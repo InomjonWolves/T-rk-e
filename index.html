@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Türkçe Yoʻl</title>
+<meta name="description" content="Oʻzbeklar uchun turk tilini oʻrganish: 10 ta dars, grammatika, kartochkalar, testlar va talaffuz. Bepul, telefonda qulay.">
+<meta name="theme-color" content="#2443b8">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Türkçe Yoʻl">
+<meta property="og:title" content="Türkçe Yoʻl — turk tilini oʻrganing">
+<meta property="og:description" content="Oʻzbeklar uchun turk tili: darslar, grammatika, kartochkalar va testlar.">
+<meta property="og:image" content="icon-512.png">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one phone-width column, Iznik-tile cobalt "word of the day" up top, tab bar pinned to the thumb zone. */
+:root {
+  --paper: #f2f4fa;
+  --card: #ffffff;
+  --ink: #111838;
+  --muted: #5a6386;
+  --line: #dde2ef;
+  --cobalt: #2443b8;
+  --cobalt-soft: #e4e9fb;
+  --turq: #0c8f88;
+  --turq-soft: #dcf3f1;
+  --tulip: #d4433a;
+  --tulip-soft: #fbe6e4;
+  --on-cobalt: #ffffff;
+  --shadow: 0 1px 2px rgba(17,24,56,.06), 0 6px 20px rgba(17,24,56,.06);
+  --font-display: "Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius: 18px;
+  --nav-h: 66px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0a0f26;
+    --card: #131a3a;
+    --ink: #e9edfb;
+    --muted: #9aa3c8;
+    --line: #252f5a;
+    --cobalt: #3a5ad6;
+    --cobalt-soft: #1c2754;
+    --turq: #3cc9be;
+    --turq-soft: #12343a;
+    --tulip: #ff7869;
+    --tulip-soft: #3a1c24;
+    --on-cobalt: #ffffff;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0a0f26;
+  --card: #131a3a;
+  --ink: #e9edfb;
+  --muted: #9aa3c8;
+  --line: #252f5a;
+  --cobalt: #3a5ad6;
+  --cobalt-soft: #1c2754;
+  --turq: #3cc9be;
+  --turq-soft: #12343a;
+  --tulip: #ff7869;
+  --tulip-soft: #3a1c24;
+  --on-cobalt: #ffffff;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--turq); outline-offset: 2px; border-radius: 10px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+p { margin: 0; }
+
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  min-height: 100%;
+  padding: calc(env(safe-area-inset-top) + 18px) 16px calc(var(--nav-h) + env(safe-area-inset-bottom) + 28px);
+  display: flex; flex-direction: column; gap: 20px;
+}
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 800; font-size: 22px; }
+.brand-mark { width: 34px; height: 34px; border-radius: 10px; background: var(--tulip); display: grid; place-items: center; }
+.brand-mark svg { width: 22px; height: 22px; }
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--card); border: 1px solid var(--line);
+  font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums;
+}
+.pill .flame { color: var(--tulip); }
+
+/* Hero: word of the day on an Iznik star tile */
+.hero {
+  position: relative; overflow: hidden;
+  background: var(--cobalt); color: var(--on-cobalt);
+  border-radius: 24px; padding: 22px 20px 20px;
+  display: flex; flex-direction: column; gap: 14px;
+  isolation: isolate;
+}
+.hero::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: rgba(255,255,255,.13);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.6'%3E%3Crect x='14' y='14' width='28' height='28'/%3E%3Crect x='14' y='14' width='28' height='28' transform='rotate(45 28 28)'/%3E%3Ccircle cx='28' cy='28' r='5'/%3E%3Cpath d='M0 0l8 8M56 0l-8 8M0 56l8-8M56 56l-8-8'/%3E%3C/g%3E%3C/svg%3E") 0 0/56px 56px;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.6'%3E%3Crect x='14' y='14' width='28' height='28'/%3E%3Crect x='14' y='14' width='28' height='28' transform='rotate(45 28 28)'/%3E%3Ccircle cx='28' cy='28' r='5'/%3E%3Cpath d='M0 0l8 8M56 0l-8 8M0 56l8-8M56 56l-8-8'/%3E%3C/g%3E%3C/svg%3E") 0 0/56px 56px;
+}
+.hero::after {
+  content: ""; position: absolute; z-index: -1; right: -60px; top: -60px;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.18), transparent 70%);
+}
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; opacity: .85; }
+.hero-word { font-family: var(--font-display); font-weight: 800; font-size: clamp(42px, 13vw, 66px); line-height: .95; letter-spacing: -0.03em; word-break: break-word; }
+.hero-mean { font-size: 18px; font-weight: 500; opacity: .95; }
+.hero-note { font-size: 14px; opacity: .8; }
+.hero-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 18px; border-radius: 14px; border: 0;
+  font-weight: 600; font-size: 16px;
+  transition: transform .12s ease, background-color .2s;
+}
+.btn:active { transform: scale(.97); }
+.btn svg { width: 20px; height: 20px; flex: none; }
+.btn-light { background: rgba(255,255,255,.95); color: #1a2a7a; }
+.btn-ghost-light { background: rgba(255,255,255,.14); color: #fff; }
+.btn-primary { background: var(--cobalt); color: var(--on-cobalt); }
+.btn-tulip { background: var(--tulip); color: #fff; }
+.btn-soft { background: var(--cobalt-soft); color: var(--ink); }
+.btn-line { background: var(--card); border: 1.5px solid var(--line); color: var(--ink); }
+.btn-block { width: 100%; }
+.btn[disabled] { opacity: .45; pointer-events: none; }
+
+/* Stats */
+.stats { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 10px; }
+.stat {
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0;
+}
+.stat-num { font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat-label { font-size: 13px; color: var(--muted); line-height: 1.25; }
+.goal { flex-direction: row; align-items: center; gap: 12px; }
+.ring { width: 54px; height: 54px; flex: none; }
+.ring circle { fill: none; stroke-width: 7; }
+.ring .bg { stroke: var(--line); }
+.ring .fg { stroke: var(--turq); stroke-linecap: round; transition: stroke-dashoffset .6s ease; }
+
+.section { display: flex; flex-direction: column; gap: 12px; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.section-head h2 { font-size: 22px; font-weight: 800; }
+.link { background: none; border: 0; color: var(--cobalt); font-weight: 600; padding: 6px 0; }
+:root[data-theme="dark"] .link { color: var(--turq); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .link { color: var(--turq); } }
+
+/* Unit cards */
+.units { display: flex; flex-direction: column; gap: 10px; }
+.unit {
+  display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 14px;
+  width: 100%; text-align: left; padding: 14px; border: 0;
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.unit:active { transform: scale(.99); }
+.unit-num {
+  width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums;
+  background: var(--cobalt-soft); color: var(--cobalt);
+}
+:root[data-theme="dark"] .unit-num { color: #b9c6ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .unit-num { color: #b9c6ff; } }
+.unit.done .unit-num { background: var(--turq-soft); color: var(--turq); }
+.unit-body { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.unit-title { font-weight: 700; font-size: 17px; line-height: 1.2; }
+.unit-sub { color: var(--muted); font-size: 14px; }
+.bar { height: 6px; border-radius: 6px; background: var(--line); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--turq); border-radius: 6px; transition: width .5s ease; }
+.chev { color: var(--muted); width: 20px; height: 20px; }
+
+.continue {
+  display: flex; flex-direction: column; gap: 12px;
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px;
+  border-left: 5px solid var(--tulip);
+}
+.continue h3 { font-size: 20px; font-weight: 800; }
+
+.quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.quick button {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+  padding: 14px; border: 0; border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow);
+  text-align: left; font-weight: 600; font-size: 15px; line-height: 1.2; min-height: 100px;
+}
+.quick .ico { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; }
+.quick .ico svg { width: 20px; height: 20px; }
+.ico-c { background: var(--cobalt-soft); color: var(--cobalt); }
+.ico-t { background: var(--turq-soft); color: var(--turq); }
+.ico-r { background: var(--tulip-soft); color: var(--tulip); }
+
+/* Lesson view */
+.back { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 8px 0; font-weight: 600; color: var(--muted); }
+.back svg { width: 20px; height: 20px; }
+.lesson-head { display: flex; flex-direction: column; gap: 6px; }
+.lesson-head h1 { font-size: 34px; font-weight: 800; line-height: 1.05; }
+.lesson-head .sub { color: var(--muted); font-size: 17px; }
+.tip {
+  background: var(--turq-soft); border-radius: var(--radius); padding: 14px 16px;
+  display: flex; gap: 12px; font-size: 15px;
+}
+.tip b { display: block; margin-bottom: 2px; }
+.tip svg { width: 22px; height: 22px; flex: none; color: var(--turq); margin-top: 2px; }
+.words { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.word { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 13px 14px; border-top: 1px solid var(--line); }
+.word:first-child { border-top: 0; }
+.word-tr { font-weight: 700; font-size: 18px; line-height: 1.25; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.word-uz { color: var(--muted); font-size: 15px; }
+.word-note { font-size: 13px; color: var(--tulip); margin-top: 3px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); flex: none; }
+.dot.k1 { background: #e9b949; }
+.dot.k2 { background: var(--turq); }
+.say {
+  width: 44px; height: 44px; border-radius: 50%; border: 0; display: grid; place-items: center;
+  background: var(--cobalt-soft); color: var(--cobalt);
+}
+:root[data-theme="dark"] .say { color: #b9c6ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .say { color: #b9c6ff; } }
+.say svg { width: 20px; height: 20px; }
+.say.playing { background: var(--cobalt); color: #fff; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.actions .btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+/* Practice picker */
+.modes { display: flex; flex-direction: column; gap: 10px; }
+.mode {
+  display: grid; grid-template-columns: 52px 1fr auto; gap: 14px; align-items: center;
+  padding: 16px; border: 0; border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); text-align: left;
+}
+.mode .ico { width: 52px; height: 52px; border-radius: 15px; display: grid; place-items: center; }
+.mode .ico svg { width: 26px; height: 26px; }
+.mode b { display: block; font-size: 17px; }
+.mode span { color: var(--muted); font-size: 14px; }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 16px 6px; margin: 0 -16px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; padding: 9px 14px; border-radius: 999px; border: 1.5px solid var(--line);
+  background: var(--card); font-weight: 600; font-size: 14px; white-space: nowrap;
+}
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+/* Alphabet */
+.letters { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.letter {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 12px; border: 1.5px solid transparent; border-radius: 16px; background: var(--card); box-shadow: var(--shadow); text-align: left;
+}
+.letter .big { font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1; }
+.letter .ex { font-size: 13px; font-weight: 600; }
+.letter .hint { font-size: 12px; color: var(--muted); line-height: 1.3; }
+.letter.diff { border-color: var(--tulip); }
+.letter.diff .big { color: var(--tulip); }
+.legend { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+.legend i { width: 14px; height: 14px; border-radius: 4px; border: 2px solid var(--tulip); }
+.letter-detail {
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px;
+  display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center;
+}
+.letter-detail .big { font-family: var(--font-display); font-weight: 800; font-size: 54px; line-height: 1; color: var(--cobalt); }
+:root[data-theme="dark"] .letter-detail .big { color: #b9c6ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .letter-detail .big { color: #b9c6ff; } }
+
+/* Grammar */
+.lead { font-size: 17px; line-height: 1.55; max-width: 62ch; }
+.rules { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.rules li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; font-size: 15px; }
+.rules li::before { content: ""; width: 8px; height: 8px; margin: 8px 0 0 6px; border-radius: 2px; background: var(--tulip); transform: rotate(45deg); }
+.table-wrap { overflow-x: auto; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }
+.gtable { width: 100%; border-collapse: collapse; font-size: 15px; }
+.gtable th { text-align: left; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 700; padding: 12px 14px 8px; background: var(--cobalt-soft); }
+.gtable td { padding: 11px 14px; border-top: 1px solid var(--line); vertical-align: top; }
+.gtable td:nth-child(2) { font-weight: 700; color: var(--cobalt); }
+:root[data-theme="dark"] .gtable td:nth-child(2) { color: #b9c6ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .gtable td:nth-child(2) { color: #b9c6ff; } }
+.gtable td:last-child { color: var(--muted); }
+.gtable tr > :first-child { white-space: nowrap; }
+.gq { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.gq-q { font-weight: 700; font-size: 16px; }
+.gq-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.gq-opts .opt { min-height: 46px; padding: 8px 16px; font-size: 16px; flex: 1 1 auto; justify-content: center; }
+.gq .feedback { min-height: 0; font-size: 14px; }
+.check { width: 22px; height: 22px; border-radius: 50%; background: var(--turq); color: #fff; display: grid; place-items: center; flex: none; }
+.check svg { width: 14px; height: 14px; }
+.unit-num.g { background: var(--tulip-soft); color: var(--tulip); font-size: 16px; }
+
+/* Session overlay */
+.session {
+  position: fixed; inset: 0; z-index: 50; background: var(--paper);
+  display: flex; flex-direction: column;
+  padding: calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 16px);
+}
+.session[hidden] { display: none; }
+.session-inner { max-width: 560px; width: 100%; margin: 0 auto; flex: 1; display: flex; flex-direction: column; gap: 18px; min-height: 0; }
+.session-top { display: flex; align-items: center; gap: 12px; }
+.x { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--card); display: grid; place-items: center; box-shadow: var(--shadow); flex: none; }
+.x svg { width: 20px; height: 20px; }
+.session-top .bar { flex: 1; height: 10px; }
+.session-count { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; min-width: 40px; text-align: right; }
+.stage { flex: 1; display: flex; flex-direction: column; gap: 16px; justify-content: center; min-height: 0; overflow-y: auto; }
+.q-label { font-size: 14px; font-weight: 600; color: var(--muted); }
+.q-word { font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 10vw, 48px); line-height: 1.05; letter-spacing: -0.02em; word-break: break-word; }
+.q-row { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
+.options { display: flex; flex-direction: column; gap: 10px; }
+.opt {
+  min-height: 58px; padding: 12px 16px; border-radius: 16px; text-align: left;
+  border: 2px solid var(--line); background: var(--card); font-size: 17px; font-weight: 600;
+  display: flex; align-items: center; gap: 12px;
+}
+.opt .k { width: 28px; height: 28px; border-radius: 8px; background: var(--paper); display: grid; place-items: center; font-size: 13px; color: var(--muted); flex: none; }
+.opt.right { border-color: var(--turq); background: var(--turq-soft); }
+.opt.wrong { border-color: var(--tulip); background: var(--tulip-soft); }
+.feedback { min-height: 24px; font-weight: 600; font-size: 15px; }
+.feedback.ok { color: var(--turq); }
+.feedback.no { color: var(--tulip); }
+
+.flip { perspective: 1200px; width: 100%; }
+.flip-inner {
+  position: relative; width: 100%; min-height: 300px;
+  transform-style: preserve-3d; transition: transform .5s cubic-bezier(.2,.7,.2,1);
+}
+.flip.on .flip-inner { transform: rotateY(180deg); }
+.face {
+  position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  border-radius: 24px; padding: 24px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; text-align: center;
+  background: var(--card); box-shadow: var(--shadow); border: 0; width: 100%;
+}
+.face.back-face { transform: rotateY(180deg); background: var(--cobalt); color: #fff; }
+.face .hint-tap { font-size: 13px; color: var(--muted); }
+.face.back-face .q-word { font-size: clamp(26px, 8vw, 38px); }
+.face .note { font-size: 14px; opacity: .85; max-width: 32ch; }
+
+.type-box { display: flex; flex-direction: column; gap: 10px; }
+.type-input {
+  width: 100%; min-height: 58px; padding: 0 16px; border-radius: 16px; border: 2px solid var(--line);
+  background: var(--card); color: var(--ink); font: 600 20px var(--font-body);
+}
+.type-input:focus { outline: none; border-color: var(--cobalt); }
+.type-input.right { border-color: var(--turq); }
+.type-input.wrong { border-color: var(--tulip); }
+.keys { display: flex; gap: 6px; flex-wrap: wrap; }
+.keys button { min-width: 44px; height: 44px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); font-weight: 700; font-size: 18px; }
+.keys button:active { background: var(--cobalt-soft); }
+
+.result { text-align: center; align-items: center; }
+.result .score { font-family: var(--font-display); font-weight: 800; font-size: 72px; line-height: 1; color: var(--turq); font-variant-numeric: tabular-nums; }
+.result h2 { font-size: 26px; }
+.result p { color: var(--muted); }
+.session-foot { display: flex; gap: 10px; }
+.session-foot .btn { flex: 1; }
+
+/* Bottom nav */
+.nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-inner { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); height: var(--nav-h); }
+.nav a {
+  min-width: 0; text-align: center; line-height: 1.15;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  text-decoration: none; color: var(--muted); font-size: 11px; font-weight: 600;
+}
+.nav a svg { width: 24px; height: 24px; }
+.nav a[aria-current="page"] { color: var(--ink); }
+.nav a[aria-current="page"] .nav-ico { background: var(--cobalt-soft); }
+.nav-ico { width: 52px; height: 30px; border-radius: 15px; display: grid; place-items: center; transition: background-color .2s; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px); z-index: 60;
+  transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none;
+  background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 12px; font-size: 14px; font-weight: 600;
+  max-width: calc(100% - 32px); transition: opacity .2s, transform .2s;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.view { display: flex; flex-direction: column; gap: 20px; }
+.view-in { animation: rise .35s ease both; }
+@keyframes rise { from { transform: translateY(8px); opacity: .4; } to { transform: none; opacity: 1; } }
+.muted { color: var(--muted); }
+.page-title { font-size: 32px; font-weight: 800; line-height: 1.05; }
+
+@media (max-width: 380px) {
+  .stats { grid-template-columns: 1fr 1fr; }
+  .stats .goal { grid-column: 1 / -1; }
+  .quick { grid-template-columns: 1fr 1fr; }
+  .quick button:last-child { grid-column: 1 / -1; min-height: 0; flex-direction: row; align-items: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<nav class="nav" aria-label="Asosiy menyu">
+  <div class="nav-inner">
+    <a href="#home" data-tab="home"><span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></span>Bosh sahifa</a>
+    <a href="#lessons" data-tab="lessons"><span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M8 7h7M8 11h5"/></svg></span>Darslar</a>
+    <a href="#practice" data-tab="practice"><span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Mashq</a>
+    <a href="#grammar" data-tab="grammar"><span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/><path d="m15 17 2 2 4-5"/></svg></span>Grammatika</a>
+    <a href="#alphabet" data-tab="alphabet"><span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 19 5-14 5 14M5 14h6"/><path d="M15 15.5a3 3 0 1 0 6 0v-1a3 3 0 1 0-6 0M21 12v7"/></svg></span>Alifbo</a>
+  </div>
+</nav>
+
+<div class="session" id="session" hidden role="dialog" aria-modal="true" aria-label="Mashq">
+  <div class="session-inner">
+    <div class="session-top">
+      <button class="x" data-act="close-session" aria-label="Mashqni yopish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <div class="bar"><i id="s-bar" style="width:0%"></i></div>
+      <div class="session-count" id="s-count">0/10</div>
+    </div>
+    <div class="stage" id="stage"></div>
+    <div class="session-foot" id="s-foot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const UNITS = [
+  { id: "selam", tr: "Selamlaşma", uz: "Salomlashish",
+    tip: ["Sen va Siz", "Turkchada ham xuddi oʻzbekchadagidek: doʻstga “sen”, kattalarga “siz”. “Merhaba” har qanday vaziyatda ishlaydi."],
+    words: [
+      ["Merhaba", "Salom"],
+      ["Günaydın", "Xayrli tong"],
+      ["İyi akşamlar", "Xayrli kech"],
+      ["İyi geceler", "Xayrli tun"],
+      ["Nasılsın?", "Qalaysan?"],
+      ["İyiyim, teşekkürler", "Yaxshiman, rahmat"],
+      ["Hoş geldiniz", "Xush kelibsiz"],
+      ["Görüşürüz", "Koʻrishguncha"],
+      ["Hoşça kal", "Xayr, sogʻ boʻl", "Ketayotgan odam qolayotganga aytadi"],
+      ["Lütfen", "Iltimos"],
+      ["Teşekkür ederim", "Rahmat"],
+      ["Evet", "Ha"],
+      ["Hayır", "Yoʻq"]
+    ] },
+  { id: "tanisma", tr: "Tanışma", uz: "Tanishuv",
+    tip: ["-man / -im", "Oʻzbekcha “oʻzbekman” → turkcha “Özbeğim”. Shaxs qoʻshimchasi deyarli bir xil ishlaydi: -ım, -im, -um, -üm."],
+    words: [
+      ["Adın ne?", "Isming nima?"],
+      ["Benim adım …", "Mening ismim …"],
+      ["Nerelisin?", "Qayerliksan?"],
+      ["Özbekistanlıyım", "Oʻzbekistonlikman"],
+      ["Memnun oldum", "Tanishganimdan xursandman"],
+      ["Kaç yaşındasın?", "Necha yoshdasan?"],
+      ["Türkçe öğreniyorum", "Turk tilini oʻrganyapman"],
+      ["Anlamadım", "Tushunmadim"],
+      ["Tekrar eder misiniz?", "Takrorlay olasizmi?"],
+      ["Yavaş konuşur musunuz?", "Sekinroq gapira olasizmi?"]
+    ] },
+  { id: "sayilar", tr: "Sayılar", uz: "Raqamlar",
+    tip: ["Deyarli bir xil", "Sonlar oʻzbekchaga juda yaqin: bir, iki, üç… Faqat “yüz” 100 degani, “bin” esa 1000 (oʻzbekcha “ming”)."],
+    words: [
+      ["bir", "1 — bir"], ["iki", "2 — ikki"], ["üç", "3 — uch"], ["dört", "4 — toʻrt"],
+      ["beş", "5 — besh"], ["altı", "6 — olti"], ["yedi", "7 — yetti"], ["sekiz", "8 — sakkiz"],
+      ["dokuz", "9 — toʻqqiz"], ["on", "10 — oʻn"], ["yirmi", "20 — yigirma"], ["elli", "50 — ellik"],
+      ["yüz", "100 — yuz"], ["bin", "1000 — ming"]
+    ] },
+  { id: "aile", tr: "Aile", uz: "Oila",
+    tip: ["“Kardeş” ehtiyot boʻling", "Turkcha “kardeş” = aka-uka yoki opa-singil. Oʻzbekcha “qarindosh” turkchada “akraba” boʻladi."],
+    words: [
+      ["aile", "oila"], ["anne", "ona"], ["baba", "ota"],
+      ["kardeş", "aka-uka, opa-singil", "“Qarindosh” emas!"],
+      ["ağabey", "aka"], ["abla", "opa"], ["oğul", "oʻgʻil"], ["kız", "qiz"],
+      ["dede", "bobo"], ["nine", "buvi"], ["eş", "turmush oʻrtoq"], ["çocuk", "bola"]
+    ] },
+  { id: "yemek", tr: "Yemek", uz: "Ovqat",
+    tip: ["Restoranda", "Ofitsiantni chaqirish uchun “Bakar mısınız?” deng. Ovqatdan oldin hamma “Afiyet olsun!” deydi."],
+    words: [
+      ["su", "suv"], ["ekmek", "non"], ["çay", "choy"], ["kahve", "qahva"],
+      ["et", "goʻsht"], ["tavuk", "tovuq"], ["pirinç", "guruch"], ["süt", "sut"],
+      ["elma", "olma"], ["şeker", "shakar"], ["Hesap, lütfen", "Hisobni bering"],
+      ["Afiyet olsun", "Yoqimli ishtaha"], ["Bakar mısınız?", "Qarab yuboring-chi? (ofitsiantga)"]
+    ] },
+  { id: "renkler", tr: "Renkler", uz: "Ranglar",
+    tip: ["“Mavi” koʻk", "Turkchada osmon rangi “mavi”. “Gök” esa osmonning oʻzi. “Kahverengi” — soʻzma-soʻz “qahva rangi”."],
+    words: [
+      ["kırmızı", "qizil"], ["mavi", "koʻk"], ["yeşil", "yashil"], ["sarı", "sariq"],
+      ["siyah", "qora"], ["beyaz", "oq"], ["turuncu", "toʻq sariq"], ["mor", "binafsha"],
+      ["pembe", "pushti"], ["gri", "kulrang"], ["kahverengi", "jigarrang"]
+    ] },
+  { id: "zaman", tr: "Zaman", uz: "Vaqt",
+    tip: ["“Ay” ikki maʼnoli", "“Ay” ham oy (osmondagi), ham oy (taqvimdagi). Oʻzbekchadagidek!"],
+    words: [
+      ["bugün", "bugun"], ["yarın", "ertaga"], ["dün", "kecha"], ["şimdi", "hozir"],
+      ["sabah", "ertalab"], ["akşam", "kechqurun"], ["gece", "tun"], ["saat", "soat"],
+      ["hafta", "hafta"], ["ay", "oy"], ["yıl", "yil"], ["Saat kaç?", "Soat necha?"]
+    ] },
+  { id: "sehir", tr: "Şehirde", uz: "Shaharda",
+    tip: ["Bozorda", "“Pazar” — bozor va yakshanba kuni. Narx soʻrash uchun: “Bu ne kadar?”"],
+    words: [
+      ["… nerede?", "… qayerda?"], ["tuvalet", "hojatxona"], ["otel", "mehmonxona"],
+      ["havalimanı", "aeroport"], ["otobüs", "avtobus"], ["sağ", "oʻng"], ["sol", "chap"],
+      ["düz", "toʻgʻri"], ["Bu ne kadar?", "Bu qancha turadi?"], ["pahalı", "qimmat"],
+      ["ucuz", "arzon"], ["pazar", "bozor; yakshanba"]
+    ] },
+  { id: "fiiller", tr: "Fiiller", uz: "Feʼllar",
+    tip: ["-mak / -mek = -moq", "Turkcha feʼlning oxiridagi -mak/-mek oʻzbekcha -moq bilan bir xil: yazmak → yozmoq."],
+    words: [
+      ["gelmek", "kelmoq"], ["gitmek", "bormoq"], ["yemek", "yemoq; ovqat"], ["içmek", "ichmoq"],
+      ["okumak", "oʻqimoq"], ["yazmak", "yozmoq"], ["konuşmak", "gapirmoq"], ["bilmek", "bilmoq"],
+      ["sevmek", "sevmoq"], ["istemek", "xohlamoq"], ["yapmak", "qilmoq"], ["görmek", "koʻrmoq"]
+    ] },
+  { id: "dostlar", tr: "Tanıdık kelimeler", uz: "Oʻxshash va aldamchi soʻzlar",
+    tip: ["Aldamchi doʻstlar", "Qizil yozuvli soʻzlar oʻzbekchaga oʻxshaydi, lekin boshqa maʼnoni bildiradi. Ularni alohida yodlang."],
+    words: [
+      ["dil", "til", "Oʻzbekcha “dil” (yurak) emas!"],
+      ["ayna", "koʻzgu", "Oʻzbekcha “oyna” (deraza) emas!"],
+      ["kol", "bilak", "Kaft “el” deyiladi"],
+      ["gök", "osmon", "Rang emas, osmon"],
+      ["göz", "koʻz"], ["yol", "yoʻl"], ["kitap", "kitob"], ["kalem", "qalam"],
+      ["dost", "doʻst"], ["kar", "qor"], ["baş", "bosh"], ["güzel", "chiroyli"]
+    ] }
+];
+
+const LETTERS = [
+  ["A a", "araba", "mashina", "a"],
+  ["B b", "balık", "baliq", "b"],
+  ["C c", "cep", "choʻntak", "“j” deb oʻqiladi!", 1],
+  ["Ç ç", "çay", "choy", "“ch”", 1],
+  ["D d", "deniz", "dengiz", "d"],
+  ["E e", "ev", "uy", "e"],
+  ["F f", "fil", "fil", "f"],
+  ["G g", "göz", "koʻz", "g"],
+  ["Ğ ğ", "dağ", "togʻ", "Oʻqilmaydi, oldingi unlini choʻzadi", 1],
+  ["H h", "hava", "havo", "h"],
+  ["I ı", "ılık", "iliq", "Nuqtasiz: “qiz”dagi qisqa i", 1],
+  ["İ i", "iki", "ikki", "Nuqtali: katta harfda ham nuqta bor", 1],
+  ["J j", "japon", "yapon", "“jurnal”dagi j, kam uchraydi"],
+  ["K k", "kedi", "mushuk", "k"],
+  ["L l", "limon", "limon", "l"],
+  ["M m", "masa", "stol", "m"],
+  ["N n", "nar", "anor", "n"],
+  ["O o", "okul", "maktab", "o"],
+  ["Ö ö", "ördek", "oʻrdak", "Lablar yumaloq, “oʻ”ga yaqin", 1],
+  ["P p", "para", "pul", "p"],
+  ["R r", "renk", "rang", "r"],
+  ["S s", "su", "suv", "s"],
+  ["Ş ş", "şeker", "shakar", "“sh”", 1],
+  ["T t", "tuz", "tuz", "t"],
+  ["U u", "uçak", "samolyot", "u"],
+  ["Ü ü", "üzüm", "uzum", "Lablar yumaloq, ingichka u", 1],
+  ["V v", "vatan", "vatan", "v"],
+  ["Y y", "yol", "yoʻl", "y"],
+  ["Z z", "zaman", "zamon", "z"]
+];
+
+const GRAMMAR = [
+  { id: "uyum", tr: "Ünlü uyumu", uz: "Unli uygʻunligi",
+    lead: "Turkchada qoʻshimchalar soʻzning oxirgi unlisiga moslashadi. Bu qoida butun grammatikaning kaliti: koʻplik, kelishik, zamon, hammasi shunga tayanadi.",
+    points: ["Ikki xil shakl (a/e): oxirgi unli a, ı, o, u boʻlsa → a; e, i, ö, ü boʻlsa → e. Masalan: -lar/-ler, -da/-de.", "Toʻrt xil shakl (ı/i/u/ü): jadvalga qarang. Masalan: -ım/-im/-um/-üm."],
+    table: { head: ["Oxirgi unli", "2 xil", "4 xil"], rows: [["a, ı", "a", "ı"], ["o, u", "a", "u"], ["e, i", "e", "i"], ["ö, ü", "e", "ü"]] },
+    compare: "Oʻzbek tilida bu qoida deyarli yoʻqolgan: “uylar” ham, “kitoblar” ham deymiz. Turkchada esa “evler” va “kitaplar”.",
+    examples: [["kitaplar", "kitoblar"], ["evler", "uylar"], ["okulda", "maktabda"], ["evde", "uyda"]],
+    quiz: [
+      { q: "göz + lar/ler = ?", o: ["gözlar", "gözler"], a: 1 },
+      { q: "masa + da/de = ?", o: ["masada", "masade"], a: 0 },
+      { q: "4 xil qoʻshimchada o, u dan keyin qaysi unli keladi?", o: ["ı", "i", "u", "ü"], a: 2 }
+    ] },
+  { id: "cogul", tr: "Çoğul", uz: "Koʻplik: -lar / -ler",
+    lead: "Koʻplik qoʻshimchasi oʻzbekcha -lar bilan bir xil. Faqat unli uygʻunligiga qarab -lar yoki -ler boʻladi.",
+    points: ["Oxirgi unli a, ı, o, u → -lar: kitaplar, okullar.", "Oxirgi unli e, i, ö, ü → -ler: evler, gözler."],
+    table: { head: ["Soʻz", "Koʻplik", "Oʻzbekcha"], rows: [["kitap", "kitaplar", "kitoblar"], ["ev", "evler", "uylar"], ["çocuk", "çocuklar", "bolalar"], ["göz", "gözler", "koʻzlar"]] },
+    compare: "Sondan keyin koʻplik qoʻshilmaydi, xuddi oʻzbekchadagidek: “iki kitap” (ikki kitob).",
+    examples: [["iki kitap", "ikki kitob"], ["Çocuklar okulda", "Bolalar maktabda"]],
+    quiz: [
+      { q: "anne + lar/ler = ?", o: ["anneler", "annelar"], a: 0 },
+      { q: "“uch olma” turkchada:", o: ["üç elmalar", "üç elma"], a: 1 },
+      { q: "okul + lar/ler = ?", o: ["okuller", "okullar"], a: 1 }
+    ] },
+  { id: "sahis", tr: "Şahıs ekleri", uz: "Men talabaman: shaxs qoʻshimchalari",
+    lead: "“Men oʻqituvchiman” kabi gaplarda turkcha ham otga qoʻshimcha qoʻshadi. Olmoshlar oʻzbekchaga juda oʻxshaydi: ben, sen, o, biz, siz, onlar.",
+    points: ["Qoʻshimchadagi unli 4 xil boʻladi: ı, i, u, ü.", "Soʻz unli bilan tugasa, orasiga “y” qoʻshiladi: öğrenci-y-im."],
+    table: { head: ["Olmosh", "Turkcha", "Oʻzbekcha"], rows: [["ben", "öğrenciyim", "talabaman"], ["sen", "öğrencisin", "talabasan"], ["o", "öğrenci", "talaba"], ["biz", "öğrenciyiz", "talabamiz"], ["siz", "öğrencisiniz", "talabasiz"], ["onlar", "öğrenciler", "talabalar"]] },
+    compare: "Oʻzbekcha -man, -san, -miz, -siz bilan solishtiring: shakli boshqa, mantiqi bir xil.",
+    examples: [["Ben öğretmenim", "Men oʻqituvchiman"], ["Sen doktorsun", "Sen shifokorsan"], ["Biz yorgunuz", "Biz charchaganmiz"]],
+    quiz: [
+      { q: "Men oʻqituvchiman = Ben öğretmen___", o: ["-im", "-sin", "-iz"], a: 0 },
+      { q: "Siz shifokorsiz = Siz doktor___", o: ["-sunuz", "-sınız", "-siniz"], a: 0 },
+      { q: "“U talaba” turkchada:", o: ["O öğrenci", "O öğrenciyim", "O öğrencisin"], a: 0 }
+    ] },
+  { id: "hal", tr: "Hal ekleri", uz: "Kelishiklar: -ga, -da, -dan, -ni",
+    lead: "Turkchada asosiy toʻrt kelishik oʻzbekchaga mos keladi. Oʻzbekcha -ga turkchada shunchaki -a/-e.",
+    points: ["Jarangsiz undoshdan (ç, f, h, k, p, s, ş, t) keyin d → t: kitapta, sokaktan (koʻchadan).", "Unli bilan tugagan soʻzga “y” qoʻshiladi: arabaya (mashinaga), arabayı (mashinani).", "Atoqli otlarga qoʻshimcha apostrof bilan yoziladi: İstanbul'a, Taşkent'te."],
+    table: { head: ["Kelishik", "Turkcha", "Oʻzbekcha"], rows: [["-ga", "eve, okula", "uyga, maktabga"], ["-da", "evde, okulda", "uyda, maktabda"], ["-dan", "evden, okuldan", "uydan, maktabdan"], ["-ni", "evi, okulu", "uyni, maktabni"]] },
+    compare: "Diqqat: turkcha “evi” ham “uyni”, ham “uning uyi” boʻlishi mumkin. Maʼnoni gap ichidan bilasiz.",
+    examples: [["Okula gidiyorum", "Maktabga ketyapman"], ["Evdeyim", "Uydaman"], ["İstanbul'dan geldim", "Istanbuldan keldim"]],
+    quiz: [
+      { q: "Uyga = ev + ?", o: ["eve", "evde", "evden"], a: 0 },
+      { q: "Kitobda = kitap + ?", o: ["kitapda", "kitapta"], a: 1 },
+      { q: "Mashinaga = araba + ?", o: ["arabaa", "arabaya", "arabaga"], a: 1 }
+    ] },
+  { id: "iyelik", tr: "İyelik ekleri", uz: "Egalik: uyim, uying, uyi",
+    lead: "Egalik qoʻshimchalari oʻzbekcha bilan deyarli bir xil. Olmosh qoʻshilsa, maʼno kuchayadi: benim evim (mening uyim).",
+    points: ["Unli bilan tugagan soʻzda unli tushib qoladi: araba-m, araba-n.", "3-shaxsda unlidan keyin “s” qoʻshiladi: arabası (uning mashinasi)."],
+    table: { head: ["Kim", "ev (uy)", "araba"], rows: [["benim", "evim", "arabam"], ["senin", "evin", "araban"], ["onun", "evi", "arabası"], ["bizim", "evimiz", "arabamız"], ["sizin", "eviniz", "arabanız"], ["onların", "evleri", "arabaları"]] },
+    compare: "Diqqat: oʻzbekcha “uying” -ng bilan, turkcha “evin” -n bilan tugaydi.",
+    examples: [["Benim adım Aziz", "Mening ismim Aziz"], ["Annem doktor", "Onam shifokor"], ["Arabası yeni", "Uning mashinasi yangi"]],
+    quiz: [
+      { q: "Mening maktabim = okul + ?", o: ["okulum", "okulim", "okulun"], a: 0 },
+      { q: "Sening isming = ad + ?", o: ["adın", "adım", "adı"], a: 0 },
+      { q: "Uning mashinasi = araba + ?", o: ["arabası", "arabayı", "arabam"], a: 0 }
+    ] },
+  { id: "varyok", tr: "Var / Yok", uz: "Bor / Yoʻq",
+    lead: "“Bor” turkchada var, “yoʻq” esa yok. Egalik qoʻshimchasi bilan birga “menda bor” maʼnosi chiqadi.",
+    points: ["Param var = Pulim bor. Tuzilishi oʻzbekcha bilan bir xil.", "Savol: var mı? / yok mu?"],
+    table: { head: ["Turkcha", "Oʻzbekcha"], rows: [["Param var", "Pulim bor"], ["Vaktim yok", "Vaqtim yoʻq"], ["Sorunuz var mı?", "Savolingiz bormi?"], ["Burada çay var", "Bu yerda choy bor"]] },
+    compare: "Oʻzbekchadagi “pulim bor” tuzilishining aynan oʻzi. Faqat soʻzlarni almashtirasiz.",
+    examples: [["Bir sorum var", "Bitta savolim bor"], ["Sorun yok", "Muammo yoʻq"], ["Kardeşin var mı?", "Aka-ukang bormi?"]],
+    quiz: [
+      { q: "Vaqtim yoʻq = Vaktim ___", o: ["var", "yok", "değil"], a: 1 },
+      { q: "Pulim bor = Param ___", o: ["var", "yok", "mı"], a: 0 },
+      { q: "Savolingiz bormi?", o: ["Sorunuz var mı?", "Sorunuz yok mu?", "Sorunuz değil mi?"], a: 0 }
+    ] },
+  { id: "soru", tr: "Soru eki: mı / mi", uz: "Savol yuklamasi",
+    lead: "Oʻzbekcha -mi turkchada ham bor, lekin alohida yoziladi va unli uygʻunligiga boʻysunadi: mı, mi, mu, mü.",
+    points: ["Bu çay mı? — oxirgi unli a → mı.", "Shaxs qoʻshimchasi yuklamaga qoʻshiladi: Hazır mısın? (Tayyormisan?)"],
+    table: { head: ["Gap", "Savol", "Oʻzbekcha"], rows: [["Bu çay", "Bu çay mı?", "Bu choymi?"], ["Ev güzel", "Ev güzel mi?", "Uy chiroylimi?"], ["Sen hazırsın", "Sen hazır mısın?", "Sen tayyormisan?"], ["O Türk", "O Türk mü?", "U turkmi?"]] },
+    compare: "Oʻzbekchada “choymi” qoʻshib yoziladi, turkchada “çay mı” ajratib yoziladi.",
+    examples: [["Türkçe biliyor musun?", "Turkcha bilasanmi?"], ["Bu otobüs Taksim'e gidiyor mu?", "Bu avtobus Taksimga boradimi?"]],
+    quiz: [
+      { q: "Bu choymi? = Bu çay ___?", o: ["mı", "mi", "mu"], a: 0 },
+      { q: "Uy chiroylimi? = Ev güzel ___?", o: ["mı", "mi", "mü"], a: 1 },
+      { q: "Qaysi biri toʻgʻri yozilgan?", o: ["Bu kitapmı?", "Bu kitap mı?"], a: 1 }
+    ] },
+  { id: "simdiki", tr: "Şimdiki zaman: -iyor", uz: "Hozirgi zamon: kelyapman",
+    lead: "Hozir boʻlayotgan ish -iyor bilan ifodalanadi. Bu oʻzbekcha -yap- ning turkchadagi juftligi: kel-yap-man ↔ gel-iyor-um.",
+    points: ["Feʼl oʻzagi + ıyor/iyor/uyor/üyor + shaxs qoʻshimchasi. “-yor” qismi hech qachon oʻzgarmaydi.", "Oʻzak unli bilan tugasa, u tushib qoladi: oku-mak → okuyorum, bekle-mek → bekliyorum (kutyapman)."],
+    table: { head: ["Shaxs", "gelmek", "Oʻzbekcha"], rows: [["ben", "geliyorum", "kelyapman"], ["sen", "geliyorsun", "kelyapsan"], ["o", "geliyor", "kelyapti"], ["biz", "geliyoruz", "kelyapmiz"], ["siz", "geliyorsunuz", "kelyapsiz"], ["onlar", "geliyorlar", "kelyaptilar"]] },
+    compare: "Turklar bu zamonni oʻzbekcha “kelaman” (doimiy ish) oʻrnida ham ishlatadi: “Her gün çalışıyorum” = Har kuni ishlayman.",
+    examples: [["Ne yapıyorsun?", "Nima qilyapsan?"], ["Türkçe öğreniyorum", "Turk tilini oʻrganyapman"], ["Kitap okuyorum", "Kitob oʻqiyapman"]],
+    quiz: [
+      { q: "Men kelyapman = gel + ?", o: ["geliyorum", "gelyorum", "geliyoruz"], a: 0 },
+      { q: "Biz yozyapmiz = yaz + ?", o: ["yazıyoruz", "yaziyoruz", "yazıyorsunuz"], a: 0 },
+      { q: "Sen ichyapsan = iç + ?", o: ["içiyorsun", "içıyorsun", "içiyorum"], a: 0 }
+    ] },
+  { id: "gecmis", tr: "Geçmiş zaman: -di", uz: "Oʻtgan zamon: keldim",
+    lead: "Bu zamon oʻzbekchaga eng yaqin: geldim, geldin, geldi… deyarli harfma-harf bir xil!",
+    points: ["Qoʻshimcha 4 xil: -dı, -di, -du, -dü.", "Jarangsiz undoshdan keyin d → t: yaptım (qildim), içtim (ichdim), konuştum (gapirdim)."],
+    table: { head: ["Shaxs", "gelmek", "Oʻzbekcha"], rows: [["ben", "geldim", "keldim"], ["sen", "geldin", "kelding"], ["o", "geldi", "keldi"], ["biz", "geldik", "keldik"], ["siz", "geldiniz", "keldingiz"], ["onlar", "geldiler", "keldilar"]] },
+    compare: "Yagona farq: “kelding” turkchada “geldin”, “keldingiz” esa “geldiniz”.",
+    examples: [["Dün geldim", "Kecha keldim"], ["Ne yaptın?", "Nima qilding?"], ["Çay içtik", "Choy ichdik"]],
+    quiz: [
+      { q: "Men keldim = gel + ?", o: ["geldim", "geltim", "geldik"], a: 0 },
+      { q: "Men qildim = yap + ?", o: ["yapdım", "yaptım", "yaptı"], a: 1 },
+      { q: "Ular bordi = git + ?", o: ["gittiler", "gitdiler", "gittik"], a: 0 }
+    ] },
+  { id: "olumsuz", tr: "Olumsuzluk", uz: "Inkor: -ma, değil",
+    lead: "Feʼlni inkor qilish oʻzbekchadagidek: oʻzakka -ma/-me qoʻshiladi. Ot va sifatlar uchun “değil” (emas) ishlatiladi.",
+    points: ["gel-me-di-m = kel-ma-di-m. Tartib ham bir xil!", "Hozirgi zamonda -me + -iyor → -miyor: gelmiyorum (kelmayapman).", "Ben doktor değilim = Men shifokor emasman."],
+    table: { head: ["Ha", "Yoʻq", "Oʻzbekcha"], rows: [["geldim", "gelmedim", "kelmadim"], ["yaptı", "yapmadı", "qilmadi"], ["anlıyorum", "anlamıyorum", "tushunmayapman"], ["Türk'üm", "Türk değilim", "turk emasman"]] },
+    compare: "“Değil” gapning oxirida keladi va shaxs qoʻshimchasini oʻziga oladi: değilim, değilsin, değil.",
+    examples: [["Bilmiyorum", "Bilmayman"], ["Acele etme!", "Shoshilma!"], ["Pahalı değil", "Qimmat emas"]],
+    quiz: [
+      { q: "Kelmadim = gel + ?", o: ["gelmedim", "gelmadım", "gelmedi"], a: 0 },
+      { q: "Tushunmayapman = ?", o: ["Anlamıyorum", "Anlamadım", "Anlamıyor"], a: 0 },
+      { q: "Qimmat emas = Pahalı ___", o: ["yok", "değil", "mı"], a: 1 }
+    ] }
+];
+
+const ALL = [];
+UNITS.forEach((u, ui) => u.words.forEach(w => ALL.push({ tr: w[0], uz: w[1], note: w[2] || "", unit: ui })));
+
+const DAILY_GOAL = 50;
+const KEY = "turkce-yol-v1";
+const todayStr = () => new Date().toISOString().slice(0, 10);
+function blank() { return { xp: 0, streak: 0, lastDay: null, day: todayStr(), dayXp: 0, known: {}, gram: {} }; }
+let S = blank();
+try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(blank(), JSON.parse(raw)); } catch (e) {}
+if (S.day !== todayStr()) { S.day = todayStr(); S.dayXp = 0; }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function streakNow() {
+  if (!S.lastDay) return 0;
+  const y = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+  return (S.lastDay === todayStr() || S.lastDay === y) ? S.streak : 0;
+}
+function addXP(n) {
+  const t = todayStr();
+  if (S.day !== t) { S.day = t; S.dayXp = 0; }
+  if (S.lastDay !== t) {
+    const y = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+    S.streak = S.lastDay === y ? S.streak + 1 : 1;
+    S.lastDay = t;
+  }
+  S.xp += n; S.dayXp += n; save();
+}
+const known = w => S.known[w.tr] || 0;
+function setKnown(w, delta) { S.known[w.tr] = Math.max(0, Math.min(3, known(w) + delta)); save(); }
+function unitProgress(ui) {
+  const ws = ALL.filter(w => w.unit === ui);
+  return ws.filter(w => known(w) >= 2).length / ws.length;
+}
+const gramDone = g => { const r = S.gram[g.id] || []; return g.quiz.every((q, i) => r[i]); };
+const gramCount = () => GRAMMAR.filter(gramDone).length;
+const learnedCount = () => ALL.filter(w => known(w) >= 2).length;
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+// Keep suffixes like "-ga" from breaking after the hyphen
+const nb = s => esc(s).replace(/(^|\s)-(\S)/g, "$1\u2011$2");
+const pad = n => String(n).padStart(2, "0");
+
+const ICON = {
+  speak: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>',
+  chev: '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>',
+  cards: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="15" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v12"/></svg>',
+  quiz: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>',
+  type: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>',
+  bulb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>',
+  ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>',
+  gram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/><path d="m15 17 2 2 4-5"/></svg>',
+  flame: '<svg class="flame" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4 5 5.5 5 11a5 5 0 0 1-10 0c0-2.5 1.2-4 2.5-5 .2 1.8 1 3 2.2 3.4C11 9 11 5 12 2z"/></svg>'
+};
+
+/* ---------- Speech ---------- */
+let voices = [];
+function loadVoices() { try { voices = speechSynthesis.getVoices(); } catch (e) {} }
+try { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; } catch (e) {}
+function speak(text, btn) {
+  const clean = text.replace(/…/g, "").trim();
+  try {
+    if (!("speechSynthesis" in window)) { toast("Bu brauzerda ovoz yoʻq"); return; }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(clean);
+    u.lang = "tr-TR"; u.rate = 0.85;
+    const v = voices.find(v => (v.lang || "").toLowerCase().startsWith("tr"));
+    if (v) u.voice = v;
+    if (btn) { btn.classList.add("playing"); u.onend = u.onerror = () => btn.classList.remove("playing"); }
+    speechSynthesis.speak(u);
+    if (!v && voices.length) toast("Turkcha ovoz topilmadi: talaffuz taxminiy boʻlishi mumkin");
+  } catch (e) { toast("Ovozni ijro etib boʻlmadi"); }
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
+}
+
+/* ---------- Views ---------- */
+const app = document.getElementById("app");
+const brandMark = '<span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 3c1.8 2 2.6 3.8 2.6 5.6 1.4-1.2 3-1.8 4.4-1.6-.3 5.4-3 9-7 10-4-1-6.7-4.6-7-10 1.4-.2 3 .4 4.4 1.6C9.4 6.8 10.2 5 12 3z"/><rect x="11.2" y="17" width="1.6" height="5" rx=".8"/></svg></span>';
+
+function topbar() {
+  return `<header class="topbar">
+    <div class="brand">${brandMark}<span>Türkçe Yoʻl</span></div>
+    <div style="display:flex;gap:8px">
+      <span class="pill" title="Ketma-ket kunlar">${ICON.flame}${streakNow()}</span>
+      <span class="pill" title="Jami XP">${S.xp} XP</span>
+    </div>
+  </header>`;
+}
+
+function wordOfDay() {
+  const d = Math.floor(Date.now() / 864e5);
+  return ALL[(d * 7) % ALL.length];
+}
+
+function unitCard(u, ui) {
+  const p = unitProgress(ui);
+  return `<button class="unit${p >= 1 ? " done" : ""}" data-act="open-unit" data-u="${ui}">
+    <span class="unit-num">${pad(ui + 1)}</span>
+    <span class="unit-body">
+      <span class="unit-title">${esc(u.uz)}</span>
+      <span class="unit-sub">${esc(u.tr)} · ${u.words.length} ta soʻz</span>
+      <span class="bar" aria-label="${Math.round(p * 100)}% oʻrganilgan"><i style="width:${Math.round(p * 100)}%"></i></span>
+    </span>
+    ${ICON.chev}
+  </button>`;
+}
+
+function viewHome() {
+  const w = wordOfDay();
+  const pct = Math.min(1, S.dayXp / DAILY_GOAL);
+  const C = 2 * Math.PI * 23;
+  let next = UNITS.findIndex((u, i) => unitProgress(i) < 1);
+  if (next < 0) next = 0;
+  const np = Math.round(unitProgress(next) * 100);
+  return `${topbar()}
+  <section class="hero" aria-label="Bugungi soʻz">
+    <span class="eyebrow">Bugungi soʻz</span>
+    <div>
+      <div class="hero-word" lang="tr">${esc(w.tr)}</div>
+      <div class="hero-mean">${esc(w.uz)}</div>
+      ${w.note ? `<div class="hero-note">${esc(w.note)}</div>` : ""}
+    </div>
+    <div class="hero-row">
+      <button class="btn btn-light" data-act="say" data-t="${esc(w.tr)}">${ICON.speak}Tinglash</button>
+      <button class="btn btn-ghost-light" data-act="open-unit" data-u="${w.unit}">Darsga oʻtish</button>
+    </div>
+  </section>
+
+  <section class="stats" aria-label="Natijalar">
+    <div class="stat goal">
+      <svg class="ring" viewBox="0 0 54 54" aria-hidden="true"><circle class="bg" cx="27" cy="27" r="23"/><circle class="fg" cx="27" cy="27" r="23" transform="rotate(-90 27 27)" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct)}"/></svg>
+      <div><div class="stat-num">${S.dayXp}<span class="muted" style="font-size:15px;font-weight:600">/${DAILY_GOAL}</span></div><div class="stat-label">Bugungi XP</div></div>
+    </div>
+    <div class="stat"><div class="stat-num">${streakNow()}</div><div class="stat-label">Ketma-ket kun</div></div>
+    <div class="stat"><div class="stat-num">${learnedCount()}</div><div class="stat-label">Oʻrganilgan soʻz</div></div>
+  </section>
+
+  <section class="continue">
+    <span class="eyebrow" style="color:var(--tulip)">Davom ettiring · ${pad(next + 1)}-dars</span>
+    <h3>${esc(UNITS[next].uz)} <span class="muted" style="font-weight:600">· ${esc(UNITS[next].tr)}</span></h3>
+    <div class="bar"><i style="width:${np}%"></i></div>
+    <div class="actions">
+      <button class="btn btn-soft" data-act="open-unit" data-u="${next}">Soʻzlar</button>
+      <button class="btn btn-tulip" data-act="start" data-mode="cards" data-u="${next}">Mashq qilish</button>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>Tezkor mashq</h2></div>
+    <div class="quick">
+      <button data-act="start" data-mode="cards" data-u="all"><span class="ico ico-c">${ICON.cards}</span>Kartochka</button>
+      <button data-act="start" data-mode="quiz" data-u="all"><span class="ico ico-t">${ICON.quiz}</span>Test</button>
+      <button data-act="start" data-mode="type" data-u="all"><span class="ico ico-r">${ICON.type}</span>Yozish</button>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>Grammatika</h2><button class="link" data-act="go" data-to="grammar">${gramCount()}/${GRAMMAR.length} mavzu</button></div>
+    <div class="units">${gramCard(gramNext(), gramNext())}</div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>Darslar</h2><button class="link" data-act="go" data-to="lessons">Hammasi</button></div>
+    <div class="units">${UNITS.slice(0, 3).map((u, i) => unitCard(u, i)).join("")}</div>
+  </section>`;
+}
+
+function viewLessons() {
+  const done = UNITS.filter((u, i) => unitProgress(i) >= 1).length;
+  return `${topbar()}
+  <div class="lesson-head">
+    <h1 class="page-title">Darslar</h1>
+    <p class="muted">${UNITS.length} ta dars · ${ALL.length} ta soʻz va ibora · ${done} ta dars tugallangan</p>
+  </div>
+  <div class="units">${UNITS.map(unitCard).join("")}</div>`;
+}
+
+function viewUnit(ui) {
+  const u = UNITS[ui];
+  const rows = ALL.filter(w => w.unit === ui).map(w => {
+    const k = known(w);
+    return `<div class="word">
+      <div>
+        <div class="word-tr" lang="tr"><span class="dot${k >= 2 ? " k2" : k ? " k1" : ""}" title="${k >= 2 ? "Oʻrganilgan" : k ? "Oʻrganilmoqda" : "Yangi"}"></span>${esc(w.tr)}</div>
+        <div class="word-uz">${esc(w.uz)}</div>
+        ${w.note ? `<div class="word-note">${esc(w.note)}</div>` : ""}
+      </div>
+      <button class="say" data-act="say" data-t="${esc(w.tr)}" aria-label="${esc(w.tr)} — tinglash">${ICON.speak}</button>
+    </div>`;
+  }).join("");
+  return `<div><button class="back" data-act="go" data-to="lessons">${ICON.back}Darslar</button></div>
+  <div class="lesson-head">
+    <span class="eyebrow" style="color:var(--tulip)">${pad(ui + 1)}-dars · ${u.words.length} ta soʻz</span>
+    <h1>${esc(u.uz)}</h1>
+    <p class="sub" lang="tr">${esc(u.tr)}</p>
+  </div>
+  <div class="tip">${ICON.bulb}<div><b>${esc(u.tip[0])}</b>${esc(u.tip[1])}</div></div>
+  <div class="actions">
+    <button class="btn btn-primary" data-act="start" data-mode="cards" data-u="${ui}">${ICON.cards}Kartochka</button>
+    <button class="btn btn-tulip" data-act="start" data-mode="quiz" data-u="${ui}">${ICON.quiz}Test</button>
+    <button class="btn btn-line" data-act="start" data-mode="type" data-u="${ui}">${ICON.type}Yozib mashq qilish</button>
+  </div>
+  <div class="words">${rows}</div>
+  <p class="muted" style="font-size:14px">Nuqta rangi: kulrang — yangi, sariq — oʻrganilmoqda, yashil — oʻrganilgan.</p>`;
+}
+
+let practiceUnit = "all";
+function viewPractice() {
+  const chips = [`<button class="chip" data-act="pick" data-u="all" aria-pressed="${practiceUnit === "all"}">Barcha darslar</button>`]
+    .concat(UNITS.map((u, i) => `<button class="chip" data-act="pick" data-u="${i}" aria-pressed="${String(practiceUnit) === String(i)}">${pad(i + 1)} · ${esc(u.uz)}</button>`)).join("");
+  return `${topbar()}
+  <div class="lesson-head">
+    <h1 class="page-title">Mashq</h1>
+    <p class="muted">Har bir mashq 10 ta savol. Toʻgʻri javob uchun 10 XP.</p>
+  </div>
+  <section class="section">
+    <div class="section-head"><h2 style="font-size:18px">Qaysi soʻzlar?</h2></div>
+    <div class="chips" id="chips">${chips}</div>
+  </section>
+  <div class="modes">
+    <button class="mode" data-act="start" data-mode="cards"><span class="ico ico-c">${ICON.cards}</span><div><b>Kartochkalar</b><span>Soʻzni koʻring, agʻdaring, eslang</span></div>${ICON.chev}</button>
+    <button class="mode" data-act="start" data-mode="quiz"><span class="ico ico-t">${ICON.quiz}</span><div><b>Test</b><span>4 ta variantdan toʻgʻrisini tanlang</span></div>${ICON.chev}</button>
+    <button class="mode" data-act="start" data-mode="type"><span class="ico ico-r">${ICON.type}</span><div><b>Yozish</b><span>Turkcha yozing: ç, ş, ğ, ı tugmalari bor</span></div>${ICON.chev}</button>
+  </div>`;
+}
+
+function gramNext() { const i = GRAMMAR.findIndex(g => !gramDone(g)); return i < 0 ? 0 : i; }
+function gramCard(_, gi) {
+  const g = GRAMMAR[gi], done = gramDone(g);
+  const r = S.gram[g.id] || [], n = g.quiz.filter((q, i) => r[i]).length;
+  return `<button class="unit${done ? " done" : ""}" data-act="go" data-to="grammar-${gi + 1}">
+    <span class="unit-num g">G${gi + 1}</span>
+    <span class="unit-body">
+      <span class="unit-title">${nb(g.uz)}</span>
+      <span class="unit-sub" lang="tr">${esc(g.tr)}</span>
+      <span class="bar" aria-label="Test: ${n}/${g.quiz.length}"><i style="width:${Math.round(n / g.quiz.length * 100)}%"></i></span>
+    </span>
+    ${done ? `<span class="check" aria-label="Tugallangan">${ICON.ok}</span>` : ICON.chev}
+  </button>`;
+}
+function viewGrammarList() {
+  return `${topbar()}
+  <div class="lesson-head">
+    <h1 class="page-title">Grammatika</h1>
+    <p class="muted">${GRAMMAR.length} ta mavzu, har biri oʻzbek tili bilan solishtirilgan. Mavzu oxiridagi testni yechsangiz, mavzu tugallangan hisoblanadi.</p>
+  </div>
+  <div class="tip">${ICON.bulb}<div><b>Qaysidan boshlash kerak?</b>Tartib bilan boring: 1-mavzu (unli uygʻunligi) qolgan barcha qoidalarning asosi.</div></div>
+  <div class="units">${GRAMMAR.map((g, i) => gramCard(g, i)).join("")}</div>`;
+}
+function gqHtml(g, qi) {
+  const q = g.quiz[qi];
+  return `<div class="gq" id="gq-${qi}">
+    <div class="gq-q">${qi + 1}. ${esc(q.q)}</div>
+    <div class="gq-opts">${shuffle(q.o.map((o, oi) => [o, oi])).map(([o, oi]) => `<button class="opt" lang="tr" data-act="gq" data-q="${qi}" data-o="${oi}">${esc(o)}</button>`).join("")}</div>
+    <div class="feedback" aria-live="polite"></div>
+  </div>`;
+}
+function viewGrammar(gi) {
+  const g = GRAMMAR[gi];
+  const t = g.table;
+  const next = GRAMMAR[gi + 1];
+  return `<div><button class="back" data-act="go" data-to="grammar">${ICON.back}Grammatika</button></div>
+  <div class="lesson-head">
+    <span class="eyebrow" style="color:var(--tulip)">${gi + 1}-mavzu · ${GRAMMAR.length} tadan</span>
+    <h1>${nb(g.uz)}</h1>
+    <p class="sub" lang="tr">${esc(g.tr)}</p>
+  </div>
+  <p class="lead">${esc(g.lead)}</p>
+  <ul class="rules">${g.points.map(p => `<li><span>${esc(p)}</span></li>`).join("")}</ul>
+  <div class="table-wrap"><table class="gtable">
+    <thead><tr>${t.head.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead>
+    <tbody>${t.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody>
+  </table></div>
+  <div class="tip">${ICON.bulb}<div><b>Oʻzbekcha bilan solishtiring</b>${esc(g.compare)}</div></div>
+  <section class="section">
+    <div class="section-head"><h2 style="font-size:20px">Misollar</h2></div>
+    <div class="words">${g.examples.map(e => `<div class="word"><div><div class="word-tr" lang="tr">${esc(e[0])}</div><div class="word-uz">${esc(e[1])}</div></div>
+      <button class="say" data-act="say" data-t="${esc(e[0])}" aria-label="${esc(e[0])} — tinglash">${ICON.speak}</button></div>`).join("")}</div>
+  </section>
+  <section class="section">
+    <div class="section-head"><h2 style="font-size:20px">Oʻzingizni tekshiring</h2><span class="muted" style="font-size:14px">+5 XP har biriga</span></div>
+    ${g.quiz.map((q, qi) => gqHtml(g, qi)).join("")}
+  </section>
+  ${next ? `<button class="btn btn-primary btn-block" data-act="go" data-to="grammar-${gi + 2}">Keyingi mavzu: ${esc(next.uz)}</button>`
+         : `<button class="btn btn-soft btn-block" data-act="go" data-to="grammar">Barcha mavzular</button>`}`;
+}
+
+let letterSel = 2;
+function viewAlphabet() {
+  const L = LETTERS[letterSel];
+  return `${topbar()}
+  <div class="lesson-head">
+    <h1 class="page-title">Alifbo</h1>
+    <p class="muted">Turk alifbosida 29 harf bor. Q, X, W harflari yoʻq. Harfni bosing va misolni tinglang.</p>
+  </div>
+  <div class="letter-detail">
+    <span class="big" lang="tr">${esc(L[0])}</span>
+    <div><div style="font-weight:700;font-size:18px" lang="tr">${esc(L[1])}</div><div class="muted">${esc(L[2])}</div><div style="font-size:14px;margin-top:2px">${esc(L[3])}</div></div>
+    <button class="say" data-act="say" data-t="${esc(L[1])}" aria-label="${esc(L[1])} — tinglash">${ICON.speak}</button>
+  </div>
+  <div class="legend"><i></i>Oʻzbek lotin yozuvidan farq qiladigan harflar</div>
+  <div class="letters">${LETTERS.map((l, i) => `<button class="letter${l[4] ? " diff" : ""}" data-act="letter" data-i="${i}" aria-pressed="${i === letterSel}">
+    <span class="big" lang="tr">${esc(l[0])}</span><span class="ex" lang="tr">${esc(l[1])}</span><span class="hint">${esc(l[4] ? l[3] : l[2])}</span></button>`).join("")}</div>`;
+}
+
+/* ---------- Router ---------- */
+const TABS = ["home", "lessons", "practice", "alphabet"];
+function route() {
+  const h = (location.hash || "#home").slice(1);
+  let html, tab = h;
+  const m = /^lesson-(\d+)$/.exec(h);
+  if (m && UNITS[+m[1] - 1]) { html = viewUnit(+m[1] - 1); tab = "lessons"; }
+  else if (/^grammar-(\d+)$/.test(h) && GRAMMAR[+h.slice(8) - 1]) { html = viewGrammar(+h.slice(8) - 1); tab = "grammar"; }
+  else if (h === "grammar") html = viewGrammarList();
+  else if (h === "lessons") html = viewLessons();
+  else if (h === "practice") html = viewPractice();
+  else if (h === "alphabet") html = viewAlphabet();
+  else { html = viewHome(); tab = "home"; }
+  app.innerHTML = `<div class="view view-in">${html}</div>`;
+  document.querySelectorAll(".nav a").forEach(a => { if (a.dataset.tab === tab) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+}
+function go(to) {
+  if (location.hash === "#" + to) route(); else location.hash = to;
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", () => { route(); window.scrollTo(0, 0); });
+
+/* ---------- Session ---------- */
+const sessionEl = document.getElementById("session");
+const stage = document.getElementById("stage");
+const foot = document.getElementById("s-foot");
+let SES = null;
+
+function pickPool(u) {
+  let pool = u === "all" ? ALL.slice() : ALL.filter(w => w.unit === +u);
+  return pool;
+}
+function startSession(mode, u) {
+  let pool = pickPool(u);
+  if (mode === "type") pool = pool.filter(w => !w.tr.includes("…") && w.tr.length <= 20);
+  // Least-known words first, with a little randomness
+  const items = shuffle(pool).sort((a, b) => known(a) - known(b)).slice(0, 10);
+  SES = { mode, u, items: shuffle(items), i: 0, right: 0, xp: 0, answered: false };
+  sessionEl.hidden = false;
+  document.body.style.overflow = "hidden";
+  renderStep();
+}
+function closeSession() {
+  try { speechSynthesis.cancel(); } catch (e) {}
+  sessionEl.hidden = true; SES = null;
+  document.body.style.overflow = "";
+  route();
+}
+function progressBar() {
+  const n = SES.items.length;
+  document.getElementById("s-bar").style.width = (SES.i / n * 100) + "%";
+  document.getElementById("s-count").textContent = Math.min(SES.i + 1, n) + "/" + n;
+}
+function renderStep() {
+  if (SES.i >= SES.items.length) return renderResult();
+  SES.answered = false;
+  progressBar();
+  const w = SES.items[SES.i];
+  if (SES.mode === "cards") renderCard(w);
+  else if (SES.mode === "quiz") renderQuiz(w);
+  else renderType(w);
+}
+
+function renderCard(w) {
+  stage.innerHTML = `<div class="flip" id="flip">
+    <div class="flip-inner">
+      <button class="face" data-act="flip" aria-label="Kartochkani agʻdarish">
+        <span class="q-label">Turkcha</span>
+        <span class="q-word" lang="tr">${esc(w.tr)}</span>
+        <span class="hint-tap">Tarjimani koʻrish uchun bosing</span>
+      </button>
+      <button class="face back-face" data-act="flip" aria-label="Kartochkani agʻdarish">
+        <span class="q-label" style="color:rgba(255,255,255,.8)">Oʻzbekcha</span>
+        <span class="q-word">${esc(w.uz)}</span>
+        ${w.note ? `<span class="note">${esc(w.note)}</span>` : ""}
+      </button>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:center"><button class="btn btn-line" data-act="say" data-t="${esc(w.tr)}">${ICON.speak}Tinglash</button></div>`;
+  foot.innerHTML = `<button class="btn btn-line" data-act="card-again">Yana koʻraman</button><button class="btn btn-primary" data-act="card-know">Bilaman</button>`;
+  speak(w.tr);
+}
+
+function renderQuiz(w) {
+  const toUz = Math.random() < 0.6;
+  const pool = (SES.u === "all" ? ALL : ALL.filter(x => x.unit === w.unit)).filter(x => x.tr !== w.tr && x.uz !== w.uz);
+  const wrong = shuffle(pool.length >= 3 ? pool : ALL.filter(x => x.tr !== w.tr)).slice(0, 3);
+  const opts = shuffle([w, ...wrong]);
+  SES.correct = w;
+  stage.innerHTML = `<div class="q-label">${toUz ? "Bu soʻz nimani anglatadi?" : "Turkchasini toping"}</div>
+    <div class="q-row"><div class="q-word" ${toUz ? 'lang="tr"' : ""}>${esc(toUz ? w.tr : w.uz)}</div>
+    ${toUz ? `<button class="say" data-act="say" data-t="${esc(w.tr)}" aria-label="Tinglash">${ICON.speak}</button>` : ""}</div>
+    <div class="options">${opts.map((o, i) => `<button class="opt" data-act="answer" data-ok="${o === w ? 1 : 0}" ${toUz ? "" : 'lang="tr"'}><span class="k">${"ABCD"[i]}</span>${esc(toUz ? o.uz : o.tr)}</button>`).join("")}</div>
+    <div class="feedback" id="fb" aria-live="polite"></div>`;
+  foot.innerHTML = `<button class="btn btn-primary btn-block" data-act="next" disabled>Keyingi</button>`;
+  if (toUz) speak(w.tr);
+}
+
+const fold = s => s.toLocaleLowerCase("tr").replace(/[?!.,;:…]/g, "").replace(/\s+/g, " ").trim();
+const plain = s => fold(s).replace(/ç/g, "c").replace(/ş/g, "s").replace(/ğ/g, "g").replace(/ı/g, "i").replace(/ö/g, "o").replace(/ü/g, "u").replace(/â/g, "a");
+
+function renderType(w) {
+  stage.innerHTML = `<div class="q-label">Turkchasini yozing</div>
+    <div class="q-word">${esc(w.uz)}</div>
+    <form class="type-box" id="type-form" autocomplete="off">
+      <label for="type-input" class="q-label" style="position:absolute;left:-9999px">Javob</label>
+      <input class="type-input" id="type-input" lang="tr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Javobingiz…">
+      <div class="keys">${["ç", "ş", "ğ", "ı", "İ", "ö", "ü"].map(k => `<button type="button" data-act="key" data-k="${k}">${k}</button>`).join("")}</div>
+    </form>
+    <div class="feedback" id="fb" aria-live="polite"></div>`;
+  foot.innerHTML = `<button class="btn btn-line" data-act="type-skip">Bilmayman</button><button class="btn btn-primary" data-act="type-check">Tekshirish</button>`;
+  const inp = document.getElementById("type-input");
+  document.getElementById("type-form").addEventListener("submit", e => { e.preventDefault(); if (SES.answered) nextStep(); else checkType(); });
+  setTimeout(() => inp.focus(), 60);
+}
+function checkType(skip) {
+  if (SES.answered) return;
+  const w = SES.items[SES.i];
+  const inp = document.getElementById("type-input");
+  const v = inp.value;
+  const fb = document.getElementById("fb");
+  if (!skip && !v.trim()) { inp.focus(); return; }
+  SES.answered = true;
+  if (!skip && fold(v) === fold(w.tr)) {
+    good(); inp.classList.add("right"); fb.className = "feedback ok"; fb.textContent = "Barakalla! Toʻgʻri.";
+  } else if (!skip && plain(v) === plain(w.tr)) {
+    good(); inp.classList.add("right"); fb.className = "feedback ok"; fb.innerHTML = `Deyarli! Harflarga eʼtibor bering: <b lang="tr">${esc(w.tr)}</b>`;
+  } else {
+    bad(); inp.classList.add("wrong"); fb.className = "feedback no"; fb.innerHTML = `Toʻgʻri javob: <b lang="tr">${esc(w.tr)}</b>`;
+  }
+  speak(w.tr);
+  foot.innerHTML = `<button class="btn btn-primary btn-block" data-act="next">Keyingi</button>`;
+}
+
+function good() { const w = SES.items[SES.i]; SES.right++; SES.xp += 10; addXP(10); setKnown(w, 1); }
+function bad() { setKnown(SES.items[SES.i], -1); }
+function nextStep() { SES.i++; renderStep(); }
+
+function renderResult() {
+  const n = SES.items.length;
+  document.getElementById("s-bar").style.width = "100%";
+  document.getElementById("s-count").textContent = n + "/" + n;
+  const r = SES.right / n;
+  const title = r === 1 ? "Mükemmel! Hammasi toʻgʻri" : r >= .7 ? "Harika! Juda yaxshi" : r >= .4 ? "İyi! Yaxshi boshlanish" : "Pes etme! Taslim boʻlmang";
+  stage.innerHTML = `<div class="result stage" style="flex:0">
+    <div class="score">${SES.right}/${n}</div>
+    <h2>${esc(title)}</h2>
+    <p>+${SES.xp} XP · bugun ${S.dayXp}/${DAILY_GOAL} XP · ${streakNow()} kun ketma-ket</p>
+  </div>`;
+  foot.innerHTML = `<button class="btn btn-line" data-act="close-session">Yopish</button><button class="btn btn-primary" data-act="again">Yana mashq</button>`;
+}
+
+/* ---------- Events ---------- */
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  const act = b.dataset.act;
+  if (act === "say") { speak(b.dataset.t, b.classList.contains("say") ? b : null); }
+  else if (act === "go") go(b.dataset.to);
+  else if (act === "open-unit") go("lesson-" + (+b.dataset.u + 1));
+  else if (act === "start") startSession(b.dataset.mode, b.dataset.u ?? practiceUnit);
+  else if (act === "pick") {
+    practiceUnit = b.dataset.u;
+    document.querySelectorAll("#chips .chip").forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+  }
+  else if (act === "letter") {
+    letterSel = +b.dataset.i;
+    const y = window.scrollY; route(); window.scrollTo(0, y);
+    speak(LETTERS[letterSel][1]);
+  }
+  else if (act === "gq") {
+    const box = b.closest(".gq");
+    if (box.dataset.done) return;
+    const gi = +location.hash.slice(9) - 1, g = GRAMMAR[gi], qi = +b.dataset.q, q = g.quiz[qi];
+    const ok = +b.dataset.o === q.a;
+    box.dataset.done = "1";
+    box.querySelectorAll(".opt").forEach(o => { if (+o.dataset.o === q.a) o.classList.add("right"); });
+    const fb = box.querySelector(".feedback");
+    const r = S.gram[g.id] || (S.gram[g.id] = []);
+    if (ok) {
+      fb.className = "feedback ok"; fb.textContent = "Doğru! Toʻgʻri.";
+      if (!r[qi]) { r[qi] = true; addXP(5); if (gramDone(g)) toast("Mavzu tugallandi! Tebrikler"); }
+      save();
+    } else {
+      b.classList.add("wrong");
+      fb.className = "feedback no";
+      fb.innerHTML = `Toʻgʻri javob: <b lang="tr">${esc(q.o[q.a])}</b> <button class="link" data-act="gq-retry" data-q="${qi}">Qayta urinish</button>`;
+    }
+  }
+  else if (act === "gq-retry") {
+    const gi = +location.hash.slice(9) - 1, qi = +b.dataset.q;
+    const old = document.getElementById("gq-" + qi);
+    old.outerHTML = gqHtml(GRAMMAR[gi], qi);
+  }
+  else if (act === "close-session") closeSession();
+  else if (act === "again") startSession(SES.mode, SES.u);
+  else if (act === "flip") document.getElementById("flip").classList.toggle("on");
+  else if (act === "card-know") { good(); nextStep(); }
+  else if (act === "card-again") { bad(); SES.items.push(SES.items[SES.i]); SES.items.splice(SES.i, 1); if (SES.items.length > 14) SES.items.pop(); renderStep(); }
+  else if (act === "answer") {
+    if (SES.answered) return;
+    SES.answered = true;
+    const ok = b.dataset.ok === "1";
+    document.querySelectorAll(".opt").forEach(o => { if (o.dataset.ok === "1") o.classList.add("right"); });
+    const fb = document.getElementById("fb");
+    if (ok) { good(); fb.className = "feedback ok"; fb.textContent = "Doğru! Toʻgʻri javob."; }
+    else { bad(); b.classList.add("wrong"); fb.className = "feedback no"; fb.innerHTML = `Yanlış. Toʻgʻrisi: <b>${esc(SES.correct.tr)}</b> — ${esc(SES.correct.uz)}`; }
+    const nb = foot.querySelector("[data-act=next]"); nb.disabled = false; nb.focus();
+  }
+  else if (act === "next") nextStep();
+  else if (act === "type-check") checkType();
+  else if (act === "type-skip") checkType(true);
+  else if (act === "key") {
+    const inp = document.getElementById("type-input");
+    const s = inp.selectionStart ?? inp.value.length, en = inp.selectionEnd ?? s;
+    inp.value = inp.value.slice(0, s) + b.dataset.k + inp.value.slice(en);
+    inp.focus(); inp.setSelectionRange(s + 1, s + 1);
+  }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && SES) closeSession();
+});
+
+route();
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+</script>
+</body>
+</html>
