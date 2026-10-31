@@ -1,6 +1,6 @@
 // Offline support: cache the app shell, serve cache first, refresh in the background.
-const CACHE = "turkce-yol-v1";
-const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];
+const CACHE = "turkce-yol-v2";
+const ASSETS = ["./", "./index.html", "./firebase-config.js", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
@@ -10,12 +10,13 @@ self.addEventListener("activate", e => {
 });
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
+  const url = new URL(e.request.url);
+  // Only the app's own files, fonts and the Firebase SDK; Firebase API traffic goes straight to the network
+  const cacheable = url.origin === location.origin || url.host.startsWith("fonts.") || url.pathname.startsWith("/firebasejs/");
+  if (!cacheable) return;
   e.respondWith(caches.match(e.request).then(hit => {
     const net = fetch(e.request).then(res => {
-      if (res.ok && (new URL(e.request.url).origin === location.origin || e.request.url.includes("fonts."))) {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copy));
-      }
+      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
       return res;
     }).catch(() => hit);
     return hit || net;

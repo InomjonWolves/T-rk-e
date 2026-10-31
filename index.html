@@ -38,6 +38,7 @@
   --font-body: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --radius: 18px;
   --nav-h: 66px;
+  --tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.6'%3E%3Crect x='14' y='14' width='28' height='28'/%3E%3Crect x='14' y='14' width='28' height='28' transform='rotate(45 28 28)'/%3E%3Ccircle cx='28' cy='28' r='5'/%3E%3Cpath d='M0 0l8 8M56 0l-8 8M0 56l8-8M56 56l-8-8'/%3E%3C/g%3E%3C/svg%3E");
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -308,6 +309,62 @@ p { margin: 0; }
 .check svg { width: 14px; height: 14px; }
 .unit-num.g { background: var(--tulip-soft); color: var(--tulip); font-size: 16px; }
 
+/* Auth */
+body.locked .app, body.locked .nav { display: none; }
+.auth { min-height: 100%; display: flex; flex-direction: column; }
+.auth[hidden] { display: none; }
+.auth-hero {
+  position: relative; overflow: hidden; isolation: isolate;
+  background: var(--cobalt); color: var(--on-cobalt);
+  padding: calc(env(safe-area-inset-top) + 36px) 24px 72px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.auth-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: rgba(255,255,255,.13); -webkit-mask: var(--tile) 0 0/56px 56px; mask: var(--tile) 0 0/56px 56px; }
+.auth-hero .brand-mark { width: 52px; height: 52px; border-radius: 15px; }
+.auth-hero .brand-mark svg { width: 32px; height: 32px; }
+.auth-hero h1 { font-size: clamp(40px, 12vw, 56px); font-weight: 800; line-height: 1; letter-spacing: -0.03em; margin-top: 8px; }
+.auth-hero p { font-size: 17px; opacity: .92; max-width: 30ch; }
+.auth-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.auth-facts span { font-size: 13px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: rgba(255,255,255,.16); }
+.auth-card {
+  position: relative; max-width: 480px; width: calc(100% - 32px); margin: -44px auto 0;
+  background: var(--card); border-radius: 24px; box-shadow: var(--shadow);
+  padding: 18px; display: flex; flex-direction: column; gap: 14px;
+}
+.auth-wrap { flex: 1; padding-bottom: calc(env(safe-area-inset-bottom) + 28px); }
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--paper); border-radius: 14px; padding: 4px; }
+.seg button { border: 0; background: none; min-height: 42px; border-radius: 11px; font-weight: 700; color: var(--muted); }
+.seg button[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+#auth-form { display: flex; flex-direction: column; gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field[hidden] { display: none; }
+.field label { font-size: 14px; font-weight: 600; color: var(--muted); }
+.field input {
+  min-height: 52px; padding: 0 14px; border-radius: 14px; border: 2px solid var(--line);
+  background: var(--card); color: var(--ink); font: 500 17px var(--font-body);
+}
+.field input:focus { outline: none; border-color: var(--cobalt); }
+.auth-err { font-size: 14px; font-weight: 600; color: var(--tulip); min-height: 0; }
+.auth-err:empty { display: none; }
+.auth-err.ok { color: var(--turq); }
+.or { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.auth-loading[hidden] { display: none; }
+.auth-loading { display: grid; place-items: center; padding: 28px 0; color: var(--muted); font-weight: 600; }
+.spin { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--cobalt); animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.auth-small { font-size: 13px; color: var(--muted); text-align: center; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--tulip); color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 18px; display: grid; place-items: center; flex: none; }
+.profile { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; display: flex; align-items: center; gap: 14px; }
+.profile .avatar { width: 56px; height: 56px; font-size: 24px; }
+.profile b { display: block; font-size: 19px; }
+.profile span { color: var(--muted); font-size: 14px; word-break: break-all; }
+.notice { background: var(--tulip-soft); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; font-size: 15px; }
+.pdf-card { display: grid; grid-template-columns: 52px 1fr auto; gap: 14px; align-items: center; padding: 16px; border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); color: var(--ink); text-decoration: none; border-left: 5px solid var(--cobalt); }
+.pdf-card .ico { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: var(--tulip); color: #fff; font: 800 14px var(--font-display); letter-spacing: .04em; }
+.pdf-card b { display: block; font-size: 17px; line-height: 1.25; }
+.pdf-card span { color: var(--muted); font-size: 14px; }
+
 /* Session overlay */
 .session {
   position: fixed; inset: 0; z-index: 50; background: var(--paper);
@@ -416,8 +473,44 @@ p { margin: 0; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 </head>
 <body>
+<section class="auth" id="auth" hidden aria-label="Kirish">
+  <div class="auth-hero">
+    <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 3c1.8 2 2.6 3.8 2.6 5.6 1.4-1.2 3-1.8 4.4-1.6-.3 5.4-3 9-7 10-4-1-6.7-4.6-7-10 1.4-.2 3 .4 4.4 1.6C9.4 6.8 10.2 5 12 3z"/><rect x="11.2" y="17" width="1.6" height="5" rx=".8"/></svg></span>
+    <h1>Türkçe Yoʻl</h1>
+    <p>Turk tilini oʻzbek tilida, telefoningizda oʻrganing.</p>
+    <div class="auth-facts"><span>10 ta dars</span><span>10 ta grammatika mavzusi</span><span>Bepul</span></div>
+  </div>
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-loading" id="auth-loading"><div><div class="spin"></div>Yuklanmoqda…</div></div>
+      <div id="auth-body" hidden style="display:flex;flex-direction:column;gap:14px">
+        <div class="seg" role="tablist" aria-label="Kirish yoki roʻyxatdan oʻtish">
+          <button role="tab" id="tab-login" data-act="auth-tab" data-t="login" aria-selected="true">Kirish</button>
+          <button role="tab" id="tab-signup" data-act="auth-tab" data-t="signup" aria-selected="false">Roʻyxatdan oʻtish</button>
+        </div>
+        <form id="auth-form" novalidate>
+          <div class="field" id="f-name" hidden><label for="a-name">Ismingiz</label><input id="a-name" autocomplete="name" placeholder="Masalan, Aziza"></div>
+          <div class="field"><label for="a-email">Elektron pochta</label><input id="a-email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="siz@gmail.com"></div>
+          <div class="field"><label for="a-pass">Parol</label><input id="a-pass" type="password" autocomplete="current-password" placeholder="Kamida 6 ta belgi"></div>
+          <div class="field" id="f-pass2" hidden><label for="a-pass2">Parolni takrorlang</label><input id="a-pass2" type="password" autocomplete="new-password"></div>
+          <p class="auth-err" id="auth-err" role="alert"></p>
+          <button class="btn btn-primary btn-block" id="auth-submit" type="submit">Kirish</button>
+        </form>
+        <button class="link" id="auth-reset" data-act="auth-reset" style="align-self:center">Parolni unutdingizmi?</button>
+        <div class="or">yoki</div>
+        <button class="btn btn-line btn-block" data-act="auth-google"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.4h6.5a5.6 5.6 0 0 1-2.4 3.6v3h3.9c2.2-2.1 3.5-5.1 3.5-8.7z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-2.9l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.1 0-5.8-2.1-6.7-5H1.3v3.1A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.3 14.3a7.2 7.2 0 0 1 0-4.6V6.6h-4a12 12 0 0 0 0 10.8z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.3 6.6l4 3.1c.9-2.9 3.6-4.9 6.7-4.9z"/></svg>Google bilan kirish</button>
+        <p class="auth-small">Natijalaringiz hisobingizda saqlanadi va istalgan qurilmada davom ettirasiz.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <div class="app" id="app"></div>
 
 <nav class="nav" aria-label="Asosiy menyu">
@@ -697,7 +790,25 @@ function blank() { return { xp: 0, streak: 0, lastDay: null, day: todayStr(), da
 let S = blank();
 try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(blank(), JSON.parse(raw)); } catch (e) {}
 if (S.day !== todayStr()) { S.day = todayStr(); S.dayXp = 0; }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+let KEYU = KEY;
+function save() { try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {} cloudSave(); }
+function loadLocal(key) {
+  let v = blank();
+  try { const raw = localStorage.getItem(key); if (raw) v = Object.assign(blank(), JSON.parse(raw)); } catch (e) {}
+  if (v.day !== todayStr()) { v.day = todayStr(); v.dayXp = 0; }
+  return v;
+}
+
+/* ---------- Accounts (Firebase) ---------- */
+const FB = !!(window.firebase && window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey);
+let auth = null, db = null, USER = null, USERNAME = "", PENDING_NAME = "", cloudTimer;
+function cloudSave() {
+  if (!USER || !db) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(() => {
+    db.collection("users").doc(USER.uid).set({ progress: S, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(() => {});
+  }, 1500);
+}
 function streakNow() {
   if (!S.lastDay) return 0;
   const y = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
@@ -778,6 +889,7 @@ function topbar() {
     <div style="display:flex;gap:8px">
       <span class="pill" title="Ketma-ket kunlar">${ICON.flame}${streakNow()}</span>
       <span class="pill" title="Jami XP">${S.xp} XP</span>
+      ${USER ? `<button class="avatar" data-act="go" data-to="profile" aria-label="Profil">${esc(initial())}</button>` : ""}
     </div>
   </header>`;
 }
@@ -940,6 +1052,7 @@ function viewGrammarList() {
     <p class="muted">${GRAMMAR.length} ta mavzu, har biri oʻzbek tili bilan solishtirilgan. Mavzu oxiridagi testni yechsangiz, mavzu tugallangan hisoblanadi.</p>
   </div>
   <div class="tip">${ICON.bulb}<div><b>Qaysidan boshlash kerak?</b>Tartib bilan boring: 1-mavzu (unli uygʻunligi) qolgan barcha qoidalarning asosi.</div></div>
+  ${pdfCard()}
   <div class="units">${GRAMMAR.map((g, i) => gramCard(g, i)).join("")}</div>`;
 }
 function gqHtml(g, qi) {
@@ -980,6 +1093,33 @@ function viewGrammar(gi) {
          : `<button class="btn btn-soft btn-block" data-act="go" data-to="grammar">Barcha mavzular</button>`}`;
 }
 
+const GRAMMAR_PDF = null;
+function pdfCard() {
+  if (!GRAMMAR_PDF) return "";
+  return `<a class="pdf-card" href="${GRAMMAR_PDF.file}" target="_blank" rel="noopener">
+    <span class="ico" aria-hidden="true">PDF</span>
+    <div><b>${esc(GRAMMAR_PDF.title)}</b><span>${esc(GRAMMAR_PDF.sub)}</span></div>
+    ${ICON.chev}
+  </a>`;
+}
+
+const initial = () => (USERNAME || (USER && USER.email) || "?").trim().charAt(0).toLocaleUpperCase("tr");
+function viewProfile() {
+  if (!USER) return viewHome();
+  const isPass = USER.providerData.some(p => p.providerId === "password");
+  return `<div><button class="back" data-act="go" data-to="home">${ICON.back}Bosh sahifa</button></div>
+  <h1 class="page-title">Profil</h1>
+  <div class="profile"><span class="avatar" aria-hidden="true">${esc(initial())}</span><div style="min-width:0"><b>${esc(USERNAME || "Foydalanuvchi")}</b><span>${esc(USER.email || "")}</span></div></div>
+  ${isPass && !USER.emailVerified ? `<div class="notice"><div><b>Pochtangizni tasdiqlang.</b> ${esc(USER.email)} manziliga xat yubordik. Xatdagi havolani bosing.</div><button class="btn btn-line" data-act="verify-again">Xatni qayta yuborish</button></div>` : ""}
+  <section class="stats" aria-label="Natijalar">
+    <div class="stat"><div class="stat-num">${S.xp}</div><div class="stat-label">Jami XP</div></div>
+    <div class="stat"><div class="stat-num">${learnedCount()}</div><div class="stat-label">Oʻrganilgan soʻz</div></div>
+    <div class="stat"><div class="stat-num">${gramCount()}/${GRAMMAR.length}</div><div class="stat-label">Grammatika</div></div>
+  </section>
+  <p class="muted" style="font-size:14px">Natijalaringiz hisobingizda saqlanadi. Boshqa telefon yoki kompyuterdan shu pochta bilan kirsangiz, shu yerdan davom etasiz.</p>
+  <button class="btn btn-line btn-block" data-act="logout">Hisobdan chiqish</button>`;
+}
+
 let letterSel = 2;
 function viewAlphabet() {
   const L = LETTERS[letterSel];
@@ -1010,6 +1150,7 @@ function route() {
   else if (h === "lessons") html = viewLessons();
   else if (h === "practice") html = viewPractice();
   else if (h === "alphabet") html = viewAlphabet();
+  else if (h === "profile" && USER) { html = viewProfile(); tab = "profile"; }
   else { html = viewHome(); tab = "home"; }
   app.innerHTML = `<div class="view view-in">${html}</div>`;
   document.querySelectorAll(".nav a").forEach(a => { if (a.dataset.tab === tab) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
@@ -1192,6 +1333,11 @@ document.addEventListener("click", e => {
     const old = document.getElementById("gq-" + qi);
     old.outerHTML = gqHtml(GRAMMAR[gi], qi);
   }
+  else if (act === "auth-tab") setAuthTab(b.dataset.t);
+  else if (act === "auth-google") googleSignIn();
+  else if (act === "auth-reset") resetPassword();
+  else if (act === "logout") { auth.signOut(); go("home"); }
+  else if (act === "verify-again") { USER.sendEmailVerification().then(() => toast("Xat yuborildi. Pochtangizni tekshiring")).catch(e => toast(authMsg(e))); }
   else if (act === "close-session") closeSession();
   else if (act === "again") startSession(SES.mode, SES.u);
   else if (act === "flip") document.getElementById("flip").classList.toggle("on");
@@ -1221,7 +1367,135 @@ document.addEventListener("keydown", e => {
   if (e.key === "Escape" && SES) closeSession();
 });
 
-route();
+/* ---------- Auth screen ---------- */
+const authEl = document.getElementById("auth");
+const $ = id => document.getElementById(id);
+let authMode = "login";
+const AUTH_ERR = {
+  "auth/invalid-email": "Elektron pochta manzili notoʻgʻri yozilgan.",
+  "auth/missing-email": "Elektron pochtani kiriting.",
+  "auth/missing-password": "Parolni kiriting.",
+  "auth/weak-password": "Parol kamida 6 ta belgidan iborat boʻlsin.",
+  "auth/email-already-in-use": "Bu pochta bilan allaqachon roʻyxatdan oʻtilgan. “Kirish” ni tanlang.",
+  "auth/invalid-credential": "Pochta yoki parol notoʻgʻri.",
+  "auth/invalid-login-credentials": "Pochta yoki parol notoʻgʻri.",
+  "auth/wrong-password": "Pochta yoki parol notoʻgʻri.",
+  "auth/user-not-found": "Bu pochta bilan hisob topilmadi. Avval roʻyxatdan oʻting.",
+  "auth/too-many-requests": "Juda koʻp urinish boʻldi. Birozdan keyin qayta urinib koʻring.",
+  "auth/network-request-failed": "Internetga ulanib boʻlmadi. Aloqani tekshiring.",
+  "auth/unauthorized-domain": "Bu sayt manzili Firebase sozlamalarida ruxsat etilmagan.",
+  "auth/operation-not-allowed": "Bu kirish usuli Firebase’da hali yoqilmagan.",
+  "auth/account-exists-with-different-credential": "Bu pochta boshqa usul bilan roʻyxatdan oʻtgan. Oʻsha usul bilan kiring."
+};
+const authMsg = e => AUTH_ERR[e && e.code] || ("Xatolik yuz berdi" + (e && e.code ? ` (${e.code})` : "") + ". Qayta urinib koʻring.");
+function authError(e, ok) {
+  const el = $("auth-err");
+  if (e && (e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request")) { el.textContent = ""; return; }
+  el.className = "auth-err" + (ok ? " ok" : "");
+  el.textContent = typeof e === "string" ? e : authMsg(e);
+}
+function setAuthTab(t) {
+  authMode = t;
+  const up = t === "signup";
+  $("tab-login").setAttribute("aria-selected", String(!up));
+  $("tab-signup").setAttribute("aria-selected", String(up));
+  $("f-name").hidden = !up; $("f-pass2").hidden = !up; $("auth-reset").hidden = up;
+  $("a-pass").setAttribute("autocomplete", up ? "new-password" : "current-password");
+  $("auth-submit").textContent = up ? "Roʻyxatdan oʻtish" : "Kirish";
+  $("auth-err").textContent = "";
+}
+function showAuth(loading) {
+  document.body.classList.add("locked");
+  authEl.hidden = false;
+  $("auth-loading").hidden = !loading;
+  $("auth-body").hidden = !!loading;
+  $("auth-body").style.display = loading ? "none" : "flex";
+}
+function hideAuth() { authEl.hidden = true; document.body.classList.remove("locked"); }
+function busy(on) { const b = $("auth-submit"); b.disabled = on; if (on) b.textContent = "Kuting…"; else setAuthTab(authMode); }
+
+$("auth-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = $("a-email").value.trim(), pass = $("a-pass").value;
+  if (authMode === "signup") {
+    const name = $("a-name").value.trim();
+    if (!name) { authError("Ismingizni kiriting."); return; }
+    if (pass !== $("a-pass2").value) { authError("Parollar bir xil emas."); return; }
+    PENDING_NAME = name;
+    busy(true);
+    try {
+      const cred = await auth.createUserWithEmailAndPassword(email, pass);
+      await cred.user.updateProfile({ displayName: name });
+      USERNAME = name;
+      cred.user.sendEmailVerification().catch(() => {});
+    } catch (err) { busy(false); authError(err); }
+  } else {
+    busy(true);
+    try { await auth.signInWithEmailAndPassword(email, pass); }
+    catch (err) { busy(false); authError(err); }
+  }
+});
+function googleSignIn() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  if (standalone) { auth.signInWithRedirect(provider); return; }
+  auth.signInWithPopup(provider).catch(err => {
+    if (err.code === "auth/popup-blocked" || err.code === "auth/operation-not-supported-in-this-environment") auth.signInWithRedirect(provider);
+    else authError(err);
+  });
+}
+function resetPassword() {
+  const email = $("a-email").value.trim();
+  if (!email) { authError("Avval elektron pochtangizni yozing, keyin “Parolni unutdingizmi?” ni bosing."); $("a-email").focus(); return; }
+  auth.sendPasswordResetEmail(email)
+    .then(() => authError(`Parolni tiklash xati ${email} manziliga yuborildi.`, true))
+    .catch(authError);
+}
+
+async function loadCloud(u) {
+  KEYU = KEY + ":" + u.uid;
+  const local = loadLocal(KEYU);
+  USERNAME = u.displayName || PENDING_NAME || "";
+  const ref = db.collection("users").doc(u.uid);
+  try {
+    const snap = await ref.get();
+    const d = snap.exists ? snap.data() : null;
+    if (d && d.name) USERNAME = d.name;
+    const cloud = d && d.progress ? Object.assign(blank(), d.progress) : null;
+    S = cloud && cloud.xp >= local.xp ? cloud : local;
+    if (S.day !== todayStr()) { S.day = todayStr(); S.dayXp = 0; }
+    const base = { name: USERNAME, email: u.email || "", progress: S, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    if (!d) base.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    await ref.set(base, { merge: true });
+  } catch (e) {
+    S = local;
+    toast("Natijalarni serverdan yuklab boʻlmadi. Internetni tekshiring");
+  }
+  try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {}
+}
+
+if (FB) {
+  firebase.initializeApp(window.FIREBASE_CONFIG);
+  auth = firebase.auth(); auth.languageCode = "uz";
+  db = firebase.firestore();
+  showAuth(true);
+  auth.getRedirectResult().catch(err => { showAuth(false); authError(err); });
+  auth.onAuthStateChanged(async u => {
+    if (!u) {
+      USER = null; USERNAME = ""; S = blank(); KEYU = KEY;
+      if (SES) closeSession();
+      showAuth(false); setAuthTab(authMode);
+      return;
+    }
+    showAuth(true);
+    USER = u;
+    await loadCloud(u);
+    hideAuth();
+    route();
+  });
+} else {
+  route();
+}
 if ("serviceWorker" in navigator && location.protocol === "https:") {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
