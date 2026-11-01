@@ -1,6 +1,6 @@
 // Offline support: cache the app shell, serve cache first, refresh in the background.
-const CACHE = "turkce-yol-v4";
-const ASSETS = ["./", "./index.html", "./firebase-config.js", "./content.js", "./privacy.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];
+const CACHE = "turkce-yol-v5";
+const ASSETS = ["./", "./index.html", "./firebase-config.js", "./content.js", "./grammar.js", "./app.js", "./styles.css", "./privacy.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
