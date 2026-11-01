@@ -49,6 +49,7 @@ function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "" }
       <g clip-path="url(#${id("ec")})">
         <g class="cat-lid"><rect x="-26" y="-80" width="52" height="54" fill="${CAT_C.lid}"/><path d="M-22 -26Q0 -19 22 -26" stroke="${CAT_C.line}" stroke-width="3" fill="${CAT_C.lid}" stroke-linecap="round"/></g>
       </g>
+      ${x === 86 ? `<path class="cat-tear" opacity="0" d="M-9 22q-6 9-1 13q5 3 7-3q1-4-6-10z" fill="#8fd6ff" stroke="#4aa8e8" stroke-width="1"/>` : ""}
       <path class="cat-joy" opacity="0" d="M-16 7Q0 -13 16 7" stroke="${CAT_C.line}" stroke-width="4.5" fill="none" stroke-linecap="round"/>
     </g>`;
   const body = head ? "" : `

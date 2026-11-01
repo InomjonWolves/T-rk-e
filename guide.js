@@ -108,9 +108,9 @@ const GUIDE = [
     ] },
     { name: "FEʼL (FİİL)", items: [
       { code: "A1.20", tr: "Ek-fiil (geniş zaman)", uz: "Bogʻlama: -man, -san", f: ["İSİM / SIFAT + KİŞİ EKİ", "OT / SIFAT + -man, -san…"],
-        forms: { h: ["Shaxs", "Qoʻsh.", "asker", "öğrenci"], r: [["ben", "-(y)Im", "asker[im]", "öğrenci[yim]"], ["sen", "-sIn", "asker[sin]", "öğrenci[sin]"], ["o", "(-DIr)", "asker(dir)", "öğrenci(dir)"], ["biz", "-(y)Iz", "asker[iz]", "öğrenci[yiz]"], ["siz", "-sInIz", "asker[siniz]", "öğrenci[siniz]"], ["onlar", "(-lAr)", "asker[ler]", "öğrenci[ler]"]] },
-        rule: "«Boʻlmoq» feʼlining hozirgi shakli. 3-shaxsda -DIr ogʻzaki nutqda tushib qoladi. Oʻtgan shakli: askerdim — askar edim.",
-        ex: ["Ben asker[im].", "Men askarman."], neg: ["asker değil[im], değil[sin], değil", "askar emasman, emassan, emas"], q: ["asker mi[yim]? asker mi[sin]? asker mi?", "askarmanmi? askarmisan? askarmi?"] },
+        forms: { h: ["Shaxs", "Qoʻsh.", "öğretmen", "öğrenci"], r: [["ben", "-(y)Im", "öğretmen[im]", "öğrenci[yim]"], ["sen", "-sIn", "öğretmen[sin]", "öğrenci[sin]"], ["o", "(-DIr)", "öğretmen(dir)", "öğrenci(dir)"], ["biz", "-(y)Iz", "öğretmen[iz]", "öğrenci[yiz]"], ["siz", "-sInIz", "öğretmen[siniz]", "öğrenci[siniz]"], ["onlar", "(-lAr)", "öğretmen[ler]", "öğrenci[ler]"]] },
+        rule: "«Boʻlmoq» feʼlining hozirgi shakli. 3-shaxsda -DIr ogʻzaki nutqda tushib qoladi. Oʻtgan shakli: öğretmendim — oʻqituvchi edim.",
+        ex: ["Ben öğretmen[im].", "Men oʻqituvchiman."], neg: ["öğretmen değil[im], değil[sin], değil", "oʻqituvchi emasman, emassan, emas"], q: ["öğretmen mi[yim]? öğretmen mi[sin]? öğretmen mi?", "oʻqituvchimanmi? oʻqituvchimisan? oʻqituvchimi?"] },
       { code: "A1.21", tr: "Var / Yok", uz: "Bor / Yoʻq", f: ["(YER + DA) + İSİM + var / yok", "(JOY + -da) + OT + bor / yoʻq"],
         forms: "Egalik bilan: arabam var — mashinam bor; vaktim yok — vaqtim yoʻq",
         rule: "Biror narsaning mavjudligini bildiradi. «Menda … bor» maʼnosi egalik qoʻshimchasi orqali beriladi.",

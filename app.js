@@ -37,7 +37,7 @@ function blank() {
     xp: 0, streak: 0, best: 0, lastDay: null, day: todayKey(), dayXp: 0,
     known: {}, gram: {}, srs: {}, newDay: { d: 0, n: 0 },
     days: {}, sessions: 0, perfect: 0, acc: [0, 0], ust: {},
-    week: "", wxp: 0, goal: 50, pub: true, gx: {}, gxm: {}
+    week: "", wxp: 0, goal: 50, pub: true, gx: {}, gxm: {}, k: {}, ktest: {}, onb: 0, trUses: 0, shared: 0, night: 0, early: 0
   };
 }
 let S = blank();
@@ -47,7 +47,7 @@ function loadLocal(key) {
   try { const raw = localStorage.getItem(key); if (raw) v = Object.assign(blank(), JSON.parse(raw)); } catch (e) {}
   return migrate(v);
 }
-function save() { try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {} cloudSave(); }
+function save() { try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {} cloudSave(); clearTimeout(achTimer); achTimer = setTimeout(checkAch, 450); }
 
 /* ---------- Spaced repetition (simplified SM-2) ----------
    Each word: i = interval in days, e = ease, d = due day, r = successful reviews in a row,
@@ -101,7 +101,7 @@ const newLeft = () => Math.max(0, NEW_PER_DAY - (S.newDay.d === dayNum() ? S.new
 const newWords = n => ALL.filter(w => !srs(w)).slice(0, n);
 const mistakeWords = () => ALL.filter(w => { const st = srs(w); return st && st.m > 0; }).sort((a, b) => srs(b).w - srs(a).w);
 const unitWords = ui => ALL.filter(w => w.unit === ui);
-const unitProgress = ui => { const ws = unitWords(ui); return ws.filter(w => known(w) >= 2).length / ws.length; };
+const unitProgress = ui => { const ws = unitWords(ui); return ws.length ? ws.filter(w => known(w) >= 2).length / ws.length : 0; };
 const learnedCount = () => ALL.filter(w => known(w) >= 2).length;
 const gramDone = g => { const r = S.gram[g.id] || []; return g.quiz.every((q, i) => r[i]); };
 const gramCount = () => GRAMMAR.filter(gramDone).length;
@@ -137,6 +137,9 @@ function addXP(n) {
     Object.keys(S.days).forEach(k => { if (k < old) delete S.days[k]; });
   }
   S.xp += n; S.dayXp += n; S.wxp += n; dayRec().xp += n;
+  const hr = new Date().getHours();
+  if (hr >= 22) S.night = 1;
+  if (hr < 7) S.early = 1;
   save();
 }
 function record(w, ok) {
@@ -153,22 +156,6 @@ function tick() {
 }
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const accOf = ids => { let c = 0, t = 0; ids.forEach(id => { const u = S.ust[id]; if (u) { c += u[0]; t += u[1]; } }); return t ? pct(c, t) : null; };
-
-/* ---------- Achievements ---------- */
-const ACH = [
-  { id: "first", t: "Birinchi qadam", d: "1 ta mashq", v: () => S.sessions, n: 1, c: "violet", ico: "flag" },
-  { id: "w50", t: "50 ta soʻz", d: "oʻrganildi", v: learnedCount, n: 50, c: "sky", ico: "book" },
-  { id: "w200", t: "200 ta soʻz", d: "oʻrganildi", v: learnedCount, n: 200, c: "green", ico: "crown" },
-  { id: "s3", t: "3 kun", d: "ketma-ket", v: () => S.best, n: 3, c: "orange", ico: "flame" },
-  { id: "s7", t: "1 hafta", d: "ketma-ket", v: () => S.best, n: 7, c: "orange", ico: "flame" },
-  { id: "s30", t: "1 oy", d: "ketma-ket", v: () => S.best, n: 30, c: "pink", ico: "flame" },
-  { id: "gram", t: "Grammatika", d: "10 mavzu", v: gramCount, n: GRAMMAR.length, c: "violet", ico: "cap" },
-  { id: "xp1k", t: "1000 XP", d: "toʻplandi", v: () => S.xp, n: 1000, c: "teal", ico: "star" },
-  { id: "perfect", t: "Mukammal", d: "xatosiz mashq", v: () => S.perfect, n: 1, c: "pink", ico: "target" },
-  { id: "gx10", t: "Qoida ustasi", d: "10 mavzu mashqi", v: () => gxDoneCount(), n: 10, c: "sky", ico: "quiz" },
-  { id: "gxa1", t: "A1 qoidalari", d: "33 mavzu", v: () => gxDoneCount(), n: 33, c: "green", ico: "crown" }
-];
-const achDone = a => a.v() >= a.n;
 
 /* ---------- Helpers ---------- */
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -218,6 +205,10 @@ const ICON = {
   swap: sv('<path d="M7 7h13l-4-4M17 17H4l4 4"/>'),
   male: sv('<circle cx="10" cy="14" r="5"/><path d="M14 10l6-6M15 4h5v5"/>'),
   female: sv('<circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/>'),
+  download: sv('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'),
+  heart: sv('<path d="M12 20s-7-4.5-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.5-9 9-9 9z"/>'),
+  moon: sv('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'),
+  sun: sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
   globe: sv('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>')
 };
 const pawPath = '<ellipse cx="12" cy="16" rx="5.2" ry="4.4"/><ellipse cx="5.8" cy="10.4" rx="2.3" ry="2.7"/><ellipse cx="9.6" cy="6.6" rx="2.3" ry="2.8"/><ellipse cx="14.4" cy="6.6" rx="2.3" ry="2.8"/><ellipse cx="18.2" cy="10.4" rx="2.3" ry="2.7"/>';
@@ -408,7 +399,7 @@ function showWelcome() {
   CatLife.scan();
   clearTimeout(w._t); w._t = setTimeout(hideWelcome, 2400);
 }
-function hideWelcome() { const w = $("welcome"); if (w.hidden) return; w.classList.add("out"); setTimeout(() => { w.hidden = true; }, 340); }
+function hideWelcome() { const w = $("welcome"); if (w.hidden) return; w.classList.add("out"); setTimeout(() => { w.hidden = true; maybeOnboard(); }, 340); }
 function unitRow(u, ui) {
   const c = catOf(ui), p = unitProgress(ui);
   return `<button class="unit glass" data-act="go" data-to="lesson-${ui + 1}">
@@ -433,7 +424,7 @@ function wordRow(w, showUnit) {
       <div class="word-tr" lang="tr">${esc(w.tr)}</div>
       <div class="word-uz">${esc(w.uz)}</div>
       ${w.note ? `<div class="word-note">${esc(w.note)}</div>` : ""}
-      ${showUnit ? `<div style="margin-top:4px"><span class="tag ${c.color}-t">${pad(w.unit + 1)} · ${esc(UNITS[w.unit].uz)}</span></div>` : ""}
+      ${showUnit ? `<div style="margin-top:4px"><span class="tag ${c.color}-t">${UNITS[w.unit].course ? esc(UNITS[w.unit].uz) : `${pad(w.unit + 1)} · ${esc(UNITS[w.unit].uz)}`}</span></div>` : ""}
     </div>
     ${wordState(w)}
   </div>`;
@@ -490,6 +481,12 @@ function viewHome() {
     <button class="btn btn-white" data-act="go" data-to="practice">Erkin mashq</button>
   </section>`}
 
+  ${(() => { const u = kNext(), p = kProgress(u.id); return `<a class="pcard glass" href="#${kHash(u.id)}" style="color:inherit;text-decoration:none">
+    <div class="pcard-head"><b>${ICON.cap}Kurs: ${u.level}.${u.n}</b><span class="tag green-t">bepul</span></div>
+    <div style="font-size:20px;font-weight:800" lang="tr">${esc(u.title)}</div><p class="muted">${esc(u.sub)}</p>
+    <div class="bar"><i style="width:${Math.round(p * 100)}%"></i></div>
+    <small class="muted">Kurs: ${kDoneCount()}/${COURSE.units.length} boʻlim · A1 → B2</small></a>`; })()}
+
   <div class="goals">
     <div class="goal-card glass">
       <h3>Kunlik maqsad</h3>
@@ -531,6 +528,9 @@ function viewHome() {
     </div>
   </section>
 
+  ${(() => { const t = tipOfDay(); return `<div class="tip-card glass"><div class="tip-cat">${catSVG({ pose: "head" })}</div><div><small class="eyebrow">Pamuk maslahati</small><b>${esc(t[0])}</b><p class="muted">${esc(t[1])}</p></div></div>`; })()}
+  ${installCard()}
+
   <a class="pcard ai" href="#translate" style="text-decoration:none">
     <div class="pcard-head"><b>${ICON.translate}Aqlli tarjimon</b><span>bepul</span></div>
     <p>Turkcha ⇄ oʻzbekcha tarjima. Pamuk gapdagi grammatikani ham topib beradi.</p>
@@ -550,6 +550,7 @@ function viewHome() {
 let CAT = "all", Q = "";
 function lessonTabs(active) {
   return `<nav class="seg glass" aria-label="Darslar boʻlimlari">
+    <a href="#course" ${active === "course" ? 'aria-current="page"' : ""}>Kurs</a>
     <a href="#lessons" ${active === "lessons" ? 'aria-current="page"' : ""}>Soʻzlar</a>
     <a href="#grammar" ${active === "grammar" ? 'aria-current="page"' : ""}>Grammatika</a>
     <a href="#alphabet" ${active === "alphabet" ? 'aria-current="page"' : ""}>Alifbo</a>
@@ -918,10 +919,8 @@ function viewProfile() {
   <div class="chart-card glass"><h3>Oʻqish vaqti (daqiqa)</h3><span class="range">${range}</span>${barChart(minv, l7.map(d => d.l))}</div>
 
   <section class="section">
-    <div class="section-head"><h2>Yutuqlar</h2><span class="tag violet-t">${ACH.filter(achDone).length}/${ACH.length}</span></div>
-    <div class="achv">${ACH.map(a => { const on = achDone(a), v = Math.min(a.v(), a.n); return `<div class="ach glass${on ? " on" : ""}">
-      <span class="medal${on ? " art " + a.c : ""}">${on ? ICON[a.ico] : ICON.lock}</span><b>${esc(a.t)}</b><small>${esc(a.d)}</small>
-      ${on ? "" : `<span class="bar" aria-label="${v}/${a.n}"><i style="width:${pct(v, a.n)}%"></i></span>`}</div>`; }).join("")}</div>
+    <div class="section-head"><h2>Yutuqlar</h2><a class="link" href="#achievements">${ACH.filter(achDone).length}/${ACH.length} · Hammasi</a></div>
+    <div class="achv">${ACH.slice().sort((x, y) => (achDone(y) - achDone(x)) || (y.v() / y.n - x.v() / x.n)).slice(0, 6).map(achCard).join("")}</div>
   </section>
 
   <section class="section">
@@ -933,6 +932,8 @@ function viewProfile() {
       <div class="set-row"><span><b>Kunlik maqsad</b><small>Har kuni toʻplanadigan XP</small></span>
         <span class="mini-seg">${[30, 50, 100].map(v => `<button data-act="goal" data-v="${v}" aria-pressed="${S.goal === v}">${v}</button>`).join("")}</span></div>
       ${USER ? `<button class="set-row" data-act="pub" role="switch" aria-checked="${S.pub}"><span><b>Reytingda koʻrinish</b><small>Ismingiz va XP boshqa oʻquvchilarga koʻrinadi</small></span><span class="switch" aria-checked="${S.pub}"></span></button>` : ""}
+      <a class="set-row" href="#help" style="color:inherit;text-decoration:none"><span><b>Yordam va qoʻllanma</b><small>Ilovani oʻrnatish, saytdan foydalanish, savollar</small></span>${ICON.chev}</a>
+      <button class="set-row" data-act="share"><span><b>Doʻstlarni taklif qilish</b><small>Turk tilini birga, bepul oʻrganing</small></span>${ICON.heart}</button>
       <a class="set-row" href="privacy.html" style="color:inherit;text-decoration:none"><span><b>Maxfiylik siyosati</b></span>${ICON.chev}</a>
     </div>
   </section>
@@ -1036,6 +1037,7 @@ async function translateNow() {
       const ta = document.createElement("textarea"); ta.innerHTML = out; out = ta.value;
       const alts = [...new Set((j.matches || []).map(m => (m.translation || "").trim()).filter(t => t && fold(t) !== fold(out) && t.length < 200))].slice(0, 2);
       TR_OUT = { text: out, alts };
+      S.trUses = (S.trUses || 0) + 1; save();
       trRemember({ s: text, t: out, d: TR_DIR });
     }
   } catch (e) {
@@ -1093,9 +1095,502 @@ async function saveProfile(p) {
   if (db && USER) await db.collection("users").doc(USER.uid).set({ gender: PROFILE.gender, birth: PROFILE.birth }, { merge: true }).catch(() => toast("Maʼlumot serverga yozilmadi, internetni tekshiring"));
 }
 
+/* Course vocabulary joins the shared word list (thematic words keep their place, duplicates are skipped) */
+const ALL_BY_TR = {};
+ALL.forEach(w => { const k = fold(w.tr); if (!(k in ALL_BY_TR)) ALL_BY_TR[k] = w; });
+[["A1", "sky"], ["A2", "violet"], ["B1", "orange"], ["B2", "pink"]].forEach(([lv, color]) => {
+  const ui = UNITS.length, unit = { id: "kurs" + lv, tr: "Kurs " + lv, uz: "Kurs lugʻati " + lv, course: lv, tip: ["Kurs lugʻati", `${lv} darajasidagi kurs boʻlimlarining soʻzlari.`], words: [] };
+  UNITS.push(unit);
+  COURSE.units.filter(u => u.level === lv).forEach(u => u.vocab.forEach(g => g.words.forEach(([tr, uzz]) => {
+    const k = fold(tr);
+    if (k in ALL_BY_TR) return;
+    const w = { tr, uz: uzz, note: "", unit: ui };
+    ALL.push(w); ALL_BY_TR[k] = w; unit.words.push([tr, uzz]);
+  })));
+  CATS.push({ id: "k" + lv, uz: `Kurs ${lv} lugʻati`, color, ico: "book", ids: [unit.id] });
+});
+
+/* ---------- A1–B2 course (course.js): levels, units, level tests ---------- */
+const KU = {};
+COURSE.units.forEach((u, i) => { KU[u.id] = u; u.idx = i; });
+const kHash = id => "k-" + id;
+const KLEVEL = id => COURSE.levels.find(l => l.id === id);
+// Vocabulary of each unit, resolved to entries of the shared word list (SRS state is shared by Turkish spelling)
+const KWORDS = {};
+COURSE.units.forEach(u => {
+  KWORDS[u.id] = [];
+  u.vocab.forEach(g => g.words.forEach(([tr]) => { const w = ALL_BY_TR[fold(tr)]; if (w && !KWORDS[u.id].includes(w)) KWORDS[u.id].push(w); }));
+});
+let KTAB = "vocab";
+const kState = id => S.k[id] || (S.k[id] = { e: {}, v: {} });
+// Answer keys that can be checked: "1-a", "2-3"…, plus reading "r-1"
+function kKeys(u) {
+  const keys = [];
+  u.exercises.forEach(e => {
+    if (e.match) e.match.left.forEach((_, i) => { if (e.ans[String(i + 1)]) keys.push(`${e.n}-${i + 1}`); });
+    else e.items.forEach(([k]) => { if (e.ans[k]) keys.push(`${e.n}-${k}`); });
+  });
+  if (u.reading && u.reading.ans) Object.keys(u.reading.ans).forEach(k => keys.push(`r-${k}`));
+  return keys;
+}
+function kProgress(id) {
+  const u = KU[id], keys = kKeys(u), st = S.k[id];
+  if (!keys.length) return st && st.done ? 1 : 0;
+  return st ? keys.filter(k => st.e[k] === 1).length / keys.length : 0;
+}
+const kDone = id => !!(S.k[id] && S.k[id].done);
+const kDoneCount = (lv) => COURSE.units.filter(u => (!lv || u.level === lv) && kDone(u.id)).length;
+const kNext = () => COURSE.units.find(u => !kDone(u.id)) || COURSE.units[0];
+const kTestBest = lv => (S.ktest && S.ktest[lv]) || 0;
+
+// Normalise an answer for comparison: drop notes in brackets, quotes and punctuation
+const ansNorm = s => fold(String(s).replace(/\([^)]*\)/g, " ").replace(/[«»"“”]/g, "").replace(/[’ʼ`]/g, "'").replace(/\s+—\s+/g, " — "));
+const ansPlain = s => plain(String(s).replace(/\([^)]*\)/g, " ").replace(/[«»"“”’ʼ`']/g, ""));
+function ansVariants(a) { return String(a).split(/\s+\/\s+|;\s*/).map(x => x.trim()).filter(Boolean).concat([a]); }
+// 2 = exact, 1 = only letters differ (ç/c, ı/i…), 0 = wrong
+function ansMatch(user, right) {
+  if (!user.trim()) return 0;
+  const vs = ansVariants(right);
+  if (vs.some(v => ansNorm(v) === ansNorm(user))) return 2;
+  if (vs.some(v => ansPlain(v) === ansPlain(user))) return 1;
+  return 0;
+}
+
+/* Pamuk's little speech bubble that reacts to answers */
+const PRAISE = [["Harika!", "Ajoyib!"], ["Aferin!", "Barakalla!"], ["Süper!", "Zoʻr!"], ["Doğru!", "Toʻgʻri!"], ["Mükemmel!", "Mukammal!"], ["Çok iyi!", "Juda yaxshi!"]];
+const COMFORT = ["Afsus… Hech gap emas, yana urinib koʻramiz.", "Xato — oʻrganishning bir qismi. Toʻgʻri javobni eslab qoling.", "Ozgina qoldi! Keyingisi albatta chiqadi.", "Pamuk ham xafa… lekin siz uddalaysiz!"];
+let sayT;
+function pamukSay(mood, text) {
+  const box = $("pamuk-say");
+  box.innerHTML = `${catSVG({ pose: "head", cls: mood === "sad" ? "sad" : "happy" })}<p>${esc(text)}</p>`;
+  box.className = "pamuk-say show " + mood;
+  CatLife.scan();
+  const c = box.querySelector(".cat");
+  CatLife.mood(c, mood === "sad" ? "sad" : "happy", 1900);
+  clearTimeout(sayT); sayT = setTimeout(() => { box.className = "pamuk-say " + mood; }, 2200);
+}
+const praise = () => { const p = PRAISE[Math.floor(Math.random() * PRAISE.length)]; return `${p[0]} ${p[1]}`; };
+const comfort = () => COMFORT[Math.floor(Math.random() * COMFORT.length)];
+
+function renderBlocks(blocks) {
+  return blocks.map(b => {
+    if (b.sub) return `<h3 class="k-sub">${nb(b.sub)}</h3>`;
+    if (b.p) return `<p class="k-p">${esc(b.p)}</p>`;
+    if (b.note) return `<div class="tip glass">${ICON.bulb}<div>${esc(b.note)}</div></div>`;
+    if (b.table) return `<div class="table-wrap glass"><table class="gtable k-table"><thead><tr>${b.table.h.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead><tbody>${b.table.r.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    if (b.gloss) return `<div class="k-gloss">${b.gloss.map(([a, c]) => `<span><b lang="tr">${esc(a)}</b> — ${esc(c)}</span>`).join("")}</div>`;
+    if (b.dlg) {
+      const sides = {};
+      let n = 0;
+      b.dlg.forEach(([who]) => { if (!(who in sides)) sides[who] = n++ % 2 ? "r" : "l"; });
+      return `<div class="dlg">
+        <button class="btn btn-soft" data-act="say-seq" data-lines="${esc(JSON.stringify(b.dlg.map(x => x[1])))}">${ICON.speak}Dialogni tinglash</button>
+        ${b.dlg.map(([who, t]) => `<div class="bubble ${sides[who]}"><small>${esc(who)}</small><span lang="tr">${esc(t)}</span><button class="say mini" data-act="say" data-t="${esc(t)}" aria-label="Tinglash">${ICON.speak}</button></div>`).join("")}
+      </div>`;
+    }
+    return "";
+  }).join("");
+}
+function speakSeq(lines) {
+  try { speechSynthesis.cancel(); } catch (e) { return; }
+  let i = 0;
+  const next = () => {
+    if (i >= lines.length) return;
+    const u = new SpeechSynthesisUtterance(lines[i++].replace(/…/g, ""));
+    u.lang = "tr-TR"; u.rate = 0.9;
+    const v = voices.find(v => (v.lang || "").toLowerCase().startsWith("tr")); if (v) u.voice = v;
+    u.onend = () => setTimeout(next, 350);
+    speechSynthesis.speak(u);
+  };
+  next();
+}
+
+function kUnitRow(u) {
+  const p = kProgress(u.id), done = kDone(u.id);
+  return `<a class="unit glass" href="#${kHash(u.id)}">
+    <span class="art ${done ? "green" : { A1: "sky", A2: "violet", B1: "orange", B2: "pink" }[u.level]}"><span style="font-size:15px">${u.level}.${u.n}</span></span>
+    <span class="unit-body"><span class="unit-title" lang="tr">${esc(u.title)}</span><span class="unit-sub">${esc(u.sub)}</span></span>
+    ${done ? `<span class="state done" title="Tugallangan">${ICON.check}</span>` : pctRing(p)}
+  </a>`;
+}
+let KLV = null;
+function viewCourse() {
+  const lvl = KLEVEL(KLV || kNext().level);
+  const total = COURSE.units.length, done = kDoneCount();
+  return `${topbar()}
+  <h1 class="page-title">Darslar</h1>
+  ${lessonTabs("course")}
+  <div class="k-hero glass">
+    <div class="k-hero-txt"><span class="tag green-t">${ICON.check}100% bepul</span>
+      <h2>Turk tili A1 → B2</h2>
+      <p>32 boʻlim, 4 ta daraja testi va ${Object.values(KWORDS).reduce((a, w) => a + w.length, 0)} ta soʻz. Oʻzbek tilida tushuntirilgan, reklamasiz.</p>
+      <div class="bar" aria-label="${done}/${total}"><i style="width:${pct(done, total)}%"></i></div>
+      <small class="muted">${done}/${total} boʻlim tugallangan</small></div>
+    <div class="k-hero-cat">${mascot("cap")}</div>
+  </div>
+  <div class="seg glass" role="tablist">${COURSE.levels.map(l => `<button role="tab" data-act="k-lv" data-l="${l.id}" aria-selected="${l.id === lvl.id}">${l.id}</button>`).join("")}</div>
+  <div class="glass pad"><b>${esc(lvl.title)}</b><p class="sub" style="margin-top:4px">${esc(lvl.intro)}</p></div>
+  <div class="list">${lvl.units.map(id => kUnitRow(KU[id])).join("")}
+    <a class="unit glass" href="#ktest-${lvl.id.toLowerCase()}">
+      <span class="art teal"><span style="font-size:13px">TEST</span></span>
+      <span class="unit-body"><span class="unit-title">${esc(lvl.test.title)}</span><span class="unit-sub">20 savol · oʻtish bali ${lvl.test.pass}%${kTestBest(lvl.id) ? ` · eng yaxshi natija ${kTestBest(lvl.id)}%` : ""}</span></span>
+      ${kTestBest(lvl.id) >= lvl.test.pass ? `<span class="state done">${ICON.check}</span>` : ICON.chev}
+    </a></div>`;
+}
+const KTABS = [["vocab", "Lugʻat"], ["grammar", "Grammatika"], ["dialog", "Dialog"], ["read", "Matn"], ["ex", "Mashqlar"]];
+function viewCourseUnit(id) {
+  const u = KU[id], st = kState(id), p = kProgress(id);
+  const gram = u.sections.filter(s => s.kind !== "dialog"), dlg = u.sections.filter(s => s.kind === "dialog");
+  const tabs = KTABS.filter(([k]) => !(k === "read" && !u.reading) && !(k === "dialog" && !dlg.length));
+  if (!tabs.some(([k]) => k === KTAB)) KTAB = "vocab";
+  const prev = COURSE.units[u.idx - 1], next = COURSE.units[u.idx + 1];
+  let body = "";
+  if (KTAB === "vocab") {
+    body = `${u.vocab.map(g => `<section class="section"><div class="section-head"><h2>${esc(g.title)}</h2></div>
+      <div class="words glass">${g.words.map(([tr, uzz]) => { const w = ALL_BY_TR[fold(tr)] || { tr, uz: uzz, note: "", unit: 0 }; return `<div class="word">
+        <button class="say" data-act="say" data-t="${esc(tr)}" aria-label="${esc(tr)} — tinglash">${ICON.speak}</button>
+        <div style="min-width:0"><div class="word-tr" lang="tr">${esc(tr)}</div><div class="word-uz">${esc(uzz)}</div></div>${wordState(w)}</div>`; }).join("")}</div></section>`).join("")}
+      <div class="sticky-cta"><button class="btn btn-grad btn-block" data-act="modes" data-u="k:${id}" data-title="${esc(u.title)}">${ICON.cards}Soʻzlarni mashq qilish</button></div>`;
+  } else if (KTAB === "grammar") {
+    body = gram.map(s => `<section class="section"><div class="section-head"><h2>${esc(s.title)}</h2></div>${renderBlocks(s.blocks)}</section>`).join("");
+  } else if (KTAB === "dialog") {
+    body = dlg.map(s => `<section class="section"><div class="section-head"><h2>${esc(s.title.replace(/^Dialog:\s*/, ""))}</h2></div>${renderBlocks(s.blocks)}</section>`).join("");
+  } else if (KTAB === "read") {
+    const r = u.reading;
+    body = `<section class="section"><div class="section-head"><h2 lang="tr">${esc(r.title || "Oʻqish matni")}</h2><button class="say" data-act="say" data-t="${esc(r.text)}" aria-label="Matnni tinglash">${ICON.speak}</button></div>
+      <div class="glass pad k-read" lang="tr">${esc(r.text)}</div>
+      ${r.gloss && r.gloss.length ? `<div class="k-gloss">${r.gloss.map(([a, c]) => `<span><b lang="tr">${esc(a)}</b> — ${esc(c)}</span>`).join("")}</div>` : ""}</section>
+      ${r.qs.length ? `<section class="section"><div class="section-head"><h2>${esc(r.qtitle || "Savollar")}</h2></div>
+        ${r.qs.map((q, i) => kItem(id, "r", String(i + 1), q, r.ans ? r.ans[String(i + 1)] : "", false, st)).join("")}</section>` : ""}`;
+  } else {
+    body = u.exercises.map(e => kExercise(id, e, st)).join("") || `<div class="glass empty">Bu boʻlimda mashq yoʻq.</div>`;
+  }
+  return `<div><a class="back" href="#course">${ICON.back}Kurs</a></div>
+  <div class="lesson-head">
+    <div class="tags"><span class="tag sky-t">${u.level} · ${u.n}-boʻlim</span>${kDone(id) ? `<span class="tag green-t">${ICON.check}Tugallangan</span>` : `<span class="tag violet-t">${Math.round(p * 100)}%</span>`}</div>
+    <h1 lang="tr">${esc(u.title)}</h1>
+    <p class="sub">${esc(u.sub)}</p>
+  </div>
+  ${u.goals.length ? `<details class="glass k-goals"><summary><b>Bu boʻlimda oʻrganasiz</b></summary><ul>${u.goals.map(g => `<li>${esc(g)}</li>`).join("")}</ul></details>` : ""}
+  <nav class="chips k-tabs" aria-label="Boʻlim qismlari">${tabs.map(([k, l]) => `<button class="chip" data-act="k-tab" data-t="${k}" aria-pressed="${KTAB === k}">${l}</button>`).join("")}</nav>
+  <div id="k-body">${body}</div>
+  <div class="pager" style="grid-template-columns:1fr 1fr">
+    ${prev ? `<a class="btn btn-ghost" href="#${kHash(prev.id)}">${ICON.back}${prev.level}.${prev.n}</a>` : "<span></span>"}
+    ${next ? `<a class="btn btn-grad" href="#${kHash(next.id)}">${next.level}.${next.n}${ICON.chev.replace('class="chev"', 'style="width:20px;height:20px"')}</a>` : "<span></span>"}
+  </div>`;
+}
+// One answerable line: prompt + input (or D/Y buttons) + check
+function kItem(id, n, k, prompt, ans, sample, st, label) {
+  const key = `${n}-${k}`, val = st.v[key] || "", res = st.e[key];
+  const dy = ans && /^[DY]$/.test(ans.trim());
+  const status = res === 1 ? "ok" : res === 0 ? "no" : "";
+  const fb = res === 1 ? `<span class="ok">${ICON.check} Toʻgʻri</span>` : res === 0 ? `<span class="no">Toʻgʻri javob: <b lang="tr">${esc(ans)}</b></span>` : "";
+  if (!ans) {
+    return `<div class="k-item glass"><div class="k-q"><b>${esc(label || k)})</b> <span lang="tr">${esc(prompt)}</span>${sample ? "" : ` <span class="tag sky-t">namuna</span>`}</div></div>`;
+  }
+  return `<div class="k-item glass ${status}" data-key="${key}">
+    <div class="k-q"><b>${esc(label || k)})</b> <span>${esc(prompt)}</span></div>
+    ${dy ? `<div class="k-dy"><button class="opt${val === "D" ? (res === 1 ? " right" : " wrong") : ""}" data-act="k-dy" data-id="${id}" data-key="${key}" data-v="D">D · Toʻgʻri</button><button class="opt${val === "Y" ? (res === 1 ? " right" : " wrong") : ""}" data-act="k-dy" data-id="${id}" data-key="${key}" data-v="Y">Y · Notoʻgʻri</button></div>`
+      : `<div class="k-in"><input class="type-input k-input" id="ki-${id}-${key}" lang="tr" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(val)}" aria-label="Javob ${esc(label || k)}"><button class="btn btn-soft" data-act="k-check" data-id="${id}" data-key="${key}">Tekshirish</button></div>`}
+    <div class="k-fb">${fb}${sample && res !== 1 ? ` <button class="link" data-act="k-reveal" data-id="${id}" data-key="${key}">Namuna javob</button>` : ""}</div>
+  </div>`;
+}
+function kExercise(id, e, st) {
+  const head = `<div class="section-head"><h2>${e.n}-mashq</h2></div><p class="k-p"><b>${esc(e.title)}</b>${e.extra ? `<br>${esc(e.extra)}` : ""}</p>`;
+  if (e.match) {
+    const keys = e.match.keys.length ? e.match.keys : e.match.right.map((_, i) => "abcdefghij"[i]);
+    return `<section class="section">${head}
+      <div class="k-gloss">${e.match.right.map((r, i) => `<span><b>${keys[i]})</b> <span lang="tr">${esc(r)}</span></span>`).join("")}</div>
+      ${e.match.left.map((l, i) => { const key = `${e.n}-${i + 1}`, res = st.e[key], ans = e.ans[String(i + 1)]; return `<div class="k-item glass ${res === 1 ? "ok" : res === 0 ? "no" : ""}">
+        <div class="k-q"><b>${i + 1}.</b> <span lang="tr">${esc(l)}</span></div>
+        <div class="k-in"><select class="k-select" data-act="k-match" data-id="${id}" data-key="${key}" aria-label="${i + 1}-band javobi"><option value="">— tanlang —</option>${keys.map(k => `<option value="${k}" ${st.v[key] === k ? "selected" : ""}>${k}) ${esc(e.match.right[keys.indexOf(k)] || "")}</option>`).join("")}</select></div>
+        <div class="k-fb">${res === 1 ? `<span class="ok">${ICON.check} Toʻgʻri</span>` : res === 0 ? `<span class="no">Toʻgʻri javob: <b>${esc(ans)})</b></span>` : ""}</div></div>`; }).join("")}
+    </section>`;
+  }
+  const hasAns = e.items.some(([k]) => e.ans[k]);
+  if (!e.items.length || !hasAns) {
+    const key = `${e.n}-w`, val = st.v[key] || "", sample = e.ans._;
+    return `<section class="section">${head}
+      ${e.items.length ? `<div class="glass pad">${e.items.map(([k, q]) => `<div><b>${k})</b> <span lang="tr">${esc(q)}</span></div>`).join("")}</div>` : ""}
+      <textarea class="k-text glass" data-act="k-write" data-id="${id}" data-key="${key}" rows="5" placeholder="Shu yerga yozing… (faqat oʻzingiz uchun saqlanadi)" lang="tr">${esc(val)}</textarea>
+      ${sample ? `<details class="glass pad"><summary><b>Namuna javob</b></summary><p class="k-p" lang="tr" style="margin-top:8px">${esc(sample)}</p></details>` : `<p class="sub">Yozganingizni ovoz chiqarib oʻqing. Imkoni boʻlsa, turkcha biladigan doʻstingizga koʻrsating.</p>`}
+    </section>`;
+  }
+  return `<section class="section">${head}${e.items.map(([k, q]) => kItem(id, e.n, k, q, e.ans[k], !!e.sample || (e.ans[k] || "").split(" ").length > 3, st)).join("")}</section>`;
+}
+// Check one answer, store it, react, award XP the first time it is right
+function kSubmit(id, key, value) {
+  const u = KU[id], st = kState(id);
+  let right;
+  if (key.startsWith("r-")) right = u.reading.ans[key.slice(2)];
+  else {
+    const [n, k] = key.split("-"), e = u.exercises.find(x => String(x.n) === n);
+    right = e.match ? e.ans[k] : e.ans[k];
+  }
+  const m = ansMatch(value, right);
+  const was = st.e[key];
+  st.v[key] = value;
+  st.e[key] = m ? 1 : 0;
+  dayRec().rev++; S.acc[1]++; if (m) S.acc[0]++;
+  if (m && was !== 1) addXP(5); else save();
+  if (m === 2) pamukSay("happy", praise());
+  else if (m === 1) pamukSay("happy", "Deyarli toʻgʻri! Harflarga eʼtibor bering: " + right);
+  else pamukSay("sad", comfort());
+  // A unit counts as finished at 70% correct
+  if (!st.done && kProgress(id) >= 0.7) {
+    st.done = todayKey(); addXP(30);
+    celebrate({ title: `${u.level}.${u.n} tugallandi!`, text: `«${u.title}» boʻlimini bepul va mustaqil tugatdingiz. +30 XP`, ico: "check", c: "green" });
+  }
+  return m;
+}
+function kRerender() { const y = window.scrollY; route(); window.scrollTo(0, y); }
+
+function viewCourseTest(lv) {
+  const l = KLEVEL(lv), t = l.test, res = KTEST_RES && KTEST_RES.lv === lv ? KTEST_RES : null;
+  let qn = 0;
+  return `<div><a class="back" href="#course">${ICON.back}Kurs</a></div>
+  <div class="lesson-head"><div class="tags"><span class="tag teal-t">${lv}</span><span class="tag violet-t">Oʻtish bali ${t.pass}%</span></div><h1>${esc(t.title)}</h1>
+    <p class="sub">Har bir savolga javob tanlang, oxirida «Natijani koʻrish» ni bosing. Test bepul va istalgancha qayta topshirish mumkin.</p></div>
+  ${res ? `<div class="glass pad k-result ${res.pct >= t.pass ? "pass" : "fail"}">${mascot(res.pct >= t.pass ? "trophy" : "sit")}<h2>${res.pct}%</h2><p>${res.pct >= t.pass ? "Tabriklaymiz! Siz bu darajani muvaffaqiyatli yakunladingiz." : "Hali biroz mashq kerak. Qiyin boʻlgan boʻlimlarni takrorlab, yana urinib koʻring."}</p></div>` : ""}
+  ${t.parts.map(p => `<section class="section"><div class="section-head"><h2>${esc(p.name)}</h2></div>
+    ${p.text ? `<div class="glass pad k-read" lang="tr">${esc(p.text)}</div>` : ""}
+    ${p.qs.map(q => { const i = qn++, chosen = KTEST_ANS[i]; return `<div class="k-item glass">
+      <div class="k-q"><b>${i + 1}.</b> <span lang="tr">${esc(q.q)}</span></div>
+      <div class="k-opts">${q.o.map((o, oi) => { let cls = chosen === oi ? " picked" : ""; if (res) cls = oi === q.a ? " right" : chosen === oi ? " wrong" : ""; return `<button class="opt${cls}" data-act="k-tq" data-i="${i}" data-o="${oi}" lang="tr" ${res ? "disabled" : ""}>${esc(o)}</button>`; }).join("")}</div></div>`; }).join("")}
+  </section>`).join("")}
+  ${res ? `<button class="btn btn-ghost btn-block" data-act="k-test-again" data-l="${lv}">Qayta topshirish</button>` : `<button class="btn btn-grad btn-block" data-act="k-test-done" data-l="${lv}">Natijani koʻrish</button>`}`;
+}
+let KTEST_ANS = {}, KTEST_RES = null;
+
+/* ---------- Achievements: categories, unlock celebration ---------- */
+const ACH_CATS = [["learn", "Soʻzlar"], ["streak", "Seriya"], ["course", "Kurs"], ["gram", "Grammatika"], ["practice", "Mashq"], ["life", "Faollik"]];
+const ACH = [
+  { id: "w10", cat: "learn", t: "Ilk 10 soʻz", d: "10 ta soʻz oʻrganildi", v: learnedCount, n: 10, c: "sky", ico: "book" },
+  { id: "w50", cat: "learn", t: "50 ta soʻz", d: "50 ta soʻz oʻrganildi", v: learnedCount, n: 50, c: "sky", ico: "book" },
+  { id: "w200", cat: "learn", t: "200 ta soʻz", d: "200 ta soʻz oʻrganildi", v: learnedCount, n: 200, c: "green", ico: "book" },
+  { id: "w500", cat: "learn", t: "500 ta soʻz", d: "500 ta soʻz oʻrganildi", v: learnedCount, n: 500, c: "violet", ico: "crown" },
+  { id: "w1000", cat: "learn", t: "Soʻz ustasi", d: "1000 ta soʻz oʻrganildi", v: learnedCount, n: 1000, c: "pink", ico: "crown" },
+  { id: "s3", cat: "streak", t: "3 kun", d: "3 kun ketma-ket", v: () => S.best, n: 3, c: "orange", ico: "flame" },
+  { id: "s7", cat: "streak", t: "1 hafta", d: "7 kun ketma-ket", v: () => S.best, n: 7, c: "orange", ico: "flame" },
+  { id: "s14", cat: "streak", t: "2 hafta", d: "14 kun ketma-ket", v: () => S.best, n: 14, c: "orange", ico: "flame" },
+  { id: "s30", cat: "streak", t: "1 oy", d: "30 kun ketma-ket", v: () => S.best, n: 30, c: "pink", ico: "flame" },
+  { id: "s100", cat: "streak", t: "100 kun", d: "100 kun ketma-ket", v: () => S.best, n: 100, c: "violet", ico: "crown" },
+  { id: "k1", cat: "course", t: "Ilk boʻlim", d: "Kursning 1 boʻlimi tugadi", v: () => kDoneCount(), n: 1, c: "sky", ico: "flag" },
+  { id: "kA1", cat: "course", t: "A1 bitiruvchisi", d: "A1 ning 8 boʻlimi", v: () => kDoneCount("A1"), n: 8, c: "sky", ico: "cap" },
+  { id: "kA2", cat: "course", t: "A2 bitiruvchisi", d: "A2 ning 8 boʻlimi", v: () => kDoneCount("A2"), n: 8, c: "violet", ico: "cap" },
+  { id: "kB1", cat: "course", t: "B1 bitiruvchisi", d: "B1 ning 8 boʻlimi", v: () => kDoneCount("B1"), n: 8, c: "orange", ico: "cap" },
+  { id: "kB2", cat: "course", t: "B2 bitiruvchisi", d: "B2 ning 8 boʻlimi", v: () => kDoneCount("B2"), n: 8, c: "pink", ico: "cap" },
+  { id: "kt1", cat: "course", t: "Test gʻolibi", d: "1 ta daraja testidan oʻtish", v: () => COURSE.levels.filter(l => kTestBest(l.id) >= l.test.pass).length, n: 1, c: "teal", ico: "star" },
+  { id: "kt4", cat: "course", t: "A1 → B2", d: "4 ta testdan oʻtish", v: () => COURSE.levels.filter(l => kTestBest(l.id) >= l.test.pass).length, n: 4, c: "green", ico: "crown" },
+  { id: "gram", cat: "gram", t: "Grammatika", d: "10 asosiy mavzu", v: gramCount, n: GRAMMAR.length, c: "violet", ico: "cap" },
+  { id: "gx10", cat: "gram", t: "Qoida ustasi", d: "10 ta qoida mashqi", v: () => gxDoneCount(), n: 10, c: "sky", ico: "quiz" },
+  { id: "gxa1", cat: "gram", t: "A1 qoidalari", d: "33 ta qoida mashqi", v: () => gxDoneCount(), n: 33, c: "green", ico: "crown" },
+  { id: "first", cat: "practice", t: "Birinchi qadam", d: "1 ta mashq", v: () => S.sessions, n: 1, c: "violet", ico: "flag" },
+  { id: "sess10", cat: "practice", t: "Tirishqoq", d: "10 ta mashq", v: () => S.sessions, n: 10, c: "sky", ico: "bolt" },
+  { id: "sess50", cat: "practice", t: "Chempion", d: "50 ta mashq", v: () => S.sessions, n: 50, c: "orange", ico: "bolt" },
+  { id: "perfect", cat: "practice", t: "Mukammal", d: "xatosiz mashq", v: () => S.perfect, n: 1, c: "pink", ico: "target" },
+  { id: "perfect5", cat: "practice", t: "Aniq nishon", d: "5 ta xatosiz mashq", v: () => S.perfect, n: 5, c: "pink", ico: "target" },
+  { id: "xp1k", cat: "practice", t: "1000 XP", d: "1000 XP toʻplandi", v: () => S.xp, n: 1000, c: "teal", ico: "star" },
+  { id: "xp5k", cat: "practice", t: "5000 XP", d: "5000 XP toʻplandi", v: () => S.xp, n: 5000, c: "violet", ico: "star" },
+  { id: "photo", cat: "life", t: "Yangi qiyofa", d: "Profil rasmi qoʻyildi", v: () => (MYPHOTO ? 1 : 0), n: 1, c: "sky", ico: "camera" },
+  { id: "tr10", cat: "life", t: "Tarjimon", d: "10 marta tarjima", v: () => S.trUses || 0, n: 10, c: "teal", ico: "translate" },
+  { id: "share", cat: "life", t: "Doʻstlarga ulashdi", d: "Saytni doʻstlarga ulashish", v: () => S.shared || 0, n: 1, c: "green", ico: "heart" },
+  { id: "night", cat: "life", t: "Tungi boyqush", d: "22:00 dan keyin mashq", v: () => S.night || 0, n: 1, c: "violet", ico: "moon" },
+  { id: "early", cat: "life", t: "Erta qush", d: "07:00 dan oldin mashq", v: () => S.early || 0, n: 1, c: "orange", ico: "sun" }
+];
+const achDone = a => a.v() >= a.n;
+let ACH_QUEUE = [], achTimer;
+function checkAch() {
+  if (!S.achv) {
+    // First run for this profile: record what is already earned without a fanfare
+    S.achv = {};
+    ACH.forEach(a => { if (achDone(a)) S.achv[a.id] = todayKey(); });
+    try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {}
+    return;
+  }
+  const fresh = ACH.filter(a => !S.achv[a.id] && achDone(a));
+  if (!fresh.length) return;
+  fresh.forEach(a => { S.achv[a.id] = todayKey(); S.xp += 20; S.dayXp += 20; S.wxp += 20; dayRec().xp += 20; });
+  try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {}
+  cloudSave();
+  fresh.forEach(a => celebrate({ title: a.t, text: `${a.d}. Pamuk sizdan faxrlanadi! +20 XP`, ico: a.ico, c: a.c, share: true }));
+}
+function celebrate(c) {
+  ACH_QUEUE.push(c);
+  if (ACH_QUEUE.length === 1) showCelebrate();
+}
+function showCelebrate() {
+  const c = ACH_QUEUE[0];
+  if (!c) return;
+  const el = $("celebrate");
+  const colors = ["#ffcf4a", "#ff7aa8", "#6f8dff", "#45d29b", "#a98bff", "#ffa552"];
+  el.innerHTML = `<div class="confetti" aria-hidden="true">${Array.from({ length: 36 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 0.6).toFixed(2)}s;animation-duration:${(2 + Math.random() * 1.5).toFixed(2)}s;transform:rotate(${Math.random() * 360}deg)"></i>`).join("")}</div>
+    <div class="cel-card" role="dialog" aria-modal="true" aria-label="Yangi yutuq">
+      <div class="cel-cat">${mascot("trophy")}</div>
+      <span class="medal art ${c.c} cel-medal">${ICON[c.ico] || ICON.star}</span>
+      <small class="eyebrow">Yangi yutuq!</small>
+      <h2>${esc(c.title)}</h2>
+      <p>${esc(c.text)}</p>
+      <div class="cel-actions">${c.share ? `<button class="btn btn-ghost" data-act="share" data-text="${esc(`Türkçe Yoʻl'da «${c.title}» yutugʻini oldim! Turk tilini bepul oʻrganing:`)}">${ICON.heart}Ulashish</button>` : ""}<button class="btn btn-grad" data-act="cel-next">Davom etish</button></div>
+    </div>`;
+  el.hidden = false;
+  CatLife.scan();
+  setTimeout(() => CatLife.mood(el.querySelector(".cat"), "happy", 2400), 300);
+}
+function nextCelebrate() {
+  ACH_QUEUE.shift();
+  if (ACH_QUEUE.length) showCelebrate(); else { $("celebrate").hidden = true; $("celebrate").innerHTML = ""; }
+}
+function viewAchievements() {
+  const done = ACH.filter(achDone).length;
+  const nextUp = ACH.filter(a => !achDone(a)).map(a => ({ a, p: Math.min(1, a.v() / a.n) })).sort((x, y) => y.p - x.p).slice(0, 3);
+  return `<div><a class="back" href="#profile">${ICON.back}Profil</a></div>
+  <div class="ach-hero glass">${mascot("trophy")}<div><h1 class="page-title" style="font-size:26px">Yutuqlar</h1><p class="sub">${done} / ${ACH.length} ochildi · har biri +20 XP</p>
+    <div class="bar" style="margin-top:8px"><i style="width:${pct(done, ACH.length)}%"></i></div></div></div>
+  ${nextUp.length ? `<section class="section"><div class="section-head"><h2>Yaqin qolgan yutuqlar</h2></div>
+    <div class="list">${nextUp.map(({ a, p }) => `<div class="unit glass"><span class="medal art ${a.c}" style="width:56px;height:56px;border-radius:50%;display:grid;place-items:center;color:#fff">${ICON[a.ico] || ICON.star}</span>
+      <span class="unit-body"><span class="unit-title">${esc(a.t)}</span><span class="unit-sub">${esc(a.d)} · yana ${Math.max(0, a.n - a.v())} ta</span><span class="bar"><i style="width:${Math.round(p * 100)}%"></i></span></span><span></span></div>`).join("")}</div></section>` : ""}
+  ${ACH_CATS.map(([k, l]) => `<section class="section"><div class="section-head"><h2>${l}</h2><span class="tag violet-t">${ACH.filter(a => a.cat === k && achDone(a)).length}/${ACH.filter(a => a.cat === k).length}</span></div>
+    <div class="achv">${ACH.filter(a => a.cat === k).map(achCard).join("")}</div></section>`).join("")}`;
+}
+function achCard(a) {
+  const on = achDone(a), v = Math.min(a.v(), a.n), when = S.achv && S.achv[a.id];
+  return `<div class="ach glass${on ? " on" : ""}">
+    <span class="medal${on ? " art " + a.c : ""}">${on ? (ICON[a.ico] || ICON.star) : ICON.lock}</span><b>${esc(a.t)}</b><small>${esc(a.d)}</small>
+    ${on ? (when ? `<small class="muted">${when.slice(8, 10)}.${when.slice(5, 7)}.${when.slice(0, 4)}</small>` : "") : `<span class="bar" aria-label="${v}/${a.n}"><i style="width:${pct(v, a.n)}%"></i></span><small class="muted">${v}/${a.n}</small>`}</div>`;
+}
+
+/* ---------- Tips, encouragement, sharing ---------- */
+const TIPS = [
+  ["Bir soʻzni 3 kun ichida 3 marta takrorlang", "Takrorlash tizimi soʻzlarni aynan unutish arafasida qaytaradi. Kuniga 10 daqiqa — eng samarali usul."],
+  ["Turkcha «c» — bu «j»", "cep (choʻntak), cami (masjid). «ç» esa «ch»: çay (choy)."],
+  ["Oʻzbekcha bilganingiz — katta ustunlik", "göz — koʻz, yol — yoʻl, kitap — kitob. Turkcha soʻzlarning katta qismi sizga allaqachon tanish."],
+  ["Ovoz chiqarib oʻqing", "Har bir soʻzni tinglash tugmasi bilan eshitib, qaytaring. Talaffuz shunday tez oʻrnashadi."],
+  ["Kechqurun takrorlang", "Uxlashdan oldin qilingan takrorlash xotirada yaxshiroq saqlanadi."],
+  ["Xatolardan qoʻrqmang", "Har bir xato xatolar daftariga tushadi va keyinroq qayta soʻraladi. Xato — oʻrganishning yarmi."],
+  ["Aldamchi soʻzlarga ehtiyot boʻling", "dil — til (yurak emas), ayna — koʻzgu (oyna emas), kurt — boʻri (qurt emas)."],
+  ["Kuniga 5 ta gap yozing", "Bugungi soʻzlar bilan oʻzingiz haqingizda 5 ta gap yozing — kursdagi yozish mashqlari shu uchun."],
+  ["Turk seriallarini subtitr bilan koʻring", "Avval oʻzbekcha, keyin turkcha subtitr bilan. Tanish soʻzlarni ushlashga harakat qiling."],
+  ["Unli uygʻunligi — kalit", "Qoʻshimcha soʻzning oxirgi unlisiga moslashadi: evler, okullar. Grammatika boʻlimidagi 1-mavzuni oʻqing."],
+  ["Seriyani uzmang", "Har kuni hech boʻlmasa bitta mashq qiling: Pamuk ketma-ket kunlaringizni sanaydi."],
+  ["Telefoningizga ilova sifatida oʻrnating", "Profil → Yordam boʻlimida 1 daqiqada oʻrnatish yoʻriqnomasi bor. Internetsiz ham ishlaydi!"],
+  ["Tarjimondan aqlli foydalaning", "Gapni tarjima qilganda Pamuk undagi grammatikani topib, qoʻllanma mavzusiga olib boradi."],
+  ["-yor hech qachon oʻzgarmaydi", "geliyorum, okuyorum, gidiyorum — «yor» qismi doim bir xil."],
+  ["Kichik maqsad qoʻying", "Kunlik maqsadni 30 XP ga qoʻyib, uni har kuni bajarish — katta maqsaddan samaraliroq."],
+  ["Doʻstingiz bilan oʻrganing", "Reytingda doʻstingiz bilan bellashing — birga oʻrganish 2 barobar qiziqarli."],
+  ["Ğ oʻqilmaydi", "dağ [daa], öğretmen [öö-retmen] — ğ oldingi unlini choʻzadi."],
+  ["Dialoglarni rol oʻynab oʻqing", "Kurs dialoglarini ikkala rolda ovoz chiqarib oʻqing, keyin tinglash tugmasi bilan solishtiring."],
+  ["Bepul — lekin jiddiy", "Bu kurs A1 dan B2 gacha toʻliq daraja beradi: 32 boʻlim, 4 test. Hech qanday toʻlov yoʻq."],
+  ["Bir kunda emas, har kuni", "Damlaya damlaya göl olur — tomchi-tomchi koʻl boʻlur. Kuniga 10 daqiqa, oyiga 300 daqiqa!"]
+];
+const tipOfDay = () => TIPS[dayNum() % TIPS.length];
+async function shareSite(text) {
+  const url = location.origin + location.pathname;
+  const msg = text || "Turk tilini oʻzbek tilida bepul oʻrganing — Pamuk bilan har kuni 10 daqiqa:";
+  try {
+    if (navigator.share) { await navigator.share({ title: "Türkçe Yoʻl", text: msg, url }); }
+    else { await navigator.clipboard.writeText(msg + " " + url); toast("Havola nusxalandi — doʻstlaringizga yuboring"); }
+    S.shared = (S.shared || 0) + 1; save();
+  } catch (e) { /* the viewer closed the share sheet */ }
+}
+
+/* ---------- Install (PWA) and help ---------- */
+let INSTALL_EVT = null;
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); INSTALL_EVT = e; if (["#help", "#home", ""].includes(location.hash)) kRerender(); });
+addEventListener("appinstalled", () => { INSTALL_EVT = null; toast("Ilova oʻrnatildi! Endi uni bosh ekrandan oching."); });
+const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+function installCard() {
+  if (isStandalone()) return "";
+  try { if (localStorage.getItem("ty-install-hide")) return ""; } catch (e) {}
+  return `<div class="pcard glass install-card">
+    <div class="pcard-head"><b>${ICON.download}Ilovani oʻrnating</b><button class="link" data-act="install-hide" aria-label="Yopish">Keyinroq</button></div>
+    <p class="muted">Türkçe Yoʻl telefoningizda ilova boʻlib ochiladi, internetsiz ham ishlaydi. Bepul, 1 daqiqa.</p>
+    ${INSTALL_EVT ? `<button class="btn btn-grad btn-block" data-act="install">Oʻrnatish</button>` : `<a class="btn btn-soft btn-block" href="#help">Qanday oʻrnatiladi?</a>`}
+  </div>`;
+}
+async function doInstall() {
+  if (!INSTALL_EVT) { go("help"); return; }
+  INSTALL_EVT.prompt();
+  try { await INSTALL_EVT.userChoice; } catch (e) {}
+  INSTALL_EVT = null; kRerender();
+}
+function viewHelp() {
+  const step = (n, t, d) => `<div class="help-step"><span class="help-n">${n}</span><div><b>${t}</b><p class="muted">${d}</p></div></div>`;
+  return `<div><a class="back" href="#profile">${ICON.back}Profil</a></div>
+  <div class="ach-hero glass">${mascot("wave")}<div><h1 class="page-title" style="font-size:26px">Yordam va qoʻllanma</h1><p class="sub">Pamuk saytdan qanday foydalanishni tushuntiradi</p></div></div>
+
+  <section class="section"><div class="section-head"><h2>Ilovani oʻrnatish (PWA)</h2>${isStandalone() ? `<span class="tag green-t">${ICON.check}Oʻrnatilgan</span>` : ""}</div>
+    ${INSTALL_EVT ? `<button class="btn btn-grad btn-block" data-act="install">${ICON.download}Hozir oʻrnatish</button>` : ""}
+    <div class="glass pad help-box"><b>Android (Chrome)</b>
+      ${step(1, "Saytni Chrome brauzerida oching", "inomjonwolves.github.io/T-rk-e")}
+      ${step(2, "Yuqori oʻng burchakdagi ⋮ menyusini bosing", "Uch nuqta belgisi")}
+      ${step(3, "«Ilovani oʻrnatish» yoki «Bosh ekranga qoʻshish» ni tanlang", "Keyin «Oʻrnatish» ni tasdiqlang")}
+      ${step(4, "Bosh ekranda Pamuk belgisi paydo boʻladi", "Endi sayt alohida ilova boʻlib ochiladi")}</div>
+    <div class="glass pad help-box"><b>iPhone / iPad (Safari)</b>
+      ${step(1, "Saytni Safari brauzerida oching", "Chrome emas, aynan Safari")}
+      ${step(2, "Pastdagi «Ulashish» tugmasini bosing", "Kvadrat va yuqoriga qaragan oʻq belgisi")}
+      ${step(3, "«Bosh ekranga» (Add to Home Screen) ni tanlang", "Roʻyxatni pastga suring")}
+      ${step(4, "«Qoʻshish» ni bosing", "Pamuk belgisi bosh ekranda paydo boʻladi")}</div>
+    <div class="glass pad help-box"><b>Kompyuter (Chrome, Edge)</b>
+      ${step(1, "Manzil satrining oʻng tomonidagi ⊕ belgisini bosing", "«Ilovani oʻrnatish»")}
+      ${step(2, "«Oʻrnatish» ni tasdiqlang", "Ilova alohida oynada ochiladi")}</div>
+    <div class="tip glass">${ICON.bulb}<div><b>Nima uchun oʻrnatish kerak?</b>Ilova tezroq ochiladi, toʻliq ekranda ishlaydi va bir marta ochilgandan keyin internetsiz ham darslar ishlaydi.</div></div>
+  </section>
+
+  <section class="section"><div class="section-head"><h2>Saytdan qanday foydalanish kerak</h2></div>
+    <div class="glass pad help-box">
+      ${step(1, "Har kuni «Bugungi reja» ni bajaring", "Bosh sahifadagi kartada: takrorlash + 10 ta yangi soʻz, taxminan 10 daqiqa.")}
+      ${step(2, "Kursni tartib bilan oʻqing", "Darslar → Kurs: A1 dan boshlang. Har boʻlimda Lugʻat → Grammatika → Dialog → Matn → Mashqlar.")}
+      ${step(3, "Grammatikani mustahkamlang", "Darslar → Grammatika: qoʻllanma mavzulari va qoidalar mashqi.")}
+      ${step(4, "Xatolar daftarini tozalang", "Mashq sahifasida: xato qilgan soʻzlaringiz alohida mashq qilinadi.")}
+      ${step(5, "Aqlli tarjimondan foydalaning", "Bosh sahifadagi tarjimon: tarjima + lugʻat + gapdagi grammatika.")}
+      ${step(6, "Daraja testini topshiring", "Har daraja oxirida test bor: 60% dan yuqori — keyingi darajaga oʻting.")}
+    </div></section>
+
+  <section class="section"><div class="section-head"><h2>Koʻp soʻraladigan savollar</h2></div>
+    <details class="glass pad"><summary><b>Sayt rostdan ham bepulmi?</b></summary><p class="muted" style="margin-top:6px">Ha, 100% bepul va reklamasiz. Barcha darslar, kurs, testlar va tarjimon bepul.</p></details>
+    <details class="glass pad"><summary><b>Qaysi darajagacha oʻrganish mumkin?</b></summary><p class="muted" style="margin-top:6px">A1 (boshlangʻich) dan B2 (yuqori oʻrta) gacha: 32 boʻlim, 4 ta daraja testi, 1000 dan ortiq soʻz.</p></details>
+    <details class="glass pad"><summary><b>Natijalarim yoʻqolmaydimi?</b></summary><p class="muted" style="margin-top:6px">Hisobga kirgan boʻlsangiz, natijalaringiz serverda saqlanadi va istalgan qurilmada davom etasiz.</p></details>
+    <details class="glass pad"><summary><b>Ovoz eshitilmayapti, nima qilay?</b></summary><p class="muted" style="margin-top:6px">Telefon sozlamalarida «Matnni nutqqa aylantirish» (Text-to-speech) boʻlimida turk tilini yuklab oling va ovoz balandligini tekshiring.</p></details>
+    <details class="glass pad"><summary><b>Internetsiz ishlaydimi?</b></summary><p class="muted" style="margin-top:6px">Ha, sayt bir marta ochilgandan keyin darslar internetsiz ham ochiladi. Tarjimon va reyting uchun internet kerak.</p></details>
+  </section>
+
+  <section class="section"><div class="section-head"><h2>Doʻstlaringizni taklif qiling</h2></div>
+    <div class="glass pad"><p class="muted">Turk tilini birga oʻrganish qiziqarliroq! Havolani doʻstlaringizga yuboring va reytingda bellashing.</p>
+      <button class="btn btn-grad btn-block" data-act="share" style="margin-top:10px">${ICON.heart}Doʻstlarga ulashish</button></div></section>`;
+}
+
+/* ---------- First-run tour ---------- */
+const ONB = [
+  { m: "wave", t: "Salom! Men Pamukman", d: "Turk tilini oʻzbek tilida, 100% bepul va reklamasiz oʻrganishga yordam beraman. Har kuni atigi 10 daqiqa yetarli." },
+  { m: "cap", t: "A1 dan B2 gacha toʻliq kurs", d: "32 boʻlim, grammatika qoʻllanmasi, 1000 dan ortiq soʻz va daraja testlari. Hammasi tartib bilan, oʻzbekcha tushuntirish bilan." },
+  { m: "trophy", t: "Yutuqlar va reyting", d: "Har kuni mashq qiling, seriyani uzmang, yutuqlarni yigʻing va doʻstlaringiz bilan reytingda bellashing." },
+  { m: "sit", t: "Telefoningizga oʻrnating", d: "Saytni ilova sifatida oʻrnatsangiz, u tezroq ochiladi va internetsiz ham ishlaydi. Yoʻriqnoma: Profil → Yordam." }
+];
+let ONB_I = 0;
+function showOnboard() {
+  const s = ONB[ONB_I], el = $("onboard");
+  el.innerHTML = `<div class="onb-card glass blur" role="dialog" aria-modal="true" aria-label="Tanishuv">
+    <div class="onb-cat">${mascot(s.m)}</div>
+    <h2>${esc(s.t)}</h2><p>${esc(s.d)}</p>
+    <div class="onb-dots">${ONB.map((_, i) => `<i class="${i === ONB_I ? "on" : ""}"></i>`).join("")}</div>
+    <div class="cel-actions"><button class="btn btn-ghost" data-act="onb-skip">Oʻtkazib yuborish</button><button class="btn btn-grad" data-act="onb-next">${ONB_I < ONB.length - 1 ? "Keyingi" : "Boshladik!"}</button></div>
+  </div>`;
+  el.hidden = false;
+  CatLife.scan();
+}
+function endOnboard() { S.onb = 1; save(); $("onboard").hidden = true; $("onboard").innerHTML = ""; }
+function maybeOnboard() {
+  if (S.onb || !$("onboard").hidden || !$("auth").hidden || !$("welcome").hidden) return;
+  if (S.xp > 0 || S.sessions > 0) { S.onb = 1; save(); return; }
+  ONB_I = 0; showOnboard();
+}
+
 /* ---------- Router ---------- */
 function route() {
   const h = (location.hash || "#home").slice(1);
+  { const ps = $("pamuk-say"); if (ps) { clearTimeout(sayT); ps.classList.remove("show"); } }
   let html, tab = h, after = null;
   const m = /^lesson-(\d+)$/.exec(h), gm = /^grammar-(\d+)$/.exec(h);
   if (m && UNITS[+m[1] - 1]) { html = viewUnit(+m[1] - 1); tab = "lessons"; }
@@ -1103,6 +1598,11 @@ function route() {
   else if (h.startsWith("g-") && GUIDE_ALL.find(i => gHash(i.code) === h)) { html = viewGuideTopic(GUIDE_ALL.find(i => gHash(i.code) === h)); tab = "lessons"; }
   else if (h === "guide") { html = viewGuide(); tab = "lessons"; }
   else if (h === "translate") { html = viewTranslate(); tab = "home"; }
+  else if (h === "course") { html = viewCourse(); tab = "lessons"; }
+  else if (h.startsWith("k-") && KU[h.slice(2)]) { html = viewCourseUnit(h.slice(2)); tab = "lessons"; }
+  else if (/^ktest-(a1|a2|b1|b2)$/.test(h)) { html = viewCourseTest(h.slice(6).toUpperCase()); tab = "lessons"; }
+  else if (h === "achievements") { html = viewAchievements(); tab = "profile"; }
+  else if (h === "help") { html = viewHelp(); tab = "profile"; }
   else if (h === "gx") { html = viewGx(); tab = "lessons"; }
   else if (h === "lessons") html = viewLessons();
   else if (h === "grammar") { html = viewGrammarList(); tab = "lessons"; }
@@ -1115,6 +1615,7 @@ function route() {
   document.querySelectorAll(".nav a").forEach(a => { if (a.dataset.tab === tab) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
   if (after) after();
   CatLife.scan();
+  if ($("auth").hidden && $("welcome").hidden) setTimeout(maybeOnboard, 600);
 }
 function go(to) {
   if (location.hash === "#" + to) route(); else location.hash = to;
@@ -1127,6 +1628,7 @@ const sessionEl = $("session"), stage = $("stage"), foot = $("s-foot");
 let SES = null;
 function pickPool(u) {
   if (u === "all") return ALL.slice();
+  if (String(u).startsWith("k:")) return (KWORDS[u.slice(2)] || []).slice();
   if (String(u).startsWith("cat:")) { const c = CATS.find(c => c.id === u.slice(4)); return ALL.filter(w => c.ids.includes(UNITS[w.unit].id)); }
   return ALL.filter(w => w.unit === +u);
 }
@@ -1369,6 +1871,7 @@ function renderResult() {
     <div class="score">${SES.right}/${n}</div>
     <h2>${esc(title)}</h2>
     <p>${r >= 0.7 ? "Pamuk sizdan faxrlanadi!" : "Pamuk aytadi: xatolar ham oʻrganishning bir qismi."}</p>
+    <p class="muted">Siz bugun yana bir qadam qoʻydingiz — bepul va mustaqil. Ertaga ham kutamiz!</p>
     <p>+${SES.xp} XP · bugun ${S.dayXp}/${S.goal} XP · ${streakNow()} kun ketma-ket</p>
     <p>Takrorlash navbatida: ${dueWords().length} ta · Xatolar daftarida: ${mistakeWords().length} ta</p>
     ${SES.topicDone ? `<div class="tags" style="justify-content:center"><span class="tag green-t">${ICON.check}${esc(SES.topicDone)} mavzusi tugallandi</span></div>` : ""}
@@ -1490,6 +1993,37 @@ document.addEventListener("click", e => {
     const nbtn = foot.querySelector("[data-act=next]"); nbtn.disabled = false; nbtn.focus();
   }
   else if (act === "next") nextStep();
+  else if (act === "k-lv") { KLV = b.dataset.l; kRerender(); }
+  else if (act === "k-tab") { KTAB = b.dataset.t; route(); const t = document.querySelector(".k-tabs"); if (t) window.scrollTo(0, t.getBoundingClientRect().top + window.scrollY - 70); }
+  else if (act === "k-check") { const inp = $(`ki-${b.dataset.id}-${b.dataset.key}`); kSubmit(b.dataset.id, b.dataset.key, inp.value); kRerender(); }
+  else if (act === "k-dy") { kSubmit(b.dataset.id, b.dataset.key, b.dataset.v); kRerender(); }
+  else if (act === "k-reveal") {
+    const id = b.dataset.id, key = b.dataset.key, u = KU[id], [n, k] = key.split("-");
+    const right = n === "r" ? u.reading.ans[k] : u.exercises.find(x => String(x.n) === n).ans[k];
+    b.outerHTML = `<span class="muted">Namuna: <b lang="tr">${esc(right)}</b></span> <button class="link" data-act="k-self" data-id="${id}" data-key="${key}">Men ham shunday yozdim ✓</button>`;
+  }
+  else if (act === "k-self") { const st = kState(b.dataset.id); if (st.e[b.dataset.key] !== 1) { st.e[b.dataset.key] = 1; addXP(5); pamukSay("happy", praise()); } kRerender(); }
+  else if (act === "k-tq") { KTEST_ANS[+b.dataset.i] = +b.dataset.o; b.parentElement.querySelectorAll(".opt").forEach(o => o.classList.toggle("picked", o === b)); }
+  else if (act === "k-test-done") {
+    const lv = b.dataset.l, t = KLEVEL(lv).test, qs = t.parts.flatMap(p => p.qs);
+    const miss = qs.findIndex((q, i) => KTEST_ANS[i] === undefined);
+    if (miss >= 0) { toast(`${miss + 1}-savolga javob tanlanmagan`); return; }
+    const right = qs.filter((q, i) => KTEST_ANS[i] === q.a).length, p = Math.round(right / qs.length * 100);
+    KTEST_RES = { lv, pct: p };
+    const was = kTestBest(lv);
+    S.ktest[lv] = Math.max(was, p);
+    addXP(right * 2);
+    if (p >= t.pass) pamukSay("happy", `${p}% — Tabriklaymiz! Siz ${lv} darajasini tasdiqladingiz!`); else pamukSay("sad", `${p}% — Afsus, bu safar oʻtmadi. Qiyin boʻlimlarni takrorlab, yana urinib koʻring!`);
+    window.scrollTo(0, 0); route();
+  }
+  else if (act === "k-test-again") { KTEST_ANS = {}; KTEST_RES = null; route(); window.scrollTo(0, 0); }
+  else if (act === "say-seq") speakSeq(JSON.parse(b.dataset.lines));
+  else if (act === "cel-next") nextCelebrate();
+  else if (act === "share") shareSite(b.dataset.text);
+  else if (act === "install") doInstall();
+  else if (act === "install-hide") { try { localStorage.setItem("ty-install-hide", "1"); } catch (err) {} kRerender(); }
+  else if (act === "onb-next") { if (ONB_I < ONB.length - 1) { ONB_I++; showOnboard(); } else endOnboard(); }
+  else if (act === "onb-skip") endOnboard();
   else if (act === "gx-start") startSession("gx", b.dataset.c);
   else if (act === "gx-ans") {
     if (SES.answered) return;
@@ -1517,6 +2051,18 @@ document.addEventListener("click", e => {
     inp.value = inp.value.slice(0, s) + b.dataset.k + inp.value.slice(en);
     inp.focus(); inp.setSelectionRange(s + 1, s + 1);
   }
+});
+document.addEventListener("change", e => {
+  if (e.target.dataset && e.target.dataset.act === "k-match") { kSubmit(e.target.dataset.id, e.target.dataset.key, e.target.value); kRerender(); }
+});
+let kWriteT;
+document.addEventListener("input", e => {
+  if (!e.target.dataset || e.target.dataset.act !== "k-write") return;
+  const st = kState(e.target.dataset.id); st.v[e.target.dataset.key] = e.target.value;
+  clearTimeout(kWriteT); kWriteT = setTimeout(save, 800);
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.classList && e.target.classList.contains("k-input")) { const btn = e.target.parentElement.querySelector("[data-act=k-check]"); if (btn) btn.click(); }
 });
 document.addEventListener("change", async e => {
   if (e.target.id !== "photo-input" || !e.target.files[0]) return;

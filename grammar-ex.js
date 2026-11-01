@@ -157,12 +157,12 @@ const BX = {
     { t: "t", q: "qanday = ___", ans: ["nasıl"] }
   ],
   "A1.20": [
-    { t: "c", q: "Men askarman.", o: ["Ben askerim.", "Ben askersin.", "Ben asker."], a: 0 },
+    { t: "c", q: "Men oʻqituvchiman.", o: ["Ben öğretmenim.", "Ben öğretmensin.", "Ben öğretmen."], a: 0 },
     { t: "c", q: "Sen talabasan.", o: ["Sen öğrencisin.", "Sen öğrenciyim.", "Sen öğrencisiniz."], a: 0 },
     { t: "c", q: "Biz talabamiz.", o: ["Biz öğrenciyiz.", "Biz öğrenciiz.", "Biz öğrencimiz."], a: 0, e: "Unlidan keyin bufer y: öğrenci + y + iz." },
-    { t: "c", q: "Men askar emasman.", o: ["Ben asker değilim.", "Ben askerim değil.", "Ben asker yokum."], a: 0 },
+    { t: "c", q: "Men oʻqituvchi emasman.", o: ["Ben öğretmen değilim.", "Ben öğretmenim değil.", "Ben öğretmen yokum."], a: 0 },
     { t: "t", q: "Siz öğretmen ___? (-misiz)", ans: ["misiniz"], uz: "Siz oʻqituvchimisiz?" },
-    { t: "t", q: "Ben ___. (asker, oʻtgan zamon)", ans: ["askerdim"], uz: "Men askar edim." }
+    { t: "t", q: "Ben ___. (öğretmen, oʻtgan zamon)", ans: ["öğretmendim"], uz: "Men oʻqituvchi edim." }
   ],
   "A1.21": [
     { t: "c", q: "Mashinam bor.", o: ["Arabam var.", "Arabam yok.", "Araba benim var."], a: 0 },
