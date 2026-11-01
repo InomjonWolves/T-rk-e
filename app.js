@@ -37,7 +37,7 @@ function blank() {
     xp: 0, streak: 0, best: 0, lastDay: null, day: todayKey(), dayXp: 0,
     known: {}, gram: {}, srs: {}, newDay: { d: 0, n: 0 },
     days: {}, sessions: 0, perfect: 0, acc: [0, 0], ust: {},
-    week: "", wxp: 0, goal: 50, pub: true, gx: {}, gxm: {}, k: {}, ktest: {}, onb: 0, trUses: 0, shared: 0, night: 0, early: 0, pron: [0, 0]
+    week: "", wxp: 0, goal: 50, pub: true, gx: {}, gxm: {}, k: {}, ktest: {}, onb: 0, trUses: 0, shared: 0, night: 0, early: 0, pron: [0, 0], sk: skBlank()
   };
 }
 let S = blank();
@@ -69,6 +69,9 @@ function migrate(st) {
   if (st.day !== todayKey()) { st.day = todayKey(); st.dayXp = 0; }
   if (st.week !== weekKey()) { st.week = weekKey(); st.wxp = 0; }
   st.best = Math.max(st.best || 0, st.streak || 0);
+  // Skill stats arrived later: start them from what we already know (pronunciation)
+  if (!st.skv) { st.skv = 1; st.sk = skBlank(); const p = st.pron || [0, 0]; st.sk.s[0] = p[0]; st.sk.s[1] = p[1]; }
+  ["r", "l", "w", "s"].forEach(id => { if (!st.sk[id]) st.sk[id] = [0, 0, 0, 0]; });
   return st;
 }
 function grade(w, ok) {
@@ -151,10 +154,50 @@ function record(w, ok) {
 }
 function tick() {
   if (!SES) return;
-  const now = Date.now();
-  dayRec().sec += Math.min(now - SES.last, 45000) / 1000;
+  const now = Date.now(), sec = Math.min(now - SES.last, 45000) / 1000;
+  dayRec().sec += sec;
+  if (SES.sk) skillTime(SES.sk, sec);
   SES.last = now;
 }
+/* ---------- Four skills: Okuma, Dinleme, Yazma, Konuşma ----------
+   Every exercise is tagged with one or two skills. Totals live in S.sk[id] = [right, tries, xp, seconds],
+   and each day keeps S.days[k].sk[id] = [right, tries, seconds] for the charts and the balance score. */
+const SKILLS = [
+  { id: "r", tr: "Okuma", uz: "Oʻqish", ico: "book", c: "sky" },
+  { id: "l", tr: "Dinleme", uz: "Tinglash", ico: "ear", c: "violet" },
+  { id: "w", tr: "Yazma", uz: "Yozish", ico: "type", c: "pink" },
+  { id: "s", tr: "Konuşma", uz: "Gapirish", ico: "mic", c: "green" }
+];
+function skBlank() { return { r: [0, 0, 0, 0], l: [0, 0, 0, 0], w: [0, 0, 0, 0], s: [0, 0, 0, 0] }; }
+function skDay(id) { const d = dayRec(); d.sk = d.sk || {}; return d.sk[id] || (d.sk[id] = [0, 0, 0]); }
+function skillLog(ids, ok, xp = 0) {
+  ids = [].concat(ids || []);
+  ids.forEach(id => {
+    const a = S.sk[id]; if (!a) return;
+    a[1]++; if (ok) a[0]++; a[2] += Math.round(xp / ids.length);
+    const b = skDay(id); b[1]++; if (ok) b[0]++;
+  });
+}
+function skillTime(ids, sec) {
+  ids = [].concat(ids || []);
+  ids.forEach(id => { if (!S.sk[id]) return; S.sk[id][3] += sec / ids.length; skDay(id)[2] += sec / ids.length; });
+}
+// Sums over the last `days` days: o = right, n = tries, t = seconds
+function skStats(days = 14, from = 0) {
+  const out = {};
+  SKILLS.forEach(s => out[s.id] = { o: 0, n: 0, t: 0 });
+  for (let i = from; i < from + days; i++) {
+    const d = dayGet(keyOf(dayNum() - i));
+    if (!d.sk) continue;
+    Object.keys(d.sk).forEach(id => { if (!out[id]) return; const a = d.sk[id]; out[id].o += a[0]; out[id].n += a[1]; out[id].t += a[2] || 0; });
+  }
+  return out;
+}
+// Balance = weakest skill's right answers / strongest skill's right answers
+const skBalance = st => { const v = SKILLS.map(s => st[s.id].o), mx = Math.max(...v); return mx ? Math.round(Math.min(...v) / mx * 100) : 0; };
+const skAcc = x => x.n ? pct(x.o, x.n) : null;
+const skWeakest = st => SKILLS.slice().sort((a, b) => st[a.id].o - st[b.id].o || st[a.id].n - st[b.id].n)[0];
+const skToday = () => { const d = dayGet(todayKey()).sk || {}; return SKILLS.filter(s => d[s.id] && d[s.id][1]); };
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const accOf = ids => { let c = 0, t = 0; ids.forEach(id => { const u = S.ust[id]; if (u) { c += u[0]; t += u[1]; } }); return t ? pct(c, t) : null; };
 
@@ -211,6 +254,7 @@ const ICON = {
   moon: sv('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'),
   sun: sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
   globe: sv('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>'),
+  ear: sv('<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="5" height="7" rx="2"/><rect x="16" y="14" width="5" height="7" rx="2"/>'),
   mic: sv('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>')
 };
 const pawPath = '<ellipse cx="12" cy="16" rx="5.2" ry="4.4"/><ellipse cx="5.8" cy="10.4" rx="2.3" ry="2.7"/><ellipse cx="9.6" cy="6.6" rx="2.3" ry="2.8"/><ellipse cx="14.4" cy="6.6" rx="2.3" ry="2.8"/><ellipse cx="18.2" cy="10.4" rx="2.3" ry="2.7"/>';
@@ -298,13 +342,13 @@ const last7 = () => Array.from({ length: 7 }, (_, i) => { const d = dayNum() - 6
 let voices = [];
 function loadVoices() { try { voices = speechSynthesis.getVoices(); } catch (e) {} }
 try { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; } catch (e) {}
-function speak(text, btn) {
+function speak(text, btn, rate) {
   const clean = text.replace(/…/g, "").trim();
   try {
     if (!("speechSynthesis" in window)) { toast("Bu brauzerda ovoz yoʻq"); return; }
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(clean);
-    u.lang = "tr-TR"; u.rate = 0.85;
+    u.lang = "tr-TR"; u.rate = rate || 0.85;
     const v = voices.find(v => (v.lang || "").toLowerCase().startsWith("tr"));
     if (v) u.voice = v;
     if (btn) { btn.classList.add("playing"); u.onend = u.onerror = () => btn.classList.remove("playing"); }
@@ -436,6 +480,8 @@ function modeSheet(u, title) {
     <button class="mode glass" data-act="start" data-mode="cards" data-u="${u}"><span class="ico violet-t">${ICON.cards}</span><span><b>Kartochkalar</b><span>Koʻring, agʻdaring, eslang</span></span>${ICON.chev}</button>
     <button class="mode glass" data-act="start" data-mode="quiz" data-u="${u}"><span class="ico sky-t">${ICON.quiz}</span><span><b>Test</b><span>4 ta variantdan toʻgʻrisini tanlang</span></span>${ICON.chev}</button>
     <button class="mode glass" data-act="start" data-mode="type" data-u="${u}"><span class="ico pink-t">${ICON.type}</span><span><b>Yozish</b><span>Turkcha yozing: ç, ş, ğ, ı tugmalari bor</span></span>${ICON.chev}</button>
+    <button class="mode glass" data-act="start" data-mode="listen" data-u="${u}"><span class="ico violet-t">${ICON.ear}</span><span><b>Tinglab toping</b><span>Soʻzni eshitib, maʼnosini tanlang</span></span>${ICON.chev}</button>
+    <button class="mode glass" data-act="start" data-mode="dict" data-u="${u}"><span class="ico pink-t">${ICON.type}</span><span><b>Diktant</b><span>Eshitganingizni yozing</span></span>${ICON.chev}</button>
     <button class="mode glass" data-act="start" data-mode="say" data-u="${u}"><span class="ico green-t">${ICON.mic}</span><span><b>Talaffuz</b><span>${canListen() ? "Soʻzni ovoz chiqarib ayting, Pamuk tekshiradi" : "Bu brauzerda ishlamaydi: Chrome yoki Safari kerak"}</span></span>${ICON.chev}</button>`);
 }
 
@@ -483,6 +529,8 @@ function viewHome() {
     <p>Soʻzlar unutilish arafasida qaytadi. Ertaga yana keling.</p>
     <button class="btn btn-white" data-act="go" data-to="practice">Erkin mashq</button>
   </section>`}
+
+  ${skillsHomeCard()}
 
   ${(() => { const u = kNext(), p = kProgress(u.id); return `<a class="pcard glass" href="#${kHash(u.id)}" style="color:inherit;text-decoration:none">
     <div class="pcard-head"><b>${ICON.cap}Kurs: ${u.level}.${u.n}</b><span class="tag green-t">bepul</span></div>
@@ -817,6 +865,12 @@ function viewPractice() {
   </div>
 
   <div class="pcard glass">
+    <div class="pcard-head"><b>${ICON.ear}Tinglash mashqi</b>${S.sk.l[1] ? `<span>${pct(S.sk.l[0], S.sk.l[1])}%</span>` : ""}</div>
+    <div class="facts"><span>${ICON.list}Tinglab toping · Diktant · Gaplarni tinglash</span><span>${ICON.target}Matn koʻrinmaydi, faqat ovoz</span><span>${ICON.quiz}${S.sk.l[1] ? `${S.sk.l[0]} ta toʻgʻri javob` : "Quloqni turkchaga oʻrgating"}</span></div>
+    <button class="plus" data-act="listen-modes" aria-label="Tinglash mashqlari">${ICON.play}</button>
+  </div>
+
+  <div class="pcard glass">
     <div class="pcard-head"><b>${ICON.mic}Talaffuz mashqi</b>${S.pron[1] ? `<span>${pct(S.pron[0], S.pron[1])}%</span>` : ""}</div>
     <div class="facts"><span>${ICON.list}Soʻzni tinglang va ovoz chiqarib ayting</span><span>${ICON.target}Notoʻgʻri aytilgan harflar qizil boʻladi</span><span>${ICON.quiz}${S.pron[1] ? `${S.pron[0]} ta soʻz toʻgʻri aytildi` : "Mikrofon kerak · ovoz saqlanmaydi"}</span></div>
     ${canListen() ? "" : `<p class="muted" style="margin-top:6px">Brauzeringiz nutqni tanishni qoʻllamaydi. Saytni Chrome (Android, kompyuter) yoki Safari (iPhone) da oching.</p>`}
@@ -928,6 +982,7 @@ function viewProfile() {
     </div>
   </section>
 
+  ${skillsProfileCard()}
   <div class="chart-card glass"><h3>Haftalik faollik (XP)</h3><span class="range">${range}</span>${lineChart(xpv, l7.map(d => d.l))}</div>
   <div class="chart-card glass"><h3>Oʻqish vaqti (daqiqa)</h3><span class="range">${range}</span>${barChart(minv, l7.map(d => d.l))}</div>
 
@@ -1288,7 +1343,7 @@ function viewCourseUnit(id) {
   } else if (KTAB === "grammar") {
     body = gram.map(s => `<section class="section"><div class="section-head"><h2>${esc(s.title)}</h2></div>${renderBlocks(s.blocks)}</section>`).join("");
   } else if (KTAB === "dialog") {
-    body = dlg.map(s => `<section class="section"><div class="section-head"><h2>${esc(s.title.replace(/^Dialog:\s*/, ""))}</h2></div>${renderBlocks(s.blocks)}</section>`).join("");
+    body = `<button class="btn btn-soft btn-block" data-act="start" data-mode="lsent" data-u="${u.id}">${ICON.ear}Matnsiz tinglash mashqi</button>` + dlg.map(s => `<section class="section"><div class="section-head"><h2>${esc(s.title.replace(/^Dialog:\s*/, ""))}</h2></div>${renderBlocks(s.blocks)}</section>`).join("");
   } else if (KTAB === "read") {
     const r = u.reading;
     body = `<section class="section"><div class="section-head"><h2 lang="tr">${esc(r.title || "Oʻqish matni")}</h2><button class="say" data-act="say" data-t="${esc(r.text)}" aria-label="Matnni tinglash">${ICON.speak}</button></div>
@@ -1363,6 +1418,8 @@ function kSubmit(id, key, value) {
   }
   const m = ansMatch(value, right);
   const was = st.e[key];
+  const isMatch = !key.startsWith("r-") && (u.exercises.find(x => String(x.n) === key.split("-")[0]) || {}).match;
+  skillLog(key.startsWith("r-") || isMatch ? "r" : "w", !!m, m && was !== 1 ? 5 : 0);
   st.v[key] = value;
   st.e[key] = m ? 1 : 0;
   dayRec().rev++; S.acc[1]++; if (m) S.acc[0]++;
@@ -1427,6 +1484,8 @@ const ACH = [
   { id: "sess50", cat: "practice", t: "Chempion", d: "50 ta mashq", v: () => S.sessions, n: 50, c: "orange", ico: "bolt" },
   { id: "perfect", cat: "practice", t: "Mukammal", d: "xatosiz mashq", v: () => S.perfect, n: 1, c: "pink", ico: "target" },
   { id: "perfect5", cat: "practice", t: "Aniq nishon", d: "5 ta xatosiz mashq", v: () => S.perfect, n: 5, c: "pink", ico: "target" },
+  { id: "four", cat: "practice", t: "Toʻrt tomonlama", d: "Bir kunda 4 koʻnikmani mashq qilish", v: () => Math.max(0, ...Object.values(S.days).map(d => d.sk ? Object.values(d.sk).filter(a => a[1]).length : 0)), n: 4, c: "violet", ico: "target" },
+  { id: "listen50", cat: "practice", t: "Ziyrak quloq", d: "Tinglashda 50 ta toʻgʻri javob", v: () => S.sk.l[0], n: 50, c: "sky", ico: "ear" },
   { id: "pron20", cat: "practice", t: "Bulbul", d: "20 ta soʻzni toʻgʻri talaffuz qilish", v: () => S.pron[0], n: 20, c: "green", ico: "mic" },
   { id: "xp1k", cat: "practice", t: "1000 XP", d: "1000 XP toʻplandi", v: () => S.xp, n: 1000, c: "teal", ico: "star" },
   { id: "xp5k", cat: "practice", t: "5000 XP", d: "5000 XP toʻplandi", v: () => S.xp, n: 5000, c: "violet", ico: "star" },
@@ -1640,6 +1699,7 @@ function route() {
   else if (h.startsWith("k-") && KU[h.slice(2)]) { html = viewCourseUnit(h.slice(2)); tab = "lessons"; }
   else if (/^ktest-(a1|a2|b1|b2)$/.test(h)) { html = viewCourseTest(h.slice(6).toUpperCase()); tab = "lessons"; }
   else if (h === "achievements") { html = viewAchievements(); tab = "profile"; }
+  else if (h === "skills") { html = viewSkills(); tab = "profile"; }
   else if (h === "help") { html = viewHelp(); tab = "profile"; }
   else if (h === "gx") { html = viewGx(); tab = "lessons"; }
   else if (h === "lessons") html = viewLessons();
@@ -1686,6 +1746,10 @@ function startSession(mode, u) {
   } else if (mode === "gxm") {
     items = shuffle(gxMistakes()).slice(0, 15).map(k => { const [c, i] = k.split("#"); return { gx: true, code: c, i: +i, ex: BX[c][+i] }; });
     if (!items.length) { toast("Qoida xatolari yoʻq"); return; }
+  } else if (mode === "listen" || mode === "dict" || mode === "lsent") {
+    if (!canSpeak()) { toast("Bu brauzerda ovoz yoʻq"); return; }
+    items = mode === "lsent" ? lsItems(u) : sayItems(u, mode === "dict" ? w => sayable(w) && typeable(w) : sayable, 10);
+    if (!items.length) { toast("Tinglash uchun material topilmadi"); return; }
   } else if (mode === "say") {
     if (!canListen()) { toast("Bu brauzer nutqni tanimaydi. Chrome yoki Safari'da oching"); return; }
     items = sayItems(u);
@@ -1722,10 +1786,13 @@ function renderStep() {
   progressBar();
   const w = SES.items[SES.i];
   if (w.gx) return renderGx(w);
+  if (w.ls) return renderLs(w);
   const m = itemMode(w);
   if (m === "cards") renderCard(w);
   else if (m === "quiz") renderQuiz(w);
   else if (m === "say") renderSay(w);
+  else if (m === "listen") renderListen(w);
+  else if (m === "dict") renderDict(w);
   else renderType(w);
 }
 // Review sessions mix modes: new words are shown as cards, known ones are tested
@@ -1736,6 +1803,7 @@ function itemMode(w) {
   return typeable(w) && (st.r >= 2 || (SES.mode === "mistakes" && Math.random() < 0.4)) && Math.random() < 0.5 ? "type" : "quiz";
 }
 function renderCard(w) {
+  SES.sk = ["r"];
   stage.innerHTML = `<div class="flip" id="flip">
     <div class="flip-inner">
       <button class="face" data-act="flip" aria-label="Kartochkani agʻdarish">
@@ -1755,6 +1823,7 @@ function renderCard(w) {
   speak(w.tr);
 }
 function renderQuiz(w) {
+  SES.sk = ["r"];
   const toUz = Math.random() < 0.6;
   const pool = (SES.u === "all" ? ALL : ALL.filter(x => x.unit === w.unit)).filter(x => x.tr !== w.tr && x.uz !== w.uz);
   const wrong = shuffle(pool.length >= 3 ? pool : ALL.filter(x => x.tr !== w.tr)).slice(0, 3);
@@ -1769,6 +1838,7 @@ function renderQuiz(w) {
   if (toUz) speak(w.tr);
 }
 function renderType(w) {
+  SES.sk = ["w"];
   stage.innerHTML = `<div class="q-label">Turkchasini yozing</div>
     <div class="q-word">${esc(w.uz)}</div>
     <form class="type-box" id="type-form" autocomplete="off">
@@ -1793,8 +1863,209 @@ function checkType(skip) {
   } else {
     bad(); inp.classList.add("wrong"); fb.className = "feedback no"; fb.innerHTML = `Toʻgʻri javob: <b lang="tr">${esc(w.tr)}</b>`;
   }
+  const rv = $("ls-reveal"); if (rv) rv.hidden = false;
   speak(w.tr);
   foot.innerHTML = `<button class="btn btn-grad btn-block" data-act="next">Keyingi</button>`;
+}
+/* ---------- Skills dashboard ---------- */
+const SK_HOW = {
+  r: "Soʻz testlari, kartochkalar, qoida testlari (variant tanlash), kurs matnlari savollari va daraja testlari",
+  l: "Tinglab toping, diktant va dialog gaplarini matnsiz tinglash",
+  w: "Soʻz yozish, diktant, qoida mashqlaridagi yozish va gap tuzish, kursdagi tarjima va erkin yozish",
+  s: "Talaffuz mashqi: soʻzni ovoz chiqarib aytish"
+};
+function skBars(st) {
+  const mx = Math.max(1, ...SKILLS.map(s => st[s.id].o));
+  return `<div class="sk-bars">${SKILLS.map(s => { const x = st[s.id], a = skAcc(x); return `<div class="sk-line">
+    <span class="ico ${s.c}-t">${ICON[s.ico]}</span>
+    <span class="sk-name"><b>${s.tr}</b><small>${s.uz}</small></span>
+    <span class="sk-track"><i style="width:${Math.round(x.o / mx * 100)}%;background:var(--${s.c})"></i></span>
+    <span class="sk-val">${x.o}<small>${a === null ? "—" : a + "%"}</small></span></div>`; }).join("")}</div>`;
+}
+function skillsHomeCard() {
+  const st = skStats(14), done = skToday(), weak = skWeakest(st);
+  return `<div class="pcard glass">
+    <div class="pcard-head"><b>${ICON.target}4 koʻnikma</b><a class="link" href="#skills">Batafsil</a></div>
+    <div class="sk-row">${SKILLS.map(s => { const on = done.includes(s); return `<div class="sk-mini${on ? " on" : ""}"><span class="ico ${s.c}-t">${ICON[s.ico]}</span><small>${s.tr}</small><span class="sk-dot" aria-label="${on ? "Bugun bajarildi" : "Bugun hali yoʻq"}">${on ? ICON.check : ""}</span></div>`; }).join("")}</div>
+    <p class="muted">${done.length === 4 ? "Barakalla! Bugun toʻrttala koʻnikmani mashq qildingiz." : `Bugun ${done.length}/4 koʻnikma. Eng koʻp eʼtibor kerak: <b>${weak.uz}</b>.`}</p>
+    ${done.length === 4 ? "" : `<button class="btn btn-soft btn-block" data-act="sk-go" data-s="${weak.id}">${ICON[weak.ico]}${weak.tr} · ${weak.uz} mashqi</button>`}
+  </div>`;
+}
+function skillsProfileCard() {
+  const st = skStats(14);
+  return `<a class="pcard glass" href="#skills" style="color:inherit;text-decoration:none">
+    <div class="pcard-head"><b>${ICON.target}4 koʻnikma · 14 kun</b><span>Muvozanat ${skBalance(st)}%</span></div>
+    ${skBars(st)}
+  </a>`;
+}
+// Right answers per skill for each of the last 4 weeks (oldest first)
+function skWeeksChart() {
+  const weeks = [3, 2, 1, 0].map(w => skStats(7, w * 7));
+  const mx = Math.max(1, ...weeks.flatMap(st => SKILLS.map(s => st[s.id].o)));
+  const W = 320, H = 150, gw = W / 4, bw = 13, base = H - 22;
+  const bars = weeks.map((st, wi) => SKILLS.map((s, si) => {
+    const v = st[s.id].o, h = Math.round(v / mx * (base - 10)), x = wi * gw + (gw - 4 * bw - 9) / 2 + si * (bw + 3);
+    return `<rect x="${x}" y="${base - h}" width="${bw}" height="${Math.max(h, 1.5)}" rx="4" fill="var(--${s.c})"><title>${s.tr}: ${v}</title></rect>`;
+  }).join("")).join("");
+  const labels = ["3 hafta oldin", "2 hafta oldin", "Oʻtgan hafta", "Shu hafta"].map((l, i) => `<text x="${i * gw + gw / 2}" y="${H - 5}" text-anchor="middle" class="chart-label">${l}</text>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" class="sk-chart" role="img" aria-label="Soʻnggi 4 hafta: koʻnikmalar boʻyicha toʻgʻri javoblar">${bars}${labels}</svg>
+    <div class="sk-legend">${SKILLS.map(s => `<span><i style="background:var(--${s.c})"></i>${s.tr}</span>`).join("")}</div>`;
+}
+function viewSkills() {
+  const st = skStats(14), all = S.sk, bal = skBalance(st), weak = skWeakest(st), any = SKILLS.some(s => all[s.id][1]);
+  return `<div><a class="back" href="#profile">${ICON.back}Profil</a></div>
+  <div class="lesson-head">
+    <div class="tags"><span class="tag violet-t">${ICON.target}Okuma · Dinleme · Yazma · Konuşma</span></div>
+    <h1>4 koʻnikma</h1>
+    <p class="sub">Tilni toʻliq bilish uchun toʻrttala koʻnikma teng rivojlanishi kerak. Bu yerda soʻnggi 14 kunlik natijalaringiz.</p>
+  </div>
+  <div class="pcard glass sk-balance">
+    ${pctRing(bal / 100)}
+    <div><b>Muvozanat</b><p class="muted">${!any ? "Hali maʼlumot yoʻq. Mashq qila boshlang, natijalar shu yerda chiqadi." : bal >= 80 ? "Ajoyib! Koʻnikmalaringiz teng rivojlanmoqda." : `Eng koʻp eʼtibor kerak: <b>${weak.tr} (${weak.uz})</b>. Bugun shundan boshlang.`}</p>
+    <button class="btn btn-grad" data-act="sk-go" data-s="${weak.id}">${ICON[weak.ico]}${weak.tr} mashqi</button></div>
+  </div>
+  <section class="section"><div class="section-head"><h2>Soʻnggi 14 kun</h2><span class="tag sky-t">toʻgʻri javoblar</span></div>
+    <div class="glass pad">${skBars(st)}</div></section>
+  <section class="section"><div class="section-head"><h2>Koʻnikmalar</h2></div>
+    ${SKILLS.map(s => { const x = st[s.id], t = all[s.id], a = skAcc(x); return `<div class="pcard glass">
+      <div class="pcard-head"><b><span class="tag ${s.c}-t" style="padding:6px">${ICON[s.ico]}</span>${s.tr} · ${s.uz}</b><span>${a === null ? "—" : a + "%"}</span></div>
+      <div class="facts"><span>${ICON.list}14 kunda: ${x.n} ta mashq, ${x.o} ta toʻgʻri</span><span>${ICON.clock}14 kunda: ${Math.ceil(x.t / 60)} daqiqa</span><span>${ICON.star}Jami: ${t[1]} ta mashq · ${t[1] ? pct(t[0], t[1]) + "% toʻgʻri" : "hali yoʻq"} · ${t[2]} XP</span></div>
+      <p class="muted" style="margin-top:6px;padding-right:48px">${esc(SK_HOW[s.id])}</p>
+      <button class="plus" data-act="sk-go" data-s="${s.id}" aria-label="${s.tr} mashqi">${ICON.play}</button>
+    </div>`; }).join("")}
+  </section>
+  <div class="chart-card glass"><h3>Soʻnggi 4 hafta</h3><span class="range">toʻgʻri javoblar</span>${skWeeksChart()}</div>
+  <div class="tip glass">${ICON.bulb}<div><b>Muvozanat qanday hisoblanadi?</b>Soʻnggi 14 kunda eng kam toʻgʻri javob berilgan koʻnikma eng koʻp toʻgʻri javob berilganiga boʻlinadi. 80% dan yuqori — yaxshi muvozanat. Har kuni toʻrttala koʻnikmadan kamida bitta mashq qiling.</div></div>`;
+}
+function skGo(id) {
+  if (id === "r") { const u = kNext(); KTAB = u.reading ? "read" : "vocab"; go(kHash(u.id)); }
+  else if (id === "l") listenSheet();
+  else if (id === "w") startSession("dict", "pron");
+  else startSession("say", "pron");
+}
+/* ---------- Listening (Dinleme) ----------
+   Three exercises built on the browser's text-to-speech: hear a word and pick its meaning, dictation,
+   and course dialog lines played without text (pick the sentence you heard, or type the missing word). */
+const canSpeak = () => "speechSynthesis" in window;
+const hasTrVoice = () => !voices.length || voices.some(v => (v.lang || "").toLowerCase().startsWith("tr"));
+function listenNotice() {
+  return hasTrVoice() ? "" : `<div class="notice"><div>Qurilmangizda turkcha ovoz topilmadi, talaffuz notoʻgʻri boʻlishi mumkin. Telefon sozlamalarida «Matnni nutqqa aylantirish» boʻlimidan turk tilini yuklab oling.</div></div>`;
+}
+function playBtns(t) {
+  return `<div class="mic-wrap"><button class="mic-btn play-btn" data-act="ls-play" data-t="${esc(t)}" aria-label="Yana tinglash">${ICON.speak}</button>
+    <button class="link" data-act="ls-play" data-t="${esc(t)}" data-slow="1">Sekinroq tinglash</button></div>`;
+}
+function listenSheet() {
+  if (!canSpeak()) { toast("Bu brauzerda ovoz yoʻq"); return; }
+  openSheet(`<h3>Tinglash mashqi</h3>
+    <button class="mode glass" data-act="start" data-mode="listen" data-u="pron"><span class="ico violet-t">${ICON.ear}</span><span><b>Tinglab toping</b><span>Soʻzni eshitasiz, maʼnosini tanlaysiz</span></span>${ICON.chev}</button>
+    <button class="mode glass" data-act="start" data-mode="dict" data-u="pron"><span class="ico pink-t">${ICON.type}</span><span><b>Diktant</b><span>Eshitganingizni turkcha yozasiz</span></span>${ICON.chev}</button>
+    <button class="mode glass" data-act="start" data-mode="lsent" data-u="auto"><span class="ico sky-t">${ICON.chat}</span><span><b>Gaplarni tinglash</b><span>Kurs dialoglaridan gaplar, matnsiz</span></span>${ICON.chev}</button>`);
+}
+function renderListen(w) {
+  SES.sk = ["l"]; SES.correct = w;
+  const pool = (SES.u === "all" || SES.u === "pron" ? ALL : ALL.filter(x => x.unit === w.unit)).filter(x => x.tr !== w.tr && x.uz !== w.uz);
+  const opts = shuffle([w, ...shuffle(pool.length >= 3 ? pool : ALL.filter(x => x.tr !== w.tr)).slice(0, 3)]);
+  stage.innerHTML = `${listenNotice()}<div class="q-label">Tinglang va maʼnosini toping</div>
+    ${playBtns(w.tr)}
+    <div class="ls-reveal" id="ls-reveal" hidden><b lang="tr">${esc(w.tr)}</b> — ${esc(w.uz)}</div>
+    <div class="options">${opts.map((o, i) => `<button class="opt" data-act="answer" data-ok="${o === w ? 1 : 0}"><span class="k">${"ABCD"[i]}</span>${esc(o.uz)}</button>`).join("")}</div>
+    <div class="feedback" id="fb" aria-live="polite"></div>`;
+  foot.innerHTML = `<button class="btn btn-grad btn-block" data-act="next" disabled>Keyingi</button>`;
+  speak(w.tr);
+}
+const typeBox = () => `<form class="type-box" id="type-form" autocomplete="off">
+    <label for="type-input" class="sr">Javob</label>
+    <input class="type-input" id="type-input" lang="tr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Eshitganingizni yozing…">
+    <div class="keys">${["ç", "ş", "ğ", "ı", "İ", "ö", "ü"].map(k => `<button type="button" data-act="key" data-k="${k}">${k}</button>`).join("")}</div>
+  </form>`;
+function renderDict(w) {
+  SES.sk = ["l", "w"];
+  stage.innerHTML = `${listenNotice()}<div class="q-label">Diktant: eshitganingizni turkcha yozing</div>
+    ${playBtns(w.tr)}
+    ${typeBox()}
+    <div class="ls-reveal" id="ls-reveal" hidden><b lang="tr">${esc(w.tr)}</b> — ${esc(w.uz)}</div>
+    <div class="feedback" id="fb" aria-live="polite"></div>`;
+  foot.innerHTML = `<button class="btn btn-ghost" data-act="type-skip">Bilmayman</button><button class="btn btn-grad" data-act="type-check">Tekshirish</button>`;
+  $("type-form").addEventListener("submit", e => { e.preventDefault(); if (SES.answered) nextStep(); else checkType(); });
+  speak(w.tr);
+}
+// Dialog lines from the course: one unit, or ("auto") every unit up to the learner's current one
+function lsLines(u) {
+  let units;
+  if (KU[u]) units = [KU[u]];
+  else { const cur = COURSE.units.indexOf(kNext()); units = COURSE.units.slice(0, Math.max(cur + 1, 4)); }
+  const lines = [];
+  units.forEach(un => un.sections.filter(s => s.kind === "dialog").forEach(s => s.blocks.forEach(b => (b.dlg || []).forEach(([, t]) => {
+    const clean = t.replace(/\([^)]*\)/g, "").replace(/\s+/g, " ").trim(), n = clean.split(" ").length;
+    if (n >= 3 && n <= 14 && !lines.some(x => x.t === clean)) lines.push({ t: clean, unit: un.id });
+  }))));
+  return lines;
+}
+function lsItems(u) {
+  const lines = shuffle(lsLines(u)), items = [];
+  lines.forEach(ln => {
+    if (items.length >= 8) return;
+    if (items.length % 2 === 0) {
+      const near = lines.filter(x => x.t !== ln.t).sort((a, b) => Math.abs(a.t.length - ln.t.length) - Math.abs(b.t.length - ln.t.length)).slice(0, 6);
+      if (near.length < 2) return;
+      items.push({ ls: "pick", t: ln.t, opts: shuffle([ln.t, ...shuffle(near).slice(0, 2).map(x => x.t)]) });
+    } else {
+      const words = ln.t.split(" ");
+      const cand = words.map((w, k) => [w.replace(/[.,!?;:«»"…—]/g, ""), k]).filter(([w]) => w.replace(/'.*/, "").length >= 4 && !/\d/.test(w));
+      if (!cand.length) return;
+      const [word, k] = cand[Math.floor(Math.random() * cand.length)];
+      items.push({ ls: "cloze", t: ln.t, word, shown: words.map((w, j) => j === k ? w.replace(word, "___") : w).join(" ") });
+    }
+  });
+  return items;
+}
+function renderLs(it) {
+  if (it.ls === "pick") {
+    SES.sk = ["l"];
+    stage.innerHTML = `${listenNotice()}<div class="q-label">Qaysi gapni eshitdingiz?</div>
+      ${playBtns(it.t)}
+      <div class="options">${it.opts.map((o, i) => `<button class="opt" lang="tr" data-act="ls-ans" data-o="${i}"><span class="k">${"ABC"[i]}</span>${esc(o)}</button>`).join("")}</div>
+      <div class="feedback" id="fb" aria-live="polite"></div>`;
+    foot.innerHTML = `<button class="btn btn-grad btn-block" data-act="next" disabled>Keyingi</button>`;
+  } else {
+    SES.sk = ["l", "w"];
+    stage.innerHTML = `${listenNotice()}<div class="q-label">Tinglang va tushib qolgan soʻzni yozing</div>
+      ${playBtns(it.t)}
+      <div class="q-sent" lang="tr">${blankHtml(it.shown)}</div>
+      ${typeBox()}
+      <div class="feedback" id="fb" aria-live="polite"></div>`;
+    foot.innerHTML = `<button class="btn btn-ghost" data-act="ls-skip">Bilmayman</button><button class="btn btn-grad" data-act="ls-check">Tekshirish</button>`;
+    $("type-form").addEventListener("submit", e => { e.preventDefault(); if (SES.answered) nextStep(); else lsCheck(); });
+  }
+  speak(it.t);
+}
+function lsFinish(ok, html) {
+  SES.answered = true;
+  tick();
+  const it = SES.items[SES.i], fb = $("fb");
+  if (ok) { SES.right++; SES.xp += 10; skillLog(SES.sk, true, 10); addXP(10); CatLife.mood(sCat(), "happy", 1000); }
+  else {
+    skillLog(SES.sk, false); save(); CatLife.mood(sCat(), "sad", 1600);
+    if (!SES.re.has(it.t) && SES.items.length < 40) { SES.re.add(it.t); SES.items.push(it); }
+  }
+  fb.className = "feedback " + (ok ? "ok" : "no"); fb.innerHTML = html;
+  foot.innerHTML = `<button class="btn btn-ghost" data-act="ls-play" data-t="${esc(it.t)}">${ICON.speak}Tinglash</button><button class="btn btn-grad" data-act="next">Keyingi</button>`;
+}
+function lsPick(o, btn) {
+  if (SES.answered) return;
+  const it = SES.items[SES.i], ok = it.opts[o] === it.t;
+  document.querySelectorAll("[data-act=ls-ans]").forEach(x => { if (it.opts[+x.dataset.o] === it.t) x.classList.add("right"); });
+  if (!ok) btn.classList.add("wrong");
+  lsFinish(ok, ok ? "Doğru! Toʻgʻri eshitdingiz." : `Eshitilgan gap: <b lang="tr">${esc(it.t)}</b>`);
+}
+function lsCheck(skip) {
+  if (SES.answered) return;
+  const it = SES.items[SES.i], inp = $("type-input"), v = inp.value;
+  if (!skip && !v.trim()) { inp.focus(); return; }
+  const exact = !skip && gxNorm(v) === gxNorm(it.word), near = !skip && !exact && gxPlain(v) === gxPlain(it.word);
+  inp.classList.add(exact || near ? "right" : "wrong");
+  lsFinish(exact || near, `${exact ? "Barakalla! Toʻgʻri." : near ? `Deyarli! Toʻgʻri yozilishi: <b lang="tr">${esc(it.word)}</b>` : `Tushib qolgan soʻz: <b lang="tr">${esc(it.word)}</b>`}<div class="sub" lang="tr" style="margin-top:4px">${esc(it.t)}</div>`);
 }
 /* ---------- Pronunciation practice ----------
    Uses the browser's own speech recognition (Web Speech API, tr-TR). Nothing is recorded or stored by the site:
@@ -1803,14 +2074,14 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const canListen = () => !!SR;
 let REC = null;
 const sayable = w => !/[…\/()=;]/.test(w.tr) && w.tr.length <= 26 && /[a-zçğıöşü]/i.test(w.tr);
-function sayItems(u) {
+function sayItems(u, f = sayable, n = 8) {
   let pool;
   if (u === "pron") {
     // Words the learner has already met; for a fresh start, the first lessons
-    pool = ALL.filter(w => srs(w) && sayable(w));
-    if (pool.length < 8) pool = ALL.filter(sayable).slice(0, 80);
-  } else pool = pickPool(u).filter(sayable);
-  return shuffle(pool).slice(0, 8);
+    pool = ALL.filter(w => srs(w) && f(w));
+    if (pool.length < n) pool = ALL.filter(f).slice(0, 80);
+  } else pool = pickPool(u).filter(f);
+  return shuffle(pool).slice(0, n);
 }
 // Recognisers often write numbers as digits: turn them back into Turkish words
 const TR_ONES = ["", "bir", "iki", "üç", "dört", "beş", "altı", "yedi", "sekiz", "dokuz"];
@@ -1856,7 +2127,7 @@ function sayMarked(target, ok) {
   return [...target].map((c, i) => bad.has(i) ? `<span class="miss">${esc(c)}</span>` : esc(c)).join("");
 }
 function renderSay(w) {
-  SES.tries = 0; SES.best = null;
+  SES.sk = ["s"]; SES.tries = 0; SES.best = null;
   stage.innerHTML = `<div class="q-label">Ovoz chiqarib ayting</div>
     <div class="q-row"><div class="q-word say-target" id="say-target" lang="tr">${esc(w.tr)}</div>
       <button class="say" data-act="say" data-t="${esc(w.tr)}" aria-label="Tinglash">${ICON.speak}</button></div>
@@ -1936,6 +2207,7 @@ function sayFinish(ok, skipped) {
   tick();
   if (!skipped) {
     S.pron[1]++; dayRec().rev++;
+    skillLog("s", ok, ok ? 10 : 0);
     if (ok) { S.pron[0]++; SES.right++; SES.xp += 10; addXP(10); CatLife.mood(sCat(), "happy", 1000); }
     else { save(); CatLife.mood(sCat(), "sad", 1600); }
   }
@@ -1945,6 +2217,7 @@ function sayFinish(ok, skipped) {
 /* ---------- Rule exercises ---------- */
 const blankHtml = q => esc(q).replace("___", '<span class="blank">&nbsp;</span>');
 function renderGx(it) {
+  SES.sk = it.ex.t === "c" ? ["r"] : ["w"];
   const ex = it.ex, tp = gxTopic(it.code);
   const head = `<div class="tags"><span class="tag sky-t">${esc(it.code)}</span><span class="tag violet-t">${esc(tp ? tp.uz : "")}</span></div>`;
   if (ex.t === "c") {
@@ -2019,6 +2292,7 @@ function gxGood(it) {
   const k = it.code + "#" + it.i;
   if (S.gxm[k]) delete S.gxm[k];
   dayRec().rev++; S.acc[0]++; S.acc[1]++;
+  skillLog(SES.sk, true, 10);
   addXP(10);
   if (!was && gxDone(it.code)) SES.topicDone = it.code;
   CatLife.mood(sCat(), "happy", 1000);
@@ -2027,17 +2301,19 @@ function gxBad(it) {
   tick();
   S.gxm[it.code + "#" + it.i] = 1;
   dayRec().rev++; S.acc[1]++;
+  skillLog(SES.sk, false);
   save();
   CatLife.mood(sCat(), "sad", 1600);
   const key = it.code + "#" + it.i;
   if (!SES.re.has(key) && SES.items.length < 40) { SES.re.add(key); SES.items.push(it); }
 }
 const sCat = () => $("s-cat").querySelector(".cat");
-function good() { tick(); const w = SES.items[SES.i]; SES.right++; SES.xp += 10; grade(w, true); addXP(10); CatLife.mood(sCat(), "happy", 1000); }
+function good() { tick(); const w = SES.items[SES.i]; SES.right++; SES.xp += 10; grade(w, true); skillLog(SES.sk, true, 10); addXP(10); CatLife.mood(sCat(), "happy", 1000); }
 function bad() {
   tick();
   const w = SES.items[SES.i];
   grade(w, false);
+  skillLog(SES.sk, false);
   CatLife.mood(sCat(), "sad", 1600);
   // Show a missed word once more at the end of the session
   if (!SES.re.has(w.tr) && SES.items.length < 40) { SES.re.add(w.tr); SES.items.push(w); }
@@ -2164,6 +2440,12 @@ document.addEventListener("click", e => {
   else if (act === "close-session") closeSession();
   else if (act === "again") startSession(SES.mode, SES.u);
   else if (act === "mic") micToggle();
+  else if (act === "ls-play") speak(b.dataset.t, null, b.dataset.slow ? 0.55 : 0.85);
+  else if (act === "ls-ans") lsPick(+b.dataset.o, b);
+  else if (act === "ls-check") lsCheck();
+  else if (act === "ls-skip") lsCheck(true);
+  else if (act === "listen-modes") listenSheet();
+  else if (act === "sk-go") skGo(b.dataset.s);
   else if (act === "say-skip") sayFinish(false, true);
   else if (act === "flip") $("flip").classList.toggle("on");
   else if (act === "card-know") { good(); nextStep(); }
@@ -2179,7 +2461,8 @@ document.addEventListener("click", e => {
     SES.answered = true;
     const ok = b.dataset.ok === "1";
     document.querySelectorAll(".opt").forEach(o => { if (o.dataset.ok === "1") o.classList.add("right"); });
-    const fb = $("fb");
+    const fb = $("fb"), rv = $("ls-reveal");
+    if (rv) rv.hidden = false;
     if (ok) { good(); fb.className = "feedback ok"; fb.textContent = "Doğru! Toʻgʻri javob."; }
     else { bad(); b.classList.add("wrong"); fb.className = "feedback no"; fb.innerHTML = `Yanlış. Toʻgʻrisi: <b>${esc(SES.correct.tr)}</b> — ${esc(SES.correct.uz)}`; }
     const nbtn = foot.querySelector("[data-act=next]"); nbtn.disabled = false; nbtn.focus();
@@ -2194,7 +2477,7 @@ document.addEventListener("click", e => {
     const right = n === "r" ? u.reading.ans[k] : u.exercises.find(x => String(x.n) === n).ans[k];
     b.outerHTML = `<span class="muted">Namuna: <b lang="tr">${esc(right)}</b></span> <button class="link" data-act="k-self" data-id="${id}" data-key="${key}">Men ham shunday yozdim ✓</button>`;
   }
-  else if (act === "k-self") { const st = kState(b.dataset.id); if (st.e[b.dataset.key] !== 1) { st.e[b.dataset.key] = 1; addXP(5); pamukSay("happy", praise()); } kRerender(); }
+  else if (act === "k-self") { const st = kState(b.dataset.id); if (st.e[b.dataset.key] !== 1) { st.e[b.dataset.key] = 1; skillLog("w", true, 5); addXP(5); pamukSay("happy", praise()); } kRerender(); }
   else if (act === "k-tq") { KTEST_ANS[+b.dataset.i] = +b.dataset.o; b.parentElement.querySelectorAll(".opt").forEach(o => o.classList.toggle("picked", o === b)); }
   else if (act === "k-test-done") {
     const lv = b.dataset.l, t = KLEVEL(lv).test, qs = t.parts.flatMap(p => p.qs);
@@ -2202,6 +2485,7 @@ document.addEventListener("click", e => {
     if (miss >= 0) { toast(`${miss + 1}-savolga javob tanlanmagan`); return; }
     const right = qs.filter((q, i) => KTEST_ANS[i] === q.a).length, p = Math.round(right / qs.length * 100);
     KTEST_RES = { lv, pct: p };
+    qs.forEach((q, i) => skillLog("r", KTEST_ANS[i] === q.a));
     const was = kTestBest(lv);
     S.ktest[lv] = Math.max(was, p);
     addXP(right * 2);
@@ -2250,7 +2534,9 @@ document.addEventListener("change", e => {
 let kWriteT;
 document.addEventListener("input", e => {
   if (!e.target.dataset || e.target.dataset.act !== "k-write") return;
-  const st = kState(e.target.dataset.id); st.v[e.target.dataset.key] = e.target.value;
+  const st = kState(e.target.dataset.id), key = e.target.dataset.key; st.v[key] = e.target.value;
+  // Free writing counts for Yazma once it reaches 10 words
+  if (!st.e[key] && e.target.value.trim().split(/\s+/).length >= 10) { st.e[key] = 1; skillLog("w", true, 5); addXP(5); toast("Yozish mashqi hisobga olindi: +5 XP"); }
   clearTimeout(kWriteT); kWriteT = setTimeout(save, 800);
 });
 document.addEventListener("keydown", e => {
