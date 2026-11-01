@@ -1054,7 +1054,7 @@ function ageOf(birth) {
 const birthText = b => { const [y, m, d] = b.split("-").map(Number); return `${d}-${MONTHS[m - 1]}, ${y} · ${ageOf(b)} yosh`; };
 function genderSticker() {
   if (!PROFILE.gender) return "";
-  return PROFILE.gender === "f" ? `<span class="sticker f">${ICON.female}Ayol</span>` : `<span class="sticker m">${ICON.male}Erkak</span>`;
+  return PROFILE.gender === "f" ? `<span class="sticker f" title="Ayol" aria-label="Ayol">${ICON.female}</span>` : `<span class="sticker m" title="Erkak" aria-label="Erkak">${ICON.male}</span>`;
 }
 function birthSelects(prefix, value) {
   const [y, m, d] = (value || "").split("-").map(Number), maxY = new Date().getFullYear() - 5;

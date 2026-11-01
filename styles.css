@@ -641,8 +641,11 @@ body.locked .app, body.locked .nav { display: none; }
 .cat.sad .cat-head { animation: none; transform: rotate(-5deg) translateY(4px); }
 .cat.hop { animation: catHop 0.6s cubic-bezier(0.3, 0.7, 0.3, 1); }
 @keyframes catHop { 0%, 100% { transform: translateY(0); } 35% { transform: translateY(-9%) scale(1.02, 0.98); } 70% { transform: translateY(1%) scale(1.02, 0.97); } }
-.cat[data-pose="wave"] .cat-arm { transform-origin: 168px 200px; animation: catWave 2.6s ease-in-out infinite; }
-@keyframes catWave { 0%, 45%, 100% { transform: rotate(0); } 10% { transform: rotate(-16deg); } 20% { transform: rotate(9deg); } 30% { transform: rotate(-12deg); } 38% { transform: rotate(4deg); } }
+/* Waving: the whole forearm sways side to side from the elbow, the paw follows a beat later from the wrist */
+.cat[data-pose="wave"] .cat-arm { transform-origin: 178px 190px; animation: catWave 3.2s ease-in-out infinite; }
+.cat[data-pose="wave"] .cat-paw { transform-origin: 200px 136px; animation: catWrist 3.2s ease-in-out infinite; }
+@keyframes catWave { 0%, 62%, 100% { transform: rotate(0); } 10% { transform: rotate(-9deg); } 22% { transform: rotate(7deg); } 34% { transform: rotate(-8deg); } 46% { transform: rotate(5deg); } 55% { transform: rotate(-2deg); } }
+@keyframes catWrist { 0%, 64%, 100% { transform: rotate(0); } 13% { transform: rotate(-7deg); } 25% { transform: rotate(6deg); } 37% { transform: rotate(-6deg); } 49% { transform: rotate(4deg); } 58% { transform: rotate(-1deg); } }
 .cat .cat-stars path { transform-box: fill-box; transform-origin: center; animation: twinkle 1.8s ease-in-out infinite; }
 .cat .cat-stars path:nth-child(2) { animation-delay: 0.5s; }
 .cat .cat-stars path:nth-child(3) { animation-delay: 1s; }
@@ -708,7 +711,7 @@ body.locked .app, body.locked .nav { display: none; }
 .cat .cat-cover { transform: translateY(90px); opacity: 0; transition: transform 0.35s cubic-bezier(0.3, 0.8, 0.3, 1.2), opacity 0.2s; }
 .cat.shy .cat-cover { transform: none; opacity: 1; }
 .cat.shy .cat-eye-in { transform: scaleY(0.07); }
-.cat.shy .cat-arm { opacity: 0; transition: opacity 0.15s; }
+.cat.shy .cat-arm { opacity: 0; animation: none; transition: opacity 0.12s; }
 .cat .cat-arm { transition: opacity 0.3s 0.15s; }
 .cat.shy .cat-head { animation: none; transform: rotate(-3deg) translateY(2px); }
 .speech { position: relative; display: inline-block; padding: 8px 14px; border-radius: 16px; background: var(--card-strong); box-shadow: var(--shadow); font-weight: 700; font-size: 14px; margin-bottom: -6px; }
@@ -734,7 +737,7 @@ body.locked .app, body.locked .nav { display: none; }
 .welcome-card p { color: var(--muted); font-weight: 600; }
 
 /* Gender sticker on the profile photo */
-.sticker { position: absolute; left: -8px; top: -8px; padding: 4px 9px; border-radius: 12px; font-size: 12px; font-weight: 800; color: #fff; border: 2.5px solid #fff; box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.45); transform: rotate(-10deg); display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.sticker { position: absolute; left: -2px; top: -2px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: #fff; border: 2.5px solid var(--card-strong); box-shadow: 0 4px 10px -4px rgba(0, 0, 0, 0.4); }
 .sticker.m { background: linear-gradient(135deg, #5ab0ff, #2f6ff0); }
 .sticker.f { background: linear-gradient(135deg, #ff9cc0, #e8558a); }
 .sticker svg { width: 13px; height: 13px; }
