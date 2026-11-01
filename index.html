@@ -286,6 +286,25 @@ p { margin: 0; }
 :root[data-theme="dark"] .letter-detail .big { color: #b9c6ff; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .letter-detail .big { color: #b9c6ff; } }
 
+/* Daily review */
+.review {
+  display: flex; flex-direction: column; gap: 14px; padding: 18px;
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+  border-left: 5px solid var(--turq);
+}
+.review-nums { display: flex; gap: 22px; }
+.review-nums div { display: flex; flex-direction: column; }
+.review-nums b { font-family: var(--font-display); font-weight: 800; font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; }
+.review-nums span { font-size: 13px; color: var(--muted); }
+.review h3 { font-size: 20px; font-weight: 800; }
+.review.done { border-left-color: var(--line); }
+.level-head { display: flex; align-items: baseline; gap: 10px; margin-top: 6px; }
+.level-head b { font-family: var(--font-display); font-size: 18px; font-weight: 800; }
+.level-head span { color: var(--muted); font-size: 14px; }
+.badge { min-width: 26px; height: 26px; padding: 0 8px; border-radius: 13px; background: var(--tulip); color: #fff; font-size: 13px; font-weight: 700; display: inline-grid; place-items: center; font-variant-numeric: tabular-nums; }
+.mistake-list { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.mistake-list .word-note { color: var(--muted); }
+
 /* Grammar */
 .lead { font-size: 17px; line-height: 1.55; max-width: 62ch; }
 .rules { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
@@ -505,7 +524,7 @@ body.locked .app, body.locked .nav { display: none; }
         <button class="link" id="auth-reset" data-act="auth-reset" style="align-self:center">Parolni unutdingizmi?</button>
         <div class="or">yoki</div>
         <button class="btn btn-line btn-block" data-act="auth-google"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.4h6.5a5.6 5.6 0 0 1-2.4 3.6v3h3.9c2.2-2.1 3.5-5.1 3.5-8.7z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-2.9l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.1 0-5.8-2.1-6.7-5H1.3v3.1A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.3 14.3a7.2 7.2 0 0 1 0-4.6V6.6h-4a12 12 0 0 0 0 10.8z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.3 6.6l4 3.1c.9-2.9 3.6-4.9 6.7-4.9z"/></svg>Google bilan kirish</button>
-        <p class="auth-small">Natijalaringiz hisobingizda saqlanadi va istalgan qurilmada davom ettirasiz.</p>
+        <p class="auth-small">Natijalaringiz hisobingizda saqlanadi va istalgan qurilmada davom ettirasiz. Roʻyxatdan oʻtib, <a href="privacy.html">maxfiylik siyosati</a>ga rozilik bildirasiz.</p>
       </div>
     </div>
   </div>
@@ -537,104 +556,8 @@ body.locked .app, body.locked .nav { display: none; }
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="content.js"></script>
 <script>
-const UNITS = [
-  { id: "selam", tr: "Selamlaşma", uz: "Salomlashish",
-    tip: ["Sen va Siz", "Turkchada ham xuddi oʻzbekchadagidek: doʻstga “sen”, kattalarga “siz”. “Merhaba” har qanday vaziyatda ishlaydi."],
-    words: [
-      ["Merhaba", "Salom"],
-      ["Günaydın", "Xayrli tong"],
-      ["İyi akşamlar", "Xayrli kech"],
-      ["İyi geceler", "Xayrli tun"],
-      ["Nasılsın?", "Qalaysan?"],
-      ["İyiyim, teşekkürler", "Yaxshiman, rahmat"],
-      ["Hoş geldiniz", "Xush kelibsiz"],
-      ["Görüşürüz", "Koʻrishguncha"],
-      ["Hoşça kal", "Xayr, sogʻ boʻl", "Ketayotgan odam qolayotganga aytadi"],
-      ["Lütfen", "Iltimos"],
-      ["Teşekkür ederim", "Rahmat"],
-      ["Evet", "Ha"],
-      ["Hayır", "Yoʻq"]
-    ] },
-  { id: "tanisma", tr: "Tanışma", uz: "Tanishuv",
-    tip: ["-man / -im", "Oʻzbekcha “oʻzbekman” → turkcha “Özbeğim”. Shaxs qoʻshimchasi deyarli bir xil ishlaydi: -ım, -im, -um, -üm."],
-    words: [
-      ["Adın ne?", "Isming nima?"],
-      ["Benim adım …", "Mening ismim …"],
-      ["Nerelisin?", "Qayerliksan?"],
-      ["Özbekistanlıyım", "Oʻzbekistonlikman"],
-      ["Memnun oldum", "Tanishganimdan xursandman"],
-      ["Kaç yaşındasın?", "Necha yoshdasan?"],
-      ["Türkçe öğreniyorum", "Turk tilini oʻrganyapman"],
-      ["Anlamadım", "Tushunmadim"],
-      ["Tekrar eder misiniz?", "Takrorlay olasizmi?"],
-      ["Yavaş konuşur musunuz?", "Sekinroq gapira olasizmi?"]
-    ] },
-  { id: "sayilar", tr: "Sayılar", uz: "Raqamlar",
-    tip: ["Deyarli bir xil", "Sonlar oʻzbekchaga juda yaqin: bir, iki, üç… Faqat “yüz” 100 degani, “bin” esa 1000 (oʻzbekcha “ming”)."],
-    words: [
-      ["bir", "1 — bir"], ["iki", "2 — ikki"], ["üç", "3 — uch"], ["dört", "4 — toʻrt"],
-      ["beş", "5 — besh"], ["altı", "6 — olti"], ["yedi", "7 — yetti"], ["sekiz", "8 — sakkiz"],
-      ["dokuz", "9 — toʻqqiz"], ["on", "10 — oʻn"], ["yirmi", "20 — yigirma"], ["elli", "50 — ellik"],
-      ["yüz", "100 — yuz"], ["bin", "1000 — ming"]
-    ] },
-  { id: "aile", tr: "Aile", uz: "Oila",
-    tip: ["“Kardeş” ehtiyot boʻling", "Turkcha “kardeş” = aka-uka yoki opa-singil. Oʻzbekcha “qarindosh” turkchada “akraba” boʻladi."],
-    words: [
-      ["aile", "oila"], ["anne", "ona"], ["baba", "ota"],
-      ["kardeş", "aka-uka, opa-singil", "“Qarindosh” emas!"],
-      ["ağabey", "aka"], ["abla", "opa"], ["oğul", "oʻgʻil"], ["kız", "qiz"],
-      ["dede", "bobo"], ["nine", "buvi"], ["eş", "turmush oʻrtoq"], ["çocuk", "bola"]
-    ] },
-  { id: "yemek", tr: "Yemek", uz: "Ovqat",
-    tip: ["Restoranda", "Ofitsiantni chaqirish uchun “Bakar mısınız?” deng. Ovqatdan oldin hamma “Afiyet olsun!” deydi."],
-    words: [
-      ["su", "suv"], ["ekmek", "non"], ["çay", "choy"], ["kahve", "qahva"],
-      ["et", "goʻsht"], ["tavuk", "tovuq"], ["pirinç", "guruch"], ["süt", "sut"],
-      ["elma", "olma"], ["şeker", "shakar"], ["Hesap, lütfen", "Hisobni bering"],
-      ["Afiyet olsun", "Yoqimli ishtaha"], ["Bakar mısınız?", "Qarab yuboring-chi? (ofitsiantga)"]
-    ] },
-  { id: "renkler", tr: "Renkler", uz: "Ranglar",
-    tip: ["“Mavi” koʻk", "Turkchada osmon rangi “mavi”. “Gök” esa osmonning oʻzi. “Kahverengi” — soʻzma-soʻz “qahva rangi”."],
-    words: [
-      ["kırmızı", "qizil"], ["mavi", "koʻk"], ["yeşil", "yashil"], ["sarı", "sariq"],
-      ["siyah", "qora"], ["beyaz", "oq"], ["turuncu", "toʻq sariq"], ["mor", "binafsha"],
-      ["pembe", "pushti"], ["gri", "kulrang"], ["kahverengi", "jigarrang"]
-    ] },
-  { id: "zaman", tr: "Zaman", uz: "Vaqt",
-    tip: ["“Ay” ikki maʼnoli", "“Ay” ham oy (osmondagi), ham oy (taqvimdagi). Oʻzbekchadagidek!"],
-    words: [
-      ["bugün", "bugun"], ["yarın", "ertaga"], ["dün", "kecha"], ["şimdi", "hozir"],
-      ["sabah", "ertalab"], ["akşam", "kechqurun"], ["gece", "tun"], ["saat", "soat"],
-      ["hafta", "hafta"], ["ay", "oy"], ["yıl", "yil"], ["Saat kaç?", "Soat necha?"]
-    ] },
-  { id: "sehir", tr: "Şehirde", uz: "Shaharda",
-    tip: ["Bozorda", "“Pazar” — bozor va yakshanba kuni. Narx soʻrash uchun: “Bu ne kadar?”"],
-    words: [
-      ["… nerede?", "… qayerda?"], ["tuvalet", "hojatxona"], ["otel", "mehmonxona"],
-      ["havalimanı", "aeroport"], ["otobüs", "avtobus"], ["sağ", "oʻng"], ["sol", "chap"],
-      ["düz", "toʻgʻri"], ["Bu ne kadar?", "Bu qancha turadi?"], ["pahalı", "qimmat"],
-      ["ucuz", "arzon"], ["pazar", "bozor; yakshanba"]
-    ] },
-  { id: "fiiller", tr: "Fiiller", uz: "Feʼllar",
-    tip: ["-mak / -mek = -moq", "Turkcha feʼlning oxiridagi -mak/-mek oʻzbekcha -moq bilan bir xil: yazmak → yozmoq."],
-    words: [
-      ["gelmek", "kelmoq"], ["gitmek", "bormoq"], ["yemek", "yemoq; ovqat"], ["içmek", "ichmoq"],
-      ["okumak", "oʻqimoq"], ["yazmak", "yozmoq"], ["konuşmak", "gapirmoq"], ["bilmek", "bilmoq"],
-      ["sevmek", "sevmoq"], ["istemek", "xohlamoq"], ["yapmak", "qilmoq"], ["görmek", "koʻrmoq"]
-    ] },
-  { id: "dostlar", tr: "Tanıdık kelimeler", uz: "Oʻxshash va aldamchi soʻzlar",
-    tip: ["Aldamchi doʻstlar", "Qizil yozuvli soʻzlar oʻzbekchaga oʻxshaydi, lekin boshqa maʼnoni bildiradi. Ularni alohida yodlang."],
-    words: [
-      ["dil", "til", "Oʻzbekcha “dil” (yurak) emas!"],
-      ["ayna", "koʻzgu", "Oʻzbekcha “oyna” (deraza) emas!"],
-      ["kol", "bilak", "Kaft “el” deyiladi"],
-      ["gök", "osmon", "Rang emas, osmon"],
-      ["göz", "koʻz"], ["yol", "yoʻl"], ["kitap", "kitob"], ["kalem", "qalam"],
-      ["dost", "doʻst"], ["kar", "qor"], ["baş", "bosh"], ["güzel", "chiroyli"]
-    ] }
-];
-
 const LETTERS = [
   ["A a", "araba", "mashina", "a"],
   ["B b", "balık", "baliq", "b"],
@@ -786,7 +709,7 @@ UNITS.forEach((u, ui) => u.words.forEach(w => ALL.push({ tr: w[0], uz: w[1], not
 const DAILY_GOAL = 50;
 const KEY = "turkce-yol-v1";
 const todayStr = () => new Date().toISOString().slice(0, 10);
-function blank() { return { xp: 0, streak: 0, lastDay: null, day: todayStr(), dayXp: 0, known: {}, gram: {} }; }
+function blank() { return { xp: 0, streak: 0, lastDay: null, day: todayStr(), dayXp: 0, known: {}, gram: {}, srs: {}, newDay: { d: 0, n: 0 } }; }
 let S = blank();
 try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(blank(), JSON.parse(raw)); } catch (e) {}
 if (S.day !== todayStr()) { S.day = todayStr(); S.dayXp = 0; }
@@ -796,7 +719,7 @@ function loadLocal(key) {
   let v = blank();
   try { const raw = localStorage.getItem(key); if (raw) v = Object.assign(blank(), JSON.parse(raw)); } catch (e) {}
   if (v.day !== todayStr()) { v.day = todayStr(); v.dayXp = 0; }
-  return v;
+  return migrate(v);
 }
 
 /* ---------- Accounts (Firebase) ---------- */
@@ -824,8 +747,55 @@ function addXP(n) {
   }
   S.xp += n; S.dayXp += n; save();
 }
-const known = w => S.known[w.tr] || 0;
-function setKnown(w, delta) { S.known[w.tr] = Math.max(0, Math.min(3, known(w) + delta)); save(); }
+/* ---------- Spaced repetition (simplified SM-2) ----------
+   Each word: i = interval in days, e = ease, d = due day, r = successful reviews in a row,
+   m = correct answers still needed to leave the mistake notebook, w = total mistakes. */
+const NEW_PER_DAY = 10;
+const LEARNED_DAYS = 3;
+const dayNum = () => Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / 864e5);
+const srs = w => S.srs[w.tr];
+function migrate(st) {
+  st.srs = st.srs || {};
+  const t = dayNum();
+  Object.keys(st.known || {}).forEach(tr => {
+    if (st.srs[tr]) return;
+    const k = st.known[tr];
+    if (k >= 2) st.srs[tr] = { i: LEARNED_DAYS, e: 2.5, d: t, r: 2, m: 0, w: 0 };
+    else if (k === 1) st.srs[tr] = { i: 0, e: 2.5, d: t, r: 0, m: 0, w: 0 };
+  });
+  st.known = {};
+  if (!st.newDay) st.newDay = { d: 0, n: 0 };
+  return st;
+}
+function grade(w, ok) {
+  const t = dayNum();
+  let st = srs(w);
+  if (!st) {
+    st = S.srs[w.tr] = { i: 0, e: 2.5, d: t, r: 0, m: 0, w: 0 };
+    if (S.newDay.d !== t) S.newDay = { d: t, n: 0 };
+    S.newDay.n++;
+  }
+  if (ok) {
+    // Only a review that was due moves the word forward: cramming the same day does not count twice
+    if (st.d <= t || st.r === 0) {
+      st.i = st.r === 0 ? 1 : st.r === 1 ? LEARNED_DAYS : Math.round(st.i * st.e);
+      st.r++;
+      st.d = t + st.i;
+    }
+    if (st.m > 0) st.m--;
+  } else {
+    st.w++; st.m = 2; st.r = 0; st.i = 0; st.d = t;
+    st.e = Math.max(1.3, +(st.e - 0.2).toFixed(2));
+  }
+  save();
+}
+// 0 = new, 1 = learning, 2 = learned (survived reviews on different days)
+const known = w => { const st = srs(w); return !st ? 0 : st.i >= LEARNED_DAYS ? 2 : 1; };
+const dueWords = () => { const t = dayNum(); return ALL.filter(w => { const st = srs(w); return st && st.d <= t; }).sort((a, b) => srs(a).d - srs(b).d); };
+const newLeft = () => Math.max(0, NEW_PER_DAY - (S.newDay.d === dayNum() ? S.newDay.n : 0));
+const newWords = n => ALL.filter(w => !srs(w)).slice(0, n);
+const mistakeWords = () => ALL.filter(w => { const st = srs(w); return st && st.m > 0; }).sort((a, b) => srs(b).w - srs(a).w);
+migrate(S);
 function unitProgress(ui) {
   const ws = ALL.filter(w => w.unit === ui);
   return ws.filter(w => known(w) >= 2).length / ws.length;
@@ -912,6 +882,26 @@ function unitCard(u, ui) {
   </button>`;
 }
 
+function reviewCard() {
+  const due = dueWords().length, fresh = Math.min(newLeft(), newWords(NEW_PER_DAY).length);
+  if (!due && !fresh) {
+    return `<section class="review done">
+      <span class="eyebrow" style="color:var(--turq)">Bugungi takrorlash</span>
+      <h3>Bugungi reja bajarildi. Ertaga yana keling!</h3>
+      <p class="muted" style="font-size:15px">Soʻzlar unutilish arafasida qaytadi. Kuniga 10 daqiqa yetarli.</p>
+    </section>`;
+  }
+  return `<section class="review">
+    <span class="eyebrow" style="color:var(--turq)">Bugungi takrorlash</span>
+    <div class="review-nums">
+      <div><b>${due}</b><span>takrorlash</span></div>
+      <div><b>${fresh}</b><span>yangi soʻz</span></div>
+      <div><b>${mistakeWords().length}</b><span>xatolar daftarida</span></div>
+    </div>
+    <button class="btn btn-primary btn-block" data-act="start" data-mode="review">Takrorlashni boshlash</button>
+  </section>`;
+}
+
 function viewHome() {
   const w = wordOfDay();
   const pct = Math.min(1, S.dayXp / DAILY_GOAL);
@@ -941,6 +931,8 @@ function viewHome() {
     <div class="stat"><div class="stat-num">${streakNow()}</div><div class="stat-label">Ketma-ket kun</div></div>
     <div class="stat"><div class="stat-num">${learnedCount()}</div><div class="stat-label">Oʻrganilgan soʻz</div></div>
   </section>
+
+  ${reviewCard()}
 
   <section class="continue">
     <span class="eyebrow" style="color:var(--tulip)">Davom ettiring · ${pad(next + 1)}-dars</span>
@@ -972,6 +964,11 @@ function viewHome() {
   </section>`;
 }
 
+const LEVELS = [
+  { name: "A1.1", uz: "Birinchi qadamlar", from: 0, to: 12 },
+  { name: "A1.2", uz: "Kundalik hayot", from: 12, to: 24 },
+  { name: "A1.3", uz: "Shahar va muloqot", from: 24, to: 36 }
+];
 function viewLessons() {
   const done = UNITS.filter((u, i) => unitProgress(i) >= 1).length;
   return `${topbar()}
@@ -979,7 +976,8 @@ function viewLessons() {
     <h1 class="page-title">Darslar</h1>
     <p class="muted">${UNITS.length} ta dars · ${ALL.length} ta soʻz va ibora · ${done} ta dars tugallangan</p>
   </div>
-  <div class="units">${UNITS.map(unitCard).join("")}</div>`;
+  ${LEVELS.map(L => `<div class="level-head"><b>${L.name}</b><span>${esc(L.uz)} · ${pad(L.from + 1)}–${pad(L.to)}</span></div>
+  <div class="units">${UNITS.slice(L.from, L.to).map((u, i) => unitCard(u, L.from + i)).join("")}</div>`).join("")}`;
 }
 
 function viewUnit(ui) {
@@ -1008,18 +1006,34 @@ function viewUnit(ui) {
     <button class="btn btn-line" data-act="start" data-mode="type" data-u="${ui}">${ICON.type}Yozib mashq qilish</button>
   </div>
   <div class="words">${rows}</div>
-  <p class="muted" style="font-size:14px">Nuqta rangi: kulrang — yangi, sariq — oʻrganilmoqda, yashil — oʻrganilgan.</p>`;
+  <p class="muted" style="font-size:14px">Nuqta rangi: kulrang — yangi, sariq — oʻrganilmoqda, yashil — oʻrganilgan (turli kunlarda kamida 2 marta toʻgʻri topilgan).</p>`;
 }
 
 let practiceUnit = "all";
+function mistakeSection() {
+  const ms = mistakeWords();
+  if (!ms.length) return `<div class="tip">${ICON.bulb}<div><b>Xatolar daftari boʻsh</b>Xato qilgan soʻzlaringiz shu yerga tushadi. Ketma-ket 2 marta toʻgʻri topsangiz, daftardan chiqadi.</div></div>`;
+  return `<section class="section">
+    <div class="section-head"><h2 style="font-size:20px">Xatolar daftari <span class="badge">${ms.length}</span></h2></div>
+    <div class="mistake-list words">${ms.slice(0, 5).map(w => `<div class="word"><div>
+      <div class="word-tr" lang="tr">${esc(w.tr)}</div><div class="word-uz">${esc(w.uz)}</div>
+      <div class="word-note">${srs(w).w} marta xato</div></div>
+      <button class="say" data-act="say" data-t="${esc(w.tr)}" aria-label="${esc(w.tr)} — tinglash">${ICON.speak}</button></div>`).join("")}</div>
+    ${ms.length > 5 ? `<p class="muted" style="font-size:14px">Yana ${ms.length - 5} ta soʻz</p>` : ""}
+    <button class="btn btn-tulip btn-block" data-act="start" data-mode="mistakes">Xatolar ustida ishlash</button>
+  </section>`;
+}
 function viewPractice() {
   const chips = [`<button class="chip" data-act="pick" data-u="all" aria-pressed="${practiceUnit === "all"}">Barcha darslar</button>`]
     .concat(UNITS.map((u, i) => `<button class="chip" data-act="pick" data-u="${i}" aria-pressed="${String(practiceUnit) === String(i)}">${pad(i + 1)} · ${esc(u.uz)}</button>`)).join("");
   return `${topbar()}
   <div class="lesson-head">
     <h1 class="page-title">Mashq</h1>
-    <p class="muted">Har bir mashq 10 ta savol. Toʻgʻri javob uchun 10 XP.</p>
+    <p class="muted">Toʻgʻri javob uchun 10 XP.</p>
   </div>
+  ${reviewCard()}
+  ${mistakeSection()}
+  <div class="section-head"><h2 style="font-size:20px">Erkin mashq</h2></div>
   <section class="section">
     <div class="section-head"><h2 style="font-size:18px">Qaysi soʻzlar?</h2></div>
     <div class="chips" id="chips">${chips}</div>
@@ -1117,7 +1131,11 @@ function viewProfile() {
     <div class="stat"><div class="stat-num">${gramCount()}/${GRAMMAR.length}</div><div class="stat-label">Grammatika</div></div>
   </section>
   <p class="muted" style="font-size:14px">Natijalaringiz hisobingizda saqlanadi. Boshqa telefon yoki kompyuterdan shu pochta bilan kirsangiz, shu yerdan davom etasiz.</p>
-  <button class="btn btn-line btn-block" data-act="logout">Hisobdan chiqish</button>`;
+  <button class="btn btn-line btn-block" data-act="logout">Hisobdan chiqish</button>
+  <div id="del-box" style="display:flex;flex-direction:column;gap:10px">
+    <button class="link" data-act="delete-ask" style="align-self:center;color:var(--tulip)">Hisobni oʻchirish</button>
+  </div>
+  <p class="auth-small"><a href="privacy.html">Maxfiylik siyosati</a></p>`;
 }
 
 let letterSel = 2;
@@ -1171,12 +1189,23 @@ function pickPool(u) {
   let pool = u === "all" ? ALL.slice() : ALL.filter(w => w.unit === +u);
   return pool;
 }
+const typeable = w => !w.tr.includes("…") && w.tr.length <= 20;
 function startSession(mode, u) {
-  let pool = pickPool(u);
-  if (mode === "type") pool = pool.filter(w => !w.tr.includes("…") && w.tr.length <= 20);
-  // Least-known words first, with a little randomness
-  const items = shuffle(pool).sort((a, b) => known(a) - known(b)).slice(0, 10);
-  SES = { mode, u, items: shuffle(items), i: 0, right: 0, xp: 0, answered: false };
+  let items;
+  if (mode === "review") {
+    // Due reviews first (oldest first), then today's share of new words in lesson order
+    items = dueWords().slice(0, 20).concat(newWords(Math.min(newLeft(), 10)));
+    if (!items.length) { toast("Bugun takrorlash yoʻq. Erkin mashq qiling!"); return; }
+  } else if (mode === "mistakes") {
+    items = shuffle(mistakeWords().slice(0, 15));
+    if (!items.length) { toast("Xatolar daftari boʻsh"); return; }
+  } else {
+    let pool = pickPool(u);
+    if (mode === "type") pool = pool.filter(typeable);
+    // Least-known words first, with a little randomness
+    items = shuffle(shuffle(pool).sort((a, b) => known(a) - known(b)).slice(0, 10));
+  }
+  SES = { mode, u, items, i: 0, right: 0, xp: 0, answered: false, re: new Set() };
   sessionEl.hidden = false;
   document.body.style.overflow = "hidden";
   renderStep();
@@ -1197,11 +1226,19 @@ function renderStep() {
   SES.answered = false;
   progressBar();
   const w = SES.items[SES.i];
-  if (SES.mode === "cards") renderCard(w);
-  else if (SES.mode === "quiz") renderQuiz(w);
+  const m = itemMode(w);
+  if (m === "cards") renderCard(w);
+  else if (m === "quiz") renderQuiz(w);
   else renderType(w);
 }
 
+// Review sessions mix modes: new words are shown as cards, known ones are tested
+function itemMode(w) {
+  if (SES.mode !== "review" && SES.mode !== "mistakes") return SES.mode;
+  if (!srs(w)) return "cards";
+  const st = srs(w);
+  return typeable(w) && (st.r >= 2 || (SES.mode === "mistakes" && Math.random() < 0.4)) && Math.random() < 0.5 ? "type" : "quiz";
+}
 function renderCard(w) {
   stage.innerHTML = `<div class="flip" id="flip">
     <div class="flip-inner">
@@ -1273,8 +1310,13 @@ function checkType(skip) {
   foot.innerHTML = `<button class="btn btn-primary btn-block" data-act="next">Keyingi</button>`;
 }
 
-function good() { const w = SES.items[SES.i]; SES.right++; SES.xp += 10; addXP(10); setKnown(w, 1); }
-function bad() { setKnown(SES.items[SES.i], -1); }
+function good() { const w = SES.items[SES.i]; SES.right++; SES.xp += 10; addXP(10); grade(w, true); }
+function bad() {
+  const w = SES.items[SES.i];
+  grade(w, false);
+  // Show a missed word once more at the end of the session
+  if (!SES.re.has(w.tr) && SES.items.length < 40) { SES.re.add(w.tr); SES.items.push(w); }
+}
 function nextStep() { SES.i++; renderStep(); }
 
 function renderResult() {
@@ -1287,8 +1329,9 @@ function renderResult() {
     <div class="score">${SES.right}/${n}</div>
     <h2>${esc(title)}</h2>
     <p>+${SES.xp} XP · bugun ${S.dayXp}/${DAILY_GOAL} XP · ${streakNow()} kun ketma-ket</p>
+    <p>Takrorlash navbatida: ${dueWords().length} ta · Xatolar daftarida: ${mistakeWords().length} ta</p>
   </div>`;
-  foot.innerHTML = `<button class="btn btn-line" data-act="close-session">Yopish</button><button class="btn btn-primary" data-act="again">Yana mashq</button>`;
+  foot.innerHTML = `<button class="btn btn-line" data-act="close-session">Yopish</button>${SES.mode === "review" || SES.mode === "mistakes" ? "" : `<button class="btn btn-primary" data-act="again">Yana mashq</button>`}`;
 }
 
 /* ---------- Events ---------- */
@@ -1338,11 +1381,21 @@ document.addEventListener("click", e => {
   else if (act === "auth-reset") resetPassword();
   else if (act === "logout") { auth.signOut(); go("home"); }
   else if (act === "verify-again") { USER.sendEmailVerification().then(() => toast("Xat yuborildi. Pochtangizni tekshiring")).catch(e => toast(authMsg(e))); }
+  else if (act === "delete-ask") {
+    document.getElementById("del-box").innerHTML = `<div class="notice"><div><b>Hisob butunlay oʻchirilsinmi?</b> Barcha natijalaringiz yoʻqoladi va buni qaytarib boʻlmaydi.</div>
+      <div class="actions"><button class="btn btn-line" data-act="go" data-to="profile">Bekor qilish</button><button class="btn btn-tulip" data-act="delete-yes">Ha, oʻchirish</button></div></div>`;
+  }
+  else if (act === "delete-yes") deleteAccount(b);
   else if (act === "close-session") closeSession();
   else if (act === "again") startSession(SES.mode, SES.u);
   else if (act === "flip") document.getElementById("flip").classList.toggle("on");
   else if (act === "card-know") { good(); nextStep(); }
-  else if (act === "card-again") { bad(); SES.items.push(SES.items[SES.i]); SES.items.splice(SES.i, 1); if (SES.items.length > 14) SES.items.pop(); renderStep(); }
+  else if (act === "card-again") {
+    const w = SES.items[SES.i];
+    if (srs(w)) grade(w, false);
+    if (!SES.re.has(w.tr)) { SES.re.add(w.tr); SES.items.push(w); }
+    nextStep();
+  }
   else if (act === "answer") {
     if (SES.answered) return;
     SES.answered = true;
@@ -1452,6 +1505,21 @@ function resetPassword() {
     .catch(authError);
 }
 
+async function deleteAccount(btn) {
+  btn.disabled = true; btn.textContent = "Oʻchirilmoqda…";
+  const u = USER;
+  try {
+    await db.collection("users").doc(u.uid).delete();
+    await u.delete();
+    try { localStorage.removeItem(KEY + ":" + u.uid); } catch (e) {}
+    toast("Hisobingiz oʻchirildi");
+  } catch (e) {
+    btn.disabled = false; btn.textContent = "Ha, oʻchirish";
+    cloudSave();
+    if (e.code === "auth/requires-recent-login") toast("Xavfsizlik uchun hisobdan chiqib, qayta kiring va yana urinib koʻring");
+    else toast(authMsg(e));
+  }
+}
 async function loadCloud(u) {
   KEYU = KEY + ":" + u.uid;
   const local = loadLocal(KEYU);
@@ -1462,7 +1530,7 @@ async function loadCloud(u) {
     const d = snap.exists ? snap.data() : null;
     if (d && d.name) USERNAME = d.name;
     const cloud = d && d.progress ? Object.assign(blank(), d.progress) : null;
-    S = cloud && cloud.xp >= local.xp ? cloud : local;
+    S = migrate(cloud && cloud.xp >= local.xp ? cloud : local);
     if (S.day !== todayStr()) { S.day = todayStr(); S.dayXp = 0; }
     const base = { name: USERNAME, email: u.email || "", progress: S, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
     if (!d) base.createdAt = firebase.firestore.FieldValue.serverTimestamp();
