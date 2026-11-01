@@ -275,14 +275,15 @@ p { margin: 0; }
 .play svg { width: 13px; height: 13px; margin-left: 2px; }
 
 /* Category art: soft 3D tiles */
-.art { background: var(--grad); box-shadow: inset 0 -10px 18px rgba(0, 0, 0, 0.08), inset 0 8px 14px rgba(255, 255, 255, 0.35); }
+/* Every glossy tile keeps its highlight inside itself (it used to spill across the page in dark mode) */
+.art { position: relative; overflow: hidden; isolation: isolate; background: var(--grad); box-shadow: inset 0 -10px 18px rgba(0, 0, 0, 0.08), inset 0 8px 14px rgba(255, 255, 255, 0.35); }
 .art.violet { background: linear-gradient(145deg, #b59cff, #7652de); }
 .art.sky { background: linear-gradient(145deg, #8fc0ff, #2f78ec); }
 .art.orange { background: linear-gradient(145deg, #ffc98a, #f0841f); }
 .art.pink { background: linear-gradient(145deg, #ffa9c2, #df4f79); }
 .art.green { background: linear-gradient(145deg, #8be3bd, #1fa774); }
 .art.teal { background: linear-gradient(145deg, #86e4de, #0f9a95); }
-.art::after { content: ""; position: absolute; width: 60%; height: 40%; left: 12%; top: 8%; border-radius: 50%; background: rgba(255, 255, 255, 0.28); filter: blur(6px); }
+.art::after { content: ""; position: absolute; z-index: -1; pointer-events: none; width: 60%; height: 40%; left: 12%; top: 8%; border-radius: 50%; background: rgba(255, 255, 255, 0.28); filter: blur(6px); }
 .art svg { position: relative; z-index: 1; }
 .art span { position: relative; z-index: 1; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); }
 
