@@ -1866,7 +1866,7 @@ function renderType(w) {
     <div class="feedback" id="fb" aria-live="polite"></div>`;
   foot.innerHTML = `<button class="btn btn-ghost" data-act="type-skip">Bilmayman</button><button class="btn btn-grad" data-act="type-check">Tekshirish</button>`;
   $("type-form").addEventListener("submit", e => { e.preventDefault(); if (SES.answered) nextStep(); else checkType(); });
-  setTimeout(() => $("type-input").focus(), 60);
+  setTimeout(() => { const i = $("type-input"); if (i) i.focus(); }, 60);
 }
 function checkType(skip) {
   if (SES.answered) return;
@@ -2528,7 +2528,7 @@ function renderGx(it) {
       <div class="feedback" id="fb" aria-live="polite"></div>`;
     foot.innerHTML = `<button class="btn btn-ghost" data-act="gx-skip">Bilmayman</button><button class="btn btn-grad" data-act="gx-check">Tekshirish</button>`;
     $("type-form").addEventListener("submit", e => { e.preventDefault(); if (SES.answered) nextStep(); else gxCheckType(); });
-    setTimeout(() => $("type-input").focus(), 60);
+    setTimeout(() => { const i = $("type-input"); if (i) i.focus(); }, 60);
   } else {
     const toks = ex.s.split(" ");
     let order = shuffle(toks.map((t, i) => i));
