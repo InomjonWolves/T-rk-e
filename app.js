@@ -865,6 +865,12 @@ function viewPractice() {
   </div>
 
   <div class="pcard glass">
+    <div class="pcard-head"><b>${ICON.type}Yozish mashqi</b>${S.sk.w[1] ? `<span>${pct(S.sk.w[0], S.sk.w[1])}%</span>` : ""}</div>
+    <div class="facts"><span>${ICON.list}Soʻz yozish · Diktant · Erkin yozish</span><span>${ICON.target}Erkin yozish avtomatik tekshiriladi: hajm, grammatika, imlo</span></div>
+    <button class="plus" data-act="write-modes" aria-label="Yozish mashqlari">${ICON.play}</button>
+  </div>
+
+  <div class="pcard glass">
     <div class="pcard-head"><b>${ICON.ear}Tinglash mashqi</b>${S.sk.l[1] ? `<span>${pct(S.sk.l[0], S.sk.l[1])}%</span>` : ""}</div>
     <div class="facts"><span>${ICON.list}Tinglab toping · Diktant · Gaplarni tinglash</span><span>${ICON.target}Matn koʻrinmaydi, faqat ovoz</span><span>${ICON.quiz}${S.sk.l[1] ? `${S.sk.l[0]} ta toʻgʻri javob` : "Quloqni turkchaga oʻrgating"}</span></div>
     <button class="plus" data-act="listen-modes" aria-label="Tinglash mashqlari">${ICON.play}</button>
@@ -1404,7 +1410,10 @@ function kExercise(id, e, st) {
     const key = `${e.n}-w`, val = st.v[key] || "", sample = e.ans._;
     return `<section class="section">${head}
       ${e.items.length ? `<div class="glass pad">${e.items.map(([k, q]) => `<div><b>${k})</b> <span lang="tr">${esc(q)}</span></div>`).join("")}</div>` : ""}
-      <textarea class="k-text glass" data-act="k-write" data-id="${id}" data-key="${key}" rows="5" placeholder="Shu yerga yozing… (faqat oʻzingiz uchun saqlanadi)" lang="tr">${esc(val)}</textarea>
+      ${/^Yozish/.test(e.title) && WT[id] ? `<div class="tags">${WT[id].map(([l]) => `<span class="tag violet-t">${esc(l)}</span>`).join("")}</div>` : ""}
+      <textarea class="k-text glass" data-act="k-write" data-id="${id}" data-key="${key}" rows="${/^Yozish/.test(e.title) ? 9 : 5}" placeholder="Shu yerga yozing… (faqat oʻzingiz uchun saqlanadi)" lang="tr">${esc(val)}</textarea>
+      ${/^Yozish/.test(e.title) ? `<button class="btn btn-grad btn-block" data-act="wr-check" data-id="${id}" data-key="${key}">${ICON.check}Yozganimni tekshirish</button>
+      <div class="glass pad wr-box" id="wr-${id}-${key}" ${WR_RES[id + "|" + key] ? "" : "hidden"}>${WR_RES[id + "|" + key] ? wrResultHtml(WR_RES[id + "|" + key]) : ""}</div>` : ""}
       ${sample ? `<details class="glass pad"><summary><b>Namuna javob</b></summary><p class="k-p" lang="tr" style="margin-top:8px">${esc(sample)}</p></details>` : `<p class="sub">Yozganingizni ovoz chiqarib oʻqing. Imkoni boʻlsa, turkcha biladigan doʻstingizga koʻrsating.</p>`}
     </section>`;
   }
@@ -1489,6 +1498,7 @@ const ACH = [
   { id: "perfect5", cat: "practice", t: "Aniq nishon", d: "5 ta xatosiz mashq", v: () => S.perfect, n: 5, c: "pink", ico: "target" },
   { id: "four", cat: "practice", t: "Toʻrt tomonlama", d: "Bir kunda 4 koʻnikmani mashq qilish", v: () => Math.max(0, ...Object.values(S.days).map(d => d.sk ? Object.values(d.sk).filter(a => a[1]).length : 0)), n: 4, c: "violet", ico: "target" },
   { id: "listen50", cat: "practice", t: "Ziyrak quloq", d: "Tinglashda 50 ta toʻgʻri javob", v: () => S.sk.l[0], n: 50, c: "sky", ico: "ear" },
+  { id: "writer5", cat: "practice", t: "Yozuvchi", d: "5 ta yozish topshirigʻida 70+ ball", v: () => Object.values(S.k).reduce((a, st) => a + Object.values(st.wb || {}).filter(v => v >= 70).length, 0), n: 5, c: "pink", ico: "type" },
   { id: "roles3", cat: "practice", t: "Aktyor", d: "3 ta rolli dialogni oʻynash", v: () => S.roles || 0, n: 3, c: "orange", ico: "chat" },
   { id: "pron20", cat: "practice", t: "Bulbul", d: "20 ta soʻzni toʻgʻri talaffuz qilish", v: () => S.pron[0], n: 20, c: "green", ico: "mic" },
   { id: "xp1k", cat: "practice", t: "1000 XP", d: "1000 XP toʻplandi", v: () => S.xp, n: 1000, c: "teal", ico: "star" },
@@ -1704,6 +1714,7 @@ function route() {
   else if (/^ktest-(a1|a2|b1|b2)$/.test(h)) { html = viewCourseTest(h.slice(6).toUpperCase()); tab = "lessons"; }
   else if (h === "achievements") { html = viewAchievements(); tab = "profile"; }
   else if (h === "skills") { html = viewSkills(); tab = "profile"; }
+  else if (h === "write") { html = viewWrite(); tab = "practice"; }
   else if (h === "help") { html = viewHelp(); tab = "profile"; }
   else if (h === "gx") { html = viewGx(); tab = "lessons"; }
   else if (h === "lessons") html = viewLessons();
@@ -1877,7 +1888,7 @@ function checkType(skip) {
 const SK_HOW = {
   r: "Soʻz testlari, kartochkalar, qoida testlari (variant tanlash), kurs matnlari savollari va daraja testlari",
   l: "Tinglab toping, diktant va dialog gaplarini matnsiz tinglash",
-  w: "Soʻz yozish, diktant, qoida mashqlaridagi yozish va gap tuzish, kursdagi tarjima va erkin yozish",
+  w: "Soʻz yozish, diktant, qoida mashqlaridagi yozish va gap tuzish, kursdagi tarjima va erkin yozish (avtomatik tekshiruvda 70 ball va undan yuqori — toʻgʻri)",
   s: "Soʻzlar talaffuzi, dialog gaplarini takrorlash, rolli dialog va kurs matnlari savollariga ogʻzaki javob"
 };
 function skBars(st) {
@@ -1946,7 +1957,7 @@ function viewSkills() {
 function skGo(id) {
   if (id === "r") { const u = kNext(); KTAB = u.reading ? "read" : "vocab"; go(kHash(u.id)); }
   else if (id === "l") listenSheet();
-  else if (id === "w") startSession("dict", "pron");
+  else if (id === "w") writeSheet();
   else speakSheet();
 }
 /* ---------- Listening (Dinleme) ----------
@@ -1967,6 +1978,12 @@ function listenSheet() {
     <button class="mode glass" data-act="start" data-mode="listen" data-u="pron"><span class="ico violet-t">${ICON.ear}</span><span><b>Tinglab toping</b><span>Soʻzni eshitasiz, maʼnosini tanlaysiz</span></span>${ICON.chev}</button>
     <button class="mode glass" data-act="start" data-mode="dict" data-u="pron"><span class="ico pink-t">${ICON.type}</span><span><b>Diktant</b><span>Eshitganingizni turkcha yozasiz</span></span>${ICON.chev}</button>
     <button class="mode glass" data-act="start" data-mode="lsent" data-u="auto"><span class="ico sky-t">${ICON.chat}</span><span><b>Gaplarni tinglash</b><span>Kurs dialoglaridan gaplar, matnsiz</span></span>${ICON.chev}</button>`);
+}
+function writeSheet() {
+  openSheet(`<h3>Yozish mashqi</h3>
+    <button class="mode glass" data-act="start" data-mode="type" data-u="all"><span class="ico pink-t">${ICON.type}</span><span><b>Soʻz yozish</b><span>Oʻzbekchasini koʻrib, turkcha yozasiz</span></span>${ICON.chev}</button>
+    <button class="mode glass" data-act="start" data-mode="dict" data-u="pron"><span class="ico violet-t">${ICON.ear}</span><span><b>Diktant</b><span>Eshitganingizni yozasiz</span></span>${ICON.chev}</button>
+    <a class="mode glass" href="#write" data-act="sheet-close-link"><span class="ico green-t">${ICON.book}</span><span><b>Erkin yozish</b><span>Kurs mavzulari boʻyicha matn, avtomatik tekshiruv</span></span>${ICON.chev}</a>`);
 }
 function renderListen(w) {
   SES.sk = ["l"]; SES.correct = w;
@@ -2192,6 +2209,147 @@ function roleAfter(it) {
   chat.insertAdjacentHTML("beforeend", it.after.map(([w, t]) => roleBubble(w, t)).join(""));
   chat.scrollTop = chat.scrollHeight;
   setTimeout(() => speakSeq(it.after.map(x => x[1])), 900);
+}
+/* ---------- Writing check (Yazma) ----------
+   Free writing tasks in the course get an automatic, rule-based review: length, the unit's target grammar,
+   connectors, Turkish letters / spelling against our own corpus, punctuation and repetition. No AI, no server. */
+const WT = {
+  "a1-2": [["Oʻzingiz haqingizda: adım, -(y)Im", /\badım\b|\S(yım|yim|yum|yüm|ım|im|um|üm)\b/], ["Qayerliksiz: -lI", /\S(lı|li|lu|lü)(yım|yim|yum|yüm)?\b/], ["Yosh: … yaşındayım", /yaşında/]],
+  "a1-3": [["var / yok", /\b(var|yok)\b/], ["Oʻrin kelishigi -DA", /\S(da|de|ta|te)\b/], ["Joy soʻzlari: üstünde, yanında…", /(üst|alt|iç|ön|arka|yan|karşı)(ı|i|ü|u|sı|sın)?n?(da|de)\b/]],
+  "a1-5": [["Hozirgi zamon -(I)yor", /\S(ıyor|iyor|uyor|üyor)/], ["Soat: saat … -DA", /\bsaat\b/], ["Tartib: önce, sonra", /\b(önce|sonra|ardından)\b/]],
+  "a1-6": [["Egalik: annem, babam…", /\b(annem|babam|kardeşim|ablam|abim|ailem|eşim|dedem|ninem)\b/], ["… var", /\bvar\b/], ["Kasb yoki yosh", /(yaşında|öğretmen|doktor|mühendis|öğrenci|çalışıyor)/]],
+  "a1-8": [["Oʻtgan zamon -DI", /\S(dı|di|du|dü|tı|ti|tu|tü)(m|n|k|nız|niz|nuz|nüz|lar|ler)?\b/], ["Vaqt: geçen hafta sonu, cumartesi…", /(cumartesi|pazar|hafta sonu|dün|geçen)/], ["Bogʻlash: sonra, ve", /\b(sonra|ve|ama)\b/]],
+  "a2-1": [["Kelasi zamon -(y)AcAk", /\S(acak|ecek|acağ|eceğ)/], ["Vaqt: yarın, gelecek…", /\b(yarın|gelecek|sonra|yazın|tatilde)\b/], ["Istak: -mAk istiyorum", /(mak|mek) ist/]],
+  "a2-2": [["Geniş zaman: -(A/I)rIm", /\S{2,}(arım|erim|ırım|irim|urum|ürüm|mam|mem)\b/], ["Takroriylik: her gün, genellikle, bazen…", /(her gün|genellikle|bazen|sık sık|hiç|asla|her zaman|her sabah|her akşam)/]],
+  "a2-3": [["Yoʻnalish: sağa, sola, düz", /\b(sağa|sola|düz|dön)/], ["-(y)ArAk / -(y)Ip", /\S{2,}(arak|erek|ıp|ip|up|üp)\b/], ["Joy: yanında, karşısında…", /(yanında|karşısında|önünde|arkasında|köşe)/]],
+  "a2-5": [["Qiyos: daha", /\bdaha\b/], ["Orttirma: en", /\ben\b/], ["Tenglik / oʻxshatish: kadar, gibi", /\b(kadar|gibi)\b/]],
+  "a2-6": [["-(I)yordu", /(ıyor|iyor|uyor|üyor)(du|dum|dun|duk|lardı)/], ["Oʻtgan zamon -DI", /\S(dı|di|du|dü|tı|ti|tu|tü)(m|k|n)?\b/], ["Eshitilgan -mIş", /\S(mış|miş|muş|müş)/]],
+  "a2-8": [["Tartib: önce, sonra", /\b(önce|sonra)\b/], ["-(y)ken", /(?:^|[^a-zçğıöşü])(?!erken)[a-zçğıöşü]+ken(?![a-zçğıöşü])/], ["-DIktAn sonra", /(dıktan|dikten|duktan|dükten|tıktan|tikten|tuktan|tükten) sonra/], ["-mAdAn önce", /(madan|meden) önce/]],
+  "b1-1": [["Sifatdosh -(y)An", /\b\S{2,}[^ıiuüaeoö\s'](an|en)\s+[a-zçğıöşü]/], ["Sifatdosh -DIK + egalik", /(dığ|diğ|duğ|düğ|tığ|tiğ|tuğ|tüğ)(ı|i|u|ü)|(dık|dik|duk|dük|tık|tik|tuk|tük)(ları|leri)/]],
+  "b1-2": [["Sabab: -DIğI için", /(dığı|diği|duğu|düğü|tığı|tiği|tuğu|tüğü|dığım|diğim|duğum|düğüm|dığın|diğin|duğun|düğün|tığım|tiğim|tığın|tiğin)\S* için/], ["yüzünden / sayesinde / nedeniyle", /(yüzünden|sayesinde|nedeniyle|dolayı)/], ["Natija: bu yüzden, bu nedenle", /(bu yüzden|bu nedenle|bu sebeple|dolayısıyla|çünkü)/]],
+  "b1-3": [["Real shart -ArsA", /\S{2,}(arsa|erse|ırsa|irse|ursa|ürse)/], ["Buyruq yoki -mAlI", /\S(malı|meli|malıyız|meliyiz)|\S(ın|in|un|ün|yın|yin|yun|yün)\.?$/m], ["varsa / yoksa", /\b(varsa|yoksa)\b/]],
+  "b1-4": [["Majhul nisbat", /\S{2,}(ıl|il|ul|ül|ın|in|un|ün|n)(ır|ir|ur|ür|maz|mez|malı|meli|malıdır|melidir|dı|di|du|dü)\b/], ["Tartib: önce, sonra", /\b(önce|sonra|ardından|en son)/]],
+  "b1-5": [["Orttirma nisbat (-DIr, -t)", /\S{2,}(tır|tir|tur|tür|dır|dir|dur|dür|t)(acak|ecek|ıyor|iyor|uyor|üyor|ır|ir|ur|ür|dı|di|tı|ti|tu|tü|alım|elim|sın|sin|ıyorum|iyorum)/], ["Kimga -(y)A … nimani -(y)I", /\S(ya|ye|a|e) \S+(ı|i|u|ü|yı|yi|yu|yü|nı|ni) /]],
+  "b1-6": [["-DIğInI / -(y)AcAğInI söyledi", /(dığını|diğini|duğunu|düğünü|tığını|tiğini|tuğunu|tüğünü|acağını|eceğini)/], ["Buyruq: -mAsInI istedi", /(masını|mesini|mamı|memi|manı|meni|mamızı|memizi)/], ["Feʼllar: söyledi, sordu, dedi", /\b(sordu|söyledi|dedi|istedi|anlattı)\b/]],
+  "b1-7": [["-(y)IncA", /\S(ınca|ince|unca|ünce)\b/], ["-(y)Ip", /\S{2,}(ıp|ip|up|üp)\b/], ["-DIkçA yoki -(y)ArAk", /\S(dıkça|dikçe|dukça|dükçe|tıkça|tikçe|tukça|tükçe|arak|erek)\b/]],
+  "b1-8": [["Fikr: bence, bana göre, düşünüyorum", /(bence|bana göre|düşünüyorum|kanımca|bana kalırsa)/], ["Dalil: ayrıca, örneğin, ancak", /(ayrıca|örneğin|ancak|öte yandan|üstelik|mesela)/], ["Xulosa: sonuç olarak", /(sonuç olarak|kısacası|özetle)/]],
+  "b2-1": [["Harakat nomi -mAk / -mA", /\S{2,}(mak|mek|ması|mesi|maya|meye|mayı|meyi)\b/], ["Ehtiyoj: ihtiyaç, gerekli", /(ihtiyaç|gerekli|gerekiyor|lazım)/], ["Qachon: tarih, saat, gün", /(saat|tarih|günü|pazar|cumartesi|ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık)/]],
+  "b2-2": [["-mIştI", /(mıştı|mişti|muştu|müştü)/], ["-(y)AcAktI", /(acaktı|ecekti)/], ["-ArdI", /\S{2,}(ardı|erdi|ırdı|irdi|urdu|ürdü)/]],
+  "b2-3": [["Xayoliy shart -sAydI", /(saydı|seydi)/], ["Natija -ArdI", /\S{2,}(ardı|erdi|ırdı|irdi|urdu|ürdü)/], ["keşke", /keşke/]],
+  "b2-4": [["Zidlik: rağmen, hâlde, oysa", /(rağmen|halde|hâlde|oysa|halbuki|hâlbuki|yine de)/], ["Kuchaytirish: sadece … değil, üstelik", /(sadece|üstelik|dahası|aksine)/], ["Xulosa: sonuç olarak", /(sonuç olarak|kısacası|özetle)/]],
+  "b2-5": [["Murojaat: … MÜDÜRLÜĞÜNE", /(müdürlüğüne|rektörlüğüne|başkanlığına|sayın)/], ["Rasmiy shakl: -mAktAyIm, -mIştIr", /(maktayım|mekteyim|maktadır|mektedir|mıştır|miştir|muştur|müştür)/], ["Yakun: Gereğini arz ederim", /(arz ederim|rica ederim|saygılarımla)/]],
+  "b2-6": [["Maqol", /(damlaya|birlikten|bir elin|acele|ayağını|dost kara|ak akçe|sabreden|ağaç yaş|bugünün işini|söz gümüş|az olsun|görünen köy|bin bilsen|her işte)/], ["Misol: örneğin, mesela", /(örneğin|mesela|bence|bana göre)/], ["Xulosa: sonuç olarak", /(sonuç olarak|kısacası|özetle)/]],
+  "b2-7": [["Xabar feʼllari: açıkladı, belirtti…", /(açıkladı|belirtti|vurguladı|kaydetti|ifade etti|bildirdi)/], ["Rasmiy birikma: kapsamında, çerçevesinde", /(kapsamında|çerçevesinde|doğrultusunda|ilişkin|ile ilgili)/], ["Raqam yoki sana", /\d|yüzde/]]
+};
+// JavaScript's \b does not treat ç, ğ, ı, ö, ş, ü as letters: rewrite it with Turkish-aware boundaries
+// (a leading boundary consumes one non-letter, a trailing one only looks ahead; no lookbehind for older Safari)
+const WR_L = "a-zçğıöşüâîû";
+Object.values(WT).forEach(arr => arr.forEach(g => {
+  const src = g[1].source.replace(/\\b(?=[(\\a-zçğıöşü])/g, `(?:^|[^${WR_L}])`).replace(/\\b/g, `(?![${WR_L}])`);
+  g[1] = new RegExp(src, g[1].flags);
+}));
+const WR_CONN = ["ve", "ama", "fakat", "ancak", "çünkü", "ayrıca", "örneğin", "mesela", "bu yüzden", "bu nedenle", "önce", "sonra", "ardından", "sonuç olarak", "kısacası", "üstelik", "ya da", "veya", "hem", "yani", "oysa", "bence", "en sonunda", "öte yandan", "buna rağmen", "yine de"];
+const WR_STOP = new Set(["için", "gibi", "kadar", "daha", "sonra", "önce", "çok", "benim", "bizim", "onun", "senin", "olarak", "ama", "ancak", "değil", "şimdi", "bugün"]);
+// Writing tasks: course exercises whose title starts with "Yozish"
+function wrTasks() {
+  const out = [];
+  COURSE.units.forEach(u => u.exercises.forEach(e => { if (/^Yozish/.test(e.title) && !e.match && !(e.items || []).some(([k]) => e.ans && e.ans[k])) out.push({ u, e, key: `${e.n}-w` }); }));
+  return out;
+}
+function wrTarget(title) {
+  const m = title.match(/(\d+)\s*[–-]\s*(\d+)\s*(gap|soʻz|band|qator)/) || title.match(/(\d+)()\s*(gap|soʻz|band)/);
+  if (!m) return { min: 60, max: 180, unit: "soʻz" };
+  return { min: +m[1], max: +(m[2] || Math.round(m[1] * 1.25)), unit: m[3] === "soʻz" ? "soʻz" : "gap" };
+}
+// Every Turkish word form the site itself uses, keyed by its form without Turkish letters
+let WR_CORPUS = null;
+function wrCorpus() {
+  if (WR_CORPUS) return WR_CORPUS;
+  const forms = new Set(), byPlain = {};
+  const add = t => String(t).toLocaleLowerCase("tr").split(/[^a-zçğıöşüâîû]+/).forEach(w => { if (w.length > 1) forms.add(w); });
+  ALL.forEach(w => add(w.tr));
+  const walk = o => { if (typeof o === "string") { if (/[çğıöşü]/i.test(o) || !/[ʻʼ]/.test(o)) add(o); } else if (Array.isArray(o)) o.forEach(walk); else if (o && typeof o === "object") Object.keys(o).forEach(k => { if (!["uz", "goals", "title", "sub", "note"].includes(k)) walk(o[k]); }); };
+  COURSE.units.forEach(u => { walk(u.sections); walk(u.reading); walk(u.exercises); u.vocab.forEach(v => v.words.forEach(([tr]) => add(tr))); });
+  Object.values(BX).forEach(arr => arr.forEach(x => { (x.o || []).forEach(add); (x.ans || []).forEach(add); if (x.s) add(x.s); }));
+  forms.forEach(f => { if (!/[çğıöşü]/.test(f)) return; const p = plain(f); (byPlain[p] = byPlain[p] || []).push(f); });
+  return (WR_CORPUS = { forms, byPlain });
+}
+function wrCheck(text, task) {
+  const t = text.trim(), low = " " + t.toLocaleLowerCase("tr") + " ";
+  const words = t.split(/\s+/).filter(w => /[a-zçğıöşüA-ZÇĞİÖŞÜ]/.test(w)), wc = words.length;
+  const sents = t.replace(/([.!?…])\s+/g, "$1\n").split(/\n+/).map(x => x.trim()).filter(x => /[a-zçğıöşü]/i.test(x)), sc = sents.length;
+  const tgt = wrTarget(task.e.title), have = tgt.unit === "soʻz" ? wc : sc;
+  const vol = Math.min(1, have / tgt.min);
+  const goals = (WT[task.u.id] || []).map(([label, re]) => ({ label, ok: re.test(low) }));
+  const gScore = goals.length ? goals.filter(g => g.ok).length / goals.length : 1;
+  const conns = WR_CONN.filter(c => new RegExp(`(^|[^a-zçğıöşü])${c}([^a-zçğıöşü]|$)`).test(low));
+  const needC = task.u.level === "A1" ? 2 : task.u.level === "A2" ? 3 : 4;
+  const cScore = Math.min(1, conns.length / needC);
+  // Spelling: letters that Turkish does not have, and words written without ç, ğ, ı, ö, ş, ü
+  const C = wrCorpus(), spell = [];
+  words.forEach(raw => {
+    const w = raw.toLocaleLowerCase("tr").replace(/^[^a-zçğıöşüâîûqxw]+|[^a-zçğıöşüâîûqxw]+$/g, "").replace(/'.*$/, "");
+    if (!w || spell.some(s => s.w === w)) return;
+    if (/[qxw]|[ʻʼ]/.test(w)) spell.push({ w, fix: null, why: "turk alifbosida q, x, w harflari yoʻq" });
+    else if (!C.forms.has(w) && C.byPlain[w]) spell.push({ w, fix: C.byPlain[w][0], why: "turkcha harflar" });
+  });
+  const sScore = 1 - Math.min(1, spell.length / Math.max(3, wc / 15));
+  // Punctuation: sentences should start with a capital letter and the text should end with . ! or ?
+  const lowerStart = sents.filter(x => /^[a-zçğıöşü]/.test(x)).length, noEnd = /[.!?…]$/.test(t) ? 0 : 1;
+  const pScore = sc ? 1 - Math.min(1, (lowerStart + noEnd) / sc) : 0;
+  const freq = {};
+  words.forEach(raw => { const w = raw.toLocaleLowerCase("tr").replace(/[^a-zçğıöşü]/g, ""); if (w.length >= 4 && !WR_STOP.has(w)) freq[w] = (freq[w] || 0) + 1; });
+  const reps = Object.entries(freq).filter(([, n]) => n >= Math.max(4, wc / 25)).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const score = Math.round(100 * (0.25 * vol + 0.35 * gScore + 0.15 * cScore + 0.15 * sScore + 0.10 * pScore));
+  return { score, wc, sc, tgt, have, goals, conns, needC, spell, lowerStart, noEnd, reps };
+}
+const WR_RES = {};
+function wrResultHtml(r) {
+  const row = (ok, title, body) => `<div class="wr-row"><span class="state ${ok ? "done" : "warn"}">${ok ? ICON.check : "!"}</span><div><b>${title}</b><div class="sub">${body}</div></div></div>`;
+  const verdict = r.score >= 85 ? "Ajoyib yozilgan!" : r.score >= 70 ? "Yaxshi! Kichik kamchiliklar bor." : r.score >= 50 ? "Yomon emas, lekin toʻldirish kerak." : "Hali qisqa yoki talablarga mos emas.";
+  return `<div class="wr-head">${pctRing(r.score / 100)}<div><b>${verdict}</b><div class="sub">${r.wc} ta soʻz · ${r.sc} ta gap</div></div></div>
+    ${row(r.have >= r.tgt.min, "Hajm", `${r.have} ${r.tgt.unit} (talab: ${r.tgt.min}–${r.tgt.max} ${r.tgt.unit})${r.have > r.tgt.max * 1.5 ? " — juda uzun, qisqartiring" : ""}`)}
+    ${r.goals.length ? row(r.goals.every(g => g.ok), "Mavzu grammatikasi", r.goals.map(g => `${g.ok ? "✔" : "✘"} ${esc(g.label)}`).join("<br>")) : ""}
+    ${row(r.conns.length >= r.needC, "Bogʻlovchilar", r.conns.length ? `Ishlatilgan: <span lang="tr">${r.conns.map(esc).join(", ")}</span>${r.conns.length < r.needC ? `. Yana qoʻshing: ayrıca, örneğin, bu yüzden, sonuç olarak…` : ""}` : "Gaplarni bogʻlang: ve, ama, çünkü, sonra, bu yüzden…")}
+    ${row(!r.spell.length, "Imlo va turkcha harflar", r.spell.length ? r.spell.slice(0, 8).map(s => s.fix ? `<span lang="tr">${esc(s.w)} → <b>${esc(s.fix)}</b></span>` : `<span lang="tr">${esc(s.w)}</span> — ${esc(s.why)}`).join("<br>") : "Xato topilmadi")}
+    ${row(!r.lowerStart && !r.noEnd, "Tinish belgilari", !r.lowerStart && !r.noEnd ? "Gaplar katta harf bilan boshlanib, nuqta bilan tugagan" : [r.lowerStart ? `${r.lowerStart} ta gap kichik harf bilan boshlangan` : "", r.noEnd ? "matn oxirida nuqta yoʻq" : ""].filter(Boolean).join(", "))}
+    ${r.reps.length ? row(false, "Takrorlar", r.reps.map(([w, n]) => `<span lang="tr">«${esc(w)}»</span> ${n} marta`).join(", ") + " — boshqa soʻz bilan almashtirib koʻring") : ""}
+    <p class="muted" style="font-size:13px">Avtomatik tekshiruv taxminiy: u grammatika va shaklni koʻradi, mazmunni emas. Imkoni boʻlsa, matnni turkcha biladigan odamga ham koʻrsating.</p>`;
+}
+function wrRun(id, key) {
+  const u = KU[id], e = u.exercises.find(x => `${x.n}-w` === key), st = kState(id), text = st.v[key] || "";
+  if (text.trim().split(/\s+/).length < 5) { toast("Avval kamida bir necha gap yozing"); return; }
+  const r = wrCheck(text, { u, e });
+  WR_RES[id + "|" + key] = r;
+  st.wb = st.wb || {}; st.wl = st.wl || {};
+  // Count each different text once; XP the first time the task reaches 70
+  if (st.wl[key] !== text.length + ":" + r.score) {
+    st.wl[key] = text.length + ":" + r.score;
+    const first = r.score >= 70 && !(st.wb[key] >= 70);
+    skillLog("w", r.score >= 70, first ? 15 : 0);
+    if (first) addXP(15); else save();
+  }
+  st.wb[key] = Math.max(st.wb[key] || 0, r.score);
+  const box = $(`wr-${id}-${key}`);
+  if (box) { box.hidden = false; box.innerHTML = wrResultHtml(r); }
+  pamukSay(r.score >= 70 ? "happy" : "sad", r.score >= 70 ? `${r.score} ball — barakalla!` : `${r.score} ball. Tavsiyalarni koʻrib, matnni toʻldiring.`);
+}
+function viewWrite() {
+  const tasks = wrTasks(), cur = COURSE.units.indexOf(kNext());
+  const lv = ["A1", "A2", "B1", "B2"];
+  return `${topbar()}
+  <div><a class="back" href="#practice">${ICON.back}Mashq</a></div>
+  <div class="lesson-head">
+    <div class="tags"><span class="tag pink-t">${ICON.type}Yazma</span><span class="tag green-t">${tasks.filter(t => ((S.k[t.u.id] || {}).wb || {})[t.key] >= 70).length}/${tasks.length} bajarilgan</span></div>
+    <h1>Erkin yozish</h1>
+    <p class="sub">Har bir kurs boʻlimidagi yozish topshirigʻi. Yozganingizni sayt avtomatik tekshiradi: hajm, mavzu grammatikasi, bogʻlovchilar, imlo va tinish belgilari.</p>
+  </div>
+  ${lv.map(l => { const ts = tasks.filter(t => t.u.level === l); return ts.length ? `<div class="toc-group" style="padding-left:2px">${l}</div><div class="list">${ts.map(t => {
+    const best = ((S.k[t.u.id] || {}).wb || {})[t.key], locked = COURSE.units.indexOf(t.u) > cur + 1;
+    return `<a class="unit glass" href="#${kHash(t.u.id)}" data-act="wr-open" data-id="${t.u.id}">
+      <span class="art ${best >= 70 ? "green" : "pink"}"><span style="font-size:14px">${t.u.level}.${t.u.n}</span></span>
+      <span class="unit-body"><span class="unit-title">${esc(t.e.title.replace(/^Yozish\.?\s*/, ""))}</span><span class="unit-sub">${best !== undefined ? `Eng yaxshi natija: ${best} ball` : locked ? "Kursda hali bu boʻlimga yetmagansiz" : "Hali yozilmagan"}</span></span>
+      ${best !== undefined ? pctRing(best / 100) : ICON.chev}</a>`; }).join("")}</div>` : ""; }).join("")}`;
 }
 /* ---------- Pronunciation practice ----------
    Uses the browser's own speech recognition (Web Speech API, tr-TR). Nothing is recorded or stored by the site:
@@ -2579,6 +2737,10 @@ document.addEventListener("click", e => {
   else if (act === "ls-skip") lsCheck(true);
   else if (act === "listen-modes") listenSheet();
   else if (act === "speak-modes") speakSheet();
+  else if (act === "write-modes") writeSheet();
+  else if (act === "wr-check") wrRun(b.dataset.id, b.dataset.key);
+  else if (act === "wr-open") { KTAB = "ex"; closeSheet(true); }
+  else if (act === "sheet-close-link") closeSheet(true);
   else if (act === "sk-go") skGo(b.dataset.s);
   else if (act === "say-skip") sayFinish(false, true);
   else if (act === "flip") $("flip").classList.toggle("on");
@@ -2669,8 +2831,6 @@ let kWriteT;
 document.addEventListener("input", e => {
   if (!e.target.dataset || e.target.dataset.act !== "k-write") return;
   const st = kState(e.target.dataset.id), key = e.target.dataset.key; st.v[key] = e.target.value;
-  // Free writing counts for Yazma once it reaches 10 words
-  if (!st.e[key] && e.target.value.trim().split(/\s+/).length >= 10) { st.e[key] = 1; skillLog("w", true, 5); addXP(5); toast("Yozish mashqi hisobga olindi: +5 XP"); }
   clearTimeout(kWriteT); kWriteT = setTimeout(save, 800);
 });
 document.addEventListener("keydown", e => {
