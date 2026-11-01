@@ -19,7 +19,6 @@ const LEVELS = [
   { name: "A1.2", uz: "Kundalik hayot", from: 12, to: 24 },
   { name: "A1.3", uz: "Shahar va muloqot", from: 24, to: 36 }
 ];
-const GRAMMAR_PDF = null;
 
 /* ---------- Dates ---------- */
 const DAY = 864e5;
@@ -200,49 +199,16 @@ const ICON = {
   bolt: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
   lock: sv('<rect x="5" y="11" width="14" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
   word: sv('<path d="M4 7V5h16v2M9 19h6M12 5v14"/>'),
+  camera: sv('<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/>'),
   globe: sv('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>')
 };
-const tulipPath = '<path d="M12 3c1.8 2 2.6 3.8 2.6 5.6 1.4-1.2 3-1.8 4.4-1.6-.3 5.4-3 9-7 10-4-1-6.7-4.6-7-10 1.4-.2 3 .4 4.4 1.6C9.4 6.8 10.2 5 12 3z"/><rect x="11.2" y="17" width="1.6" height="5" rx=".8"/>';
-const logo = `<span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="#fff">${tulipPath}</svg></span>`;
+const pawPath = '<ellipse cx="12" cy="16" rx="5.2" ry="4.4"/><ellipse cx="5.8" cy="10.4" rx="2.3" ry="2.7"/><ellipse cx="9.6" cy="6.6" rx="2.3" ry="2.8"/><ellipse cx="14.4" cy="6.6" rx="2.3" ry="2.8"/><ellipse cx="18.2" cy="10.4" rx="2.3" ry="2.7"/>';
+const logo = `<span class="logo" aria-hidden="true">${catSVG({ pose: "head", lite: true })}</span>`;
 
-/* Soft "felt toy" mascots drawn in SVG: the brand tulip, a graduation cap and a trophy */
+/* Brand cat poses used across the app (drawn in cat.js) */
 function mascot(kind, cls = "") {
-  const n = ++uid;
-  const pal = {
-    tulip: ["#ffb3c8", "#e2456f"], cap: ["#8fd1ff", "#2f86f0"], trophy: ["#ffd58a", "#f08a24"]
-  }[kind];
-  const eye = (x, y) => `<g class="blink"><ellipse cx="${x}" cy="${y}" rx="10" ry="11" fill="#fff"/><circle cx="${x + 2}" cy="${y + 2}" r="5.2" fill="#1d1b2e"/><circle cx="${x + 3.6}" cy="${y}" r="1.7" fill="#fff"/></g>`;
-  const defs = `<defs>
-    <radialGradient id="g${n}" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="${pal[0]}"/><stop offset="1" stop-color="${pal[1]}"/></radialGradient>
-    <filter id="f${n}" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${n}" result="t"/><feDisplacementMap in="SourceGraphic" in2="t" scale="2.4"/></filter>
-  </defs>`;
-  let body = "";
-  if (kind === "tulip") {
-    body = `<path d="M100 150c-1-22 0-40 2-56" stroke="#3fae6a" stroke-width="7" stroke-linecap="round" fill="none"/>
-      <path d="M101 132c14-16 32-20 44-16-6 16-24 24-44 16z" fill="#56c47f"/>
-      <g filter="url(#f${n})"><path d="M100 22c16 16 22 30 22 42 12-10 26-14 36-12-2 40-26 64-58 70-32-6-56-30-58-70 10-2 24 2 36 12 0-12 6-26 22-42z" fill="url(#g${n})"/></g>
-      ${eye(88, 74)}${eye(114, 74)}
-      <ellipse cx="76" cy="96" rx="7" ry="4" fill="#fff" opacity=".35"/><ellipse cx="126" cy="96" rx="7" ry="4" fill="#fff" opacity=".35"/>`;
-  } else if (kind === "cap") {
-    body = `<g filter="url(#f${n})">
-        <path d="M58 76h84v40c0 10-19 18-42 18s-42-8-42-18z" fill="url(#g${n})"/>
-        <path d="M100 30l76 30-76 30-76-30z" fill="url(#g${n})"/>
-        <path d="M100 30l76 30-76 30-76-30z" fill="#fff" opacity=".18"/>
-      </g>
-      <path d="M100 60l50 14v30" stroke="#ffcf4a" stroke-width="4" fill="none" stroke-linecap="round"/>
-      <rect x="144" y="100" width="12" height="18" rx="5" fill="#ffcf4a"/>
-      ${eye(86, 104)}${eye(114, 104)}`;
-  } else {
-    body = `<path d="M62 48c-26 0-30 34 0 40M138 48c26 0 30 34 0 40" stroke="${pal[1]}" stroke-width="10" fill="none" stroke-linecap="round" filter="url(#f${n})"/>
-      <g filter="url(#f${n})">
-        <path d="M56 30h88c0 50-16 76-44 80-28-4-44-30-44-80z" fill="url(#g${n})"/>
-        <rect x="92" y="108" width="16" height="18" fill="${pal[1]}"/>
-        <rect x="68" y="124" width="64" height="22" rx="9" fill="url(#g${n})"/>
-      </g>
-      ${eye(88, 64)}${eye(114, 64)}
-      <path d="M40 30l-8-6M164 30l8-6M34 60h-10M166 60h10" stroke="#ffcf4a" stroke-width="3.5" stroke-linecap="round"/>`;
-  }
-  return `<svg class="mascot ${cls}" viewBox="0 0 200 160" aria-hidden="true">${defs}${body}</svg>`;
+  const opt = { wave: { pose: "wave" }, cap: { pose: "sit", acc: "cap" }, trophy: { pose: "sit", acc: "stars" }, sit: { pose: "sit" }, head: { pose: "head" } }[kind] || { pose: "sit" };
+  return catSVG(Object.assign({ cls: "mascot " + cls }, opt));
 }
 
 function ring(p, size, stroke, color, cls) {
@@ -338,19 +304,55 @@ function toast(msg) {
   t.textContent = msg; t.classList.add("show");
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
 }
-function openSheet(html) { $("sheet-body").innerHTML = `<div class="grabber"></div>${html}`; $("sheet").hidden = false; }
+function openSheet(html) { $("sheet-body").innerHTML = `<div class="grabber"></div>${html}`; $("sheet").hidden = false; CatLife.scan(); }
 function closeSheet() { $("sheet").hidden = true; }
 
 /* ---------- Shared pieces ---------- */
 const app = $("app");
 const initial = () => (USERNAME || (USER && USER.email) || "M").trim().charAt(0).toLocaleUpperCase("tr");
 const avClass = s => "c" + (1 + [...String(s)].reduce((a, c) => a + c.charCodeAt(0), 0) % 4);
+// A user's photo, or the brand cat on a coloured disc for those without one
+let MYPHOTO = "";
+const AV_CACHE = {};
+function avatarHTML(photo, seed, cls = "") {
+  return photo
+    ? `<span class="avatar ${cls}"><img src="${esc(photo)}" alt=""></span>`
+    : `<span class="avatar cat-av ${avClass(seed || "me")} ${cls}">${catSVG({ pose: "head", lite: true })}</span>`;
+}
+const photoKey = () => "ty-photo" + (USER ? ":" + USER.uid : "");
+function loadMyPhoto() { try { MYPHOTO = localStorage.getItem(photoKey()) || ""; } catch (e) { MYPHOTO = ""; } }
+async function setMyPhoto(data) {
+  MYPHOTO = data;
+  try { if (data) localStorage.setItem(photoKey(), data); else localStorage.removeItem(photoKey()); } catch (e) {}
+  if (db && USER) {
+    const ref = db.collection("avatars").doc(USER.uid);
+    try { if (data) await ref.set({ photo: data }); else await ref.delete(); AV_CACHE[USER.uid] = data; }
+    catch (e) { toast(e && e.code === "permission-denied" ? "Rasm faqat shu qurilmada saqlandi: Firestore qoidalarini yangilang" : "Rasm serverga yuklanmadi, internetni tekshiring"); }
+  }
+}
+// Square-crop and shrink a picked photo to a small JPEG data URL
+function processPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const s = Math.min(img.naturalWidth, img.naturalHeight), c = document.createElement("canvas");
+      c.width = c.height = 256;
+      c.getContext("2d").drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, 256, 256);
+      URL.revokeObjectURL(url);
+      let q = 0.85, out = c.toDataURL("image/jpeg", q);
+      while (out.length > 100000 && q > 0.4) { q -= 0.15; out = c.toDataURL("image/jpeg", q); }
+      resolve(out);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("bad image")); };
+    img.src = url;
+  });
+}
 function topbar() {
   return `<header class="top">
     <div class="brand">${logo}<span>Türkçe Yoʻl</span></div>
     <div class="top-actions">
       <button class="icon-btn" data-act="go" data-to="lessons" data-focus="search" aria-label="Soʻz qidirish">${ICON.search}</button>
-      <a class="avatar" href="#profile" aria-label="Profil">${esc(initial())}</a>
+      <a href="#profile" aria-label="Profil" style="border-radius:50%">${avatarHTML(MYPHOTO, USER ? USER.uid : "me")}</a>
     </div>
   </header>`;
 }
@@ -424,18 +426,18 @@ function viewHome() {
   </div>
 
   <div class="week glass" aria-label="Shu hafta">
-    ${wk.map(d => `<div class="day${d.n === tn ? " today" : ""}${dayGet(d.k).xp ? " on" : ""}"><small>${d.l}</small><b>${new Date(d.n * DAY).getUTCDate()}</b><svg class="mark" viewBox="0 0 24 24" fill="currentColor" aria-label="${dayGet(d.k).xp ? "Mashq qilingan" : "Mashq yoʻq"}">${tulipPath}</svg></div>`).join("")}
+    ${wk.map(d => `<div class="day${d.n === tn ? " today" : ""}${dayGet(d.k).xp ? " on" : ""}"><small>${d.l}</small><b>${new Date(d.n * DAY).getUTCDate()}</b><svg class="mark" viewBox="0 0 24 24" fill="currentColor" aria-label="${dayGet(d.k).xp ? "Mashq qilingan" : "Mashq yoʻq"}">${pawPath}</svg></div>`).join("")}
   </div>
 
   ${todo ? `<section class="hero">
     <span class="chip-float">${ICON.spark.replace("<svg", '<svg style="width:14px;height:14px;vertical-align:-2px;color:var(--accent)"')} Bugungi reja</span>
-    <div class="float">${mascot("cap")}</div>
+    <div>${mascot("cap")}</div>
     <h2>Kuniga 10 daqiqa yetarli</h2>
     <div class="hero-stats"><span>${due} takrorlash</span><span>${fresh} yangi soʻz</span><span>~${Math.max(1, Math.round(todo * 0.25))} daqiqa</span></div>
     <button class="btn btn-white" data-act="start" data-mode="review">Boshlash</button>
   </section>` : `<section class="hero warm">
     <span class="chip-float">Bajarildi</span>
-    <div class="float">${mascot("trophy")}</div>
+    <div>${mascot("trophy")}</div>
     <h2>Bugungi reja bajarildi!</h2>
     <p>Soʻzlar unutilish arafasida qaytadi. Ertaga yana keling.</p>
     <button class="btn btn-white" data-act="go" data-to="practice">Erkin mashq</button>
@@ -558,11 +560,13 @@ function gramRow(g, gi) {
     ${pctRing(n / g.quiz.length)}
   </button>`;
 }
-function pdfCard() {
-  if (!GRAMMAR_PDF) return "";
-  return `<a class="pdf-card glass" href="${GRAMMAR_PDF.file}" target="_blank" rel="noopener">
-    <span class="art pink"><span>PDF</span></span>
-    <div><b>${esc(GRAMMAR_PDF.title)}</b><span>${esc(GRAMMAR_PDF.sub)}</span></div>${ICON.chev}
+function bookCard() {
+  const last = S.bookPage || 0;
+  return `<a class="book-card glass" href="#book">
+    <span class="book-cover"><img src="book/p01.webp" alt="" loading="lazy"></span>
+    <span><span class="tag pink-t">${ICON.book}Qoʻllanma · ${BOOK.pages} bet</span>
+      <b style="margin-top:6px">Turk tili grammatikasi A1–B2</b>
+      <span class="unit-sub">${last > 3 ? `${last}-betda toʻxtagansiz · davom eting` : "Formulalar va misollar bilan toʻliq qoʻllanma"}</span></span>
   </a>`;
 }
 function viewGrammarList() {
@@ -570,7 +574,7 @@ function viewGrammarList() {
   <h1 class="page-title">Darslar</h1>
   ${lessonTabs("grammar")}
   <div class="tip glass">${ICON.bulb}<div><b>Qaysidan boshlash kerak?</b>Tartib bilan boring: 1-mavzu (unli uygʻunligi) qolgan barcha qoidalarning asosi. Har mavzu oʻzbek tili bilan solishtirilgan.</div></div>
-  ${pdfCard()}
+  ${bookCard()}
   <div class="list">${GRAMMAR.map(gramRow).join("")}</div>`;
 }
 function gqHtml(g, qi) {
@@ -606,6 +610,95 @@ function viewGrammar(gi) {
   </section>
   ${next ? `<button class="btn btn-grad btn-block" data-act="go" data-to="grammar-${gi + 2}">Keyingi: ${nb(next.uz)}</button>`
          : `<button class="btn btn-soft btn-block" data-act="go" data-to="grammar">Barcha mavzular</button>`}`;
+}
+
+/* ---------- Grammar book (A1–B2 PDF, shown page by page) ---------- */
+let BOOK_LV = "A1", BOOK_Q = "", BOOK_TEXT = null;
+const bookTopic = n => { let hit = null; BOOK.toc.forEach(l => l.items.forEach(i => { if (i.page <= n && (!hit || i.page >= hit.page)) hit = i; })); return hit; };
+function viewBook() {
+  const lv = BOOK.toc.find(l => l.id === BOOK_LV) || BOOK.toc[1];
+  let group = null;
+  const rows = lv.items.map(i => {
+    const head = i.group && i.group !== group ? `<div class="toc-group">${esc(i.group === "MASHQ" ? "MASHQLAR" : i.group)}</div>` : "";
+    group = i.group;
+    return `${head}<a class="toc-row" href="#book-${i.page}">
+      ${i.code ? `<span class="code">${esc(i.code)}</span>` : `<span class="code">${ICON.book.replace("<svg", '<svg style="width:14px;height:14px;vertical-align:-2px"')}</span>`}
+      <span>${i.tr ? `<b lang="tr">${esc(i.tr)}</b><small>${esc(i.uz)}</small>` : `<b>${esc(i.uz)}</b>`}</span>
+      <span class="pg">${i.page}</span></a>`;
+  }).join("");
+  return `<div><button class="back" data-act="go" data-to="grammar">${ICON.back}Grammatika</button></div>
+  <div class="book-card glass" style="grid-template-columns:90px 1fr">
+    <a class="book-cover" href="#book-1" style="width:90px;height:122px"><img src="book/p01.webp" alt="Muqova"></a>
+    <span><b style="font-size:20px">Turk tili grammatikasi A1–B2</b>
+      <span class="unit-sub">${BOOK.pages} bet · 128 mavzu · formulalar va misollar</span>
+      <span style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <a class="btn btn-grad" style="min-height:42px;padding:0 16px;font-size:14px;text-decoration:none" href="#book-${S.bookPage || 2}">${S.bookPage > 3 ? `${S.bookPage}-betdan davom` : "Oʻqishni boshlash"}</a>
+        <a class="btn btn-ghost" style="min-height:42px;padding:0 14px;font-size:14px;text-decoration:none" href="${BOOK.pdf}" download>PDF</a>
+      </span></span>
+  </div>
+  <label class="search glass" for="bq">${ICON.search}<span class="sr">Kitobdan qidirish</span><input id="bq" type="search" placeholder="Kitobdan qidiring: iyor, kelishik…" value="${esc(BOOK_Q)}" autocomplete="off" lang="tr"></label>
+  <div id="book-hits"></div>
+  <div class="chips">${BOOK.toc.map(l => `<button class="chip" data-act="book-lv" data-l="${l.id}" aria-pressed="${l.id === lv.id}">${esc(l.name)}</button>`).join("")}</div>
+  <div class="level-head"><b>${esc(lv.name)}</b><span>${esc(lv.uz)}</span></div>
+  <div class="glass words">${rows}</div>
+  <div class="glass words">${BOOK.front.map(f => `<a class="toc-row" href="#book-${f.page}"><span class="code">${ICON.list.replace("<svg", '<svg style="width:14px;height:14px;vertical-align:-2px"')}</span><span><b>${esc(f.uz)}</b></span><span class="pg">${f.page}</span></a>`).join("")}</div>`;
+}
+async function bookSearch() {
+  const box = $("book-hits");
+  if (!box) return;
+  const q = BOOK_Q.trim();
+  if (q.length < 2) { box.innerHTML = ""; return; }
+  if (!BOOK_TEXT) {
+    box.innerHTML = `<div class="glass empty"><div class="spin"></div></div>`;
+    try { BOOK_TEXT = await (await fetch("book/text.json")).json(); } catch (e) { box.innerHTML = `<div class="glass empty">Qidiruv uchun internet kerak</div>`; return; }
+  }
+  const nq = q.toLocaleLowerCase("tr"), ns = nq.replace(/\s+/g, "");
+  const hits = [];
+  BOOK_TEXT.forEach((t, i) => {
+    const low = t.toLocaleLowerCase("tr");
+    let at = low.indexOf(nq);
+    // Suffixes are typeset apart in the book ("gel iyor um"), so also match with spaces removed
+    if (at < 0 && low.replace(/\s+/g, "").includes(ns)) at = -2;
+    if (at !== -1) hits.push({ p: i + 1, at, t });
+  });
+  if ($("bq") && $("bq").value.trim() !== q) return;
+  box.innerHTML = hits.length ? `<div class="glass words">${hits.slice(0, 25).map(h => {
+      const tp = bookTopic(h.p);
+      let snip = "";
+      if (h.at >= 0) { const a = Math.max(0, h.at - 50); snip = esc(h.t.slice(a, h.at)) + "<mark>" + esc(h.t.slice(h.at, h.at + q.length)) + "</mark>" + esc(h.t.slice(h.at + q.length, h.at + q.length + 70)); }
+      else snip = esc(h.t.slice(0, 110));
+      return `<a class="hit" href="#book-${h.p}"><b>${h.p}-bet${tp && tp.code ? " · " + esc(tp.code) : ""}${tp ? " · " + esc(tp.uz || tp.tr) : ""}</b><p>…${snip}…</p></a>`;
+    }).join("")}</div>${hits.length > 25 ? `<p class="sub">Yana ${hits.length - 25} ta bet topildi. Soʻrovni aniqroq yozing.</p>` : ""}`
+    : `<div class="glass empty"><b>“${esc(q)}” topilmadi</b></div>`;
+}
+function viewBookPage(n) {
+  S.bookPage = n; save();
+  const tp = bookTopic(n);
+  return `<div class="reader-top">
+    <a class="icon-btn" href="#book" aria-label="Mundarija">${ICON.list}</a>
+    <div class="info"><b>${tp ? esc((tp.code ? tp.code + " · " : "") + (tp.uz || tp.tr)) : n === 1 ? "Muqova" : "Turk tili grammatikasi"}</b><small>${n} / ${BOOK.pages}</small></div>
+    <a class="icon-btn" href="${BOOK.pdf}" download aria-label="PDF yuklab olish">${sv('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>')}</a>
+  </div>
+  <div class="book-page" id="book-page"><img src="book/p${pad(n)}.webp" alt="${n}-bet" width="936" height="1323"></div>
+  <div class="pager">
+    <a class="btn btn-ghost" href="#book-${Math.max(1, n - 1)}" ${n <= 1 ? 'aria-disabled="true" style="opacity:.4;pointer-events:none"' : ""}>${ICON.back}Oldingi</a>
+    <input class="page-jump" id="page-jump" type="number" inputmode="numeric" min="1" max="${BOOK.pages}" value="${n}" aria-label="Betga oʻtish">
+    <a class="btn btn-grad" href="#book-${Math.min(BOOK.pages, n + 1)}" ${n >= BOOK.pages ? 'aria-disabled="true" style="opacity:.4;pointer-events:none"' : ""}>Keyingi${ICON.chev.replace('class="chev"', 'style="width:20px;height:20px"')}</a>
+  </div>
+  <p class="sub" style="text-align:center">Barmogʻingiz bilan chapga yoki oʻngga suring. Kattalashtirish uchun ikki barmoq bilan oching.</p>`;
+}
+function bookAfter(n) {
+  // Preload neighbours so turning pages feels instant
+  [n + 1, n - 1].forEach(k => { if (k >= 1 && k <= BOOK.pages) { const im = new Image(); im.src = `book/p${pad(k)}.webp`; } });
+  const pg = $("book-page");
+  let sx = 0, sy = 0, multi = false;
+  pg.addEventListener("touchstart", e => { multi = e.touches.length > 1; sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  pg.addEventListener("touchend", e => {
+    if (multi || (window.visualViewport && visualViewport.scale > 1.05)) return;
+    const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+    if (Math.abs(dx) > 60 && Math.abs(dy) < 50) go("book-" + Math.min(BOOK.pages, Math.max(1, n + (dx < 0 ? 1 : -1))));
+  });
+  $("page-jump").addEventListener("change", e => { const v = Math.min(BOOK.pages, Math.max(1, parseInt(e.target.value, 10) || n)); go("book-" + v); });
 }
 
 /* ---------- Alphabet ---------- */
@@ -681,6 +774,18 @@ function viewRank() {
   </div>
   <div id="rank-body"><div class="glass empty"><div class="spin"></div>Yuklanmoqda…</div></div>`;
 }
+// Fetch leaderboard photos once per session and drop them into the rendered rows
+function loadRankPhotos(ids) {
+  ids.filter(id => !(id in AV_CACHE) && id !== USER.uid).forEach(id => {
+    AV_CACHE[id] = "";
+    db.collection("avatars").doc(id).get().then(d => {
+      const ph = d.exists && d.data().photo;
+      if (!ph) return;
+      AV_CACHE[id] = ph;
+      document.querySelectorAll(`[data-av="${CSS.escape(id)}"]`).forEach(el => { el.innerHTML = avatarHTML(ph, id); });
+    }).catch(() => {});
+  });
+}
 async function loadRank() {
   const box = $("rank-body");
   if (!box) return;
@@ -712,13 +817,14 @@ async function loadRank() {
   const me = rows.findIndex(r => r.id === USER.uid);
   const pod = i => { const r = rows[i]; if (!r) return "<div></div>"; return `<div class="pod${i === 0 ? " first" : ""}">
       ${i === 0 ? `<svg class="crown" viewBox="0 0 24 18" fill="#ffc83d" aria-hidden="true"><path d="M2 5l5 4 5-8 5 8 5-4-2 12H4z"/></svg>` : `<span class="place">${i + 1}</span>`}
-      <span class="avatar ${avClass(r.id)}">${esc((r.name || "?").charAt(0).toLocaleUpperCase("tr"))}</span>
+      <span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id)}</span>
       <b>${esc(r.name || "Oʻquvchi")}</b><span>${r[key]} XP</span></div>`; };
   $("rank-body").innerHTML = `<div class="glass podium">${pod(1)}${pod(0)}${pod(2)}</div>
     ${rows.length > 3 ? `<div class="glass words" style="margin-top:12px">${rows.slice(3, 50).map((r, i) => `<div class="rank-row${r.id === USER.uid ? " me" : ""}">
-      <span class="n">${i + 4}</span><span class="avatar ${avClass(r.id)}">${esc((r.name || "?").charAt(0).toLocaleUpperCase("tr"))}</span>
+      <span class="n">${i + 4}</span><span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id)}</span>
       <span style="min-width:0"><b>${esc(r.name || "Oʻquvchi")}</b><small>${r.streak || 0} kun ketma-ket</small></span><span class="xp">${r[key]} XP</span></div>`).join("")}</div>` : ""}
     <p class="sub" style="text-align:center;margin-top:12px">${me >= 0 ? `Siz ${me + 1}-oʻrindasiz · eng yaxshi ${Math.max(1, Math.round((me + 1) / rows.length * 100))}%` : S.pub ? "Mashq qilib XP toʻplang, shunda reytingda paydo boʻlasiz." : "Siz reytingda koʻrinmaysiz. Buni Profil → Sozlamalarda yoqish mumkin."}</p>`;
+  loadRankPhotos(rows.slice(0, 50).map(r => r.id));
 }
 
 /* ---------- Profile & statistics ---------- */
@@ -729,9 +835,10 @@ function viewProfile() {
   const th = (() => { try { return localStorage.getItem("ty-theme") || "auto"; } catch (e) { return "auto"; } })();
   return `<div class="top"><h1 class="page-title">Profil</h1>${logo}</div>
   <div class="profile-card glass">
-    <span class="avatar lg">${esc(initial())}</span>
+    <button class="avatar-edit" data-act="photo" aria-label="Profil rasmini oʻzgartirish">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "lg")}<span class="cam">${ICON.camera}</span></button>
+    <input type="file" id="photo-input" accept="image/*" hidden>
     <div style="min-width:0"><b>${esc(USERNAME || (USER ? "Oʻquvchi" : "Mehmon"))}</b><span>${esc(USER ? USER.email || "" : "Hisobsiz rejim")}</span>
-      ${USER && USER.emailVerified ? `<div style="margin-top:6px"><span class="tag green-t">${ICON.check}Tasdiqlangan</span></div>` : ""}</div>
+      <div class="tags" style="margin-top:6px">${USER && USER.emailVerified ? `<span class="tag green-t">${ICON.check}Tasdiqlangan</span>` : ""}${MYPHOTO ? `<button class="tag pink-t" data-act="photo-remove">Rasmni olib tashlash</button>` : `<button class="tag violet-t" data-act="photo">Rasm qoʻyish</button>`}</div></div>
   </div>
   ${isPass && !USER.emailVerified ? `<div class="notice"><div><b>Pochtangizni tasdiqlang.</b> ${esc(USER.email)} manziliga xat yubordik.</div><button class="btn btn-ghost" data-act="verify-again">Xatni qayta yuborish</button></div>` : ""}
 
@@ -777,6 +884,8 @@ function route() {
   const m = /^lesson-(\d+)$/.exec(h), gm = /^grammar-(\d+)$/.exec(h);
   if (m && UNITS[+m[1] - 1]) { html = viewUnit(+m[1] - 1); tab = "lessons"; }
   else if (gm && GRAMMAR[+gm[1] - 1]) { html = viewGrammar(+gm[1] - 1); tab = "lessons"; }
+  else if (/^book-(\d+)$/.test(h) && +h.slice(5) >= 1 && +h.slice(5) <= BOOK.pages) { const n = +h.slice(5); html = viewBookPage(n); tab = "lessons"; after = () => bookAfter(n); }
+  else if (h === "book") { html = viewBook(); tab = "lessons"; after = () => bookSearch(); }
   else if (h === "lessons") html = viewLessons();
   else if (h === "grammar") { html = viewGrammarList(); tab = "lessons"; }
   else if (h === "alphabet") { html = viewAlphabet(); tab = "lessons"; }
@@ -787,6 +896,7 @@ function route() {
   app.innerHTML = `<div class="view">${html}</div>`;
   document.querySelectorAll(".nav a").forEach(a => { if (a.dataset.tab === tab) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
   if (after) after();
+  CatLife.scan();
 }
 function go(to) {
   if (location.hash === "#" + to) route(); else location.hash = to;
@@ -822,7 +932,9 @@ function startSession(mode, u) {
   SES = { mode, u, items, i: 0, right: 0, xp: 0, answered: false, re: new Set(), last: Date.now(), had: ACH.filter(achDone).map(a => a.id) };
   sessionEl.hidden = false;
   document.body.style.overflow = "hidden";
+  $("s-cat").innerHTML = catSVG({ pose: "head" });
   renderStep();
+  CatLife.scan();
 }
 function closeSession() {
   try { speechSynthesis.cancel(); } catch (e) {}
@@ -913,11 +1025,13 @@ function checkType(skip) {
   speak(w.tr);
   foot.innerHTML = `<button class="btn btn-grad btn-block" data-act="next">Keyingi</button>`;
 }
-function good() { tick(); const w = SES.items[SES.i]; SES.right++; SES.xp += 10; grade(w, true); addXP(10); }
+const sCat = () => $("s-cat").querySelector(".cat");
+function good() { tick(); const w = SES.items[SES.i]; SES.right++; SES.xp += 10; grade(w, true); addXP(10); CatLife.mood(sCat(), "happy", 1000); }
 function bad() {
   tick();
   const w = SES.items[SES.i];
   grade(w, false);
+  CatLife.mood(sCat(), "sad", 1600);
   // Show a missed word once more at the end of the session
   if (!SES.re.has(w.tr) && SES.items.length < 40) { SES.re.add(w.tr); SES.items.push(w); }
 }
@@ -936,13 +1050,15 @@ function renderResult() {
   const title = r === 1 ? "Mükemmel! Hammasi toʻgʻri" : r >= 0.7 ? "Harika! Juda yaxshi" : r >= 0.4 ? "İyi! Yaxshi boshlanish" : "Pes etme! Taslim boʻlmang";
   const fresh = ACH.filter(a => achDone(a) && !SES.had.includes(a.id));
   stage.innerHTML = `<div class="result stage" style="flex:none;overflow:visible">
-    <div class="float">${mascot(r >= 0.7 ? "trophy" : "cap")}</div>
+    <div>${mascot(r >= 0.7 ? "trophy" : "sit")}</div>
     <div class="score">${SES.right}/${n}</div>
     <h2>${esc(title)}</h2>
     <p>+${SES.xp} XP · bugun ${S.dayXp}/${S.goal} XP · ${streakNow()} kun ketma-ket</p>
     <p>Takrorlash navbatida: ${dueWords().length} ta · Xatolar daftarida: ${mistakeWords().length} ta</p>
     ${fresh.length ? `<div class="tags" style="justify-content:center">${fresh.map(a => `<span class="tag violet-t">${ICON.star}Yangi yutuq: ${esc(a.t)}</span>`).join("")}</div>` : ""}
   </div>`;
+  CatLife.scan();
+  setTimeout(() => CatLife.mood(stage.querySelector(".cat"), r >= 0.7 ? "happy" : "sad", 1500), 250);
   foot.innerHTML = `<button class="btn btn-ghost" data-act="close-session">Yopish</button>${SES.mode === "review" || SES.mode === "mistakes" ? "" : `<button class="btn btn-grad" data-act="again">Yana mashq</button>`}`;
 }
 
@@ -957,6 +1073,7 @@ document.addEventListener("click", e => {
   else if (act === "start") startSession(b.dataset.mode, b.dataset.u || "all");
   else if (act === "modes") modeSheet(b.dataset.u, b.dataset.title);
   else if (act === "cat") { CAT = b.dataset.c; route(); }
+  else if (act === "book-lv") { BOOK_LV = b.dataset.l; const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "rank-tab") { RANK_TAB = b.dataset.t; route(); }
   else if (act === "letter") {
     letterSel = +b.dataset.i;
@@ -998,6 +1115,8 @@ document.addEventListener("click", e => {
     const gi = +location.hash.slice(9) - 1, qi = +b.dataset.q;
     $("gq-" + qi).outerHTML = gqHtml(GRAMMAR[gi], qi);
   }
+  else if (act === "photo") $("photo-input").click();
+  else if (act === "photo-remove") { setMyPhoto(""); const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "auth-tab") setAuthTab(b.dataset.t);
   else if (act === "auth-google") googleSignIn();
   else if (act === "auth-reset") resetPassword();
@@ -1039,13 +1158,26 @@ document.addEventListener("click", e => {
     inp.focus(); inp.setSelectionRange(s + 1, s + 1);
   }
 });
+document.addEventListener("change", async e => {
+  if (e.target.id !== "photo-input" || !e.target.files[0]) return;
+  try {
+    const data = await processPhoto(e.target.files[0]);
+    await setMyPhoto(data);
+    toast("Rasm saqlandi");
+  } catch (err) { toast("Bu faylni rasm sifatida ochib boʻlmadi"); }
+  const y = window.scrollY; route(); window.scrollTo(0, y);
+});
+let bookT;
 document.addEventListener("input", e => {
+  if (e.target.id === "bq") { BOOK_Q = e.target.value; clearTimeout(bookT); bookT = setTimeout(bookSearch, 200); return; }
   if (e.target.id !== "q") return;
   Q = e.target.value;
   $("search-results").innerHTML = searchResults();
   $("units-block").hidden = !!Q.trim();
 });
 document.addEventListener("keydown", e => {
+  const bm = /^#book-(\d+)$/.exec(location.hash);
+  if (bm && !SES && e.target.tagName !== "INPUT" && (e.key === "ArrowRight" || e.key === "ArrowLeft")) { go("book-" + Math.min(BOOK.pages, Math.max(1, +bm[1] + (e.key === "ArrowRight" ? 1 : -1)))); return; }
   if (e.key !== "Escape") return;
   if (!$("sheet").hidden) closeSheet(); else if (SES) closeSession();
 });
@@ -1103,7 +1235,7 @@ function setAuthTab(t) {
 function showAuth(loading) {
   document.body.classList.add("locked");
   authEl.hidden = false;
-  if (!$("auth-mascot").innerHTML) $("auth-mascot").innerHTML = mascot("tulip");
+  if (!$("auth-mascot").innerHTML) { $("auth-mascot").innerHTML = mascot("wave"); CatLife.scan(); }
   $("auth-loading").hidden = !loading;
   $("auth-body").hidden = !!loading;
   $("auth-body").style.display = loading ? "none" : "flex";
@@ -1153,6 +1285,8 @@ async function deleteAccount(btn) {
   const u = USER;
   try {
     await db.collection("league").doc(u.uid).delete().catch(() => {});
+    await db.collection("avatars").doc(u.uid).delete().catch(() => {});
+    try { localStorage.removeItem("ty-photo:" + u.uid); } catch (e) {}
     await db.collection("users").doc(u.uid).delete();
     await u.delete();
     try { localStorage.removeItem(KEY + ":" + u.uid); } catch (e) {}
@@ -1184,10 +1318,17 @@ async function loadCloud(u) {
   }
   try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {}
   cloudSave();
+  loadMyPhoto();
+  db.collection("avatars").doc(u.uid).get().then(d => {
+    const ph = d.exists ? d.data().photo || "" : "";
+    if (ph && ph !== MYPHOTO) { MYPHOTO = ph; try { localStorage.setItem(photoKey(), ph); } catch (e) {} route(); }
+    else if (!ph && MYPHOTO) setMyPhoto(MYPHOTO);
+  }).catch(() => {});
 }
 
 /* ---------- Boot ---------- */
 S = loadLocal(KEY);
+loadMyPhoto();
 if (FB) {
   firebase.initializeApp(window.FIREBASE_CONFIG);
   auth = firebase.auth(); auth.languageCode = "uz";
@@ -1196,7 +1337,7 @@ if (FB) {
   auth.getRedirectResult().catch(err => { showAuth(false); authError(err); });
   auth.onAuthStateChanged(async u => {
     if (!u) {
-      USER = null; USERNAME = ""; S = blank(); KEYU = KEY; RANK_CACHE = {};
+      USER = null; USERNAME = ""; S = blank(); KEYU = KEY; RANK_CACHE = {}; MYPHOTO = "";
       if (SES) closeSession();
       showAuth(false); setAuthTab(authMode);
       return;
