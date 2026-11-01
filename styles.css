@@ -897,3 +897,12 @@ details.glass summary { cursor: pointer; }
 .sk-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
 .ls-reveal { text-align: center; font-size: 18px; padding: 10px; border-radius: 14px; background: var(--hair); }
 .play-btn svg { width: 38px; height: 38px; }
+
+/* Speaking: role play and oral answers */
+.sheet-sub { font-size: 13px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 8px 2px 0; }
+.role-chat { max-height: 42vh; overflow-y: auto; padding: 4px 2px; scroll-behavior: smooth; }
+.role-chat .bubble { padding-right: 14px; }
+.bubble.me { border: 2px solid var(--accent); }
+.bubble.me .say-target { font-size: 17px; font-weight: 700; }
+.kw-ok { color: var(--green); background: var(--green-soft); border-radius: 6px; padding: 0 1px; }
+#oral-sample .miss { color: var(--pink); background: var(--pink-soft); border-radius: 6px; padding: 0 1px; }

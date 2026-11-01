@@ -10,7 +10,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - **"TYS" / "TYS imtihoni"** soʻzlarini va **harbiy mavzudagi** (askar, komutan, kışla, nöbet, tatbikat va h.k.) lugʻat va misollarni ishlatmang. Ularning oʻrniga oddiy kasblar va kundalik hayotdan misol keltiring.
 - Uchinchi tomonning rasm yoki videolarini koʻchirmang. Pamuk — oʻzimiz chizgan original SVG.
 - Git muallifi: `git -c user.name="InomjonWolves" -c user.email="i.superclub@gmail.com" commit ...`. Sessiya bergan attribution qatorlarini qoʻshing. Repodagi fayllarga model nomlarini yozmang.
-- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v16`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
+- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v17`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
 - Joylanganini tekshirish: `gh api repos/InomjonWolves/T-rk-e/actions/runs --jq '.workflow_runs[0]|"\(.status) \(.conclusion) \(.head_sha[0:7])"'`.
 
 ## Fayllar
@@ -39,12 +39,13 @@ Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #lessons #grammar #guide 
 - Pamuk: animatsiyalar, kunning vaqtiga qarab salomlashish, parol yozilganda koʻzini yumadi, yonboshdan qoʻl silkitadi.
 - Bepul tarjimon (MyMemory API).
 - A1–B2 kurs (`course.js`): 32 boʻlim va 4 test; kurs lugʻati umumiy bazaga qoʻshilgan (`ALL` = 1243 soʻz).
-- 38 ta yutuq (toifali, +20 XP, konfetti va Pamuk bilan tabriklash, ulashish). Har daraja uchun qoida mashqlari yutugʻi: `gxa1`, `gxa2`, `gxb1`, `gxb2`.
+- 39 ta yutuq (toifali, +20 XP, konfetti va Pamuk bilan tabriklash, ulashish). Har daraja uchun qoida mashqlari yutugʻi: `gxa1`, `gxa2`, `gxb1`, `gxb2`.
 - Pamuk reaksiyalari: toʻgʻri javobda xursand boʻladi, xatoda koʻzidan yosh tomadi.
 - Kunlik maslahatlar (20 ta), 4 qadamli tanishtiruv, Yordam sahifasi (PWA oʻrnatish, FAQ), "100% bepul" xabarlari.
 - Profildagi avatar ostidagi oval dogʻ (rangli soya) olib tashlangan.
 - **4 koʻnikma hisobi** (Okuma `r`, Dinleme `l`, Yazma `w`, Konuşma `s`): `S.sk[id] = [toʻgʻri, urinish, xp, soniya]`, kunlik `S.days[k].sk[id] = [toʻgʻri, urinish, soniya]`. Har mashq `SES.sk` orqali belgilanadi, `skillLog()` va `skillTime()` yozadi. Moslik: test/kartochka/qoida-variant/kurs matni/daraja testi → r; soʻz yozish/qoida-yozish/kurs tarjimasi/erkin yozish (≥10 soʻz) → w; talaffuz → s; tinglash → l; diktant va tushib qolgan soʻz → l+w. Muvozanat = 14 kundagi eng kam toʻgʻri javob / eng koʻp. Sahifa `#skills`, bosh sahifa va profilda karta, yutuqlar `four`, `listen50`.
 - **Tinglash mashqlari** (TTS): `listen` (tinglab maʼnosini toping), `dict` (diktant), `lsent` (kurs dialog gaplari: eshitilgan gapni tanlash yoki tushib qolgan soʻzni yozish; `u = "auto"` yoki boʻlim id). Kurs Dialog yorligʻida "Matnsiz tinglash mashqi" tugmasi.
+- **Gapirish mashqlari** (Web Speech API): `sayline` (dialog gapini takrorlash, 80% chegara), `oral` (kurs matni savollariga ogʻzaki javob: namuna javobdagi kalit soʻzlar, `oralScore`, 60% chegara; Okuma + Konuşma), `role` (rolli dialog: `u = "unitId|sectionIndex|speaker"`, sherik gaplarini `speakSeq` aytadi, `S.roles`, yutuq `roles3`). Kirish: Mashq → Gapirish mashqi (`speakSheet`), kurs Dialog yorligʻi, kurs Matn yorligʻi.
 - Talaffuz mashqi (`mode "say"`): Web Speech API (`tr-TR`), harfma-harf solishtirish (`sayDiff`), notoʻgʻri harflar qizil, 3 ta urinish, raqamlar soʻzga aylantiriladi (`trNum`). Mashq sahifasida alohida karta, har bir dars/toifa uchun "Talaffuz" rejimi, `S.pron`, yutuq `pron20`. Brauzer qoʻllamasa tugma oʻchiq.
 - Qoʻllanma va qoida mashqlari A1–B2 gacha toʻldirildi. `#guide` va `#gx` sahifalarida daraja tugmalari bor. Tarjimon A2–B2 qoliplarini ham taniydi (`TR_HINTS`).
 
@@ -53,7 +54,7 @@ Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #lessons #grammar #guide 
 2. **Kurs matnlarini tekshirish.** A2.7–8, B1 va B2 boʻlimlari hamda A2–B2 testlari bir marta koʻrib chiqildi va topilgan xatolar tuzatildi (toplatırım, Doktor sayesinde, Bilgilerinizi rica ederim, ikki toʻgʻri variantli test savollari va h.k.). Baribir turk tilini ona tili darajasida biladigan odam oxirgi marta koʻrib chiqishi foydali.
 3. **Qoʻllanma va qoida mashqlarining A2–B2 qismini tekshirish.** Mavzular va mashqlar yozildi (79 mavzu, 470+ mashq). Ularni ham turk tilini yaxshi biladigan odam koʻrib chiqishi kerak.
 4. Tarjimon (MyMemory) CORS bilan real brauzerda ishlashini tekshirish. Sandbox tarmogʻi `api.mymemory.translated.net` ga kirishni ham toʻsadi (403).
-5. **4 koʻnikma rejasining qolgan bosqichlari:** 3) Konuşma: gapni takrorlash va rolli dialog; 4) Yazma: erkin yozishni avtomatik tekshirish; 5) daraja testlarini 4 qismga boʻlish va koʻnikma boʻyicha daraja; 6) (ixtiyoriy) barcha foydalanuvchilar boʻyicha anonim analitika.
+5. **4 koʻnikma rejasining qolgan bosqichlari:** 4) Yazma: erkin yozishni avtomatik tekshirish; 5) daraja testlarini 4 qismga boʻlish va koʻnikma boʻyicha daraja; 6) (ixtiyoriy) barcha foydalanuvchilar boʻyicha anonim analitika.
 6. Talaffuz mashqini real telefonda (Android Chrome, iPhone Safari) sinab koʻrish. Playwright testida `SpeechRecognition` soxta klass bilan almashtiriladi.
 7. Gʻoyalar: push eslatmalar, doʻstlar va guruh ligalari, kurs boʻlimlari uchun audio.
 

@@ -37,7 +37,7 @@ function blank() {
     xp: 0, streak: 0, best: 0, lastDay: null, day: todayKey(), dayXp: 0,
     known: {}, gram: {}, srs: {}, newDay: { d: 0, n: 0 },
     days: {}, sessions: 0, perfect: 0, acc: [0, 0], ust: {},
-    week: "", wxp: 0, goal: 50, pub: true, gx: {}, gxm: {}, k: {}, ktest: {}, onb: 0, trUses: 0, shared: 0, night: 0, early: 0, pron: [0, 0], sk: skBlank()
+    week: "", wxp: 0, goal: 50, pub: true, gx: {}, gxm: {}, k: {}, ktest: {}, onb: 0, trUses: 0, shared: 0, night: 0, early: 0, pron: [0, 0], sk: skBlank(), roles: 0
   };
 }
 let S = blank();
@@ -871,10 +871,10 @@ function viewPractice() {
   </div>
 
   <div class="pcard glass">
-    <div class="pcard-head"><b>${ICON.mic}Talaffuz mashqi</b>${S.pron[1] ? `<span>${pct(S.pron[0], S.pron[1])}%</span>` : ""}</div>
-    <div class="facts"><span>${ICON.list}Soʻzni tinglang va ovoz chiqarib ayting</span><span>${ICON.target}Notoʻgʻri aytilgan harflar qizil boʻladi</span><span>${ICON.quiz}${S.pron[1] ? `${S.pron[0]} ta soʻz toʻgʻri aytildi` : "Mikrofon kerak · ovoz saqlanmaydi"}</span></div>
+    <div class="pcard-head"><b>${ICON.mic}Gapirish mashqi</b>${S.pron[1] ? `<span>${pct(S.pron[0], S.pron[1])}%</span>` : ""}</div>
+    <div class="facts"><span>${ICON.list}Talaffuz · Gaplarni takrorlash · Ogʻzaki javob · Rolli dialog</span><span>${ICON.target}Notoʻgʻri aytilgan harflar qizil boʻladi</span><span>${ICON.quiz}${S.pron[1] ? `${S.pron[0]} ta soʻz toʻgʻri aytildi` : "Mikrofon kerak · ovoz saqlanmaydi"}</span></div>
     ${canListen() ? "" : `<p class="muted" style="margin-top:6px">Brauzeringiz nutqni tanishni qoʻllamaydi. Saytni Chrome (Android, kompyuter) yoki Safari (iPhone) da oching.</p>`}
-    <button class="plus" data-act="start" data-mode="say" data-u="pron" aria-label="Talaffuz mashqini boshlash" ${canListen() ? "" : "disabled"}>${ICON.play}</button>
+    <button class="plus" data-act="speak-modes" aria-label="Gapirish mashqlari" ${canListen() ? "" : "disabled"}>${ICON.play}</button>
   </div>
 
   <section class="section">
@@ -1343,12 +1343,15 @@ function viewCourseUnit(id) {
   } else if (KTAB === "grammar") {
     body = gram.map(s => `<section class="section"><div class="section-head"><h2>${esc(s.title)}</h2></div>${renderBlocks(s.blocks)}</section>`).join("");
   } else if (KTAB === "dialog") {
-    body = `<button class="btn btn-soft btn-block" data-act="start" data-mode="lsent" data-u="${u.id}">${ICON.ear}Matnsiz tinglash mashqi</button>` + dlg.map(s => `<section class="section"><div class="section-head"><h2>${esc(s.title.replace(/^Dialog:\s*/, ""))}</h2></div>${renderBlocks(s.blocks)}</section>`).join("");
+    body = `<button class="btn btn-soft btn-block" data-act="start" data-mode="lsent" data-u="${u.id}">${ICON.ear}Matnsiz tinglash mashqi</button>
+      ${canListen() ? `<details class="glass pad"><summary><b>${ICON.mic}Gapirish: rolli dialog va takrorlash</b></summary><div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+        <button class="mode glass" data-act="start" data-mode="sayline" data-u="${u.id}"><span class="ico sky-t">${ICON.speak}</span><span><b>Gaplarni takrorlash</b><span>Shu boʻlim dialoglaridan</span></span>${ICON.chev}</button>${roleButtons(u)}</div></details>` : ""}` + dlg.map(s => `<section class="section"><div class="section-head"><h2>${esc(s.title.replace(/^Dialog:\s*/, ""))}</h2></div>${renderBlocks(s.blocks)}</section>`).join("");
   } else if (KTAB === "read") {
     const r = u.reading;
     body = `<section class="section"><div class="section-head"><h2 lang="tr">${esc(r.title || "Oʻqish matni")}</h2><button class="say" data-act="say" data-t="${esc(r.text)}" aria-label="Matnni tinglash">${ICON.speak}</button></div>
       <div class="glass pad k-read" lang="tr">${esc(r.text)}</div>
       ${r.gloss && r.gloss.length ? `<div class="k-gloss">${r.gloss.map(([a, c]) => `<span><b lang="tr">${esc(a)}</b> — ${esc(c)}</span>`).join("")}</div>` : ""}</section>
+      ${canListen() && r.ans && Object.values(r.ans).some(x => !/^[DY]$/.test(x)) ? `<button class="btn btn-soft btn-block" data-act="start" data-mode="oral" data-u="${u.id}">${ICON.mic}Savollarga ogʻzaki javob berish</button>` : ""}
       ${r.qs.length ? `<section class="section"><div class="section-head"><h2>${esc(r.qtitle || "Savollar")}</h2></div>
         ${r.qs.map((q, i) => kItem(id, "r", String(i + 1), q, r.ans ? r.ans[String(i + 1)] : "", false, st)).join("")}</section>` : ""}`;
   } else {
@@ -1486,6 +1489,7 @@ const ACH = [
   { id: "perfect5", cat: "practice", t: "Aniq nishon", d: "5 ta xatosiz mashq", v: () => S.perfect, n: 5, c: "pink", ico: "target" },
   { id: "four", cat: "practice", t: "Toʻrt tomonlama", d: "Bir kunda 4 koʻnikmani mashq qilish", v: () => Math.max(0, ...Object.values(S.days).map(d => d.sk ? Object.values(d.sk).filter(a => a[1]).length : 0)), n: 4, c: "violet", ico: "target" },
   { id: "listen50", cat: "practice", t: "Ziyrak quloq", d: "Tinglashda 50 ta toʻgʻri javob", v: () => S.sk.l[0], n: 50, c: "sky", ico: "ear" },
+  { id: "roles3", cat: "practice", t: "Aktyor", d: "3 ta rolli dialogni oʻynash", v: () => S.roles || 0, n: 3, c: "orange", ico: "chat" },
   { id: "pron20", cat: "practice", t: "Bulbul", d: "20 ta soʻzni toʻgʻri talaffuz qilish", v: () => S.pron[0], n: 20, c: "green", ico: "mic" },
   { id: "xp1k", cat: "practice", t: "1000 XP", d: "1000 XP toʻplandi", v: () => S.xp, n: 1000, c: "teal", ico: "star" },
   { id: "xp5k", cat: "practice", t: "5000 XP", d: "5000 XP toʻplandi", v: () => S.xp, n: 5000, c: "violet", ico: "star" },
@@ -1750,9 +1754,9 @@ function startSession(mode, u) {
     if (!canSpeak()) { toast("Bu brauzerda ovoz yoʻq"); return; }
     items = mode === "lsent" ? lsItems(u) : sayItems(u, mode === "dict" ? w => sayable(w) && typeable(w) : sayable, 10);
     if (!items.length) { toast("Tinglash uchun material topilmadi"); return; }
-  } else if (mode === "say") {
+  } else if (mode === "say" || mode === "sayline" || mode === "oral" || mode === "role") {
     if (!canListen()) { toast("Bu brauzer nutqni tanimaydi. Chrome yoki Safari'da oching"); return; }
-    items = sayItems(u);
+    items = mode === "say" ? sayItems(u) : mode === "sayline" ? lineItems(u) : mode === "oral" ? oralItems(u) : roleItems(u);
     if (!items.length) { toast("Talaffuz uchun soʻz topilmadi"); return; }
   } else {
     let pool = pickPool(u);
@@ -1790,7 +1794,9 @@ function renderStep() {
   const m = itemMode(w);
   if (m === "cards") renderCard(w);
   else if (m === "quiz") renderQuiz(w);
-  else if (m === "say") renderSay(w);
+  else if (m === "say" || m === "sayline") renderSay(w);
+  else if (m === "oral") renderOral(w);
+  else if (m === "role") renderRole(w);
   else if (m === "listen") renderListen(w);
   else if (m === "dict") renderDict(w);
   else renderType(w);
@@ -1872,7 +1878,7 @@ const SK_HOW = {
   r: "Soʻz testlari, kartochkalar, qoida testlari (variant tanlash), kurs matnlari savollari va daraja testlari",
   l: "Tinglab toping, diktant va dialog gaplarini matnsiz tinglash",
   w: "Soʻz yozish, diktant, qoida mashqlaridagi yozish va gap tuzish, kursdagi tarjima va erkin yozish",
-  s: "Talaffuz mashqi: soʻzni ovoz chiqarib aytish"
+  s: "Soʻzlar talaffuzi, dialog gaplarini takrorlash, rolli dialog va kurs matnlari savollariga ogʻzaki javob"
 };
 function skBars(st) {
   const mx = Math.max(1, ...SKILLS.map(s => st[s.id].o));
@@ -1941,7 +1947,7 @@ function skGo(id) {
   if (id === "r") { const u = kNext(); KTAB = u.reading ? "read" : "vocab"; go(kHash(u.id)); }
   else if (id === "l") listenSheet();
   else if (id === "w") startSession("dict", "pron");
-  else startSession("say", "pron");
+  else speakSheet();
 }
 /* ---------- Listening (Dinleme) ----------
    Three exercises built on the browser's text-to-speech: hear a word and pick its meaning, dictation,
@@ -2067,6 +2073,126 @@ function lsCheck(skip) {
   inp.classList.add(exact || near ? "right" : "wrong");
   lsFinish(exact || near, `${exact ? "Barakalla! Toʻgʻri." : near ? `Deyarli! Toʻgʻri yozilishi: <b lang="tr">${esc(it.word)}</b>` : `Tushib qolgan soʻz: <b lang="tr">${esc(it.word)}</b>`}<div class="sub" lang="tr" style="margin-top:4px">${esc(it.t)}</div>`);
 }
+/* ---------- Speaking (Konuşma): sentences, role play, oral answers ----------
+   All three reuse the pronunciation machinery (micToggle → sayCheck → sayFinish). */
+const cleanLine = t => t.replace(/\([^)]*\)/g, "").replace(/\s+/g, " ").replace(/\s+([.,!?;:])/g, "$1").trim();
+const kUnitsUpTo = () => { const cur = COURSE.units.indexOf(kNext()); return COURSE.units.slice(0, Math.max(cur + 1, 4)); };
+// The current course unit if it has a dialog, otherwise the nearest earlier one
+function roleUnit() {
+  const cur = COURSE.units.indexOf(kNext());
+  for (let i = cur; i >= 0; i--) if (COURSE.units[i].sections.some(s => s.kind === "dialog")) return COURSE.units[i];
+  return COURSE.units.find(u => u.sections.some(s => s.kind === "dialog"));
+}
+function roleButtons(u) {
+  const out = [];
+  u.sections.forEach((s, si) => {
+    if (s.kind !== "dialog") return;
+    const lines = s.blocks.flatMap(b => b.dlg || []), who = [...new Set(lines.map(l => l[0]))];
+    who.forEach(w => {
+      const n = lines.filter(l => l[0] === w).length;
+      out.push(`<button class="mode glass" data-act="start" data-mode="role" data-u="${esc(u.id + "|" + si + "|" + w)}"><span class="ico orange-t">${ICON.chat}</span><span><b>${esc(w)} rolida</b><span lang="tr">${esc(s.title.replace(/^Dialog:\s*/, ""))} · ${n} ta gap</span></span>${ICON.chev}</button>`);
+    });
+  });
+  return out.join("");
+}
+function speakSheet() {
+  if (!canListen()) { toast("Bu brauzer nutqni tanimaydi. Chrome yoki Safari'da oching"); return; }
+  const ru = roleUnit();
+  openSheet(`<h3>Gapirish mashqi</h3>
+    <button class="mode glass" data-act="start" data-mode="say" data-u="pron"><span class="ico green-t">${ICON.mic}</span><span><b>Soʻzlar talaffuzi</b><span>Soʻzni ovoz chiqarib ayting</span></span>${ICON.chev}</button>
+    <button class="mode glass" data-act="start" data-mode="sayline" data-u="auto"><span class="ico sky-t">${ICON.speak}</span><span><b>Gaplarni takrorlash</b><span>Dialog gapini tinglab, oʻzingiz ayting</span></span>${ICON.chev}</button>
+    <button class="mode glass" data-act="start" data-mode="oral" data-u="auto"><span class="ico violet-t">${ICON.quiz}</span><span><b>Savollarga ogʻzaki javob</b><span>Kurs matnlari boʻyicha, ovoz bilan</span></span>${ICON.chev}</button>
+    ${ru ? `<div class="sheet-sub">Rolli dialog · ${esc(ru.level)}.${ru.n} <span lang="tr">${esc(ru.title)}</span></div>${roleButtons(ru)}` : ""}`);
+}
+function lineItems(u) {
+  return shuffle(lsLines(u)).slice(0, 8).map(l => ({ tr: l.t, uz: `Kurs dialogidan · ${KU[l.unit].level}.${KU[l.unit].n}`, unit: l.unit, line: true }));
+}
+function oralItems(u) {
+  const units = KU[u] ? [KU[u]] : kUnitsUpTo(), items = [];
+  units.forEach(un => {
+    const r = un.reading;
+    if (!r || !r.ans) return;
+    Object.keys(r.ans).forEach(k => {
+      const a = cleanLine(r.ans[k]);
+      if (/^[DY]$/.test(a) || a.split(" ").length < 2 || /[…\/]/.test(a) || !r.qs[+k - 1]) return;
+      items.push({ oral: true, tr: a, q: r.qs[+k - 1], unit: un.id, rtitle: r.title, rtext: r.text });
+    });
+  });
+  return shuffle(items).slice(0, 6);
+}
+function roleItems(spec) {
+  const [uid, si, who] = String(spec).split("|"), un = KU[uid], sec = un && un.sections[+si];
+  if (!sec) return [];
+  const items = [];
+  let before = [];
+  sec.blocks.flatMap(b => b.dlg || []).forEach(([w, t]) => {
+    const c = cleanLine(t);
+    if (!c) return;
+    if (w === who) { items.push({ role: true, tr: c, who, before, unit: uid, title: sec.title.replace(/^Dialog:\s*/, "") }); before = []; }
+    else before.push([w, c]);
+  });
+  if (items.length && before.length) items[items.length - 1].after = before;
+  return items;
+}
+// Oral answers: how many content words of the model answer were said (suffixes may differ)
+const ORAL_STOP = new Set(["ve", "bir", "bu", "şu", "da", "de", "mi", "mı", "mu", "mü", "ile", "için", "çok", "ama", "evet", "hayır", "var", "yok", "değil"]);
+function oralScore(sample, heard) {
+  const kw = [...new Set(sayNorm(sample).out.split(" ").filter(x => x.length >= 3 && !ORAL_STOP.has(x)))];
+  const hw = heardNorm(heard).split(" ").filter(Boolean);
+  const stem = k => k.slice(0, Math.max(4, k.length - 3));
+  const hit = kw.map(k => hw.some(h => h === k || (k.length >= 4 && h.length >= 4 && h.startsWith(stem(k)))));
+  return { kw, hit, score: kw.length ? hit.filter(Boolean).length / kw.length : 0 };
+}
+function oralMarked(sample, r) {
+  return esc(sample).replace(/[A-Za-zÇĞİÖŞÜçğıöşüÂâÎîÛû]+/g, word => {
+    const k = sayNorm(word).out, i = r.kw.indexOf(k);
+    return i < 0 ? word : `<span class="${r.hit[i] ? "kw-ok" : "miss"}">${word}</span>`;
+  });
+}
+function renderOral(it) {
+  SES.sk = ["s", "r"]; SES.tries = 0;
+  const un = KU[it.unit];
+  stage.innerHTML = `<div class="tags"><span class="tag sky-t">${esc(un.level)}.${un.n}</span><span class="tag violet-t" lang="tr">${esc(it.rtitle || "")}</span></div>
+    <div class="q-label">Savolga ovoz chiqarib, toʻliq gap bilan javob bering</div>
+    <div class="q-row"><div class="q-sent" lang="tr">${esc(it.q)}</div><button class="say" data-act="say" data-t="${esc(it.q.replace(/\([^)]*\)/g, ""))}" aria-label="Savolni tinglash">${ICON.speak}</button></div>
+    ${it.rtext ? `<details class="glass pad"><summary><b>Matnni koʻrish</b></summary><p class="k-p" lang="tr" style="margin-top:8px">${esc(it.rtext)}</p></details>` : ""}
+    <div class="mic-wrap">
+      <button class="mic-btn" id="mic-btn" data-act="mic" aria-label="Mikrofon: gapirishni boshlash">${ICON.mic}</button>
+      <div class="mic-hint" id="mic-hint">Mikrofonni bosib, javobingizni ayting</div>
+      <div class="heard" id="heard" lang="tr" aria-live="polite"></div>
+    </div>
+    <div class="ls-reveal" id="oral-sample" hidden></div>
+    <div class="feedback" id="fb" aria-live="polite"></div>`;
+  foot.innerHTML = `<button class="btn btn-ghost btn-block" data-act="say-skip">Hozir gapira olmayman</button>`;
+}
+function roleBubble(who, t, me) {
+  return `<div class="bubble ${me ? "r" : "l"}"><small>${esc(who)}${me ? " (siz)" : ""}</small><span lang="tr">${esc(t)}</span></div>`;
+}
+function renderRole(it) {
+  SES.sk = ["s"]; SES.tries = 0;
+  const hist = SES.items.slice(0, SES.i).flatMap(x => [...x.before.map(([w, t]) => roleBubble(w, t)), roleBubble(x.who, x.tr, true)]);
+  stage.innerHTML = `<div class="tags"><span class="tag orange-t">${ICON.chat}Rolli dialog</span><span class="tag violet-t" lang="tr">${esc(it.title)}</span></div>
+    <div class="dlg role-chat" id="role-chat">${hist.join("")}${it.before.map(([w, t]) => roleBubble(w, t)).join("")}
+      <div class="bubble r me"><small>Sizning navbatingiz · ${esc(it.who)}</small><span class="say-target" id="say-target" lang="tr">${esc(it.tr)}</span></div>
+    </div>
+    <div class="mic-wrap">
+      <button class="mic-btn" id="mic-btn" data-act="mic" aria-label="Mikrofon: gapirishni boshlash">${ICON.mic}</button>
+      <div class="mic-hint" id="mic-hint">${it.before.length ? "Sherigingizni tinglang, keyin oʻz gapingizni ayting" : "Dialogni siz boshlaysiz: gapingizni ayting"}</div>
+      <div class="heard" id="heard" lang="tr" aria-live="polite"></div>
+    </div>
+    <div class="feedback" id="fb" aria-live="polite"></div>`;
+  foot.innerHTML = `<button class="btn btn-ghost" data-act="say" data-t="${esc(it.tr)}">${ICON.speak}Namuna</button><button class="btn btn-ghost" data-act="say-skip">Oʻtkazib yuborish</button>`;
+  const chat = $("role-chat"); chat.scrollTop = chat.scrollHeight;
+  if (it.before.length) speakSeq(it.before.map(x => x[1]));
+}
+// After the learner's last line, show and play what the partner says to close the dialog
+function roleAfter(it) {
+  if (!it.role || !it.after || !it.after.length) return;
+  const chat = $("role-chat"); if (!chat) return;
+  chat.insertAdjacentHTML("beforeend", it.after.map(([w, t]) => roleBubble(w, t)).join(""));
+  chat.scrollTop = chat.scrollHeight;
+  setTimeout(() => speakSeq(it.after.map(x => x[1])), 900);
+}
 /* ---------- Pronunciation practice ----------
    Uses the browser's own speech recognition (Web Speech API, tr-TR). Nothing is recorded or stored by the site:
    the browser returns text, and we compare it letter by letter with the target word. */
@@ -2128,10 +2254,10 @@ function sayMarked(target, ok) {
 }
 function renderSay(w) {
   SES.sk = ["s"]; SES.tries = 0; SES.best = null;
-  stage.innerHTML = `<div class="q-label">Ovoz chiqarib ayting</div>
+  stage.innerHTML = `<div class="q-label">${w.line ? "Tinglang va gapni ovoz chiqarib takrorlang" : "Ovoz chiqarib ayting"}</div>
     <div class="q-row"><div class="q-word say-target" id="say-target" lang="tr">${esc(w.tr)}</div>
       <button class="say" data-act="say" data-t="${esc(w.tr)}" aria-label="Tinglash">${ICON.speak}</button></div>
-    <div class="sub">${esc(w.uz)}</div>
+    <div class="sub">${esc(w.uz || "")}</div>
     <div class="mic-wrap">
       <button class="mic-btn" id="mic-btn" data-act="mic" aria-label="Mikrofon: gapirishni boshlash">${ICON.mic}</button>
       <div class="mic-hint" id="mic-hint">Avval tinglang, keyin mikrofonni bosib ayting</div>
@@ -2178,25 +2304,30 @@ function micToggle() {
   catch (e) { toast("Mikrofonni ishga tushirib boʻlmadi"); }
 }
 function sayCheck(w, alts) {
-  const target = sayNorm(w.tr).out;
   let best = null;
-  alts.forEach(a => { const r = sayDiff(target, heardNorm(a)); r.text = a; if (!best || r.score > best.score) best = r; });
+  if (w.oral) alts.forEach(a => { const r = oralScore(w.tr, a); r.text = a; if (!best || r.score > best.score) best = r; });
+  else { const target = sayNorm(w.tr).out; alts.forEach(a => { const r = sayDiff(target, heardNorm(a)); r.text = a; if (!best || r.score > best.score) best = r; }); }
   if (!best) return;
   SES.tries++;
-  const p = Math.round(best.score * 100), fb = $("fb");
+  const p = Math.round(best.score * 100), fb = $("fb"), need = w.oral ? 0.6 : w.tr.includes(" ") ? 0.8 : 0.85;
+  const ok = best.score >= need, last = ok || SES.tries >= 3;
   $("heard").textContent = best.text;
-  $("say-target").innerHTML = sayMarked(w.tr, best.ok);
-  if (best.score >= 0.85) {
+  if (!w.oral) $("say-target").innerHTML = sayMarked(w.tr, best.ok);
+  else if (last) { const smp = $("oral-sample"); smp.hidden = false; smp.innerHTML = `<small class="muted">Namuna javob:</small><br><span lang="tr">${oralMarked(w.tr, best)}</span>`; }
+  const hits = w.oral ? `${best.hit.filter(Boolean).length}/${best.kw.length} kalit soʻz` : `${p}%`;
+  if (ok) {
     fb.className = "feedback ok";
-    fb.innerHTML = `${p === 100 ? "Mükemmel! Juda toʻgʻri aytdingiz." : "Aferin! Yaxshi aytdingiz."} <span class="tag green-t">${p}%</span>`;
+    fb.innerHTML = `${w.oral ? "Aferin! Javobingiz toʻgʻri." : p === 100 ? "Mükemmel! Juda toʻgʻri aytdingiz." : "Aferin! Yaxshi aytdingiz."} <span class="tag green-t">${hits}</span>`;
     sayFinish(true);
-  } else if (SES.tries < 3) {
+  } else if (!last) {
     fb.className = "feedback no";
-    fb.innerHTML = `${p >= 60 ? "Yaqin!" : "Unchalik oʻxshamadi."} <span class="tag pink-t">${p}%</span><div class="sub" style="margin-top:4px">Qizil harflarga eʼtibor bering, yana tinglab qayta ayting (${3 - SES.tries} ta urinish qoldi).</div>`;
+    fb.innerHTML = w.oral
+      ? `Javob toʻliq emas <span class="tag pink-t">${hits}</span><div class="sub" style="margin-top:4px">Savolni yana tinglang, matnga qarang va toʻliq gap bilan javob bering (${3 - SES.tries} ta urinish qoldi).</div>`
+      : `${p >= 60 ? "Yaqin!" : "Unchalik oʻxshamadi."} <span class="tag pink-t">${p}%</span><div class="sub" style="margin-top:4px">Qizil harflarga eʼtibor bering, yana tinglab qayta ayting (${3 - SES.tries} ta urinish qoldi).</div>`;
     CatLife.mood(sCat(), "sad", 1200);
   } else {
     fb.className = "feedback no";
-    fb.innerHTML = `Bu safar chiqmadi <span class="tag pink-t">${p}%</span><div class="sub" style="margin-top:4px">Keyingi safar albatta chiqadi. Qizil harflarni alohida mashq qiling.</div>`;
+    fb.innerHTML = `Bu safar chiqmadi <span class="tag pink-t">${hits}</span><div class="sub" style="margin-top:4px">${w.oral ? "Namuna javobni ovoz chiqarib oʻqib chiqing: yashil soʻzlarni aytdingiz, qizillari yetishmadi." : "Keyingi safar albatta chiqadi. Qizil harflarni alohida mashq qiling."}</div>`;
     sayFinish(false);
   }
 }
@@ -2207,12 +2338,13 @@ function sayFinish(ok, skipped) {
   tick();
   if (!skipped) {
     S.pron[1]++; dayRec().rev++;
-    skillLog("s", ok, ok ? 10 : 0);
+    skillLog(SES.sk || "s", ok, ok ? 10 : 0);
     if (ok) { S.pron[0]++; SES.right++; SES.xp += 10; addXP(10); CatLife.mood(sCat(), "happy", 1000); }
     else { save(); CatLife.mood(sCat(), "sad", 1600); }
   }
   const w = SES.items[SES.i];
-  foot.innerHTML = `<button class="btn btn-ghost" data-act="say" data-t="${esc(w.tr)}">${ICON.speak}Tinglash</button><button class="btn btn-grad" data-act="next">Keyingi</button>`;
+  foot.innerHTML = `<button class="btn btn-ghost" data-act="say" data-t="${esc(w.tr)}">${ICON.speak}${w.oral ? "Namunani tinglash" : "Tinglash"}</button><button class="btn btn-grad" data-act="next">Keyingi</button>`;
+  roleAfter(w);
 }
 /* ---------- Rule exercises ---------- */
 const blankHtml = q => esc(q).replace("___", '<span class="blank">&nbsp;</span>');
@@ -2327,6 +2459,7 @@ function renderResult() {
     SES.done = true;
     S.sessions++;
     if (SES.right === n && n >= 8) S.perfect++;
+    if (SES.mode === "role" && SES.right >= n / 2) S.roles = (S.roles || 0) + 1;
     tick(); save();
   }
   const r = SES.right / n;
@@ -2445,6 +2578,7 @@ document.addEventListener("click", e => {
   else if (act === "ls-check") lsCheck();
   else if (act === "ls-skip") lsCheck(true);
   else if (act === "listen-modes") listenSheet();
+  else if (act === "speak-modes") speakSheet();
   else if (act === "sk-go") skGo(b.dataset.s);
   else if (act === "say-skip") sayFinish(false, true);
   else if (act === "flip") $("flip").classList.toggle("on");
