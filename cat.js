@@ -120,6 +120,10 @@ function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "" }
   </g>
   ${arm}
   ${cap}
+  ${pose === "wave" ? `<g class="cat-cover">
+    <g ${fur}><ellipse cx="88" cy="106" rx="30" ry="24" fill="url(#${id("fg")})"/><ellipse cx="152" cy="106" rx="30" ry="24" fill="url(#${id("fg")})"/></g>
+    <path d="M76 92v10M88 89v11M100 92v10M140 92v10M152 89v11M164 92v10" stroke="${CAT_C.furDeep}" stroke-opacity=".45" stroke-width="2.2" stroke-linecap="round"/>
+  </g>` : ""}
 </svg>`;
 }
 
@@ -205,5 +209,5 @@ const CatLife = (() => {
     clearTimeout(svg._moodT);
     svg._moodT = setTimeout(() => { svg.classList.remove(m, "hop"); look(svg, 0, 0); }, ms);
   }
-  return { scan, mood };
+  return { scan, mood, look };
 })();

@@ -111,7 +111,10 @@ const gxSolved = c => (S.gx[c] || []).filter(Boolean).length;
 const gxDone = c => gxSolved(c) >= BX[c].length;
 const gxDoneCount = () => GX_CODES.filter(gxDone).length;
 const gxMistakes = () => Object.keys(S.gxm).filter(k => S.gxm[k] > 0 && BX[k.split("#")[0]]);
-const gxTopic = c => { let hit = null; BOOK.toc.forEach(l => l.items.forEach(i => { if (i.code === c) hit = i; })); return hit; };
+const GUIDE_ALL = [];
+GUIDE.forEach(l => l.groups.forEach(g => g.items.forEach(i => GUIDE_ALL.push(Object.assign({ level: l.id, group: g.name }, i)))));
+const gxTopic = c => GUIDE_ALL.find(i => i.code === c) || null;
+const gHash = c => "g-" + c.toLowerCase().replace(/\./g, "-");
 const gxNext = () => GX_CODES.find(c => !gxDone(c)) || GX_CODES[0];
 
 /* ---------- Daily activity ---------- */
@@ -210,6 +213,11 @@ const ICON = {
   lock: sv('<rect x="5" y="11" width="14" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
   word: sv('<path d="M4 7V5h16v2M9 19h6M12 5v14"/>'),
   camera: sv('<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/>'),
+  translate: sv('<path d="M4 5h8M8 3v2M5.5 5c.5 3 2.5 5.5 5.5 7M10.5 5c-.5 3-2.5 5.5-5.5 7"/><path d="M12 21l4.5-10L21 21M13.5 17.5h6"/>'),
+  copy: sv('<rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
+  swap: sv('<path d="M7 7h13l-4-4M17 17H4l4 4"/>'),
+  male: sv('<circle cx="10" cy="14" r="5"/><path d="M14 10l6-6M15 4h5v5"/>'),
+  female: sv('<circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/>'),
   globe: sv('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>')
 };
 const pawPath = '<ellipse cx="12" cy="16" rx="5.2" ry="4.4"/><ellipse cx="5.8" cy="10.4" rx="2.3" ry="2.7"/><ellipse cx="9.6" cy="6.6" rx="2.3" ry="2.8"/><ellipse cx="14.4" cy="6.6" rx="2.3" ry="2.8"/><ellipse cx="18.2" cy="10.4" rx="2.3" ry="2.7"/>';
@@ -315,7 +323,7 @@ function toast(msg) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
 }
 function openSheet(html) { $("sheet-body").innerHTML = `<div class="grabber"></div>${html}`; $("sheet").hidden = false; CatLife.scan(); }
-function closeSheet() { $("sheet").hidden = true; }
+function closeSheet(force) { if ($("sheet").dataset.locked && !force) return; $("sheet").hidden = true; }
 
 /* ---------- Shared pieces ---------- */
 const app = $("app");
@@ -361,17 +369,44 @@ function topbar() {
   return `<header class="top">
     <div class="brand">${logo}<span>Türkçe Yoʻl</span></div>
     <div class="top-actions">
+      <a class="icon-btn" href="#translate" aria-label="Aqlli tarjimon">${ICON.translate}</a>
       <button class="icon-btn" data-act="go" data-to="lessons" data-focus="search" aria-label="Soʻz qidirish">${ICON.search}</button>
       <a href="#profile" aria-label="Profil" style="border-radius:50%">${avatarHTML(MYPHOTO, USER ? USER.uid : "me")}</a>
     </div>
   </header>`;
 }
-function greeting() {
-  const h = new Date().getHours();
-  const g = h < 11 ? ["Günaydın", "Xayrli tong"] : h < 17 ? ["İyi günler", "Xayrli kun"] : h < 22 ? ["İyi akşamlar", "Xayrli kech"] : ["İyi geceler", "Xayrli tun"];
-  const name = (USERNAME || "").split(" ")[0];
-  return `<div class="greet"><small lang="tr">${g[0]} · ${g[1]}</small><h1>${name ? esc(name) : "Xush kelibsiz"}</h1></div>`;
+// Parts of the day: 05–11 morning, 11–17 day, 17–22 evening, 22–05 night
+function dayPart(h = new Date().getHours()) {
+  return h >= 5 && h < 11 ? { tr: "Günaydın", uz: "Xayrli tong", k: "tong" }
+    : h >= 11 && h < 17 ? { tr: "İyi günler", uz: "Xayrli kun", k: "kun" }
+    : h >= 17 && h < 22 ? { tr: "İyi akşamlar", uz: "Xayrli kech", k: "kech" }
+    : { tr: "İyi geceler", uz: "Xayrli tun", k: "tun" };
 }
+const firstName = () => (USERNAME || "").trim().split(/\s+/)[0];
+const isBirthday = () => PROFILE.birth && PROFILE.birth.slice(5) === todayKey().slice(5);
+function greetText() {
+  const n = firstName();
+  if (isBirthday()) return { tr: `Doğum günün kutlu olsun${n ? ", " + n : ""}!`, uz: "Tugʻilgan kuningiz muborak! Pamuk sizni tabriklaydi." };
+  const g = dayPart();
+  return { tr: `${g.tr}${n ? ", " + n : ""}!`, uz: g.uz };
+}
+function greeting() {
+  const g = greetText();
+  return `<div class="greet"><small>${esc(g.uz)}</small><h1 lang="tr">${esc(g.tr)}</h1></div>`;
+}
+// Repaint the greeting when the part of the day changes while the app is open
+let lastPart = dayPart().k;
+setInterval(() => { const k = dayPart().k; if (k !== lastPart) { lastPart = k; if ((location.hash || "#home") === "#home" && !SES) route(); } }, 60000);
+function showWelcome() {
+  try { if (sessionStorage.getItem("ty-welcomed")) return; sessionStorage.setItem("ty-welcomed", "1"); } catch (e) {}
+  const g = greetText();
+  $("welcome-card").innerHTML = `${mascot(isBirthday() ? "trophy" : "wave")}<h2 lang="tr">${esc(g.tr)}</h2><p>${esc(g.uz)}</p>`;
+  const w = $("welcome");
+  w.hidden = false; w.classList.remove("out");
+  CatLife.scan();
+  clearTimeout(w._t); w._t = setTimeout(hideWelcome, 2400);
+}
+function hideWelcome() { const w = $("welcome"); if (w.hidden) return; w.classList.add("out"); setTimeout(() => { w.hidden = true; }, 340); }
 function unitRow(u, ui) {
   const c = catOf(ui), p = unitProgress(ui);
   return `<button class="unit glass" data-act="go" data-to="lesson-${ui + 1}">
@@ -494,6 +529,11 @@ function viewHome() {
     </div>
   </section>
 
+  <a class="pcard ai" href="#translate" style="text-decoration:none">
+    <div class="pcard-head"><b>${ICON.translate}Aqlli tarjimon</b><span>bepul</span></div>
+    <p>Turkcha ⇄ oʻzbekcha tarjima. Pamuk gapdagi grammatikani ham topib beradi.</p>
+  </a>
+
   <section class="section">
     <div class="section-head"><h2>Grammatika</h2><a class="link" href="#grammar">${gramCount()}/${GRAMMAR.length}</a></div>
     <button class="unit glass" data-act="go" data-to="grammar-${GRAMMAR.indexOf(g) + 1}">
@@ -570,13 +610,13 @@ function gramRow(g, gi) {
     ${pctRing(n / g.quiz.length)}
   </button>`;
 }
-function bookCard() {
-  const last = S.bookPage || 0;
-  return `<a class="book-card glass" href="#book">
-    <span class="book-cover"><img src="book/p01.webp" alt="" loading="lazy"></span>
-    <span><span class="tag pink-t">${ICON.book}Qoʻllanma · ${BOOK.pages} bet</span>
-      <b style="margin-top:6px">Turk tili grammatikasi A1–B2</b>
-      <span class="unit-sub">${last > 3 ? `${last}-betda toʻxtagansiz · davom eting` : "Formulalar va misollar bilan toʻliq qoʻllanma"}</span></span>
+function guideCard() {
+  const last = S.guideLast && gxTopic(S.guideLast);
+  return `<a class="book-card glass" href="#guide">
+    <span class="art pink" style="width:74px;height:74px;border-radius:20px;display:grid;place-items:center;position:relative;overflow:hidden"><span style="font-size:22px">A1</span></span>
+    <span><span class="tag pink-t">${ICON.book}Qoʻllanma · ${GUIDE_ALL.length} mavzu</span>
+      <b style="margin-top:6px">Turk tili grammatikasi</b>
+      <span class="unit-sub">${last ? `Oxirgi: ${esc(last.code)} ${esc(last.uz)}` : "Formulalar, jadvallar va misollar bilan"}</span></span>
   </a>`;
 }
 function viewGrammarList() {
@@ -584,7 +624,7 @@ function viewGrammarList() {
   <h1 class="page-title">Darslar</h1>
   ${lessonTabs("grammar")}
   <div class="tip glass">${ICON.bulb}<div><b>Qaysidan boshlash kerak?</b>Tartib bilan boring: 1-mavzu (unli uygʻunligi) qolgan barcha qoidalarning asosi. Har mavzu oʻzbek tili bilan solishtirilgan.</div></div>
-  ${bookCard()}
+  ${guideCard()}
   <a class="pcard glass" href="#gx" style="color:inherit;text-decoration:none">
     <div class="pcard-head"><b>${ICON.quiz}Qoidalar mashqi · A1</b><span>${gxDoneCount()}/${GX_CODES.length}</span></div>
     <div class="bar"><i style="width:${pct(gxDoneCount(), GX_CODES.length)}%"></i></div>
@@ -628,81 +668,66 @@ function viewGrammar(gi) {
          : `<button class="btn btn-soft btn-block" data-act="go" data-to="grammar">Barcha mavzular</button>`}`;
 }
 
-/* ---------- Grammar book (A1–B2 PDF, shown page by page) ---------- */
-let BOOK_LV = "A1", BOOK_Q = "", BOOK_TEXT = null;
-const bookTopic = n => { let hit = null; BOOK.toc.forEach(l => l.items.forEach(i => { if (i.page <= n && (!hit || i.page >= hit.page)) hit = i; })); return hit; };
-function viewBook() {
-  const lv = BOOK.toc.find(l => l.id === BOOK_LV) || BOOK.toc[1];
-  let group = null;
-  const rows = lv.items.map(i => {
-    const head = i.group && i.group !== group ? `<div class="toc-group">${esc(i.group === "MASHQ" ? "MASHQLAR" : i.group)}</div>` : "";
-    group = i.group;
-    return `${head}<a class="toc-row" href="#book-${i.page}">
-      ${i.code ? `<span class="code">${esc(i.code)}</span>` : `<span class="code">${ICON.book.replace("<svg", '<svg style="width:14px;height:14px;vertical-align:-2px"')}</span>`}
-      <span>${i.tr ? `<b lang="tr">${esc(i.tr)}</b><small>${esc(i.uz)}</small>` : `<b>${esc(i.uz)}</b>`}</span>
-      <span class="pg">${BX[i.code] ? (gxDone(i.code) ? `<span class="state done" style="width:22px;height:22px" title="Mashq bajarilgan">${ICON.check}</span>` : `${gxSolved(i.code)}/${BX[i.code].length}`) : i.page}</span></a>`;
-  }).join("");
+/* ---------- Grammar guide (written from the A1–B2 handbook, in the site's own design) ---------- */
+let GUIDE_LV = "A1", GUIDE_Q = "";
+const GUIDE_SOON = [{ name: "A2", uz: "Asosiy daraja", n: 31 }, { name: "B1", uz: "Oʻrta daraja", n: 33 }, { name: "B2", uz: "Oʻrtadan yuqori", n: 27 }];
+// "gel[iyor][um]" → stem with highlighted suffixes
+const sfx = t => esc(t).replace(/\[([^\]]+)\]/g, '<span class="sfx">$1</span>');
+const plainSfx = t => t.replace(/[\[\]]/g, "");
+function guideRow(i) {
+  const st = BX[i.code] ? (gxDone(i.code) ? `<span class="state done" style="width:24px;height:24px" title="Mashq bajarilgan">${ICON.check}</span>` : `<span class="pg">${gxSolved(i.code)}/${BX[i.code].length}</span>`) : ICON.chev;
+  return `<a class="toc-row" href="#${gHash(i.code)}"><span class="code">${esc(i.code)}</span>
+    <span><b>${esc(i.uz)}</b><small lang="tr">${esc(i.tr)}</small></span>${st}</a>`;
+}
+function guideHits() {
+  const q = plain(GUIDE_Q.trim());
+  if (q.length < 2) return "";
+  const hits = GUIDE_ALL.filter(i => plain([i.code, i.tr, i.uz, i.rule || "", typeof i.forms === "string" ? i.forms : "", plainSfx(i.ex ? i.ex.join(" ") : "")].join(" ")).includes(q));
+  return hits.length ? `<div class="glass words">${hits.map(guideRow).join("")}</div>` : `<div class="glass empty"><b>“${esc(GUIDE_Q)}” topilmadi</b></div>`;
+}
+function viewGuide() {
+  const lv = GUIDE.find(l => l.id === GUIDE_LV) || GUIDE[1];
   return `<div><button class="back" data-act="go" data-to="grammar">${ICON.back}Grammatika</button></div>
-  <div class="book-card glass" style="grid-template-columns:90px 1fr">
-    <a class="book-cover" href="#book-1" style="width:90px;height:122px"><img src="book/p01.webp" alt="Muqova"></a>
-    <span><b style="font-size:20px">Turk tili grammatikasi A1–B2</b>
-      <span class="unit-sub">${BOOK.pages} bet · 128 mavzu · formulalar va misollar</span>
-      <span style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-        <a class="btn btn-grad" style="min-height:42px;padding:0 16px;font-size:14px;text-decoration:none" href="#book-${S.bookPage || 2}">${S.bookPage > 3 ? `${S.bookPage}-betdan davom` : "Oʻqishni boshlash"}</a>
-        <a class="btn btn-ghost" style="min-height:42px;padding:0 14px;font-size:14px;text-decoration:none" href="${BOOK.pdf}" download>PDF</a>
-      </span></span>
+  <div class="lesson-head">
+    <div class="tags"><span class="tag pink-t">${ICON.book}Qoʻllanma</span><span class="tag green-t">${GX_CODES.filter(gxDone).length}/${GX_CODES.length} mashq bajarilgan</span></div>
+    <h1>Turk tili grammatikasi</h1>
+    <p class="sub">Har mavzu: formula, shakllar, qoida, misol va mashqlar. Qoʻshimchalar rangli ajratilgan.</p>
   </div>
-  <label class="search glass" for="bq">${ICON.search}<span class="sr">Kitobdan qidirish</span><input id="bq" type="search" placeholder="Kitobdan qidiring: iyor, kelishik…" value="${esc(BOOK_Q)}" autocomplete="off" lang="tr"></label>
-  <div id="book-hits"></div>
-  <div class="chips">${BOOK.toc.map(l => `<button class="chip" data-act="book-lv" data-l="${l.id}" aria-pressed="${l.id === lv.id}">${esc(l.name)}</button>`).join("")}</div>
+  <label class="search glass" for="gq">${ICON.search}<span class="sr">Qoʻllanmadan qidirish</span><input id="gq" type="search" placeholder="Qidirish: iyor, kelishik, -lar…" value="${esc(GUIDE_Q)}" autocomplete="off" lang="tr"></label>
+  <div id="guide-hits">${guideHits()}</div>
+  <div class="chips">${GUIDE.map(l => `<button class="chip" data-act="guide-lv" data-l="${l.id}" aria-pressed="${l.id === lv.id}">${esc(l.name)}</button>`).join("")}${GUIDE_SOON.map(l => `<button class="chip" data-act="guide-soon" aria-disabled="true" style="opacity:.55">${esc(l.name)} · tez orada</button>`).join("")}</div>
   <div class="level-head"><b>${esc(lv.name)}</b><span>${esc(lv.uz)}</span></div>
-  <div class="glass words">${rows}</div>
-  <div class="glass words">${BOOK.front.map(f => `<a class="toc-row" href="#book-${f.page}"><span class="code">${ICON.list.replace("<svg", '<svg style="width:14px;height:14px;vertical-align:-2px"')}</span><span><b>${esc(f.uz)}</b></span><span class="pg">${f.page}</span></a>`).join("")}</div>`;
+  ${lv.groups.map(g => `<div class="glass words"><div class="toc-group">${esc(g.name)}</div>${g.items.map(guideRow).join("")}</div>`).join("")}`;
 }
-async function bookSearch() {
-  const box = $("book-hits");
-  if (!box) return;
-  const q = BOOK_Q.trim();
-  if (q.length < 2) { box.innerHTML = ""; return; }
-  if (!BOOK_TEXT) {
-    box.innerHTML = `<div class="glass empty"><div class="spin"></div></div>`;
-    try { BOOK_TEXT = await (await fetch("book/text.json")).json(); } catch (e) { box.innerHTML = `<div class="glass empty">Qidiruv uchun internet kerak</div>`; return; }
-  }
-  const nq = q.toLocaleLowerCase("tr"), ns = nq.replace(/\s+/g, "");
-  const hits = [];
-  BOOK_TEXT.forEach((t, i) => {
-    const low = t.toLocaleLowerCase("tr");
-    let at = low.indexOf(nq);
-    // Suffixes are typeset apart in the book ("gel iyor um"), so also match with spaces removed
-    if (at < 0 && low.replace(/\s+/g, "").includes(ns)) at = -2;
-    if (at !== -1) hits.push({ p: i + 1, at, t });
-  });
-  if ($("bq") && $("bq").value.trim() !== q) return;
-  box.innerHTML = hits.length ? `<div class="glass words">${hits.slice(0, 25).map(h => {
-      const tp = bookTopic(h.p);
-      let snip = "";
-      if (h.at >= 0) { const a = Math.max(0, h.at - 50); snip = esc(h.t.slice(a, h.at)) + "<mark>" + esc(h.t.slice(h.at, h.at + q.length)) + "</mark>" + esc(h.t.slice(h.at + q.length, h.at + q.length + 70)); }
-      else snip = esc(h.t.slice(0, 110));
-      return `<a class="hit" href="#book-${h.p}"><b>${h.p}-bet${tp && tp.code ? " · " + esc(tp.code) : ""}${tp ? " · " + esc(tp.uz || tp.tr) : ""}</b><p>…${snip}…</p></a>`;
-    }).join("")}</div>${hits.length > 25 ? `<p class="sub">Yana ${hits.length - 25} ta bet topildi. Soʻrovni aniqroq yozing.</p>` : ""}`
-    : `<div class="glass empty"><b>“${esc(q)}” topilmadi</b></div>`;
+function guideTable(t) {
+  return `<div class="table-wrap glass"><table class="gtable g-forms">
+    <thead><tr>${t.h.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead>
+    <tbody>${t.r.map(r => `<tr>${r.map(c => `<td lang="tr">${sfx(c)}</td>`).join("")}</tr>`).join("")}</tbody>
+  </table></div>`;
 }
-function viewBookPage(n) {
-  S.bookPage = n; save();
-  const tp = bookTopic(n);
-  return `<div class="reader-top">
-    <a class="icon-btn" href="#book" aria-label="Mundarija">${ICON.list}</a>
-    <div class="info"><b>${tp ? esc((tp.code ? tp.code + " · " : "") + (tp.uz || tp.tr)) : n === 1 ? "Muqova" : "Turk tili grammatikasi"}</b><small>${n} / ${BOOK.pages}</small></div>
-    <a class="icon-btn" href="${BOOK.pdf}" download aria-label="PDF yuklab olish">${sv('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>')}</a>
+function viewGuideTopic(i) {
+  S.guideLast = i.code; save();
+  const idx = GUIDE_ALL.indexOf(i), prev = GUIDE_ALL[idx - 1], next = GUIDE_ALL[idx + 1];
+  const line = (label, pair, cls) => pair ? `<div class="g-line"><span class="tag ${cls}">${label}</span><div><div class="g-tr" lang="tr">${sfx(pair[0])}</div><div class="word-uz">${esc(pair[1])}</div></div></div>` : "";
+  return `<div><button class="back" data-act="go" data-to="guide">${ICON.back}Qoʻllanma</button></div>
+  <div class="lesson-head">
+    <div class="tags"><span class="tag sky-t">${esc(i.code)}</span><span class="tag violet-t">${esc(i.group)}</span>${BX[i.code] && gxDone(i.code) ? `<span class="tag green-t">${ICON.check}Mashq bajarilgan</span>` : ""}</div>
+    <h1>${nb(i.uz)}</h1>
+    <p class="sub" lang="tr">${esc(i.tr)}</p>
   </div>
-  <div class="book-page" id="book-page"><img src="book/p${pad(n)}.webp" alt="${n}-bet" width="936" height="1323"></div>
-  <div class="pager">
-    <a class="btn btn-ghost" href="#book-${Math.max(1, n - 1)}" ${n <= 1 ? 'aria-disabled="true" style="opacity:.4;pointer-events:none"' : ""}>${ICON.back}Oldingi</a>
-    <input class="page-jump" id="page-jump" type="number" inputmode="numeric" min="1" max="${BOOK.pages}" value="${n}" aria-label="Betga oʻtish">
-    <a class="btn btn-grad" href="#book-${Math.min(BOOK.pages, n + 1)}" ${n >= BOOK.pages ? 'aria-disabled="true" style="opacity:.4;pointer-events:none"' : ""}>Keyingi${ICON.chev.replace('class="chev"', 'style="width:20px;height:20px"')}</a>
-  </div>
-  ${gxCardsForPage(n)}
-  <p class="sub" style="text-align:center">Barmogʻingiz bilan chapga yoki oʻngga suring. Kattalashtirish uchun ikki barmoq bilan oching.</p>`;
+  ${i.f ? `<div class="g-formula"><div class="g-f-tr" lang="tr">${esc(i.f[0])}</div><div class="g-f-uz">${esc(i.f[1])}</div></div>` : ""}
+  ${i.forms ? `<section class="section"><div class="section-head"><h2>Shakllar</h2></div>${typeof i.forms === "string" ? `<div class="glass pad g-forms-text" lang="tr">${sfx(i.forms)}</div>` : guideTable(i.forms)}</section>` : ""}
+  <div class="tip glass">${ICON.bulb}<div><b>Qoida</b>${esc(i.rule)}${i.note ? `<div style="margin-top:6px">${esc(i.note)}</div>` : ""}</div></div>
+  <section class="section"><div class="section-head"><h2>Misol</h2></div>
+    <div class="glass g-ex"><div style="min-width:0"><div class="g-tr big" lang="tr">${sfx(i.ex[0])}</div><div class="word-uz">${esc(i.ex[1])}</div></div>
+      <button class="say" data-act="say" data-t="${esc(plainSfx(i.ex[0]))}" aria-label="Tinglash">${ICON.speak}</button></div>
+    ${i.neg || i.q ? `<div class="glass words">${line("Boʻlishsiz", i.neg, "pink-t")}${line("Soʻroq", i.q, "sky-t")}</div>` : ""}
+  </section>
+  ${BX[i.code] ? `<section class="section"><div class="section-head"><h2>Mashq</h2><span class="tag sky-t">+10 XP</span></div><div class="list">${gxRow(i.code)}</div></section>` : ""}
+  <div class="pager" style="grid-template-columns:1fr 1fr">
+    ${prev ? `<a class="btn btn-ghost" href="#${gHash(prev.code)}">${ICON.back}${esc(prev.code)}</a>` : "<span></span>"}
+    ${next ? `<a class="btn btn-grad" href="#${gHash(next.code)}">${esc(next.code)}${ICON.chev.replace('class="chev"', 'style="width:20px;height:20px"')}</a>` : "<span></span>"}
+  </div>`;
 }
 function gxRow(c) {
   const tp = gxTopic(c), n = BX[c].length, k = gxSolved(c);
@@ -711,14 +736,6 @@ function gxRow(c) {
     <span class="unit-body"><span class="unit-title">${esc(tp ? tp.uz : c)}</span><span class="unit-sub"><span lang="tr">${esc(tp ? tp.tr : "")}</span> · ${n} ta mashq</span></span>
     ${pctRing(k / n)}
   </button>`;
-}
-// Exercises for the topics that start on this page of the book
-function gxCardsForPage(n) {
-  const codes = [];
-  BOOK.toc.forEach(l => l.items.forEach(i => { if (i.page === n && BX[i.code]) codes.push(i.code); }));
-  if (!codes.length) return "";
-  return `<section class="section"><div class="section-head"><h2>Shu betdagi mashqlar</h2><span class="tag sky-t">+10 XP</span></div>
-    <div class="list">${codes.map(gxRow).join("")}</div></section>`;
 }
 function viewGx() {
   const ms = gxMistakes();
@@ -733,24 +750,9 @@ function viewGx() {
 }
 function LEVEL_GROUPS() {
   const out = [];
-  const a1 = BOOK.toc.find(l => l.id === "A1");
-  a1.items.forEach(i => { if (!BX[i.code]) return; let g = out[out.length - 1]; if (!g || g.name !== i.group) out.push(g = { name: i.group, codes: [] }); g.codes.push(i.code); });
+  GUIDE_ALL.forEach(i => { if (!BX[i.code]) return; let g = out[out.length - 1]; if (!g || g.name !== i.group) out.push(g = { name: i.group, codes: [] }); g.codes.push(i.code); });
   return out;
 }
-function bookAfter(n) {
-  // Preload neighbours so turning pages feels instant
-  [n + 1, n - 1].forEach(k => { if (k >= 1 && k <= BOOK.pages) { const im = new Image(); im.src = `book/p${pad(k)}.webp`; } });
-  const pg = $("book-page");
-  let sx = 0, sy = 0, multi = false;
-  pg.addEventListener("touchstart", e => { multi = e.touches.length > 1; sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
-  pg.addEventListener("touchend", e => {
-    if (multi || (window.visualViewport && visualViewport.scale > 1.05)) return;
-    const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
-    if (Math.abs(dx) > 60 && Math.abs(dy) < 50) go("book-" + Math.min(BOOK.pages, Math.max(1, n + (dx < 0 ? 1 : -1))));
-  });
-  $("page-jump").addEventListener("change", e => { const v = Math.min(BOOK.pages, Math.max(1, parseInt(e.target.value, 10) || n)); go("book-" + v); });
-}
-
 /* ---------- Alphabet ---------- */
 let letterSel = 2;
 function viewAlphabet() {
@@ -868,7 +870,7 @@ async function loadRank() {
   const key = tab === "week" ? "wxp" : "xp";
   rows = rows.filter(r => r[key] > 0).sort((a, b) => b[key] - a[key]);
   if (!rows.length) {
-    $("rank-body").innerHTML = `<div class="glass empty">${mascot("trophy")}<b>Hali hech kim yoʻq</b><span class="muted">Birinchi boʻling: mashq qilib XP toʻplang.</span></div>`;
+    $("rank-body").innerHTML = `<div class="glass empty">${mascot("trophy")}<b>Hali hech kim yoʻq</b><span class="muted">Pamuk birinchi boʻlishingizni kutyapti: mashq qilib XP toʻplang.</span></div>`;
     return;
   }
   const me = rows.findIndex(r => r.id === USER.uid);
@@ -892,9 +894,10 @@ function viewProfile() {
   const th = (() => { try { return localStorage.getItem("ty-theme") || "auto"; } catch (e) { return "auto"; } })();
   return `<div class="top"><h1 class="page-title">Profil</h1>${logo}</div>
   <div class="profile-card glass">
-    <button class="avatar-edit" data-act="photo" aria-label="Profil rasmini oʻzgartirish">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "lg")}<span class="cam">${ICON.camera}</span></button>
+    <button class="avatar-edit" data-act="photo" aria-label="Profil rasmini oʻzgartirish">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "lg")}<span class="cam">${ICON.camera}</span>${genderSticker()}</button>
     <input type="file" id="photo-input" accept="image/*" hidden>
     <div style="min-width:0"><b>${esc(USERNAME || (USER ? "Oʻquvchi" : "Mehmon"))}</b><span>${esc(USER ? USER.email || "" : "Hisobsiz rejim")}</span>
+      ${PROFILE.birth ? `<span style="display:block">${esc(birthText(PROFILE.birth))}</span>` : ""}
       <div class="tags" style="margin-top:6px">${USER && USER.emailVerified ? `<span class="tag green-t">${ICON.check}Tasdiqlangan</span>` : ""}${MYPHOTO ? `<button class="tag pink-t" data-act="photo-remove">Rasmni olib tashlash</button>` : `<button class="tag violet-t" data-act="photo">Rasm qoʻyish</button>`}</div></div>
   </div>
   ${isPass && !USER.emailVerified ? `<div class="notice"><div><b>Pochtangizni tasdiqlang.</b> ${esc(USER.email)} manziliga xat yubordik.</div><button class="btn btn-ghost" data-act="verify-again">Xatni qayta yuborish</button></div>` : ""}
@@ -922,6 +925,7 @@ function viewProfile() {
   <section class="section">
     <div class="section-head"><h2>Sozlamalar</h2></div>
     <div class="settings glass">
+      ${USER ? `<button class="set-row" data-act="profile-edit"><span><b>Shaxsiy maʼlumotlar</b><small>${PROFILE.gender ? (PROFILE.gender === "f" ? "Ayol" : "Erkak") : "Jins koʻrsatilmagan"} · ${PROFILE.birth ? esc(birthText(PROFILE.birth)) : "tugʻilgan sana yoʻq"}</small></span>${ICON.chev}</button>` : ""}
       <div class="set-row"><span><b>Mavzu</b><small>Yorugʻ yoki qorongʻi koʻrinish</small></span>
         <span class="mini-seg">${[["auto", "Avto"], ["light", "Yorugʻ"], ["dark", "Tun"]].map(([v, l]) => `<button data-act="theme" data-v="${v}" aria-pressed="${th === v}">${l}</button>`).join("")}</span></div>
       <div class="set-row"><span><b>Kunlik maqsad</b><small>Har kuni toʻplanadigan XP</small></span>
@@ -934,6 +938,159 @@ function viewProfile() {
   <div id="del-box" style="display:flex;flex-direction:column;gap:10px"><button class="link" data-act="delete-ask" style="align-self:center;color:var(--pink)">Hisobni oʻchirish</button></div>` : ""}`;
 }
 
+/* ---------- Smart translator ----------
+   Machine translation comes from MyMemory's free public API (no key, about 5000 characters a day per user).
+   On top of it the page adds our own dictionary hits and points to the grammar topics found in the Turkish text. */
+let TR_DIR = "tr", TR_TEXT = "", TR_OUT = null, TR_BUSY = false;
+const TR_HINTS = [
+  { re: /(?:^|[\s(])\S+(ıyor|iyor|uyor|üyor)\S*/i, code: "A1.24", what: "hozirgi zamon (-yor)" },
+  { re: /(?:^|[\s(])\S+(acak|ecek|acağ|eceğ)\S*/i, code: "A1.26", what: "kelasi zamon (-acak)" },
+  { re: /(?:^|[\s(])\S+(alım|elim)(?=$|[\s.,!?;:])/i, code: "A1.27", what: "taklif (-alım)" },
+  { re: /(?:^|[\s(])\S+(mak|mek)(?=$|[\s.,!?;:])/i, code: "A1.22", what: "feʼlning noaniq shakli (-mak)" },
+  { re: /\s(mı|mi|mu|mü)(\s|\?|$)|\s(mı|mi|mu|mü)(sın|sin|sun|sün|yım|yim|yum|yüm|yız|yiz|yuz|yüz|sınız|siniz|sunuz|sünüz)(?=$|[\s.,!?;:])/i, code: "A1.33", what: "soʻroq yuklamasi (mı)" },
+  { re: /(?:^|[\s(])(var|yok)(?=$|[\s.,!?;:])/i, code: "A1.21", what: "var / yok" },
+  { re: /(?:^|[\s(])değil/i, code: "A1.20", what: "inkor: değil" },
+  { re: /(?:^|[\s(])(ile|için|gibi)(?=$|[\s.,!?;:])/i, code: "A1.29", what: "koʻmakchi: ile / için / gibi" },
+  { re: /(?:^|[\s(])(daha|en)\s/i, code: "A1.14", what: "qiyoslash: daha / en" },
+  { re: /(?:^|[\s(])(üst|alt|iç|ön|arka|yan)(ı|i|u|ü|sı)?n?(da|de|a|e|dan|den)(?=$|[\s.,!?;:])/i, code: "A1.30", what: "joy soʻzlari (üstünde…)" },
+  { re: /(?:^|[\s(])\S{2,}(lar|ler)(?=$|[\s.,!?;:])/i, code: "A1.01", what: "koʻplik (-lar)" },
+  { re: /'(da|de|ta|te)(?=$|[\s.,!?;:])/i, code: "A1.06", what: "oʻrin-payt (-da)" },
+  { re: /'(dan|den|tan|ten)(?=$|[\s.,!?;:])/i, code: "A1.07", what: "chiqish (-dan)" },
+  { re: /'(ya|ye|a|e)(?=$|[\s.,!?;:])/i, code: "A1.05", what: "joʻnalish (-ga)" }
+];
+function trHistory() { try { return JSON.parse(localStorage.getItem("ty-tr-hist") || "[]"); } catch (e) { return []; } }
+function trRemember(item) {
+  const h = trHistory().filter(x => !(x.s === item.s && x.d === item.d));
+  h.unshift(item);
+  try { localStorage.setItem("ty-tr-hist", JSON.stringify(h.slice(0, 8))); } catch (e) {}
+}
+function dictHits(text, dir) {
+  const words = plain(text).split(/[\s,.;:!?]+/).filter(w => w.length > 1);
+  if (!words.length) return [];
+  const out = [];
+  ALL.forEach(w => {
+    const src = plain(dir === "tr" ? w.tr : w.uz).split(/[;,]/)[0].replace(/^\d+ — /, "").trim();
+    if (src && (words.includes(src) || (src.includes(" ") && plain(text).includes(src)))) out.push(w);
+  });
+  return out.slice(0, 8);
+}
+function grammarHints(trText) {
+  if (!trText) return [];
+  const t = " " + trText + " ";
+  return TR_HINTS.filter(h => h.re.test(t)).slice(0, 4);
+}
+function trResultHtml() {
+  const o = TR_OUT;
+  if (!o) return "";
+  const trSide = TR_DIR === "tr" ? TR_TEXT : o.text;
+  const hints = grammarHints(trSide), hits = dictHits(TR_TEXT, TR_DIR);
+  return `${o.text ? `<div class="glass pad tr-out">
+      <div class="tile-row"><span class="tag violet-t">${TR_DIR === "tr" ? "Oʻzbekcha" : "Turkcha"}</span>
+        <span style="display:flex;gap:8px">${TR_DIR === "uz" ? `<button class="say" data-act="say" data-t="${esc(o.text)}" aria-label="Tinglash">${ICON.speak}</button>` : ""}<button class="say" data-act="tr-copy" aria-label="Nusxa olish">${ICON.copy}</button></span></div>
+      <div class="tr-text" ${TR_DIR === "uz" ? 'lang="tr"' : ""}>${esc(o.text)}</div>
+      ${o.alts && o.alts.length ? `<div class="sub">Boshqa variantlar: ${o.alts.map(esc).join(" · ")}</div>` : ""}
+    </div>` : ""}
+    ${o.err ? `<div class="notice"><div>${esc(o.err)}</div></div>` : ""}
+    ${hints.length ? `<section class="section"><div class="section-head"><h2>Bu gapdagi grammatika</h2></div><div class="list">${hints.map(h => {
+      const tp = gxTopic(h.code);
+      return `<a class="unit glass" href="#${gHash(h.code)}"><span class="art sky"><span style="font-size:13px">${h.code}</span></span><span class="unit-body"><span class="unit-title">${esc(tp ? tp.uz : h.what)}</span><span class="unit-sub">Topildi: ${esc(h.what)}</span></span>${ICON.chev}</a>`;
+    }).join("")}</div></section>` : ""}
+    ${hits.length ? `<section class="section"><div class="section-head"><h2>Lugʻatimizda bor</h2></div><div class="words glass">${hits.map(w => wordRow(w, true)).join("")}</div></section>` : ""}`;
+}
+function viewTranslate() {
+  const hist = trHistory();
+  const from = TR_DIR === "tr" ? "Turkcha" : "Oʻzbekcha", to = TR_DIR === "tr" ? "Oʻzbekcha" : "Turkcha";
+  return `${topbar()}
+  <div><h1 class="page-title">Aqlli tarjimon</h1><p class="sub">Tarjima, lugʻatimizdagi soʻzlar va gapdagi grammatika bir joyda</p></div>
+  <div class="tr-dir glass"><b>${from}</b><button class="icon-btn" data-act="tr-swap" aria-label="Yoʻnalishni almashtirish">${ICON.swap}</button><b>${to}</b></div>
+  <div class="glass tr-in">
+    <label class="sr" for="tr-src">${from} matn</label>
+    <textarea id="tr-src" rows="4" maxlength="500" ${TR_DIR === "tr" ? 'lang="tr"' : ""}>${esc(TR_TEXT)}</textarea>
+    ${TR_DIR === "tr" ? `<div class="keys">${["ç", "ş", "ğ", "ı", "İ", "ö", "ü"].map(k => `<button type="button" data-act="tr-key" data-k="${k}">${k}</button>`).join("")}</div>` : ""}
+    <div class="tile-row"><span class="sub" id="tr-count">${TR_TEXT.length}/500</span>
+      <span style="display:flex;gap:8px">${TR_DIR === "tr" ? `<button class="say" data-act="tr-say" aria-label="Tinglash">${ICON.speak}</button>` : ""}<button class="btn btn-ghost" style="min-height:42px;padding:0 14px" data-act="tr-clear">Tozalash</button></span></div>
+  </div>
+  <button class="btn btn-grad btn-block" data-act="tr-go" ${TR_BUSY ? "disabled" : ""}>${ICON.translate}${TR_BUSY ? "Tarjima qilinmoqda…" : "Tarjima qilish"}</button>
+  <div id="tr-result">${trResultHtml()}</div>
+  ${hist.length ? `<section class="section"><div class="section-head"><h2>Oxirgi tarjimalar</h2><button class="link" data-act="tr-hist-clear">Tozalash</button></div>
+    <div class="words glass">${hist.map((h, i) => `<button class="toc-row" data-act="tr-hist" data-i="${i}"><span class="code">${h.d === "tr" ? "TR" : "UZ"}</span><span style="min-width:0"><b ${h.d === "tr" ? 'lang="tr"' : ""}>${esc(h.s.slice(0, 60))}</b><small>${esc(h.t.slice(0, 70))}</small></span>${ICON.chev}</button>`).join("")}</div></section>` : ""}
+  <p class="auth-small">Tarjima bepul MyMemory xizmati orqali qilinadi, natija taxminiy boʻlishi mumkin. Matningiz shu xizmatga yuboriladi: shaxsiy maʼlumot yozmang.</p>`;
+}
+async function translateNow() {
+  const text = ($("tr-src") ? $("tr-src").value : TR_TEXT).trim();
+  TR_TEXT = text;
+  if (!text) { toast("Avval matn yozing"); return; }
+  TR_BUSY = true; route();
+  const pair = TR_DIR === "tr" ? "tr|uz" : "uz|tr";
+  try {
+    const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${encodeURIComponent(pair)}`);
+    const j = await r.json();
+    let out = (j.responseData && j.responseData.translatedText) || "";
+    if (/MYMEMORY WARNING|QUOTA/i.test(out) || j.quotaFinished) {
+      TR_OUT = { text: "", err: "Bugungi bepul tarjima limiti tugadi. Ertaga yana urinib koʻring. Lugʻatimizdan topilganlar pastda." };
+    } else if (!out || j.responseStatus >= 400) {
+      TR_OUT = { text: "", err: "Tarjima qilib boʻlmadi. Boshqacha yozib koʻring." };
+    } else {
+      const ta = document.createElement("textarea"); ta.innerHTML = out; out = ta.value;
+      const alts = [...new Set((j.matches || []).map(m => (m.translation || "").trim()).filter(t => t && fold(t) !== fold(out) && t.length < 200))].slice(0, 2);
+      TR_OUT = { text: out, alts };
+      trRemember({ s: text, t: out, d: TR_DIR });
+    }
+  } catch (e) {
+    TR_OUT = { text: "", err: "Tarjima uchun internet kerak. Lugʻatimizdan topilganlar pastda." };
+  }
+  TR_BUSY = false; route();
+}
+
+/* ---------- Personal details: gender and birth date ---------- */
+let PROFILE = { gender: "", birth: "" }, PENDING_PROFILE = null;
+const MONTHS = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];
+function ageOf(birth) {
+  const [y, m, d] = birth.split("-").map(Number), now = new Date();
+  let a = now.getFullYear() - y;
+  if (now.getMonth() + 1 < m || (now.getMonth() + 1 === m && now.getDate() < d)) a--;
+  return a;
+}
+const birthText = b => { const [y, m, d] = b.split("-").map(Number); return `${d}-${MONTHS[m - 1]}, ${y} · ${ageOf(b)} yosh`; };
+function genderSticker() {
+  if (!PROFILE.gender) return "";
+  return PROFILE.gender === "f" ? `<span class="sticker f">${ICON.female}Ayol</span>` : `<span class="sticker m">${ICON.male}Erkak</span>`;
+}
+function birthSelects(prefix, value) {
+  const [y, m, d] = (value || "").split("-").map(Number), maxY = new Date().getFullYear() - 5;
+  const opt = (v, l, sel) => `<option value="${v}" ${sel ? "selected" : ""}>${l}</option>`;
+  return `<select id="${prefix}-day" aria-label="Kun">${opt("", "Kun", !d)}${Array.from({ length: 31 }, (_, i) => opt(i + 1, i + 1, d === i + 1)).join("")}</select>
+    <select id="${prefix}-month" aria-label="Oy">${opt("", "Oy", !m)}${MONTHS.map((n, i) => opt(i + 1, n, m === i + 1)).join("")}</select>
+    <select id="${prefix}-year" aria-label="Yil">${opt("", "Yil", !y)}${Array.from({ length: maxY - 1939 }, (_, i) => maxY - i).map(v => opt(v, v, y === v)).join("")}</select>`;
+}
+// Returns "YYYY-MM-DD" or an error message
+function readBirth(prefix) {
+  const d = +$(prefix + "-day").value, m = +$(prefix + "-month").value, y = +$(prefix + "-year").value;
+  if (!d || !m || !y) return { err: "Tugʻilgan sanani toʻliq tanlang: kun, oy va yil." };
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (dt.getUTCMonth() !== m - 1) return { err: `${MONTHS[m - 1]} oyida ${d}-kun yoʻq.` };
+  return { v: `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}` };
+}
+function profileSheet(required) {
+  openSheet(`<h3>${required ? "Profilingizni toʻldiring" : "Shaxsiy maʼlumotlar"}</h3>
+    ${required ? `<p class="sub">Pamuk sizni yaxshiroq tanishi uchun ikki savol. Bu maʼlumotlar boshqalarga koʻrinmaydi.</p>` : ""}
+    <div class="field"><span class="flabel" id="ps-g">Jinsingiz</span>
+      <div class="seg glass" role="radiogroup" aria-labelledby="ps-g">
+        <button type="button" role="radio" data-act="ps-gender" data-g="m" aria-checked="${PROFILE.gender === "m"}">Erkak</button>
+        <button type="button" role="radio" data-act="ps-gender" data-g="f" aria-checked="${PROFILE.gender === "f"}">Ayol</button>
+      </div></div>
+    <div class="field"><span class="flabel" id="ps-b">Tugʻilgan sana</span><div class="birth" role="group" aria-labelledby="ps-b">${birthSelects("ps", PROFILE.birth)}</div></div>
+    <p class="auth-err" id="ps-err" role="alert"></p>
+    <button class="btn btn-grad btn-block" data-act="ps-save">Saqlash</button>
+    ${required ? "" : `<button class="btn btn-ghost btn-block" data-act="sheet-x">Bekor qilish</button>`}`);
+  $("sheet").dataset.locked = required ? "1" : "";
+}
+async function saveProfile(p) {
+  PROFILE = Object.assign(PROFILE, p);
+  try { localStorage.setItem("ty-profile" + (USER ? ":" + USER.uid : ""), JSON.stringify(PROFILE)); } catch (e) {}
+  if (db && USER) await db.collection("users").doc(USER.uid).set({ gender: PROFILE.gender, birth: PROFILE.birth }, { merge: true }).catch(() => toast("Maʼlumot serverga yozilmadi, internetni tekshiring"));
+}
+
 /* ---------- Router ---------- */
 function route() {
   const h = (location.hash || "#home").slice(1);
@@ -941,8 +1098,9 @@ function route() {
   const m = /^lesson-(\d+)$/.exec(h), gm = /^grammar-(\d+)$/.exec(h);
   if (m && UNITS[+m[1] - 1]) { html = viewUnit(+m[1] - 1); tab = "lessons"; }
   else if (gm && GRAMMAR[+gm[1] - 1]) { html = viewGrammar(+gm[1] - 1); tab = "lessons"; }
-  else if (/^book-(\d+)$/.test(h) && +h.slice(5) >= 1 && +h.slice(5) <= BOOK.pages) { const n = +h.slice(5); html = viewBookPage(n); tab = "lessons"; after = () => bookAfter(n); }
-  else if (h === "book") { html = viewBook(); tab = "lessons"; after = () => bookSearch(); }
+  else if (h.startsWith("g-") && GUIDE_ALL.find(i => gHash(i.code) === h)) { html = viewGuideTopic(GUIDE_ALL.find(i => gHash(i.code) === h)); tab = "lessons"; }
+  else if (h === "guide") { html = viewGuide(); tab = "lessons"; }
+  else if (h === "translate") { html = viewTranslate(); tab = "home"; }
   else if (h === "gx") { html = viewGx(); tab = "lessons"; }
   else if (h === "lessons") html = viewLessons();
   else if (h === "grammar") { html = viewGrammarList(); tab = "lessons"; }
@@ -1208,6 +1366,7 @@ function renderResult() {
     <div>${mascot(r >= 0.7 ? "trophy" : "sit")}</div>
     <div class="score">${SES.right}/${n}</div>
     <h2>${esc(title)}</h2>
+    <p>${r >= 0.7 ? "Pamuk sizdan faxrlanadi!" : "Pamuk aytadi: xatolar ham oʻrganishning bir qismi."}</p>
     <p>+${SES.xp} XP · bugun ${S.dayXp}/${S.goal} XP · ${streakNow()} kun ketma-ket</p>
     <p>Takrorlash navbatida: ${dueWords().length} ta · Xatolar daftarida: ${mistakeWords().length} ta</p>
     ${SES.topicDone ? `<div class="tags" style="justify-content:center"><span class="tag green-t">${ICON.check}${esc(SES.topicDone)} mavzusi tugallandi</span></div>` : ""}
@@ -1223,13 +1382,15 @@ document.addEventListener("click", e => {
   const b = e.target.closest("[data-act]");
   if (!b) return;
   const act = b.dataset.act;
-  if (act === "sheet-close") { if (e.target === b) closeSheet(); return; }
+  if (act === "sheet-close") { if (e.target === b && !$("sheet").dataset.locked) closeSheet(); return; }
+  if (act === "welcome-close") { hideWelcome(); return; }
   if (act === "say") speak(b.dataset.t, b.classList.contains("say") ? b : null);
   else if (act === "go") { go(b.dataset.to); if (b.dataset.focus) setTimeout(() => $("q") && $("q").focus(), 50); }
   else if (act === "start") startSession(b.dataset.mode, b.dataset.u || "all");
   else if (act === "modes") modeSheet(b.dataset.u, b.dataset.title);
   else if (act === "cat") { CAT = b.dataset.c; route(); }
-  else if (act === "book-lv") { BOOK_LV = b.dataset.l; const y = window.scrollY; route(); window.scrollTo(0, y); }
+  else if (act === "guide-lv") { GUIDE_LV = b.dataset.l; const y = window.scrollY; route(); window.scrollTo(0, y); }
+  else if (act === "guide-soon") toast("A2–B2 mavzulari tez orada qoʻshiladi");
   else if (act === "rank-tab") { RANK_TAB = b.dataset.t; route(); }
   else if (act === "letter") {
     letterSel = +b.dataset.i;
@@ -1272,6 +1433,28 @@ document.addEventListener("click", e => {
     $("gq-" + qi).outerHTML = gqHtml(GRAMMAR[gi], qi);
   }
   else if (act === "photo") $("photo-input").click();
+  else if (act === "sheet-x") closeSheet();
+  else if (act === "tr-go") translateNow();
+  else if (act === "tr-swap") { TR_DIR = TR_DIR === "tr" ? "uz" : "tr"; if (TR_OUT && TR_OUT.text) TR_TEXT = TR_OUT.text; TR_OUT = null; route(); }
+  else if (act === "tr-clear") { TR_TEXT = ""; TR_OUT = null; route(); setTimeout(() => $("tr-src") && $("tr-src").focus(), 30); }
+  else if (act === "tr-say") speak($("tr-src").value);
+  else if (act === "tr-copy") { try { navigator.clipboard.writeText(TR_OUT.text).then(() => toast("Nusxa olindi"), () => toast("Nusxa olib boʻlmadi")); } catch (err) { toast("Nusxa olib boʻlmadi"); } }
+  else if (act === "tr-hist") { const h = trHistory()[+b.dataset.i]; TR_DIR = h.d; TR_TEXT = h.s; TR_OUT = { text: h.t }; route(); }
+  else if (act === "tr-hist-clear") { try { localStorage.removeItem("ty-tr-hist"); } catch (err) {} route(); }
+  else if (act === "tr-key") {
+    const inp = $("tr-src"), st = inp.selectionStart ?? inp.value.length, en = inp.selectionEnd ?? st;
+    inp.value = inp.value.slice(0, st) + b.dataset.k + inp.value.slice(en); TR_TEXT = inp.value;
+    inp.focus(); inp.setSelectionRange(st + 1, st + 1);
+  }
+  else if (act === "profile-edit") profileSheet(false);
+  else if (act === "gender" || act === "ps-gender") b.parentElement.querySelectorAll("[role=radio]").forEach(r => r.setAttribute("aria-checked", String(r === b)));
+  else if (act === "ps-save") {
+    const g = document.querySelector('[data-act="ps-gender"][aria-checked="true"]'), bd = readBirth("ps");
+    if (!g) { $("ps-err").textContent = "Jinsingizni tanlang."; return; }
+    if (bd.err) { $("ps-err").textContent = bd.err; return; }
+    b.disabled = true;
+    saveProfile({ gender: g.dataset.g, birth: bd.v }).then(() => { $("sheet").dataset.locked = ""; closeSheet(true); toast("Saqlandi"); route(); });
+  }
   else if (act === "photo-remove") { setMyPhoto(""); const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "auth-tab") setAuthTab(b.dataset.t);
   else if (act === "auth-google") googleSignIn();
@@ -1342,19 +1525,17 @@ document.addEventListener("change", async e => {
   } catch (err) { toast("Bu faylni rasm sifatida ochib boʻlmadi"); }
   const y = window.scrollY; route(); window.scrollTo(0, y);
 });
-let bookT;
 document.addEventListener("input", e => {
-  if (e.target.id === "bq") { BOOK_Q = e.target.value; clearTimeout(bookT); bookT = setTimeout(bookSearch, 200); return; }
+  if (e.target.id === "tr-src") { TR_TEXT = e.target.value; $("tr-count").textContent = TR_TEXT.length + "/500"; return; }
+  if (e.target.id === "gq") { GUIDE_Q = e.target.value; $("guide-hits").innerHTML = guideHits(); return; }
   if (e.target.id !== "q") return;
   Q = e.target.value;
   $("search-results").innerHTML = searchResults();
   $("units-block").hidden = !!Q.trim();
 });
 document.addEventListener("keydown", e => {
-  const bm = /^#book-(\d+)$/.exec(location.hash);
-  if (bm && !SES && e.target.tagName !== "INPUT" && (e.key === "ArrowRight" || e.key === "ArrowLeft")) { go("book-" + Math.min(BOOK.pages, Math.max(1, +bm[1] + (e.key === "ArrowRight" ? 1 : -1)))); return; }
   if (e.key !== "Escape") return;
-  if (!$("sheet").hidden) closeSheet(); else if (SES) closeSession();
+  if (!$("sheet").hidden) { if (!$("sheet").dataset.locked) closeSheet(); } else if (SES) closeSession();
 });
 
 /* ---------- Accounts (Firebase) ---------- */
@@ -1403,6 +1584,8 @@ function setAuthTab(t) {
   $("tab-login").setAttribute("aria-selected", String(!up));
   $("tab-signup").setAttribute("aria-selected", String(up));
   $("f-name").hidden = !up; $("f-pass2").hidden = !up; $("auth-reset").hidden = up;
+  $("f-gender").hidden = !up; $("f-birth").hidden = !up;
+  $("auth-speech").textContent = up ? "Tanishaylik! Men Pamuk." : "Salom! Men Pamuk.";
   $("a-pass").setAttribute("autocomplete", up ? "new-password" : "current-password");
   $("auth-submit").textContent = up ? "Roʻyxatdan oʻtish" : "Kirish";
   $("auth-err").textContent = "";
@@ -1424,8 +1607,13 @@ $("auth-form").addEventListener("submit", async e => {
   if (authMode === "signup") {
     const name = $("a-name").value.trim();
     if (!name) { authError("Ismingizni kiriting."); return; }
+    const g = document.querySelector('#f-gender [aria-checked="true"]');
+    if (!g) { authError("Jinsingizni tanlang: erkak yoki ayol."); return; }
+    const bd = readBirth("b");
+    if (bd.err) { authError(bd.err); return; }
     if (pass !== $("a-pass2").value) { authError("Parollar bir xil emas."); return; }
     PENDING_NAME = name;
+    PENDING_PROFILE = { gender: g.dataset.g, birth: bd.v };
     busy(true);
     try {
       const cred = await auth.createUserWithEmailAndPassword(email, pass);
@@ -1438,6 +1626,22 @@ $("auth-form").addEventListener("submit", async e => {
     try { await auth.signInWithEmailAndPassword(email, pass); }
     catch (err) { busy(false); authError(err); }
   }
+});
+const authCat = () => $("auth-mascot").querySelector(".cat");
+document.addEventListener("focusin", e => {
+  const c = authCat(); if (!c) return;
+  if (e.target.type === "password") c.classList.add("shy");
+  else c.classList.remove("shy");
+});
+document.addEventListener("focusout", e => {
+  const c = authCat(); if (!c || e.target.type !== "password") return;
+  setTimeout(() => { if (!document.activeElement || document.activeElement.type !== "password") c.classList.remove("shy"); }, 0);
+});
+document.addEventListener("input", e => {
+  if (!["a-email", "a-name"].includes(e.target.id)) return;
+  const c = authCat(); if (!c) return;
+  const k = Math.min(1, e.target.value.length / 26);
+  CatLife.look(c, -6 + 12 * k, 6);
 });
 function googleSignIn() {
   const provider = new firebase.auth.GoogleAuthProvider();
@@ -1482,9 +1686,12 @@ async function loadCloud(u) {
     const snap = await ref.get();
     const d = snap.exists ? snap.data() : null;
     if (d && d.name) USERNAME = d.name;
+    PROFILE = { gender: (d && d.gender) || "", birth: (d && d.birth) || "" };
+    if (PENDING_PROFILE) { PROFILE = PENDING_PROFILE; PENDING_PROFILE = null; }
     const cloud = d && d.progress ? Object.assign(blank(), d.progress) : null;
     S = migrate(cloud && cloud.xp >= local.xp ? cloud : local);
     const base = { name: USERNAME, email: u.email || "", progress: S, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    if (PROFILE.gender) { base.gender = PROFILE.gender; base.birth = PROFILE.birth; }
     if (!d) base.createdAt = firebase.firestore.FieldValue.serverTimestamp();
     await ref.set(base, { merge: true });
   } catch (e) {
@@ -1504,6 +1711,8 @@ async function loadCloud(u) {
 /* ---------- Boot ---------- */
 S = loadLocal(KEY);
 loadMyPhoto();
+try { PROFILE = Object.assign(PROFILE, JSON.parse(localStorage.getItem("ty-profile") || "{}")); } catch (e) {}
+document.querySelector("#f-birth .birth").innerHTML = birthSelects("b", "");
 if (FB) {
   firebase.initializeApp(window.FIREBASE_CONFIG);
   auth = firebase.auth(); auth.languageCode = "uz";
@@ -1512,7 +1721,8 @@ if (FB) {
   auth.getRedirectResult().catch(err => { showAuth(false); authError(err); });
   auth.onAuthStateChanged(async u => {
     if (!u) {
-      USER = null; USERNAME = ""; S = blank(); KEYU = KEY; RANK_CACHE = {}; MYPHOTO = "";
+      USER = null; USERNAME = ""; S = blank(); KEYU = KEY; RANK_CACHE = {}; MYPHOTO = ""; PROFILE = { gender: "", birth: "" };
+      try { sessionStorage.removeItem("ty-welcomed"); } catch (e) {}
       if (SES) closeSession();
       showAuth(false); setAuthTab(authMode);
       return;
@@ -1522,9 +1732,12 @@ if (FB) {
     await loadCloud(u);
     hideAuth();
     route();
+    if (!PROFILE.gender || !PROFILE.birth) profileSheet(true);
+    else showWelcome();
   });
 } else {
   route();
+  showWelcome();
 }
 if ("serviceWorker" in navigator && location.protocol === "https:") {
   navigator.serviceWorker.register("sw.js").catch(() => {});

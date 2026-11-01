@@ -34,7 +34,8 @@
 
 <section class="auth" id="auth" hidden aria-label="Kirish">
   <div class="auth-hero">
-    <div class="float" id="auth-mascot"></div>
+    <span class="speech" id="auth-speech">Salom! Men Pamuk.</span>
+    <div id="auth-mascot"></div>
     <h1>Türkçe Yoʻl</h1>
     <p>Turk tilini oʻzbek tilida, kuniga 10 daqiqada oʻrganing.</p>
   </div>
@@ -46,9 +47,18 @@
         <button role="tab" id="tab-signup" data-act="auth-tab" data-t="signup" aria-selected="false">Roʻyxatdan oʻtish</button>
       </div>
       <form id="auth-form" novalidate>
-        <div class="field" id="f-name" hidden><label for="a-name">Ismingiz</label><input id="a-name" autocomplete="name" placeholder="Masalan, Aziza"></div>
-        <div class="field"><label for="a-email">Elektron pochta</label><input id="a-email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="siz@gmail.com"></div>
-        <div class="field"><label for="a-pass">Parol</label><input id="a-pass" type="password" autocomplete="current-password" placeholder="Kamida 6 ta belgi"></div>
+        <div class="field" id="f-name" hidden><label for="a-name">Ismingiz</label><input id="a-name" autocomplete="name"></div>
+        <div class="field" id="f-gender" hidden><span class="flabel" id="lbl-gender">Jinsingiz</span>
+          <div class="seg glass" role="radiogroup" aria-labelledby="lbl-gender">
+            <button type="button" role="radio" aria-checked="false" data-act="gender" data-g="m">Erkak</button>
+            <button type="button" role="radio" aria-checked="false" data-act="gender" data-g="f">Ayol</button>
+          </div></div>
+        <div class="field" id="f-birth" hidden><span class="flabel" id="lbl-birth">Tugʻilgan sana</span>
+          <div class="birth" role="group" aria-labelledby="lbl-birth">
+            <select id="b-day" aria-label="Kun"></select><select id="b-month" aria-label="Oy"></select><select id="b-year" aria-label="Yil"></select>
+          </div></div>
+        <div class="field"><label for="a-email">Elektron pochta</label><input id="a-email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false"></div>
+        <div class="field"><label for="a-pass">Parol</label><input id="a-pass" type="password" autocomplete="current-password"></div>
         <div class="field" id="f-pass2" hidden><label for="a-pass2">Parolni takrorlang</label><input id="a-pass2" type="password" autocomplete="new-password"></div>
         <p class="auth-err" id="auth-err" role="alert"></p>
         <button class="btn btn-grad btn-block" id="auth-submit" type="submit">Kirish</button>
@@ -62,6 +72,8 @@
 </section>
 
 <main class="app" id="app"></main>
+
+<div class="welcome" id="welcome" hidden data-act="welcome-close"><div class="welcome-card" id="welcome-card"></div></div>
 
 <nav class="nav blur" aria-label="Asosiy menyu">
   <a href="#home" data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>Asosiy</span></a>
@@ -90,7 +102,7 @@
 <script src="content.js"></script>
 <script src="grammar.js"></script>
 <script src="grammar-ex.js"></script>
-<script src="book.js"></script>
+<script src="guide.js"></script>
 <script src="cat.js"></script>
 <script src="app.js"></script>
 </body>
