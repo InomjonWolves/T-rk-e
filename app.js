@@ -37,7 +37,7 @@ function blank() {
     xp: 0, streak: 0, best: 0, lastDay: null, day: todayKey(), dayXp: 0,
     known: {}, gram: {}, srs: {}, newDay: { d: 0, n: 0 },
     days: {}, sessions: 0, perfect: 0, acc: [0, 0], ust: {},
-    week: "", wxp: 0, goal: 50, pub: true, gx: {}, gxm: {}, k: {}, ktest: {}, onb: 0, trUses: 0, shared: 0, night: 0, early: 0
+    week: "", wxp: 0, goal: 50, pub: true, gx: {}, gxm: {}, k: {}, ktest: {}, onb: 0, trUses: 0, shared: 0, night: 0, early: 0, pron: [0, 0]
   };
 }
 let S = blank();
@@ -210,7 +210,8 @@ const ICON = {
   heart: sv('<path d="M12 20s-7-4.5-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.5-9 9-9 9z"/>'),
   moon: sv('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'),
   sun: sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
-  globe: sv('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>')
+  globe: sv('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>'),
+  mic: sv('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>')
 };
 const pawPath = '<ellipse cx="12" cy="16" rx="5.2" ry="4.4"/><ellipse cx="5.8" cy="10.4" rx="2.3" ry="2.7"/><ellipse cx="9.6" cy="6.6" rx="2.3" ry="2.8"/><ellipse cx="14.4" cy="6.6" rx="2.3" ry="2.8"/><ellipse cx="18.2" cy="10.4" rx="2.3" ry="2.7"/>';
 const logo = `<span class="logo" aria-hidden="true">${catSVG({ pose: "head", lite: true })}</span>`;
@@ -434,7 +435,8 @@ function modeSheet(u, title) {
   openSheet(`<h3>${esc(title)}</h3>
     <button class="mode glass" data-act="start" data-mode="cards" data-u="${u}"><span class="ico violet-t">${ICON.cards}</span><span><b>Kartochkalar</b><span>Koʻring, agʻdaring, eslang</span></span>${ICON.chev}</button>
     <button class="mode glass" data-act="start" data-mode="quiz" data-u="${u}"><span class="ico sky-t">${ICON.quiz}</span><span><b>Test</b><span>4 ta variantdan toʻgʻrisini tanlang</span></span>${ICON.chev}</button>
-    <button class="mode glass" data-act="start" data-mode="type" data-u="${u}"><span class="ico pink-t">${ICON.type}</span><span><b>Yozish</b><span>Turkcha yozing: ç, ş, ğ, ı tugmalari bor</span></span>${ICON.chev}</button>`);
+    <button class="mode glass" data-act="start" data-mode="type" data-u="${u}"><span class="ico pink-t">${ICON.type}</span><span><b>Yozish</b><span>Turkcha yozing: ç, ş, ğ, ı tugmalari bor</span></span>${ICON.chev}</button>
+    <button class="mode glass" data-act="start" data-mode="say" data-u="${u}"><span class="ico green-t">${ICON.mic}</span><span><b>Talaffuz</b><span>${canListen() ? "Soʻzni ovoz chiqarib ayting, Pamuk tekshiradi" : "Bu brauzerda ishlamaydi: Chrome yoki Safari kerak"}</span></span>${ICON.chev}</button>`);
 }
 
 /* ---------- Home ---------- */
@@ -812,6 +814,13 @@ function viewPractice() {
     <div class="tags"><span class="tag sky-t">${esc(gxNext())}</span><span class="tag violet-t">${esc((gxTopic(gxNext()) || {}).uz || "")}</span>${gxMistakes().length ? `<span class="tag pink-t">${gxMistakes().length} ta xato</span>` : ""}</div>
     <div class="facts"><span>${ICON.list}Variant tanlash, yozish va gap tuzish</span><span>${ICON.book}Qoʻllanmadagi qoida asosida</span></div>
     <button class="plus" data-act="gx-start" data-c="${gxNext()}" aria-label="Keyingi qoida mashqi">${ICON.play}</button>
+  </div>
+
+  <div class="pcard glass">
+    <div class="pcard-head"><b>${ICON.mic}Talaffuz mashqi</b>${S.pron[1] ? `<span>${pct(S.pron[0], S.pron[1])}%</span>` : ""}</div>
+    <div class="facts"><span>${ICON.list}Soʻzni tinglang va ovoz chiqarib ayting</span><span>${ICON.target}Notoʻgʻri aytilgan harflar qizil boʻladi</span><span>${ICON.quiz}${S.pron[1] ? `${S.pron[0]} ta soʻz toʻgʻri aytildi` : "Mikrofon kerak · ovoz saqlanmaydi"}</span></div>
+    ${canListen() ? "" : `<p class="muted" style="margin-top:6px">Brauzeringiz nutqni tanishni qoʻllamaydi. Saytni Chrome (Android, kompyuter) yoki Safari (iPhone) da oching.</p>`}
+    <button class="plus" data-act="start" data-mode="say" data-u="pron" aria-label="Talaffuz mashqini boshlash" ${canListen() ? "" : "disabled"}>${ICON.play}</button>
   </div>
 
   <section class="section">
@@ -1418,6 +1427,7 @@ const ACH = [
   { id: "sess50", cat: "practice", t: "Chempion", d: "50 ta mashq", v: () => S.sessions, n: 50, c: "orange", ico: "bolt" },
   { id: "perfect", cat: "practice", t: "Mukammal", d: "xatosiz mashq", v: () => S.perfect, n: 1, c: "pink", ico: "target" },
   { id: "perfect5", cat: "practice", t: "Aniq nishon", d: "5 ta xatosiz mashq", v: () => S.perfect, n: 5, c: "pink", ico: "target" },
+  { id: "pron20", cat: "practice", t: "Bulbul", d: "20 ta soʻzni toʻgʻri talaffuz qilish", v: () => S.pron[0], n: 20, c: "green", ico: "mic" },
   { id: "xp1k", cat: "practice", t: "1000 XP", d: "1000 XP toʻplandi", v: () => S.xp, n: 1000, c: "teal", ico: "star" },
   { id: "xp5k", cat: "practice", t: "5000 XP", d: "5000 XP toʻplandi", v: () => S.xp, n: 5000, c: "violet", ico: "star" },
   { id: "photo", cat: "life", t: "Yangi qiyofa", d: "Profil rasmi qoʻyildi", v: () => (MYPHOTO ? 1 : 0), n: 1, c: "sky", ico: "camera" },
@@ -1676,6 +1686,10 @@ function startSession(mode, u) {
   } else if (mode === "gxm") {
     items = shuffle(gxMistakes()).slice(0, 15).map(k => { const [c, i] = k.split("#"); return { gx: true, code: c, i: +i, ex: BX[c][+i] }; });
     if (!items.length) { toast("Qoida xatolari yoʻq"); return; }
+  } else if (mode === "say") {
+    if (!canListen()) { toast("Bu brauzer nutqni tanimaydi. Chrome yoki Safari'da oching"); return; }
+    items = sayItems(u);
+    if (!items.length) { toast("Talaffuz uchun soʻz topilmadi"); return; }
   } else {
     let pool = pickPool(u);
     if (mode === "type") pool = pool.filter(typeable);
@@ -1691,6 +1705,7 @@ function startSession(mode, u) {
 }
 function closeSession() {
   try { speechSynthesis.cancel(); } catch (e) {}
+  micStop(true);
   if (SES) { tick(); save(); }
   sessionEl.hidden = true; SES = null;
   document.body.style.overflow = "";
@@ -1710,6 +1725,7 @@ function renderStep() {
   const m = itemMode(w);
   if (m === "cards") renderCard(w);
   else if (m === "quiz") renderQuiz(w);
+  else if (m === "say") renderSay(w);
   else renderType(w);
 }
 // Review sessions mix modes: new words are shown as cards, known ones are tested
@@ -1779,6 +1795,152 @@ function checkType(skip) {
   }
   speak(w.tr);
   foot.innerHTML = `<button class="btn btn-grad btn-block" data-act="next">Keyingi</button>`;
+}
+/* ---------- Pronunciation practice ----------
+   Uses the browser's own speech recognition (Web Speech API, tr-TR). Nothing is recorded or stored by the site:
+   the browser returns text, and we compare it letter by letter with the target word. */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const canListen = () => !!SR;
+let REC = null;
+const sayable = w => !/[…\/()=;]/.test(w.tr) && w.tr.length <= 26 && /[a-zçğıöşü]/i.test(w.tr);
+function sayItems(u) {
+  let pool;
+  if (u === "pron") {
+    // Words the learner has already met; for a fresh start, the first lessons
+    pool = ALL.filter(w => srs(w) && sayable(w));
+    if (pool.length < 8) pool = ALL.filter(sayable).slice(0, 80);
+  } else pool = pickPool(u).filter(sayable);
+  return shuffle(pool).slice(0, 8);
+}
+// Recognisers often write numbers as digits: turn them back into Turkish words
+const TR_ONES = ["", "bir", "iki", "üç", "dört", "beş", "altı", "yedi", "sekiz", "dokuz"];
+const TR_TENS = ["", "on", "yirmi", "otuz", "kırk", "elli", "altmış", "yetmiş", "seksen", "doksan"];
+function trNum(n) {
+  if (n === 0) return "sıfır";
+  const part = (k, word) => k ? (k > 1 ? trNum(k) + " " : "") + word : "";
+  const out = [part(Math.floor(n / 1000) % 1000, "bin"), part(Math.floor(n / 100) % 10, "yüz"), TR_TENS[Math.floor(n / 10) % 10], TR_ONES[n % 10]];
+  return out.filter(Boolean).join(" ");
+}
+// Lower-case letters only, with a map back to the original characters (to colour them)
+function sayNorm(s) {
+  let out = "", map = [];
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i].toLocaleLowerCase("tr").replace(/[âáà]/, "a").replace(/[îí]/, "i").replace(/[ûú]/, "u");
+    if (/[a-zçğıöşü]/.test(c)) { out += c; map.push(i); }
+    else if (/[\s\-]/.test(c) && out && out[out.length - 1] !== " ") { out += " "; map.push(-1); }
+  }
+  if (out.endsWith(" ")) { out = out.slice(0, -1); map.pop(); }
+  return { out, map };
+}
+const heardNorm = s => sayNorm(s.replace(/\d+/g, d => " " + trNum(Math.min(+d, 999999)) + " ")).out;
+// Edit distance plus, for each target letter, whether it was matched
+function sayDiff(a, b) {
+  const m = a.length, n = b.length, d = [];
+  for (let i = 0; i <= m; i++) { d.push(new Array(n + 1).fill(0)); d[i][0] = i; }
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++)
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  const ok = new Array(m).fill(false);
+  let i = m, j = n;
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1] && d[i][j] === d[i - 1][j - 1]) { ok[i - 1] = true; i--; j--; }
+    else if (d[i][j] === d[i - 1][j - 1] + 1) { i--; j--; }
+    else if (d[i][j] === d[i - 1][j] + 1) i--;
+    else j--;
+  }
+  return { dist: d[m][n], ok, score: Math.max(0, 1 - d[m][n] / Math.max(m, n, 1)) };
+}
+function sayMarked(target, ok) {
+  const { map } = sayNorm(target), bad = new Set();
+  map.forEach((idx, k) => { if (idx >= 0 && !ok[k]) bad.add(idx); });
+  return [...target].map((c, i) => bad.has(i) ? `<span class="miss">${esc(c)}</span>` : esc(c)).join("");
+}
+function renderSay(w) {
+  SES.tries = 0; SES.best = null;
+  stage.innerHTML = `<div class="q-label">Ovoz chiqarib ayting</div>
+    <div class="q-row"><div class="q-word say-target" id="say-target" lang="tr">${esc(w.tr)}</div>
+      <button class="say" data-act="say" data-t="${esc(w.tr)}" aria-label="Tinglash">${ICON.speak}</button></div>
+    <div class="sub">${esc(w.uz)}</div>
+    <div class="mic-wrap">
+      <button class="mic-btn" id="mic-btn" data-act="mic" aria-label="Mikrofon: gapirishni boshlash">${ICON.mic}</button>
+      <div class="mic-hint" id="mic-hint">Avval tinglang, keyin mikrofonni bosib ayting</div>
+      <div class="heard" id="heard" lang="tr" aria-live="polite"></div>
+    </div>
+    <div class="feedback" id="fb" aria-live="polite"></div>`;
+  foot.innerHTML = `<button class="btn btn-ghost btn-block" data-act="say-skip">Hozir gapira olmayman</button>`;
+  speak(w.tr);
+}
+function micStop(abort) {
+  if (!REC) return;
+  const r = REC; REC = null;
+  try { abort ? r.abort() : r.stop(); } catch (e) {}
+}
+function micUi(on, hint) {
+  const b = $("mic-btn"), h = $("mic-hint");
+  if (b) { b.classList.toggle("on", on); b.setAttribute("aria-label", on ? "Mikrofon: toʻxtatish" : "Mikrofon: gapirishni boshlash"); }
+  if (h && hint) h.textContent = hint;
+}
+function micToggle() {
+  if (!SES || SES.answered) return;
+  if (REC) { micStop(false); return; }
+  try { speechSynthesis.cancel(); } catch (e) {}
+  const w = SES.items[SES.i];
+  const r = new SR();
+  r.lang = "tr-TR"; r.interimResults = true; r.maxAlternatives = 5; r.continuous = false;
+  let finalAlts = null;
+  r.onresult = ev => {
+    const res = ev.results[ev.results.length - 1];
+    const h = $("heard"); if (h) h.textContent = res[0].transcript;
+    if (res.isFinal) finalAlts = [...res].map(a => a.transcript);
+  };
+  r.onerror = ev => {
+    const msg = { "not-allowed": "Mikrofonga ruxsat berilmagan. Brauzer sozlamalarida ruxsat bering.", "service-not-allowed": "Mikrofonga ruxsat berilmagan. Brauzer sozlamalarida ruxsat bering.",
+      "no-speech": "Ovoz eshitilmadi. Mikrofonni bosib, soʻzni aniq ayting.", "audio-capture": "Mikrofon topilmadi.", "network": "Nutqni tanish uchun internet kerak." }[ev.error];
+    if (msg) { const fb = $("fb"); if (fb) { fb.className = "feedback no"; fb.textContent = msg; } }
+  };
+  r.onend = () => {
+    if (REC === r) REC = null;
+    micUi(false, "Yana aytish uchun mikrofonni bosing");
+    if (finalAlts && SES && !SES.answered && SES.items[SES.i] === w) sayCheck(w, finalAlts);
+  };
+  try { r.start(); REC = r; micUi(true, "Tinglayapman… soʻzni ayting"); const h = $("heard"); if (h) h.textContent = ""; }
+  catch (e) { toast("Mikrofonni ishga tushirib boʻlmadi"); }
+}
+function sayCheck(w, alts) {
+  const target = sayNorm(w.tr).out;
+  let best = null;
+  alts.forEach(a => { const r = sayDiff(target, heardNorm(a)); r.text = a; if (!best || r.score > best.score) best = r; });
+  if (!best) return;
+  SES.tries++;
+  const p = Math.round(best.score * 100), fb = $("fb");
+  $("heard").textContent = best.text;
+  $("say-target").innerHTML = sayMarked(w.tr, best.ok);
+  if (best.score >= 0.85) {
+    fb.className = "feedback ok";
+    fb.innerHTML = `${p === 100 ? "Mükemmel! Juda toʻgʻri aytdingiz." : "Aferin! Yaxshi aytdingiz."} <span class="tag green-t">${p}%</span>`;
+    sayFinish(true);
+  } else if (SES.tries < 3) {
+    fb.className = "feedback no";
+    fb.innerHTML = `${p >= 60 ? "Yaqin!" : "Unchalik oʻxshamadi."} <span class="tag pink-t">${p}%</span><div class="sub" style="margin-top:4px">Qizil harflarga eʼtibor bering, yana tinglab qayta ayting (${3 - SES.tries} ta urinish qoldi).</div>`;
+    CatLife.mood(sCat(), "sad", 1200);
+  } else {
+    fb.className = "feedback no";
+    fb.innerHTML = `Bu safar chiqmadi <span class="tag pink-t">${p}%</span><div class="sub" style="margin-top:4px">Keyingi safar albatta chiqadi. Qizil harflarni alohida mashq qiling.</div>`;
+    sayFinish(false);
+  }
+}
+function sayFinish(ok, skipped) {
+  if (!SES || SES.answered) return;
+  micStop(true);
+  SES.answered = true;
+  tick();
+  if (!skipped) {
+    S.pron[1]++; dayRec().rev++;
+    if (ok) { S.pron[0]++; SES.right++; SES.xp += 10; addXP(10); CatLife.mood(sCat(), "happy", 1000); }
+    else { save(); CatLife.mood(sCat(), "sad", 1600); }
+  }
+  const w = SES.items[SES.i];
+  foot.innerHTML = `<button class="btn btn-ghost" data-act="say" data-t="${esc(w.tr)}">${ICON.speak}Tinglash</button><button class="btn btn-grad" data-act="next">Keyingi</button>`;
 }
 /* ---------- Rule exercises ---------- */
 const blankHtml = q => esc(q).replace("___", '<span class="blank">&nbsp;</span>');
@@ -1880,7 +2042,7 @@ function bad() {
   // Show a missed word once more at the end of the session
   if (!SES.re.has(w.tr) && SES.items.length < 40) { SES.re.add(w.tr); SES.items.push(w); }
 }
-function nextStep() { SES.i++; renderStep(); }
+function nextStep() { micStop(true); SES.i++; renderStep(); }
 function renderResult() {
   const n = SES.items.length;
   $("s-bar").style.width = "100%";
@@ -2001,6 +2163,8 @@ document.addEventListener("click", e => {
   else if (act === "delete-yes") deleteAccount(b);
   else if (act === "close-session") closeSession();
   else if (act === "again") startSession(SES.mode, SES.u);
+  else if (act === "mic") micToggle();
+  else if (act === "say-skip") sayFinish(false, true);
   else if (act === "flip") $("flip").classList.toggle("on");
   else if (act === "card-know") { good(); nextStep(); }
   else if (act === "card-again") {

@@ -848,3 +848,23 @@ body.locked .app, body.locked .nav { display: none; }
 details.glass summary { cursor: pointer; }
 .auth-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 4px; }
 .auth-chips span { padding: 5px 11px; border-radius: 999px; background: var(--card-strong); border: 1px solid var(--edge); font-size: 12.5px; font-weight: 800; color: var(--accent-ink); }
+
+/* Pronunciation practice */
+.mic-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 8px 0; }
+.mic-btn {
+  width: 88px; height: 88px; border-radius: 50%; display: grid; place-items: center; color: #fff;
+  background: var(--grad); box-shadow: 0 14px 30px -12px rgba(120, 100, 240, 0.9); position: relative; transition: transform 0.15s;
+}
+.mic-btn svg { width: 36px; height: 36px; }
+.mic-btn:active { transform: scale(0.95); }
+.mic-btn.on { background: var(--pink); box-shadow: 0 14px 30px -12px rgba(240, 80, 140, 0.9); }
+.mic-btn.on::after {
+  content: ""; position: absolute; inset: -8px; border-radius: 50%; border: 3px solid var(--pink); opacity: 0.6;
+  animation: mic-pulse 1.2s ease-out infinite;
+}
+@keyframes mic-pulse { from { transform: scale(0.9); opacity: 0.7; } to { transform: scale(1.25); opacity: 0; } }
+.mic-hint { font-size: 14px; font-weight: 600; color: var(--muted); text-align: center; }
+.heard { min-height: 24px; font-size: 18px; font-weight: 700; color: var(--ink-2); text-align: center; }
+.heard:not(:empty)::before { content: "Eshitildi: "; font-weight: 600; color: var(--muted); font-size: 14px; }
+.say-target .miss { color: var(--pink); background: var(--pink-soft); border-radius: 6px; padding: 0 1px; }
+@media (prefers-reduced-motion: reduce) { .mic-btn.on::after { animation: none; } }
