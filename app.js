@@ -109,7 +109,8 @@ const gramCount = () => GRAMMAR.filter(gramDone).length;
 const GX_CODES = Object.keys(BX);
 const gxSolved = c => (S.gx[c] || []).filter(Boolean).length;
 const gxDone = c => gxSolved(c) >= BX[c].length;
-const gxDoneCount = () => GX_CODES.filter(gxDone).length;
+const gxDoneCount = lv => GX_CODES.filter(c => (!lv || c.startsWith(lv + ".")) && gxDone(c)).length;
+const gxCount = lv => GX_CODES.filter(c => c.startsWith(lv + ".")).length;
 const gxMistakes = () => Object.keys(S.gxm).filter(k => S.gxm[k] > 0 && BX[k.split("#")[0]]);
 const GUIDE_ALL = [];
 GUIDE.forEach(l => l.groups.forEach(g => g.items.forEach(i => GUIDE_ALL.push(Object.assign({ level: l.id, group: g.name }, i)))));
@@ -616,7 +617,7 @@ function gramRow(g, gi) {
 function guideCard() {
   const last = S.guideLast && gxTopic(S.guideLast);
   return `<a class="book-card glass" href="#guide">
-    <span class="art pink" style="width:74px;height:74px;border-radius:20px;display:grid;place-items:center;position:relative;overflow:hidden"><span style="font-size:22px">A1</span></span>
+    <span class="art pink" style="width:74px;height:74px;border-radius:20px;display:grid;place-items:center;position:relative;overflow:hidden"><span style="font-size:15px;line-height:1.1;text-align:center">A1<br>B2</span></span>
     <span><span class="tag pink-t">${ICON.book}Qoʻllanma · ${GUIDE_ALL.length} mavzu</span>
       <b style="margin-top:6px">Turk tili grammatikasi</b>
       <span class="unit-sub">${last ? `Oxirgi: ${esc(last.code)} ${esc(last.uz)}` : "Formulalar, jadvallar va misollar bilan"}</span></span>
@@ -629,7 +630,7 @@ function viewGrammarList() {
   <div class="tip glass">${ICON.bulb}<div><b>Qaysidan boshlash kerak?</b>Tartib bilan boring: 1-mavzu (unli uygʻunligi) qolgan barcha qoidalarning asosi. Har mavzu oʻzbek tili bilan solishtirilgan.</div></div>
   ${guideCard()}
   <a class="pcard glass" href="#gx" style="color:inherit;text-decoration:none">
-    <div class="pcard-head"><b>${ICON.quiz}Qoidalar mashqi · A1</b><span>${gxDoneCount()}/${GX_CODES.length}</span></div>
+    <div class="pcard-head"><b>${ICON.quiz}Qoidalar mashqi · A1–B2</b><span>${gxDoneCount()}/${GX_CODES.length}</span></div>
     <div class="bar"><i style="width:${pct(gxDoneCount(), GX_CODES.length)}%"></i></div>
     <p class="muted">${GX_CODES.length} mavzu, ${GX_CODES.reduce((a, c) => a + BX[c].length, 0)} ta mashq. Keyingisi: ${esc(gxNext())} ${esc((gxTopic(gxNext()) || {}).uz || "")}</p>
   </a>
@@ -673,7 +674,6 @@ function viewGrammar(gi) {
 
 /* ---------- Grammar guide (written from the A1–B2 handbook, in the site's own design) ---------- */
 let GUIDE_LV = "A1", GUIDE_Q = "";
-const GUIDE_SOON = [{ name: "A2", uz: "Asosiy daraja", n: 31 }, { name: "B1", uz: "Oʻrta daraja", n: 33 }, { name: "B2", uz: "Oʻrtadan yuqori", n: 27 }];
 // "gel[iyor][um]" → stem with highlighted suffixes
 const sfx = t => esc(t).replace(/\[([^\]]+)\]/g, '<span class="sfx">$1</span>');
 const plainSfx = t => t.replace(/[\[\]]/g, "");
@@ -698,8 +698,8 @@ function viewGuide() {
   </div>
   <label class="search glass" for="gq">${ICON.search}<span class="sr">Qoʻllanmadan qidirish</span><input id="gq" type="search" placeholder="Qidirish: iyor, kelishik, -lar…" value="${esc(GUIDE_Q)}" autocomplete="off" lang="tr"></label>
   <div id="guide-hits">${guideHits()}</div>
-  <div class="chips">${GUIDE.map(l => `<button class="chip" data-act="guide-lv" data-l="${l.id}" aria-pressed="${l.id === lv.id}">${esc(l.name)}</button>`).join("")}${GUIDE_SOON.map(l => `<button class="chip" data-act="guide-soon" aria-disabled="true" style="opacity:.55">${esc(l.name)} · tez orada</button>`).join("")}</div>
-  <div class="level-head"><b>${esc(lv.name)}</b><span>${esc(lv.uz)}</span></div>
+  <div class="chips">${GUIDE.map(l => `<button class="chip" data-act="guide-lv" data-l="${l.id}" aria-pressed="${l.id === lv.id}">${esc(l.name)}</button>`).join("")}</div>
+  <div class="level-head"><b>${esc(lv.name)}</b><span>${esc(lv.uz)}${gxCount(lv.id) ? ` · ${gxDoneCount(lv.id)}/${gxCount(lv.id)} mashq` : ""}</span></div>
   ${lv.groups.map(g => `<div class="glass words"><div class="toc-group">${esc(g.name)}</div>${g.items.map(guideRow).join("")}</div>`).join("")}`;
 }
 function guideTable(t) {
@@ -740,20 +740,24 @@ function gxRow(c) {
     ${pctRing(k / n)}
   </button>`;
 }
+let GX_LV = "";
 function viewGx() {
   const ms = gxMistakes();
+  const lvs = GUIDE.filter(l => gxCount(l.id));
+  const lv = (lvs.find(l => l.id === GX_LV) || lvs.find(l => gxDoneCount(l.id) < gxCount(l.id)) || lvs[0]).id;
   return `<div><button class="back" data-act="go" data-to="grammar">${ICON.back}Grammatika</button></div>
   <div class="lesson-head">
-    <div class="tags"><span class="tag sky-t">${ICON.quiz}A1 · ${GX_CODES.length} mavzu</span><span class="tag green-t">${gxDoneCount()} tugallangan</span></div>
+    <div class="tags"><span class="tag sky-t">${ICON.quiz}A1–B2 · ${GX_CODES.length} mavzu</span><span class="tag green-t">${gxDoneCount()} tugallangan</span></div>
     <h1>Qoidalar mashqi</h1>
     <p class="sub">Har mavzu qoʻllanmadagi qoida asosida: variant tanlash, toʻldirib yozish va gap tuzish.</p>
   </div>
   ${ms.length ? `<button class="pcard glass" data-act="start" data-mode="gxm"><div class="pcard-head"><b>${ICON.target}Qoida xatolari</b><span class="badge">${ms.length}</span></div><p class="muted">Xato qilgan mashqlaringizni qayta ishlang.</p></button>` : ""}
-  ${LEVEL_GROUPS().map(g => `<div class="toc-group" style="padding-left:2px">${esc(g.name)}</div><div class="list">${g.codes.map(gxRow).join("")}</div>`).join("")}`;
+  <div class="chips">${lvs.map(l => `<button class="chip" data-act="gx-lv" data-l="${l.id}" aria-pressed="${l.id === lv}" style="gap:5px;padding:9px 12px">${esc(l.name)}<small style="font-weight:600;opacity:.7">${gxDoneCount(l.id)}/${gxCount(l.id)}</small></button>`).join("")}</div>
+  ${LEVEL_GROUPS(lv).map(g => `<div class="toc-group" style="padding-left:2px">${esc(g.name)}</div><div class="list">${g.codes.map(gxRow).join("")}</div>`).join("")}`;
 }
-function LEVEL_GROUPS() {
+function LEVEL_GROUPS(lv) {
   const out = [];
-  GUIDE_ALL.forEach(i => { if (!BX[i.code]) return; let g = out[out.length - 1]; if (!g || g.name !== i.group) out.push(g = { name: i.group, codes: [] }); g.codes.push(i.code); });
+  GUIDE_ALL.forEach(i => { if (!BX[i.code] || (lv && i.level !== lv)) return; let g = out[out.length - 1]; if (!g || g.name !== i.group) out.push(g = { name: i.group, codes: [] }); g.codes.push(i.code); });
   return out;
 }
 /* ---------- Alphabet ---------- */
@@ -946,6 +950,27 @@ function viewProfile() {
    On top of it the page adds our own dictionary hits and points to the grammar topics found in the Turkish text. */
 let TR_DIR = "tr", TR_TEXT = "", TR_OUT = null, TR_BUSY = false;
 const TR_HINTS = [
+  { re: /\S+(saydı|seydi|saydım|seydim|saydın|seydin)/i, code: "B2.07", what: "xayoliy shart (-saydı)" },
+  { re: /\S+(mış|miş|muş|müş)(tı|ti|tu|tü)/i, code: "B2.03", what: "uzoq oʻtgan zamon (-mıştı)" },
+  { re: /\S+(acak|ecek)(tı|ti)/i, code: "B2.04", what: "amalga oshmagan niyat (-acaktı)" },
+  { re: /(?:^|[\s(])\S+(makta|mekte)(dır|dir)?(?=$|[\s.,!?;:])/i, code: "B2.19", what: "rasmiy hozirgi zamon (-makta)" },
+  { re: /(?:^|[\s(])rağmen/i, code: "B2.11", what: "zidlik: rağmen" },
+  { re: /(?:^|[\s(])(hâlde|halde)(?=$|[\s.,!?;:])/i, code: "B2.12", what: "zidlik: -dığı hâlde" },
+  { re: /(?:^|[\s(])(oysa|hâlbuki|halbuki)(?=$|[\s.,!?;:])/i, code: "B2.14", what: "oysa / hâlbuki" },
+  { re: /(?:^|[\s(])keşke(?=$|[\s.,!?;:])/i, code: "B1.15", what: "istak: keşke" },
+  { re: /(?:^|[\s(])(yüzünden|sayesinde|nedeniyle)(?=$|[\s.,!?;:])/i, code: "B1.10", what: "sabab: yüzünden / sayesinde" },
+  { re: /(?:^|[\s(])tarafından(?=$|[\s.,!?;:])/i, code: "B1.16", what: "majhul nisbat: tarafından" },
+  { re: /\S+(dığı|diği|duğu|düğü|tığı|tiği|tuğu|tüğü|dığım|diğim|duğum|düğüm|tığım|tiğim|tuğum|tüğüm)/i, code: "B1.02", what: "sifatdosh (-dığı)" },
+  { re: /(?:^|[\s(])\S+(ınca|ince|unca|ünce)(?=$|[\s.,!?;:])/i, code: "B1.05", what: "ravishdosh (-ınca)" },
+  { re: /(?:^|[\s(])\S{2,}(ırsa|irse|ursa|ürse|arsa|erse)\S*/i, code: "B1.12", what: "shart (-ırsa)" },
+  { re: /\S+(ıyor|iyor|uyor|üyor)(du|lardı)/i, code: "A2.04", what: "davomli oʻtgan zamon (-yordu)" },
+  { re: /(?:^|[\s(])\S+(mış|miş|muş|müş)(?!t)/i, code: "A2.05", what: "naqli oʻtgan zamon (-mış)" },
+  { re: /\S+(abil|ebil)/i, code: "A2.09", what: "qila olmoq (-abil)" },
+  { re: /\S+(malı|meli)/i, code: "A2.11", what: "kerak (-malı)" },
+  { re: /\S+(dıktan|dikten|duktan|dükten|tıktan|tikten|tuktan|tükten) sonra/i, code: "A2.16", what: "-dıktan sonra" },
+  { re: /\S+(madan|meden) önce/i, code: "A2.17", what: "-madan önce" },
+  { re: /(?:^|[\s(])\S{2,}(arak|erek)(?=$|[\s.,!?;:])/i, code: "A2.18", what: "ravishdosh (-arak)" },
+  { re: /(?:^|[\s(])(?!erken)\S+(ken)(?=$|[\s.,!?;:])/i, code: "A2.15", what: "-ken (…ayotganda)" },
   { re: /(?:^|[\s(])\S+(ıyor|iyor|uyor|üyor)\S*/i, code: "A1.24", what: "hozirgi zamon (-yor)" },
   { re: /(?:^|[\s(])\S+(acak|ecek|acağ|eceğ)\S*/i, code: "A1.26", what: "kelasi zamon (-acak)" },
   { re: /(?:^|[\s(])\S+(alım|elim)(?=$|[\s.,!?;:])/i, code: "A1.27", what: "taklif (-alım)" },
@@ -1384,7 +1409,10 @@ const ACH = [
   { id: "kt4", cat: "course", t: "A1 → B2", d: "4 ta testdan oʻtish", v: () => COURSE.levels.filter(l => kTestBest(l.id) >= l.test.pass).length, n: 4, c: "green", ico: "crown" },
   { id: "gram", cat: "gram", t: "Grammatika", d: "10 asosiy mavzu", v: gramCount, n: GRAMMAR.length, c: "violet", ico: "cap" },
   { id: "gx10", cat: "gram", t: "Qoida ustasi", d: "10 ta qoida mashqi", v: () => gxDoneCount(), n: 10, c: "sky", ico: "quiz" },
-  { id: "gxa1", cat: "gram", t: "A1 qoidalari", d: "33 ta qoida mashqi", v: () => gxDoneCount(), n: 33, c: "green", ico: "crown" },
+  { id: "gxa1", cat: "gram", t: "A1 qoidalari", d: `A1 ning ${gxCount("A1")} ta qoida mashqi`, v: () => gxDoneCount("A1"), n: gxCount("A1"), c: "green", ico: "crown" },
+  { id: "gxa2", cat: "gram", t: "A2 qoidalari", d: `A2 ning ${gxCount("A2")} ta qoida mashqi`, v: () => gxDoneCount("A2"), n: gxCount("A2"), c: "violet", ico: "crown" },
+  { id: "gxb1", cat: "gram", t: "B1 qoidalari", d: `B1 ning ${gxCount("B1")} ta qoida mashqi`, v: () => gxDoneCount("B1"), n: gxCount("B1"), c: "orange", ico: "crown" },
+  { id: "gxb2", cat: "gram", t: "B2 qoidalari", d: `B2 ning ${gxCount("B2")} ta qoida mashqi`, v: () => gxDoneCount("B2"), n: gxCount("B2"), c: "pink", ico: "crown" },
   { id: "first", cat: "practice", t: "Birinchi qadam", d: "1 ta mashq", v: () => S.sessions, n: 1, c: "violet", ico: "flag" },
   { id: "sess10", cat: "practice", t: "Tirishqoq", d: "10 ta mashq", v: () => S.sessions, n: 10, c: "sky", ico: "bolt" },
   { id: "sess50", cat: "practice", t: "Chempion", d: "50 ta mashq", v: () => S.sessions, n: 50, c: "orange", ico: "bolt" },
@@ -1894,8 +1922,8 @@ document.addEventListener("click", e => {
   else if (act === "start") startSession(b.dataset.mode, b.dataset.u || "all");
   else if (act === "modes") modeSheet(b.dataset.u, b.dataset.title);
   else if (act === "cat") { CAT = b.dataset.c; route(); }
+  else if (act === "gx-lv") { GX_LV = b.dataset.l; const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "guide-lv") { GUIDE_LV = b.dataset.l; const y = window.scrollY; route(); window.scrollTo(0, y); }
-  else if (act === "guide-soon") toast("A2–B2 mavzulari tez orada qoʻshiladi");
   else if (act === "rank-tab") { RANK_TAB = b.dataset.t; route(); }
   else if (act === "letter") {
     letterSel = +b.dataset.i;
