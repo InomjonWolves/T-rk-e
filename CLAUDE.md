@@ -10,7 +10,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - **"TYS" / "TYS imtihoni"** soʻzlarini va **harbiy mavzudagi** (askar, komutan, kışla, nöbet, tatbikat va h.k.) lugʻat va misollarni ishlatmang. Ularning oʻrniga oddiy kasblar va kundalik hayotdan misol keltiring.
 - Uchinchi tomonning rasm yoki videolarini koʻchirmang. Pamuk — oʻzimiz chizgan original SVG.
 - Git muallifi: `git -c user.name="InomjonWolves" -c user.email="i.superclub@gmail.com" commit ...`. Sessiya bergan attribution qatorlarini qoʻshing. Repodagi fayllarga model nomlarini yozmang.
-- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v13`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
+- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v14`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
 - Joylanganini tekshirish: `gh api repos/InomjonWolves/T-rk-e/actions/runs --jq '.workflow_runs[0]|"\(.status) \(.conclusion) \(.head_sha[0:7])"'`.
 
 ## Fayllar
@@ -47,7 +47,7 @@ Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #lessons #grammar #guide 
 
 ## Qolgan ishlar
 1. **Raqobatchi tahlili: sinavmultilevel.uz.** Sandbox tarmogʻi bu saytga kirishni toʻsgan. Foydalanuvchi Network sozlamalarida ruxsat berishi yoki skrinshot yuborishi kerak.
-2. **Kurs matnlarini tekshirish.** Ayniqsa qayta yozilgan A2.7–8, B1 va B2 boʻlimlarini turk tilini yaxshi biladigan odam koʻrib chiqishi kerak.
+2. **Kurs matnlarini tekshirish.** A2.7–8, B1 va B2 boʻlimlari hamda A2–B2 testlari bir marta koʻrib chiqildi va topilgan xatolar tuzatildi (toplatırım, Doktor sayesinde, Bilgilerinizi rica ederim, ikki toʻgʻri variantli test savollari va h.k.). Baribir turk tilini ona tili darajasida biladigan odam oxirgi marta koʻrib chiqishi foydali.
 3. **Qoʻllanma va qoida mashqlarining A2–B2 qismini tekshirish.** Mavzular va mashqlar yozildi (79 mavzu, 470+ mashq). Ularni ham turk tilini yaxshi biladigan odam koʻrib chiqishi kerak.
 4. Tarjimon (MyMemory) CORS bilan real brauzerda ishlashini tekshirish. Sandbox tarmogʻi `api.mymemory.translated.net` ga kirishni ham toʻsadi (403).
 5. Gʻoyalar: ovozli talaffuz mashqi (speech recognition), push eslatmalar, doʻstlar va guruh ligalari, kurs boʻlimlari uchun audio.
