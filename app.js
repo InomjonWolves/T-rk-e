@@ -37,7 +37,7 @@ function blank() {
     xp: 0, streak: 0, best: 0, lastDay: null, day: todayKey(), dayXp: 0,
     known: {}, gram: {}, srs: {}, newDay: { d: 0, n: 0 },
     days: {}, sessions: 0, perfect: 0, acc: [0, 0], ust: {},
-    week: "", wxp: 0, goal: 50, pub: true
+    week: "", wxp: 0, goal: 50, pub: true, gx: {}, gxm: {}
   };
 }
 let S = blank();
@@ -105,6 +105,14 @@ const unitProgress = ui => { const ws = unitWords(ui); return ws.filter(w => kno
 const learnedCount = () => ALL.filter(w => known(w) >= 2).length;
 const gramDone = g => { const r = S.gram[g.id] || []; return g.quiz.every((q, i) => r[i]); };
 const gramCount = () => GRAMMAR.filter(gramDone).length;
+/* Rule exercises tied to the book topics (grammar-ex.js) */
+const GX_CODES = Object.keys(BX);
+const gxSolved = c => (S.gx[c] || []).filter(Boolean).length;
+const gxDone = c => gxSolved(c) >= BX[c].length;
+const gxDoneCount = () => GX_CODES.filter(gxDone).length;
+const gxMistakes = () => Object.keys(S.gxm).filter(k => S.gxm[k] > 0 && BX[k.split("#")[0]]);
+const gxTopic = c => { let hit = null; BOOK.toc.forEach(l => l.items.forEach(i => { if (i.code === c) hit = i; })); return hit; };
+const gxNext = () => GX_CODES.find(c => !gxDone(c)) || GX_CODES[0];
 
 /* ---------- Daily activity ---------- */
 function dayRec(k = todayKey()) { return S.days[k] || (S.days[k] = { xp: 0, sec: 0, rev: 0 }); }
@@ -153,7 +161,9 @@ const ACH = [
   { id: "s30", t: "1 oy", d: "ketma-ket", v: () => S.best, n: 30, c: "pink", ico: "flame" },
   { id: "gram", t: "Grammatika", d: "10 mavzu", v: gramCount, n: GRAMMAR.length, c: "violet", ico: "cap" },
   { id: "xp1k", t: "1000 XP", d: "toʻplandi", v: () => S.xp, n: 1000, c: "teal", ico: "star" },
-  { id: "perfect", t: "Mukammal", d: "xatosiz mashq", v: () => S.perfect, n: 1, c: "pink", ico: "target" }
+  { id: "perfect", t: "Mukammal", d: "xatosiz mashq", v: () => S.perfect, n: 1, c: "pink", ico: "target" },
+  { id: "gx10", t: "Qoida ustasi", d: "10 mavzu mashqi", v: () => gxDoneCount(), n: 10, c: "sky", ico: "quiz" },
+  { id: "gxa1", t: "A1 qoidalari", d: "33 mavzu", v: () => gxDoneCount(), n: 33, c: "green", ico: "crown" }
 ];
 const achDone = a => a.v() >= a.n;
 
@@ -575,6 +585,12 @@ function viewGrammarList() {
   ${lessonTabs("grammar")}
   <div class="tip glass">${ICON.bulb}<div><b>Qaysidan boshlash kerak?</b>Tartib bilan boring: 1-mavzu (unli uygʻunligi) qolgan barcha qoidalarning asosi. Har mavzu oʻzbek tili bilan solishtirilgan.</div></div>
   ${bookCard()}
+  <a class="pcard glass" href="#gx" style="color:inherit;text-decoration:none">
+    <div class="pcard-head"><b>${ICON.quiz}Qoidalar mashqi · A1</b><span>${gxDoneCount()}/${GX_CODES.length}</span></div>
+    <div class="bar"><i style="width:${pct(gxDoneCount(), GX_CODES.length)}%"></i></div>
+    <p class="muted">${GX_CODES.length} mavzu, ${GX_CODES.reduce((a, c) => a + BX[c].length, 0)} ta mashq. Keyingisi: ${esc(gxNext())} ${esc((gxTopic(gxNext()) || {}).uz || "")}</p>
+  </a>
+  <div class="section-head" style="margin-top:4px"><h2>Asosiy mavzular</h2></div>
   <div class="list">${GRAMMAR.map(gramRow).join("")}</div>`;
 }
 function gqHtml(g, qi) {
@@ -624,7 +640,7 @@ function viewBook() {
     return `${head}<a class="toc-row" href="#book-${i.page}">
       ${i.code ? `<span class="code">${esc(i.code)}</span>` : `<span class="code">${ICON.book.replace("<svg", '<svg style="width:14px;height:14px;vertical-align:-2px"')}</span>`}
       <span>${i.tr ? `<b lang="tr">${esc(i.tr)}</b><small>${esc(i.uz)}</small>` : `<b>${esc(i.uz)}</b>`}</span>
-      <span class="pg">${i.page}</span></a>`;
+      <span class="pg">${BX[i.code] ? (gxDone(i.code) ? `<span class="state done" style="width:22px;height:22px" title="Mashq bajarilgan">${ICON.check}</span>` : `${gxSolved(i.code)}/${BX[i.code].length}`) : i.page}</span></a>`;
   }).join("");
   return `<div><button class="back" data-act="go" data-to="grammar">${ICON.back}Grammatika</button></div>
   <div class="book-card glass" style="grid-template-columns:90px 1fr">
@@ -685,7 +701,41 @@ function viewBookPage(n) {
     <input class="page-jump" id="page-jump" type="number" inputmode="numeric" min="1" max="${BOOK.pages}" value="${n}" aria-label="Betga oʻtish">
     <a class="btn btn-grad" href="#book-${Math.min(BOOK.pages, n + 1)}" ${n >= BOOK.pages ? 'aria-disabled="true" style="opacity:.4;pointer-events:none"' : ""}>Keyingi${ICON.chev.replace('class="chev"', 'style="width:20px;height:20px"')}</a>
   </div>
+  ${gxCardsForPage(n)}
   <p class="sub" style="text-align:center">Barmogʻingiz bilan chapga yoki oʻngga suring. Kattalashtirish uchun ikki barmoq bilan oching.</p>`;
+}
+function gxRow(c) {
+  const tp = gxTopic(c), n = BX[c].length, k = gxSolved(c);
+  return `<button class="unit glass" data-act="gx-start" data-c="${c}">
+    <span class="art ${gxDone(c) ? "green" : "sky"}"><span style="font-size:13px">${c}</span></span>
+    <span class="unit-body"><span class="unit-title">${esc(tp ? tp.uz : c)}</span><span class="unit-sub"><span lang="tr">${esc(tp ? tp.tr : "")}</span> · ${n} ta mashq</span></span>
+    ${pctRing(k / n)}
+  </button>`;
+}
+// Exercises for the topics that start on this page of the book
+function gxCardsForPage(n) {
+  const codes = [];
+  BOOK.toc.forEach(l => l.items.forEach(i => { if (i.page === n && BX[i.code]) codes.push(i.code); }));
+  if (!codes.length) return "";
+  return `<section class="section"><div class="section-head"><h2>Shu betdagi mashqlar</h2><span class="tag sky-t">+10 XP</span></div>
+    <div class="list">${codes.map(gxRow).join("")}</div></section>`;
+}
+function viewGx() {
+  const ms = gxMistakes();
+  return `<div><button class="back" data-act="go" data-to="grammar">${ICON.back}Grammatika</button></div>
+  <div class="lesson-head">
+    <div class="tags"><span class="tag sky-t">${ICON.quiz}A1 · ${GX_CODES.length} mavzu</span><span class="tag green-t">${gxDoneCount()} tugallangan</span></div>
+    <h1>Qoidalar mashqi</h1>
+    <p class="sub">Har mavzu qoʻllanmadagi qoida asosida: variant tanlash, toʻldirib yozish va gap tuzish.</p>
+  </div>
+  ${ms.length ? `<button class="pcard glass" data-act="start" data-mode="gxm"><div class="pcard-head"><b>${ICON.target}Qoida xatolari</b><span class="badge">${ms.length}</span></div><p class="muted">Xato qilgan mashqlaringizni qayta ishlang.</p></button>` : ""}
+  ${LEVEL_GROUPS().map(g => `<div class="toc-group" style="padding-left:2px">${esc(g.name)}</div><div class="list">${g.codes.map(gxRow).join("")}</div>`).join("")}`;
+}
+function LEVEL_GROUPS() {
+  const out = [];
+  const a1 = BOOK.toc.find(l => l.id === "A1");
+  a1.items.forEach(i => { if (!BX[i.code]) return; let g = out[out.length - 1]; if (!g || g.name !== i.group) out.push(g = { name: i.group, codes: [] }); g.codes.push(i.code); });
+  return out;
 }
 function bookAfter(n) {
   // Preload neighbours so turning pages feels instant
@@ -746,6 +796,13 @@ function viewPractice() {
       <div class="facts"><span>${ICON.list}${ms.length} ta soʻz</span><span>${ICON.clock}Taxminan ${mins(Math.min(15, ms.length))} daqiqa</span><span>${ICON.quiz}Ketma-ket 2 marta toʻgʻri topsangiz, daftardan chiqadi</span></div>
       <button class="plus" data-act="start" data-mode="mistakes" aria-label="Xatolar ustida ishlash">${ICON.play}</button>`
     : `<p class="muted">Xato qilgan soʻzlaringiz shu yerga tushadi va alohida mashq qilinadi.</p>`}
+  </div>
+
+  <div class="pcard glass">
+    <div class="pcard-head"><b>${ICON.cap}Qoidalar mashqi</b><span>${gxDoneCount()}/${GX_CODES.length}</span></div>
+    <div class="tags"><span class="tag sky-t">${esc(gxNext())}</span><span class="tag violet-t">${esc((gxTopic(gxNext()) || {}).uz || "")}</span>${gxMistakes().length ? `<span class="tag pink-t">${gxMistakes().length} ta xato</span>` : ""}</div>
+    <div class="facts"><span>${ICON.list}Variant tanlash, yozish va gap tuzish</span><span>${ICON.book}Qoʻllanmadagi qoida asosida</span></div>
+    <button class="plus" data-act="gx-start" data-c="${gxNext()}" aria-label="Keyingi qoida mashqi">${ICON.play}</button>
   </div>
 
   <section class="section">
@@ -886,6 +943,7 @@ function route() {
   else if (gm && GRAMMAR[+gm[1] - 1]) { html = viewGrammar(+gm[1] - 1); tab = "lessons"; }
   else if (/^book-(\d+)$/.test(h) && +h.slice(5) >= 1 && +h.slice(5) <= BOOK.pages) { const n = +h.slice(5); html = viewBookPage(n); tab = "lessons"; after = () => bookAfter(n); }
   else if (h === "book") { html = viewBook(); tab = "lessons"; after = () => bookSearch(); }
+  else if (h === "gx") { html = viewGx(); tab = "lessons"; }
   else if (h === "lessons") html = viewLessons();
   else if (h === "grammar") { html = viewGrammarList(); tab = "lessons"; }
   else if (h === "alphabet") { html = viewAlphabet(); tab = "lessons"; }
@@ -923,6 +981,11 @@ function startSession(mode, u) {
   } else if (mode === "mistakes") {
     items = shuffle(mistakeWords().slice(0, 15));
     if (!items.length) { toast("Xatolar daftari boʻsh"); return; }
+  } else if (mode === "gx") {
+    items = BX[u].map((ex, i) => ({ gx: true, code: u, i, ex }));
+  } else if (mode === "gxm") {
+    items = shuffle(gxMistakes()).slice(0, 15).map(k => { const [c, i] = k.split("#"); return { gx: true, code: c, i: +i, ex: BX[c][+i] }; });
+    if (!items.length) { toast("Qoida xatolari yoʻq"); return; }
   } else {
     let pool = pickPool(u);
     if (mode === "type") pool = pool.filter(typeable);
@@ -952,7 +1015,9 @@ function renderStep() {
   if (SES.i >= SES.items.length) return renderResult();
   SES.answered = false;
   progressBar();
-  const w = SES.items[SES.i], m = itemMode(w);
+  const w = SES.items[SES.i];
+  if (w.gx) return renderGx(w);
+  const m = itemMode(w);
   if (m === "cards") renderCard(w);
   else if (m === "quiz") renderQuiz(w);
   else renderType(w);
@@ -1025,6 +1090,96 @@ function checkType(skip) {
   speak(w.tr);
   foot.innerHTML = `<button class="btn btn-grad btn-block" data-act="next">Keyingi</button>`;
 }
+/* ---------- Rule exercises ---------- */
+const blankHtml = q => esc(q).replace("___", '<span class="blank">&nbsp;</span>');
+function renderGx(it) {
+  const ex = it.ex, tp = gxTopic(it.code);
+  const head = `<div class="tags"><span class="tag sky-t">${esc(it.code)}</span><span class="tag violet-t">${esc(tp ? tp.uz : "")}</span></div>`;
+  if (ex.t === "c") {
+    stage.innerHTML = `${head}<div class="q-label">Toʻgʻri variantni tanlang</div>
+      <div class="q-sent">${blankHtml(ex.q)}</div>
+      <div class="options">${shuffle(ex.o.map((o, i) => [o, i])).map(([o, i], k) => `<button class="opt" lang="tr" data-act="gx-ans" data-o="${i}"><span class="k">${"ABCD"[k]}</span>${esc(o)}</button>`).join("")}</div>
+      <div class="feedback" id="fb" aria-live="polite"></div>`;
+    foot.innerHTML = `<button class="btn btn-grad btn-block" data-act="next" disabled>Keyingi</button>`;
+  } else if (ex.t === "t") {
+    stage.innerHTML = `${head}<div class="q-label">Boʻsh joyni toʻldiring</div>
+      <div class="q-sent" lang="tr">${blankHtml(ex.q)}</div>
+      ${ex.uz ? `<div class="sub">${esc(ex.uz)}</div>` : ""}
+      <form class="type-box" id="type-form" autocomplete="off">
+        <label for="type-input" class="sr">Javob</label>
+        <input class="type-input" id="type-input" lang="tr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Javobingiz…">
+        <div class="keys">${["ç", "ş", "ğ", "ı", "İ", "ö", "ü", "'"].map(k => `<button type="button" data-act="key" data-k="${k}">${k}</button>`).join("")}</div>
+      </form>
+      <div class="feedback" id="fb" aria-live="polite"></div>`;
+    foot.innerHTML = `<button class="btn btn-ghost" data-act="gx-skip">Bilmayman</button><button class="btn btn-grad" data-act="gx-check">Tekshirish</button>`;
+    $("type-form").addEventListener("submit", e => { e.preventDefault(); if (SES.answered) nextStep(); else gxCheckType(); });
+    setTimeout(() => $("type-input").focus(), 60);
+  } else {
+    const toks = ex.s.split(" ");
+    let order = shuffle(toks.map((t, i) => i));
+    if (order.every((v, i) => v === i)) order = order.reverse();
+    SES.ord = [];
+    stage.innerHTML = `${head}<div class="q-label">Soʻzlardan gap tuzing</div>
+      <div class="sub" style="font-size:16px;color:var(--ink-2)">${esc(ex.uz || "")}</div>
+      <div class="ord-ans glass" id="ord-ans" aria-label="Sizning gapingiz"></div>
+      <div class="ord-pool" id="ord-pool">${order.map(i => `<button class="tok" lang="tr" data-act="ord-tok" data-i="${i}">${esc(toks[i])}</button>`).join("")}</div>
+      <div class="feedback" id="fb" aria-live="polite"></div>`;
+    foot.innerHTML = `<button class="btn btn-ghost" data-act="gx-skip">Bilmayman</button><button class="btn btn-grad" data-act="gx-order" disabled>Tekshirish</button>`;
+  }
+}
+function gxExplain(ex, ok, right) {
+  return `${ok ? "Doğru! Toʻgʻri." : `Toʻgʻri javob: <b lang="tr">${esc(right)}</b>`}${ex.uz && ex.t !== "t" && ex.t !== "o" ? `<div class="sub" style="margin-top:4px">${esc(ex.uz)}</div>` : ""}${ex.e ? `<div class="sub" style="margin-top:4px">${esc(ex.e)}</div>` : ""}`;
+}
+const gxNorm = s => fold(s.replace(/[’ʼ`]/g, "'"));
+const gxPlain = s => plain(s.replace(/[’ʼ`']/g, ""));
+function gxFinish(ok, right, near) {
+  SES.answered = true;
+  const it = SES.items[SES.i], fb = $("fb");
+  if (ok) gxGood(it); else gxBad(it);
+  fb.className = "feedback " + (ok ? "ok" : "no");
+  fb.innerHTML = near ? `Deyarli! Toʻgʻri yozilishi: <b lang="tr">${esc(right)}</b>${it.ex.e ? `<div class="sub" style="margin-top:4px">${esc(it.ex.e)}</div>` : ""}` : gxExplain(it.ex, ok, right);
+  if (it.ex.t !== "c") speak(right);
+  foot.innerHTML = `<button class="btn btn-grad btn-block" data-act="next">Keyingi</button>`;
+}
+function gxCheckType(skip) {
+  if (SES.answered) return;
+  const ex = SES.items[SES.i].ex, inp = $("type-input"), v = inp.value;
+  if (!skip && !v.trim()) { inp.focus(); return; }
+  const exact = !skip && ex.ans.some(a => gxNorm(a) === gxNorm(v));
+  const near = !skip && !exact && ex.ans.some(a => gxPlain(a) === gxPlain(v));
+  inp.classList.add(exact || near ? "right" : "wrong");
+  gxFinish(exact || near, ex.ans[0], near);
+}
+function gxCheckOrder(skip) {
+  if (SES.answered) return;
+  const ex = SES.items[SES.i].ex, toks = ex.s.split(" ");
+  const said = SES.ord.map(i => toks[i]).join(" ");
+  const ok = !skip && said === ex.s;
+  $("ord-ans").classList.add(ok ? "right" : "wrong");
+  document.querySelectorAll("#ord-pool .tok, #ord-ans .tok").forEach(t => t.disabled = true);
+  gxFinish(ok, ex.s);
+}
+function gxGood(it) {
+  tick(); SES.right++; SES.xp += 10;
+  const arr = S.gx[it.code] || (S.gx[it.code] = []);
+  const was = gxDone(it.code);
+  arr[it.i] = true;
+  const k = it.code + "#" + it.i;
+  if (S.gxm[k]) delete S.gxm[k];
+  dayRec().rev++; S.acc[0]++; S.acc[1]++;
+  addXP(10);
+  if (!was && gxDone(it.code)) SES.topicDone = it.code;
+  CatLife.mood(sCat(), "happy", 1000);
+}
+function gxBad(it) {
+  tick();
+  S.gxm[it.code + "#" + it.i] = 1;
+  dayRec().rev++; S.acc[1]++;
+  save();
+  CatLife.mood(sCat(), "sad", 1600);
+  const key = it.code + "#" + it.i;
+  if (!SES.re.has(key) && SES.items.length < 40) { SES.re.add(key); SES.items.push(it); }
+}
 const sCat = () => $("s-cat").querySelector(".cat");
 function good() { tick(); const w = SES.items[SES.i]; SES.right++; SES.xp += 10; grade(w, true); addXP(10); CatLife.mood(sCat(), "happy", 1000); }
 function bad() {
@@ -1055,11 +1210,12 @@ function renderResult() {
     <h2>${esc(title)}</h2>
     <p>+${SES.xp} XP · bugun ${S.dayXp}/${S.goal} XP · ${streakNow()} kun ketma-ket</p>
     <p>Takrorlash navbatida: ${dueWords().length} ta · Xatolar daftarida: ${mistakeWords().length} ta</p>
+    ${SES.topicDone ? `<div class="tags" style="justify-content:center"><span class="tag green-t">${ICON.check}${esc(SES.topicDone)} mavzusi tugallandi</span></div>` : ""}
     ${fresh.length ? `<div class="tags" style="justify-content:center">${fresh.map(a => `<span class="tag violet-t">${ICON.star}Yangi yutuq: ${esc(a.t)}</span>`).join("")}</div>` : ""}
   </div>`;
   CatLife.scan();
   setTimeout(() => CatLife.mood(stage.querySelector(".cat"), r >= 0.7 ? "happy" : "sad", 1500), 250);
-  foot.innerHTML = `<button class="btn btn-ghost" data-act="close-session">Yopish</button>${SES.mode === "review" || SES.mode === "mistakes" ? "" : `<button class="btn btn-grad" data-act="again">Yana mashq</button>`}`;
+  foot.innerHTML = `<button class="btn btn-ghost" data-act="close-session">Yopish</button>${SES.mode === "gx" ? (() => { const nx = GX_CODES[GX_CODES.indexOf(SES.u) + 1]; return nx ? `<button class="btn btn-grad" data-act="gx-start" data-c="${nx}">Keyingi: ${esc(nx)}</button>` : ""; })() : SES.mode === "review" || SES.mode === "mistakes" || SES.mode === "gxm" ? "" : `<button class="btn btn-grad" data-act="again">Yana mashq</button>`}`;
 }
 
 /* ---------- Events ---------- */
@@ -1149,6 +1305,25 @@ document.addEventListener("click", e => {
     const nbtn = foot.querySelector("[data-act=next]"); nbtn.disabled = false; nbtn.focus();
   }
   else if (act === "next") nextStep();
+  else if (act === "gx-start") startSession("gx", b.dataset.c);
+  else if (act === "gx-ans") {
+    if (SES.answered) return;
+    const ex = SES.items[SES.i].ex, ok = +b.dataset.o === ex.a;
+    document.querySelectorAll(".opt").forEach(o => { o.disabled = true; if (+o.dataset.o === ex.a) o.classList.add("right"); });
+    if (!ok) b.classList.add("wrong");
+    gxFinish(ok, ex.o[ex.a]);
+  }
+  else if (act === "gx-check") gxCheckType();
+  else if (act === "gx-order") gxCheckOrder();
+  else if (act === "gx-skip") { const ex = SES.items[SES.i].ex; if (ex.t === "t") gxCheckType(true); else gxCheckOrder(true); }
+  else if (act === "ord-tok") {
+    if (SES.answered) return;
+    const i = +b.dataset.i, inAns = b.parentElement.id === "ord-ans";
+    if (inAns) { SES.ord.splice(SES.ord.indexOf(i), 1); $("ord-pool").appendChild(b); }
+    else { SES.ord.push(i); $("ord-ans").appendChild(b); }
+    const total = SES.items[SES.i].ex.s.split(" ").length;
+    foot.querySelector("[data-act=gx-order]").disabled = SES.ord.length !== total;
+  }
   else if (act === "type-check") checkType();
   else if (act === "type-skip") checkType(true);
   else if (act === "key") {
