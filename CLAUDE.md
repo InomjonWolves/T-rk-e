@@ -1,7 +1,7 @@
 # Türkçe Yoʻl — loyiha xulosasi (yangi sessiya uchun)
 
 Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uchun moʻljallangan PWA sayt.
-- Sayt: https://inomjonwolves.github.io/T-rk-e/ (GitHub Pages). Qisqa manzil: Firebase Hosting, sayt nomi `firebase.json` → `hosting.site` (hozir `pamuk` → https://pamuk.web.app). Joylash `.github/workflows/firebase-hosting.yml` orqali `main` ga har push'da (avval testlar); GitHub secret `FIREBASE_SERVICE_ACCOUNT` boʻlmasa oʻtkazib yuboriladi. Sayt nomi band boʻlsa, konsolda boshqa nom bilan sayt yaratib, `firebase.json` dagi `site` ni oʻzgartiring. Yangi domen Firebase Authentication → Authorized domains da boʻlishi kerak.
+- Sayt: https://inomjonwolves.github.io/T-rk-e/ (GitHub Pages). Qisqa manzil: Firebase Hosting, sayt nomi `firebase.json` → `hosting.site` (hozir `turkceyol` → https://turkceyol.web.app; `pamuk` nomi band edi). Joylash `.github/workflows/firebase-hosting.yml` orqali `main` ga har push'da (avval testlar); GitHub secret `FIREBASE_SERVICE_ACCOUNT` boʻlmasa oʻtkazib yuboriladi. Sayt nomi band boʻlsa, konsolda boshqa nom bilan sayt yaratib, `firebase.json` dagi `site` ni oʻzgartiring. Yangi domen Firebase Authentication → Authorized domains da boʻlishi kerak.
 - Repo: InomjonWolves/T-rk-e, `main` branch. GitHub Pages `main` ildizidan avtomatik joylanadi (build yoʻq, oddiy statik fayllar).
 - Foydalanuvchi bilan **faqat oʻzbek tilida** gaplashing.
 

@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "pamuk",
+    "site": "turkceyol",
     "public": ".",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "tests/**", "package.json", "package-lock.json", "*.md", "firestore.rules"],
     "headers": [
