@@ -530,6 +530,7 @@ function viewHome() {
     <button class="btn btn-white" data-act="go" data-to="practice">Erkin mashq</button>
   </section>`}
 
+  ${plHomeCard()}
   ${skillsHomeCard()}
 
   ${(() => { const u = kNext(), p = kProgress(u.id); return `<a class="pcard glass" href="#${kHash(u.id)}" style="color:inherit;text-decoration:none">
@@ -1237,7 +1238,7 @@ function kProgress(id) {
 }
 const kDone = id => !!(S.k[id] && S.k[id].done);
 const kDoneCount = (lv) => COURSE.units.filter(u => (!lv || u.level === lv) && kDone(u.id)).length;
-const kNext = () => COURSE.units.find(u => !kDone(u.id)) || COURSE.units[0];
+const kNext = () => COURSE.units.find((u, i) => i >= (S.kStart || 0) && !kDone(u.id)) || COURSE.units.find(u => !kDone(u.id)) || COURSE.units[0];
 const kTestBest = lv => (S.ktest && S.ktest[lv]) || 0;
 
 // Normalise an answer for comparison: drop notes in brackets, quotes and punctuation
@@ -1325,6 +1326,10 @@ function viewCourse() {
       <small class="muted">${done}/${total} boʻlim tugallangan</small></div>
     <div class="k-hero-cat">${mascot("cap")}</div>
   </div>
+  <a class="pcard glass" href="#placement" style="color:inherit;text-decoration:none;padding:14px 16px">
+    <div class="pcard-head"><b>${ICON.target}${S.place && (S.place.start || S.place.applied) ? `Darajangiz: ${esc(S.place.applied || S.place.start)} dan · qayta aniqlash` : "Darajani aniqlash testi"}</b>${ICON.chev}</div>
+    ${S.place && (S.place.start || S.place.applied) ? "" : `<p class="muted" style="margin:0">Turkchani biroz bilsangiz, 5–7 daqiqada mos boʻlimni topamiz.</p>`}
+  </a>
   <div class="seg glass" role="tablist">${COURSE.levels.map(l => `<button role="tab" data-act="k-lv" data-l="${l.id}" aria-selected="${l.id === lvl.id}">${l.id}</button>`).join("")}</div>
   <div class="glass pad"><b>${esc(lvl.title)}</b><p class="sub" style="margin-top:4px">${esc(lvl.intro)}</p></div>
   <div class="list">${lvl.units.map(id => kUnitRow(KU[id])).join("")}
@@ -1722,6 +1727,7 @@ function route() {
   else if (h === "achievements") { html = viewAchievements(); tab = "profile"; }
   else if (h === "skills") { html = viewSkills(); tab = "profile"; }
   else if (h === "write") { html = viewWrite(); tab = "practice"; }
+  else if (h === "placement") { html = viewPlacement(); tab = "lessons"; }
   else if (h === "admin") { html = viewAdmin(); tab = "profile"; }
   else if (h === "help") { html = viewHelp(); tab = "profile"; }
   else if (h === "gx") { html = viewGx(); tab = "lessons"; }
@@ -2442,10 +2448,11 @@ function ktSpeakHtml(lv, res, start) {
   </section>`;
 }
 const ktHeard = (q, r) => `<span lang="tr">«${esc(r.text)}»</span> <span class="tag ${r.score >= ktNeed(q) ? "green-t" : "pink-t"}">${Math.round(r.score * 100)}%</span>`;
-function ktMic(lv, i, btn) {
+// Records one answer with the browser's speech recognition and passes the best-scoring transcript to done()
+function micCapture(q, btn, done) {
   if (KT_REC) { try { KT_REC.stop(); } catch (e) {} return; }
   try { speechSynthesis.cancel(); } catch (e) {}
-  const q = ktGen(lv).s[i], r = new SR();
+  const r = new SR();
   r.lang = "tr-TR"; r.interimResults = false; r.maxAlternatives = 5;
   let alts = null;
   r.onresult = ev => { const res = ev.results[ev.results.length - 1]; alts = [...res].map(a => a.transcript); };
@@ -2455,11 +2462,131 @@ function ktMic(lv, i, btn) {
     if (!alts) return;
     let best = null;
     alts.forEach(a => { const sc = q.kind === "oral" ? oralScore(q.tr, a).score : sayDiff(sayNorm(q.tr).out, heardNorm(a)).score; if (!best || sc > best.score) best = { score: sc, text: a }; });
-    const prev = KT_ANS.s[i];
-    if (!prev || best.score > prev.score) KT_ANS.s[i] = best;
-    const el = $(`kt-s-${i}`); if (el) el.innerHTML = ktHeard(q, KT_ANS.s[i]);
+    done(best);
   };
   try { r.start(); KT_REC = r; btn.classList.add("on"); } catch (e) { toast("Mikrofonni ishga tushirib boʻlmadi"); }
+}
+const keepBest = (store, i, best) => { if (!store[i] || best.score > store[i].score) store[i] = best; return store[i]; };
+function ktMic(lv, i, btn) {
+  const q = ktGen(lv).s[i];
+  micCapture(q, btn, best => { const r = keepBest(KT_ANS.s, i, best), el = $(`kt-s-${i}`); if (el) el.innerHTML = ktHeard(q, r); });
+}
+function plMic(i, btn) {
+  const q = plGet().it.s[i];
+  micCapture(q, btn, best => { const r = keepBest(plGet().ans.s, i, best), el = $(`pl-s-${i}`); if (el) el.innerHTML = ktHeard(q, r); });
+}
+/* ---------- Placement test (Darajani aniqlash) ----------
+   About 18 questions from A1 to B2 in all four skills, built from the level tests' material. The highest level
+   answered well in a row decides where the course starts (S.kStart); earlier units stay open, nothing is marked done. */
+let PL = null;
+function plGen() {
+  const it = { r: [], l: [], w: [], s: [] };
+  LVS.forEach(lv => {
+    const saved = KT_GEN[lv]; KT_GEN[lv] = null;
+    const g = ktGen(lv);
+    KT_GEN[lv] = saved;
+    shuffle(KLEVEL(lv).test.parts[0].qs).slice(0, 2).forEach(q => it.r.push({ lv, q: q.q, o: q.o, a: q.a }));
+    const li = g.l.find(x => x.kind === (lv === "A1" ? "word" : "line")) || g.l[0];
+    it.l.push(Object.assign({ lv }, li));
+    if (g.w[0]) it.w.push(Object.assign({ lv }, g.w[0]));
+    if (lv === "A1" || lv === "B1") { const s = g.s.find(x => x.kind === "line") || g.s[0]; if (s) it.s.push(Object.assign({ lv }, s)); }
+  });
+  return { it, ans: { r: {}, l: {}, w: {}, s: {} }, res: null };
+}
+const plGet = () => PL || (PL = plGen());
+function plHomeCard() {
+  if (S.place || kDoneCount() > 0 || S.xp > 400) return "";
+  return `<div class="pcard glass">
+    <div class="pcard-head"><b>${ICON.target}Turkchani biroz bilasizmi?</b><span class="tag teal-t">5–7 daq</span></div>
+    <p class="muted">Qisqa test darajangizni aniqlaydi va kursni mos joydan boshlaydi: oʻqish, tinglash, yozish va gapirish boʻyicha.</p>
+    <a class="btn btn-grad btn-block" href="#placement" style="margin-top:8px">Darajani aniqlash</a>
+    <button class="link" data-act="pl-skip" style="display:block;margin:10px auto 0">Kerak emas, A1 dan boshlayman</button>
+  </div>`;
+}
+function plSection(id, name, sub, body) {
+  return `<section class="section">${ktPartHead(id, name)}${sub ? `<p class="sub">${sub}</p>` : ""}${body}</section>`;
+}
+function viewPlacement() {
+  const P = plGet(), res = P.res, it = P.it;
+  let n = 0;
+  const opts = (kind, i, q, chosen, right, trLang) => `<div class="k-opts">${q.o.map((o, oi) => {
+    let cls = chosen === oi ? " picked" : "";
+    if (res) cls = (kind === "r" ? oi === q.a : o === q.a) ? " right" : chosen === oi ? " wrong" : "";
+    return `<button class="opt${cls}" data-act="pl-${kind}" data-i="${i}" data-o="${oi}" ${trLang ? 'lang="tr"' : ""} ${res ? "disabled" : ""}>${esc(o)}</button>`;
+  }).join("")}</div>`;
+  return `<div><a class="back" href="#course">${ICON.back}Kurs</a></div>
+  <div class="lesson-head"><div class="tags"><span class="tag teal-t">${ICON.target}A1 → B2</span><span class="tag violet-t">~${it.r.length + it.l.length + it.w.length + it.s.length} savol</span></div>
+    <h1>Darajani aniqlash</h1>
+    <p class="sub">Savollar osondan qiyinga qarab boradi. Bilmasangiz, taxmin qilmang — oxirgi variantni tanlab davom eting. Natija taxminiy: u kursni qayerdan boshlashni tavsiya qiladi.</p></div>
+  ${res ? plResultHtml(res) : ""}
+  ${plSection("r", "Okuma · Grammatika va lugʻat", "", it.r.map((q, i) => `<div class="k-item glass"><div class="k-q"><b>${++n}.</b> <span lang="tr">${esc(q.q)}</span></div>${opts("r", i, q, P.ans.r[i], q.a, true)}</div>`).join(""))}
+  ${plSection("l", "Dinleme · Tinglash", "Tugmani bosib tinglang. Matn koʻrsatilmaydi.", it.l.map((q, i) => `<div class="k-item glass">
+      <div class="k-q" style="display:flex;align-items:center;gap:10px"><b>${++n}.</b><button class="say" data-act="ls-play" data-t="${esc(q.t)}" aria-label="Tinglash">${ICON.speak}</button><span>${q.kind === "word" ? "Soʻzning maʼnosini toping" : "Qaysi gapni eshitdingiz?"}</span>${res ? `<span lang="tr" class="muted">— ${esc(q.t)}</span>` : ""}</div>
+      ${opts("l", i, q, P.ans.l[i], q.a, q.kind === "line")}</div>`).join(""))}
+  ${plSection("w", "Yazma · Yozish", "", it.w.map((q, i) => { const v = P.ans.w[i] || "", m = res ? ansMatch(v, q.a) : -1; return `<div class="k-item glass">
+      <div class="k-q"><b>${++n}.</b> <small class="muted">${esc(q.title)}</small><div lang="tr" style="margin-top:4px">${esc(q.q)}</div></div>
+      <div class="k-in"><input class="k-input${m > 0 ? " right" : m === 0 ? " wrong" : ""}" data-act="pl-w" data-i="${i}" value="${esc(v)}" lang="tr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Bilmasangiz, boʻsh qoldiring" ${res ? "disabled" : ""}></div>
+      ${res && m <= 0 ? `<div class="k-fb"><span class="no">Toʻgʻri javob: <b lang="tr">${esc(q.a)}</b></span></div>` : ""}</div>`; }).join(""))}
+  ${canListen() ? plSection("s", "Konuşma · Gapirish", "Ixtiyoriy: hozir gapira olmasangiz, oʻtkazib yuboring.", it.s.map((q, i) => { const r = P.ans.s[i]; return `<div class="k-item glass">
+      <div class="k-q"><b>${++n}.</b> Gapni ovoz chiqarib ayting:<div lang="tr" style="margin-top:4px"><b>${esc(q.tr)}</b></div></div>
+      <div class="kt-mic-row">${res ? "" : `<button class="mic-btn kt-mic" data-act="pl-mic" data-i="${i}" aria-label="Mikrofon">${ICON.mic}</button>`}<div class="kt-heard" id="pl-s-${i}">${r ? ktHeard(q, r) : `<span class="muted">${res ? "Javob berilmadi" : "Mikrofonni bosing"}</span>`}</div></div></div>`; }).join("")) : ""}
+  ${res ? `<button class="btn btn-ghost btn-block" data-act="pl-again">Qayta topshirish</button>` : `<button class="btn btn-grad btn-block" data-act="pl-done">Natijani koʻrish</button>`}`;
+}
+function plFinish() {
+  const P = plGet(), it = P.it;
+  const mr = it.r.findIndex((q, i) => P.ans.r[i] === undefined);
+  if (mr >= 0) { toast(`${mr + 1}-savolga javob tanlanmagan`); return; }
+  const ml = it.l.findIndex((q, i) => P.ans.l[i] === undefined);
+  if (ml >= 0) { toast(`${it.r.length + ml + 1}-savolga javob tanlanmagan`); return; }
+  if (KT_REC) { try { KT_REC.abort(); } catch (e) {} KT_REC = null; }
+  const sTried = canListen() && Object.keys(P.ans.s).length > 0;
+  const rows = [
+    ...it.r.map((q, i) => ({ sk: "r", lv: q.lv, ok: P.ans.r[i] === q.a })),
+    ...it.l.map((q, i) => ({ sk: "l", lv: q.lv, ok: q.o[P.ans.l[i]] === q.a })),
+    ...it.w.map((q, i) => ({ sk: "w", lv: q.lv, ok: ansMatch(P.ans.w[i] || "", q.a) > 0 })),
+    ...(sTried ? it.s.map((q, i) => ({ sk: "s", lv: q.lv, ok: !!P.ans.s[i] && P.ans.s[i].score >= ktNeed(q) })) : [])
+  ];
+  const byLv = {};
+  LVS.forEach(lv => { const r = rows.filter(x => x.lv === lv); byLv[lv] = r.length ? Math.round(r.filter(x => x.ok).length / r.length * 100) : 0; });
+  // Highest level answered well, counting up from A1 without gaps
+  let passed = null;
+  for (const lv of LVS) { if (byLv[lv] >= 60) passed = lv; else break; }
+  const start = !passed ? "A1" : passed === "B2" ? "B2" : LVS[LVS.indexOf(passed) + 1];
+  const sk = {};
+  SKILLS.forEach(s => {
+    const r = rows.filter(x => x.sk === s.id);
+    if (!r.length) { sk[s.id] = null; return; }
+    let best = "";
+    for (const lv of LVS) { const q = r.filter(x => x.lv === lv); if (!q.length) continue; if (q.filter(x => x.ok).length / q.length >= 0.5) best = lv; else break; }
+    sk[s.id] = best;
+  });
+  rows.forEach(x => skillLog(x.sk, x.ok));
+  P.res = { byLv, passed, start, sk };
+  S.place = { at: todayKey(), passed, start, sk };
+  addXP(rows.filter(x => x.ok).length);
+  pamukSay("happy", passed ? `Ajoyib! ${passed} darajasidagi savollarni yaxshi bildingiz.` : "Zoʻr, endi qayerdan boshlashni bilamiz!");
+  window.scrollTo(0, 0); route();
+}
+function plResultHtml(r) {
+  const su = COURSE.units.find(u => u.level === r.start);
+  return `<div class="glass pad k-result pass">${mascot("trophy")}<h2>${r.start}</h2>
+    <p>${r.passed ? `Siz ${r.passed} darajasigacha boʻlgan savollarni yaxshi bildingiz. Kursni <b>${r.start}</b> dan boshlashni tavsiya qilamiz.` : "Kursni boshidan — A1 dan boshlashni tavsiya qilamiz. Har bir boʻlim sizga mos tezlikda."}</p>
+    <div class="sk-bars" style="text-align:left;margin-top:10px;width:100%;align-self:stretch">${LVS.map(lv => `<div class="sk-line"><span></span><span class="sk-name"><b>${lv}</b><small>savollar</small></span>
+      <span class="sk-track"><i style="width:${r.byLv[lv]}%;background:var(--${r.byLv[lv] >= 60 ? "green" : "pink"})"></i></span><span class="sk-val">${r.byLv[lv]}%<small>${r.byLv[lv] >= 60 ? "✔" : "✘"}</small></span></div>`).join("")}</div>
+    <div class="tags" style="justify-content:center;margin-top:10px">${SKILLS.map(s => `<span class="tag ${s.c}-t">${s.tr}: ${r.sk[s.id] === null ? "—" : r.sk[s.id] || "boshlangʻich"}</span>`).join("")}</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;width:100%">
+      <button class="btn btn-grad btn-block" data-act="pl-apply" data-l="${r.start}">${su ? `${su.level}.${su.n} dan boshlash` : "Boshlash"}</button>
+      ${r.start !== "A1" ? `<button class="btn btn-ghost btn-block" data-act="pl-apply" data-l="A1">Baribir A1 dan boshlayman</button>` : ""}
+    </div>
+    <p class="muted" style="font-size:13px;margin-top:8px">Oldingi boʻlimlar ochiq qoladi: istalgan vaqtda qaytib takrorlashingiz mumkin. Darajani tasdiqlash uchun keyin daraja testini topshiring.</p>
+  </div>`;
+}
+function plApply(lv) {
+  S.kStart = Math.max(0, COURSE.units.findIndex(u => u.level === lv));
+  if (S.place) S.place.applied = lv; else S.place = { at: todayKey(), applied: lv };
+  KLV = lv; save();
+  toast(`Kurs ${lv} dan boshlanadi`);
+  go("course");
 }
 function ktFinish(lv) {
   const t = KLEVEL(lv).test, qs = t.parts.flatMap(p => p.qs), g = ktGen(lv);
@@ -3034,6 +3161,12 @@ document.addEventListener("click", e => {
   else if (act === "k-test-done") ktFinish(b.dataset.l);
   else if (act === "kt-l") { KT_ANS.l[+b.dataset.i] = +b.dataset.o; b.parentElement.querySelectorAll(".opt").forEach(o => o.classList.toggle("picked", o === b)); }
   else if (act === "kt-mic") ktMic(b.dataset.l, +b.dataset.i, b);
+  else if (act === "pl-r" || act === "pl-l") { plGet().ans[act.slice(3)][+b.dataset.i] = +b.dataset.o; b.parentElement.querySelectorAll(".opt").forEach(o => o.classList.toggle("picked", o === b)); }
+  else if (act === "pl-mic") plMic(+b.dataset.i, b);
+  else if (act === "pl-done") plFinish();
+  else if (act === "pl-again") { PL = null; route(); window.scrollTo(0, 0); }
+  else if (act === "pl-apply") plApply(b.dataset.l);
+  else if (act === "pl-skip") { S.place = { at: todayKey(), skipped: 1 }; save(); route(); }
   else if (act === "k-test-again") { KTEST_ANS = {}; KTEST_RES = null; KT_GEN[b.dataset.l] = null; KT_ANS = { lv: b.dataset.l, l: {}, w: {}, s: {} }; route(); window.scrollTo(0, 0); }
   else if (act === "say-seq") speakSeq(JSON.parse(b.dataset.lines));
   else if (act === "cel-next") nextCelebrate();
@@ -3081,6 +3214,7 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("input", e => {
   if (e.target.dataset && e.target.dataset.act === "kt-w") KT_ANS.w[+e.target.dataset.i] = e.target.value;
+  if (e.target.dataset && e.target.dataset.act === "pl-w") plGet().ans.w[+e.target.dataset.i] = e.target.value;
 });
 document.addEventListener("keydown", e => {
   if (e.key === "Enter" && e.target.classList && e.target.classList.contains("k-input")) { const btn = e.target.parentElement.querySelector("[data-act=k-check]"); if (btn) btn.click(); }

@@ -8,7 +8,7 @@ before(async () => { browser = await launch(); });
 after(async () => { await browser.close(); });
 
 const ROUTES = ["#home", "#course", "#k-a1-1", "#k-b2-5", "#ktest-a1", "#ktest-b2", "#lessons", "#grammar", "#guide", "#g-a2-04", "#g-b2-09", "#gx",
-  "#alphabet", "#practice", "#rank", "#profile", "#achievements", "#help", "#translate", "#skills", "#write", "#admin"];
+  "#alphabet", "#practice", "#rank", "#profile", "#achievements", "#help", "#translate", "#skills", "#write", "#admin", "#placement"];
 
 test("all main pages render without errors", async () => {
   const { page, errors } = await openApp(browser, "#home");
