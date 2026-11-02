@@ -25,10 +25,10 @@
   // Apply the saved theme before first paint
   try { const t = localStorage.getItem("ty-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
 </script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js"></script>
+<!-- Firebase SDK is loaded by app.js after the first paint; preload only starts the download early -->
+<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
+<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js">
+<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js">
 </head>
 <body>
 
@@ -103,6 +103,7 @@
 <div class="celebrate" id="celebrate" hidden></div>
 <div class="onboard" id="onboard" hidden></div>
 
+<script src="firebase-config.js"></script>
 <script src="content.js"></script>
 <script src="grammar.js"></script>
 <script src="grammar-ex.js"></script>

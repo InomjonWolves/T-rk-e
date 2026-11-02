@@ -376,7 +376,7 @@ function avatarHTML(photo, seed, cls = "") {
     ? `<span class="avatar ${cls}"><img src="${esc(photo)}" alt=""></span>`
     : `<span class="avatar cat-av ${avClass(seed || "me")} ${cls}">${catSVG({ pose: "head", lite: true })}</span>`;
 }
-const photoKey = () => "ty-photo" + (USER ? ":" + USER.uid : "");
+const photoKey = () => "ty-photo" + (USER ? ":" + USER.uid : EARLY ? ":" + EARLY : "");
 function loadMyPhoto() { try { MYPHOTO = localStorage.getItem(photoKey()) || ""; } catch (e) { MYPHOTO = ""; } }
 async function setMyPhoto(data) {
   MYPHOTO = data;
@@ -3203,7 +3203,7 @@ document.addEventListener("click", e => {
   else if (act === "auth-tab") setAuthTab(b.dataset.t);
   else if (act === "auth-google") googleSignIn();
   else if (act === "auth-reset") resetPassword();
-  else if (act === "logout") { ADMIN = false; ADMIN_DATA = null; auth.signOut(); go("home"); }
+  else if (act === "logout") { ADMIN = false; ADMIN_DATA = null; setLastUser(null); if (auth) auth.signOut(); go("home"); }
   else if (act === "verify-again") { USER.sendEmailVerification().then(() => toast("Xat yuborildi. Pochtangizni tekshiring")).catch(err => toast(authMsg(err))); }
   else if (act === "delete-ask") {
     $("del-box").innerHTML = `<div class="notice"><div><b>Hisob butunlay oʻchirilsinmi?</b> Barcha natijalaringiz yoʻqoladi va buni qaytarib boʻlmaydi.</div>
@@ -3341,7 +3341,22 @@ document.addEventListener("keydown", e => {
 });
 
 /* ---------- Accounts (Firebase) ---------- */
-const FB = !!(window.firebase && window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey);
+let FB = !!(window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey);
+// EARLY: uid of the last signed-in user while the app runs on their local copy, before Firebase confirms the sign-in
+let EARLY = null;
+const FB_SDK = ["app", "auth", "firestore"].map(n => `https://www.gstatic.com/firebasejs/10.12.2/firebase-${n}-compat.js`);
+// The SDK is not render-blocking: scripts download in parallel and run in order (async = false)
+function loadFirebase() {
+  if (window.firebase && window.firebase.firestore) return Promise.resolve();
+  return Promise.all(FB_SDK.map(src => new Promise((ok, fail) => {
+    const s = document.createElement("script");
+    s.src = src; s.async = false; s.onload = ok; s.onerror = fail;
+    document.head.appendChild(s);
+  })));
+}
+const LAST_KEY = "ty-last-user";
+function lastUser() { try { const v = JSON.parse(localStorage.getItem(LAST_KEY) || "null"); return v && v.uid ? v : null; } catch (e) { return null; } }
+function setLastUser(v) { try { if (v) localStorage.setItem(LAST_KEY, JSON.stringify(v)); else localStorage.removeItem(LAST_KEY); } catch (e) {} }
 let auth = null, db = null, USER = null, USERNAME = "", PENDING_NAME = "", cloudTimer;
 function cloudSave() {
   if (!USER || !db) return;
@@ -3483,11 +3498,13 @@ async function deleteAccount(btn) {
 }
 async function loadCloud(u) {
   KEYU = KEY + ":" + u.uid;
-  const local = loadLocal(KEYU);
+  let local = loadLocal(KEYU);
   USERNAME = u.displayName || PENDING_NAME || "";
   const ref = db.collection("users").doc(u.uid);
   try {
     const snap = await ref.get();
+    // The app may have been used while waiting for the server: take the newest local copy
+    local = loadLocal(KEYU);
     const d = snap.exists ? snap.data() : null;
     if (d && d.name) USERNAME = d.name;
     PROFILE = { gender: (d && d.gender) || "", birth: (d && d.birth) || "" };
@@ -3503,6 +3520,7 @@ async function loadCloud(u) {
     toast("Natijalarni serverdan yuklab boʻlmadi. Internetni tekshiring");
   }
   try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {}
+  setLastUser({ uid: u.uid, name: USERNAME });
   cloudSave();
   adminCheck(u.uid);
   loadMyPhoto();
@@ -3518,27 +3536,46 @@ S = loadLocal(KEY);
 loadMyPhoto();
 try { PROFILE = Object.assign(PROFILE, JSON.parse(localStorage.getItem("ty-profile") || "{}")); } catch (e) {}
 document.querySelector("#f-birth .birth").innerHTML = birthSelects("b", "");
-if (FB) {
+function fbStart() {
   firebase.initializeApp(window.FIREBASE_CONFIG);
   auth = firebase.auth(); auth.languageCode = "uz";
   db = firebase.firestore();
-  showAuth(true);
   auth.getRedirectResult().catch(err => { showAuth(false); authError(err); });
   auth.onAuthStateChanged(async u => {
     if (!u) {
+      EARLY = null; setLastUser(null);
       USER = null; USERNAME = ""; S = blank(); KEYU = KEY; RANK_CACHE = {}; MYPHOTO = ""; PROFILE = { gender: "", birth: "" };
       try { sessionStorage.removeItem("ty-welcomed"); } catch (e) {}
       if (SES) closeSession();
       showAuth(false); setAuthTab(authMode);
       return;
     }
-    showAuth(true);
+    // Same user as the local copy already on screen: sync quietly in the background
+    const quiet = EARLY === u.uid;
+    EARLY = null;
+    if (!quiet) showAuth(true);
     USER = u;
     await loadCloud(u);
-    hideAuth();
+    if (!quiet) hideAuth();
+    if (!quiet || !SES) route();
+    if (!PROFILE.gender || !PROFILE.birth) { if ($("sheet").hidden && !SES) profileSheet(true); }
+    else if (!quiet) showWelcome();
+  });
+}
+if (FB) {
+  const last = lastUser();
+  if (last && localStorage.getItem(KEY + ":" + last.uid)) {
+    // Returning user: open their local copy at once, Firebase confirms the sign-in later
+    EARLY = last.uid; KEYU = KEY + ":" + last.uid; S = loadLocal(KEYU); USERNAME = last.name || "";
+    try { PROFILE = Object.assign({ gender: "", birth: "" }, JSON.parse(localStorage.getItem("ty-profile:" + last.uid) || "{}")); } catch (e) {}
+    loadMyPhoto();
     route();
-    if (!PROFILE.gender || !PROFILE.birth) profileSheet(true);
-    else showWelcome();
+    showWelcome();
+  } else showAuth(true);
+  loadFirebase().then(fbStart).catch(() => {
+    // No SDK (offline and not cached): work locally, as before
+    if (EARLY) return;
+    FB = false; hideAuth(); route(); showWelcome();
   });
 } else {
   route();
