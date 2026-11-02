@@ -1,5 +1,5 @@
 // Builds the static, search-engine friendly pages from the course and the grammar guide:
-//   kurs/index.html, kurs/<unit>.html, qoida/index.html, qoida/<topic>.html, sitemap.xml
+//   kurs/, qoida/ (grammar topics), lugat/ (vocabulary packs), sitemap.xml
 // The app itself lives in index.html (hash routes are not indexed by search engines).
 // Run after changing course.js or guide.js:  node tools/seo.js   (tests fail if the pages are stale)
 const fs = require("fs");
@@ -10,8 +10,8 @@ const ROOT = path.resolve(__dirname, "..");
 const SITE = "https://turkceyol.web.app/";
 
 function loadContent() {
-  const code = ["content.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js"].map(f => fs.readFileSync(path.join(ROOT, f), "utf8")).join("\n;\n");
-  return vm.runInNewContext(code + "\n;({ UNITS, BX, COURSE, GUIDE })", {});
+  const code = ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js"].map(f => fs.readFileSync(path.join(ROOT, f), "utf8")).join("\n;\n");
+  return vm.runInNewContext(code + "\n;({ UNITS, BX, COURSE, GUIDE, LUGAT })", {});
 }
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -59,14 +59,14 @@ function page({ file, title, desc, crumbs, body, ld }) {
 ${body}
 </main>
 <footer><p>Türkçe Yoʻl — oʻzbek tilida turk tilini oʻrganish. 100% bepul, reklamasiz.</p>
-<p><a href="${up}kurs/">Kurs A1–B2</a> · <a href="${up}qoida/">Grammatika qoʻllanmasi</a> · <a href="${up}privacy.html">Maxfiylik siyosati</a></p></footer>
+<p><a href="${up}kurs/">Kurs A1–B2</a> · <a href="${up}qoida/">Grammatika qoʻllanmasi</a> · <a href="${up}lugat/">Lugʻat A1–B2</a> · <a href="${up}privacy.html">Maxfiylik siyosati</a></p></footer>
 </body>
 </html>
 `;
 }
 
 function build() {
-  const { COURSE, GUIDE, BX } = loadContent();
+  const { COURSE, GUIDE, BX, LUGAT } = loadContent();
   const out = {};
   const KU = Object.fromEntries(COURSE.units.map(u => [u.id, u]));
   const words = u => u.vocab.reduce((a, v) => a + v.words.length, 0);
@@ -140,8 +140,37 @@ ${i.forms ? `<section class="card"><h2>Shakllar</h2>${typeof i.forms === "string
 ${GUIDE.map(l => `<section class="card"><h2>${esc(l.name)} — ${esc(l.uz)}</h2>${l.groups.map(g => `<h3>${esc(g.name)}</h3><ol class="toc">${g.items.map(i => `<li><a href="${slug(i.code)}.html"><span class="code">${esc(i.code)}</span><span><b>${esc(i.uz)}</b><small lang="tr">${esc(plainSfx(i.tr))}</small></span></a></li>`).join("")}</ol>`).join("")}</section>`).join("\n")}`
   });
 
+  // ---- Vocabulary packs
+  const lugC = ["Lugʻat A1–B2", "lugat/"];
+  const pairsOf = p => { const seen = new Set(); return p.w.trim().split("\n").map(l => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }).filter(([a]) => a && !seen.has(a) && seen.add(a)); };
+  LUGAT.forEach((p, k) => {
+    const prev = LUGAT[k - 1], next = LUGAT[k + 1], ws = pairsOf(p);
+    out[`lugat/${p.id}.html`] = page({
+      file: `lugat/${p.id}.html`,
+      title: `${p.uz} — turkcha ${p.lv} soʻzlar (${ws.length} ta) | Türkçe Yoʻl`,
+      desc: cut(`Turk tili ${p.lv}: “${p.uz}” mavzusidagi ${ws.length} ta eng faol soʻz oʻzbekcha tarjimasi bilan — ${ws.slice(0, 4).map(w => w[0]).join(", ")}…`, 158),
+      crumbs: [home, lugC, [`${p.lv} · ${p.uz}`, `lugat/${p.id}.html`]],
+      body: `<h1><span class="code">${esc(p.lv)}</span> ${esc(p.uz)}</h1>
+<p class="lead" lang="tr">${esc(p.tr)} · ${ws.length} ta soʻz</p>
+<section class="card">${pairs(ws)}</section>
+<a class="cta" href="../#lugat-${esc(p.id)}">Kartochka, test va talaffuz bilan mashq qilish — ilovada</a>
+<nav class="pager">${prev ? `<a href="${prev.id}.html">← ${esc(prev.lv)} · ${esc(prev.uz)}</a>` : "<span></span>"}${next ? `<a href="${next.id}.html">${esc(next.lv)} · ${esc(next.uz)} →</a>` : "<span></span>"}</nav>`,
+      ld: { "@context": "https://schema.org", "@type": "LearningResource", name: `${p.uz} — turkcha soʻzlar`, inLanguage: "uz", educationalLevel: p.lv, about: "Turk tili lugʻati", isAccessibleForFree: true }
+    });
+  });
+  const lugTotal = new Set(LUGAT.flatMap(p => pairsOf(p).map(w => w[0]))).size;
+  out["lugat/index.html"] = page({
+    file: "lugat/index.html",
+    title: "Turk tili soʻzlari A1–B2 — oʻzbekcha tarjimasi bilan | Türkçe Yoʻl",
+    desc: `Turk tilidagi eng faol ${lugTotal} ta soʻz: A1 dan B2 gacha, ${LUGAT.length} ta mavzu boʻyicha, oʻzbekcha tarjimasi bilan. Kartochka va testlar bilan bepul mashq.`,
+    crumbs: [home, lugC],
+    body: `<h1>Turk tili soʻzlari A1–B2</h1>
+<p class="lead">Eng koʻp ishlatiladigan ${lugTotal} ta soʻz, darajalar va mavzular boʻyicha. Har mavzuni ilovada kartochka, test, yozish, tinglash va talaffuz bilan mashq qilish mumkin.</p>
+${["A1", "A2", "B1", "B2"].map(lv => `<section class="card"><h2>${lv}</h2><ol class="toc">${LUGAT.filter(p => p.lv === lv).map(p => `<li><a href="${p.id}.html"><span class="code">${lv}</span><span><b>${esc(p.uz)}</b><small lang="tr">${esc(p.tr)} · ${pairsOf(p).length} ta soʻz</small></span></a></li>`).join("")}</ol></section>`).join("\n")}`
+  });
+
   // ---- Sitemap
-  const urls = ["", "kurs/", "qoida/", ...order.map(id => `kurs/${id}.html`), ...all.map(i => `qoida/${slug(i.code)}.html`), "privacy.html"];
+  const urls = ["", "kurs/", "qoida/", "lugat/", ...order.map(id => `kurs/${id}.html`), ...all.map(i => `qoida/${slug(i.code)}.html`), ...LUGAT.map(p => `lugat/${p.id}.html`), "privacy.html"];
   out["sitemap.xml"] = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map(u => `  <url><loc>${SITE}${u}</loc></url>`).join("\n")}
@@ -154,7 +183,7 @@ module.exports = { build, SITE };
 
 if (require.main === module) {
   const out = build();
-  for (const dir of ["kurs", "qoida"]) {
+  for (const dir of ["kurs", "qoida", "lugat"]) {
     fs.mkdirSync(path.join(ROOT, dir), { recursive: true });
     // Remove pages that no longer exist in the content
     for (const f of fs.readdirSync(path.join(ROOT, dir))) if (!out[`${dir}/${f}`]) fs.unlinkSync(path.join(ROOT, dir, f));

@@ -471,7 +471,7 @@ function wordRow(w, showUnit) {
       <div class="word-tr" lang="tr">${esc(w.tr)}</div>
       <div class="word-uz">${esc(w.uz)}</div>
       ${w.note ? `<div class="word-note">${esc(w.note)}</div>` : ""}
-      ${showUnit ? `<div style="margin-top:4px"><span class="tag ${c.color}-t">${UNITS[w.unit].course ? esc(UNITS[w.unit].uz) : `${pad(w.unit + 1)} · ${esc(UNITS[w.unit].uz)}`}</span></div>` : ""}
+      ${showUnit ? `<div style="margin-top:4px"><span class="tag ${c.color}-t">${UNITS[w.unit].course || UNITS[w.unit].lug ? esc((UNITS[w.unit].lug ? UNITS[w.unit].lug + " · " : "") + UNITS[w.unit].uz) : `${pad(w.unit + 1)} · ${esc(UNITS[w.unit].uz)}`}</span></div>` : ""}
     </div>
     ${wordState(w)}
   </div>`;
@@ -633,6 +633,7 @@ function viewLessons() {
   <label class="search glass" for="q">${ICON.search}<span class="sr">Soʻz qidirish</span><input id="q" type="search" placeholder="${ALL.length} ta soʻz ichidan qidiring" value="${esc(Q)}" autocomplete="off" lang="tr"></label>
   <div id="search-results">${searchResults()}</div>
   <div id="units-block" ${Q ? "hidden" : ""}>
+    <div style="margin-bottom:14px">${lugCard()}</div>
     <div class="chips" id="cats" style="margin-bottom:14px">
       <button class="chip" data-act="cat" data-c="all" aria-pressed="${CAT === "all"}">Hammasi</button>
       ${CATS.map(c => `<button class="chip ${CAT === c.id ? "" : c.color + "-t"}" data-act="cat" data-c="${c.id}" aria-pressed="${CAT === c.id}">${ICON[c.ico]}${esc(c.uz)}</button>`).join("")}
@@ -655,6 +656,51 @@ function viewUnit(ui) {
     <div class="words glass">${ws.map(w => wordRow(w)).join("")}</div>
   </section>
   <div class="sticky-cta"><button class="btn btn-grad btn-block" data-act="modes" data-u="${ui}" data-title="${esc(u.uz)}">${ICON.cards}Mashq qilish</button></div>`;
+}
+
+/* ---------- Vocabulary base ---------- */
+let LUG_LV = "A1";
+function lugCard() {
+  const n = lugAllWords().length;
+  return `<a class="book-card glass" href="#lugat">
+    <span class="art sky" style="width:74px;height:74px;border-radius:20px;display:grid;place-items:center"><span style="font-size:15px;line-height:1.1;text-align:center">A1<br>B2</span></span>
+    <span><span class="tag sky-t">${ICON.book}Lugʻat bazasi · ${n} soʻz</span>
+      <b style="margin-top:6px">Eng faol soʻzlar A1–B2</b>
+      <span class="unit-sub">${LPACKS.length} ta mavzu: oila, ish, sogʻliq, texnologiya, jamiyat…</span></span></a>`;
+}
+function lugRow(p) {
+  const n = LWORDS[p.id].length, k = lugKnown(p.id);
+  return `<a class="unit glass" href="#lugat-${p.id}">
+    <span class="art ${LV_COLOR[p.lv]}"><span style="font-size:13px">${p.lv}</span></span>
+    <span class="unit-body"><span class="unit-title">${esc(p.uz)}</span><span class="unit-sub"><span lang="tr">${esc(p.tr)}</span> · ${n} ta soʻz</span></span>
+    ${pctRing(n ? k / n : 0)}</a>`;
+}
+function viewLugat() {
+  const lvs = ["A1", "A2", "B1", "B2"], packs = lugLevel(LUG_LV);
+  const all = lugAllWords(), total = all.length, learned = all.filter(w => known(w) >= 2).length;
+  return `<div><a class="back" href="#lessons">${ICON.back}Soʻzlar</a></div>
+  <div class="lesson-head">
+    <div class="tags"><span class="tag sky-t">${ICON.book}Lugʻat bazasi</span><span class="tag green-t">${learned}/${total} oʻrganilgan</span></div>
+    <h1>Eng faol soʻzlar</h1>
+    <p class="sub">A1 dan B2 gacha mavzular boʻyicha. Har bir mavzuni kartochka, test, yozish, tinglash va talaffuz bilan mashq qiling.</p>
+  </div>
+  <div class="chips">${lvs.map(l => `<button class="chip" data-act="lug-lv" data-l="${l}" aria-pressed="${l === LUG_LV}">${l}<small style="font-weight:600;opacity:.7;margin-left:4px">${new Set(lugLevel(l).flatMap(p => LWORDS[p.id].map(w => w.tr))).size}</small></button>`).join("")}</div>
+  <div class="list">${packs.map(lugRow).join("")}</div>`;
+}
+function viewLugPack(p) {
+  const ws = LWORDS[p.id], k = lugKnown(p.id), i = LPACKS.indexOf(p), next = LPACKS[i + 1];
+  return `<div><a class="back" href="#lugat">${ICON.back}Lugʻat bazasi</a></div>
+  <div class="lesson-head">
+    <div class="tags"><span class="tag ${LV_COLOR[p.lv]}-t">${p.lv}</span><span class="tag green-t">${k}/${ws.length} oʻrganilgan</span></div>
+    <h1>${esc(p.uz)}</h1>
+    <p class="sub" lang="tr">${esc(p.tr)}</p>
+  </div>
+  <section class="section">
+    <div class="section-head"><h2>Soʻzlar <span class="muted" style="font-weight:700">(${ws.length})</span></h2></div>
+    <div class="words glass">${ws.map(w => wordRow(w)).join("")}</div>
+  </section>
+  ${next ? `<a class="btn btn-ghost btn-block" href="#lugat-${next.id}">Keyingi: ${esc(next.lv)} · ${esc(next.uz)}</a>` : ""}
+  <div class="sticky-cta"><button class="btn btn-grad btn-block" data-act="modes" data-u="l:${p.id}" data-title="${esc(p.uz)}">${ICON.cards}Mashq qilish</button></div>`;
 }
 
 /* ---------- Grammar ---------- */
@@ -1213,6 +1259,30 @@ ALL.forEach(w => { const k = fold(w.tr); if (!(k in ALL_BY_TR)) ALL_BY_TR[k] = w
   })));
   CATS.push({ id: "k" + lv, uz: `Kurs ${lv} lugʻati`, color, ico: "book", ids: [unit.id] });
 });
+/* Vocabulary base (lugat.js): thematic packs A1–B2. New words join the shared list (one SRS state per word);
+   each pack keeps its full list, including words already taught elsewhere. */
+const LPACKS = typeof LUGAT !== "undefined" ? LUGAT : [], LWORDS = {}, LBY = {};
+const LV_COLOR = { A1: "sky", A2: "violet", B1: "orange", B2: "pink" };
+LPACKS.forEach(p => {
+  const ui = UNITS.length, unit = { id: "lug-" + p.id, tr: p.tr, uz: p.uz, lug: p.lv, tip: ["Lugʻat bazasi", `${p.lv} darajasidagi faol soʻzlar: ${p.uz.toLocaleLowerCase("uz")}.`], words: [] };
+  UNITS.push(unit); LBY[p.id] = p; p.ui = ui;
+  const list = LWORDS[p.id] = [], seen = new Set();
+  p.w.trim().split("\n").forEach(line => {
+    const i = line.indexOf("=");
+    if (i < 1) return;
+    const tr = line.slice(0, i).trim(), uzz = line.slice(i + 1).trim(), k = fold(tr);
+    if (seen.has(k)) return;
+    seen.add(k);
+    let w = ALL_BY_TR[k];
+    if (!w) { w = { tr, uz: uzz, note: "", unit: ui }; ALL.push(w); ALL_BY_TR[k] = w; unit.words.push([tr, uzz]); list.push(w); }
+    // A word taught elsewhere keeps one learning record (by its spelling) but shows this pack's meaning:
+    // "pazar" is "bozor" among city words and "yakshanba" among the days of the week
+    else list.push(w.uz === uzz ? w : { tr: w.tr, uz: uzz, note: "", unit: w.unit });
+  });
+});
+const lugLevel = lv => LPACKS.filter(p => p.lv === lv);
+const lugKnown = id => LWORDS[id].filter(w => known(w) >= 2).length;
+const lugAllWords = () => { const m = new Map(); LPACKS.forEach(p => LWORDS[p.id].forEach(w => m.set(w.tr, w))); return [...m.values()]; };
 
 /* ---------- A1–B2 course (course.js): levels, units, level tests ---------- */
 const KU = {};
@@ -1768,6 +1838,8 @@ function routeNow() {
   else if (gm && GRAMMAR[+gm[1] - 1]) { html = viewGrammar(+gm[1] - 1); tab = "lessons"; }
   else if (h.startsWith("g-") && GUIDE_ALL.find(i => gHash(i.code) === h)) { html = viewGuideTopic(GUIDE_ALL.find(i => gHash(i.code) === h)); tab = "lessons"; }
   else if (h === "guide") { html = viewGuide(); tab = "lessons"; }
+  else if (h === "lugat") { html = viewLugat(); tab = "lessons"; }
+  else if (h.startsWith("lugat-") && LBY[h.slice(6)]) { html = viewLugPack(LBY[h.slice(6)]); tab = "lessons"; }
   else if (h === "translate") { html = viewTranslate(); tab = "home"; }
   else if (h === "course") { html = viewCourse(); tab = "lessons"; }
   else if (h.startsWith("k-") && KU[h.slice(2)]) { html = viewCourseUnit(h.slice(2)); tab = "lessons"; }
@@ -1807,6 +1879,7 @@ let SES = null;
 function pickPool(u) {
   if (u === "all") return ALL.slice();
   if (String(u).startsWith("k:")) return (KWORDS[u.slice(2)] || []).slice();
+  if (String(u).startsWith("l:")) return (LWORDS[u.slice(2)] || []).slice();
   if (String(u).startsWith("cat:")) { const c = CATS.find(c => c.id === u.slice(4)); return ALL.filter(w => c.ids.includes(UNITS[w.unit].id)); }
   return ALL.filter(w => w.unit === +u);
 }
@@ -3190,6 +3263,7 @@ function onAct(e) {
   else if (act === "modes") modeSheet(b.dataset.u, b.dataset.title);
   else if (act === "cat") { CAT = b.dataset.c; route(); }
   else if (act === "gx-lv") { GX_LV = b.dataset.l; const y = window.scrollY; route(); window.scrollTo(0, y); }
+  else if (act === "lug-lv") { LUG_LV = b.dataset.l; const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "guide-lv") { GUIDE_LV = b.dataset.l; const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "rank-tab") { RANK_TAB = b.dataset.t; route(); }
   else if (act === "letter") {

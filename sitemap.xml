@@ -3,6 +3,7 @@
   <url><loc>https://turkceyol.web.app/</loc></url>
   <url><loc>https://turkceyol.web.app/kurs/</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/</loc></url>
   <url><loc>https://turkceyol.web.app/kurs/a1-1.html</loc></url>
   <url><loc>https://turkceyol.web.app/kurs/a1-2.html</loc></url>
   <url><loc>https://turkceyol.web.app/kurs/a1-3.html</loc></url>
@@ -68,6 +69,7 @@
   <url><loc>https://turkceyol.web.app/qoida/a1-29.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/a1-30.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/a1-31.html</loc></url>
+  <url><loc>https://turkceyol.web.app/qoida/a1-34.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/a1-32.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/a1-33.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/a2-01.html</loc></url>
@@ -84,6 +86,7 @@
   <url><loc>https://turkceyol.web.app/qoida/a2-12.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/a2-13.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/a2-14.html</loc></url>
+  <url><loc>https://turkceyol.web.app/qoida/a2-31.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/a2-15.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/a2-16.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/a2-17.html</loc></url>
@@ -99,6 +102,7 @@
   <url><loc>https://turkceyol.web.app/qoida/a2-27.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/a2-28.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/a2-29.html</loc></url>
+  <url><loc>https://turkceyol.web.app/qoida/a2-30.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b1-01.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b1-02.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b1-03.html</loc></url>
@@ -124,24 +128,29 @@
   <url><loc>https://turkceyol.web.app/qoida/b1-23.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b1-24.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b1-25.html</loc></url>
+  <url><loc>https://turkceyol.web.app/qoida/b1-29.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b1-26.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b1-27.html</loc></url>
+  <url><loc>https://turkceyol.web.app/qoida/b1-28.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-01.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-02.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-03.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-04.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-05.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-06.html</loc></url>
+  <url><loc>https://turkceyol.web.app/qoida/b2-26.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-07.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-08.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-09.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-10.html</loc></url>
+  <url><loc>https://turkceyol.web.app/qoida/b2-24.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-11.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-12.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-13.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-14.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-15.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-16.html</loc></url>
+  <url><loc>https://turkceyol.web.app/qoida/b2-28.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-17.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-18.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-19.html</loc></url>
@@ -149,5 +158,68 @@
   <url><loc>https://turkceyol.web.app/qoida/b2-21.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-22.html</loc></url>
   <url><loc>https://turkceyol.web.app/qoida/b2-23.html</loc></url>
+  <url><loc>https://turkceyol.web.app/qoida/b2-25.html</loc></url>
+  <url><loc>https://turkceyol.web.app/qoida/b2-27.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a1-insan.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a1-ev.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a1-yemek.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a1-sehir.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a1-zaman.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a1-beden.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a1-giyim.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a1-fiil.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a1-sifat.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a1-kelime.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a1-okul.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a1-doga.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-alisveris.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-seyahat.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-saglik.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-duygu.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-is.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-teknoloji.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-hobi.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-evisleri.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-fiil.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-sifat.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-zarf.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-hava.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-iliski.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-egitim.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-medya.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-cevre.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-ekonomi.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-saglik.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-toplum.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-dusunce.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-devlet.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-kultur.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-bilim.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-fiil.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-sifat.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-baglac.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-soyut.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-yonetim.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-bilim.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-toplum.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-psikoloji.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-edebiyat.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-finans.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-cevre.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-hukuk.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-fiil.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-sifat.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-baglac.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-deyim.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-sehir.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-medya.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-gorunus.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-meslek.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-yemek2.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-ev.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-fiil2.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b2-tip.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/a2-gunluk.html</loc></url>
+  <url><loc>https://turkceyol.web.app/lugat/b1-zaman.html</loc></url>
   <url><loc>https://turkceyol.web.app/privacy.html</loc></url>
 </urlset>

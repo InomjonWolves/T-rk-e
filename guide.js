@@ -544,3 +544,54 @@ GUIDE.push({ id: "B2", name: "B2", uz: "Oʻrtadan yuqori", groups: [
       ex: ["Rapor[a] bir göz at[ar] mı[sınız]?", "Hisobotga bir koʻz yugurtirasizmi?"] }
   ] }
 ] });
+
+// Qoʻshimcha mavzular (2026-11): qoʻllanmadagi boʻshliqlar toʻldirildi. Har biri oʻz darajasidagi mos guruhga qoʻshiladi.
+[
+  ["A1", "BOGʻLOVCHI (BAĞLAÇ)", { code: "A1.34", tr: "dA bağlacı (da / de)", uz: "Ham (da / de)", f: ["KELİME + da / de (ayrı yazılır)", "SOʻZ + ham (alohida yoziladi)"],
+    forms: "Ben [de] — men ham · Sen [de] gel. — Sen ham kel. · Ali [de] Ayşe [de] — Ali ham, Ayşe ham · masa[da] (joy: stolda) ↔ masa [da] (ham: stol ham)",
+    rule: "“Ham” maʼnosidagi da / de oldingi soʻzdan alohida yoziladi. U unli uygʻunligiga boʻysunadi (da / de), lekin hech qachon ta / te boʻlmaydi. Joy kelishigi -DA esa qoʻshib yoziladi va jarangsiz undoshdan keyin -ta / -te boʻladi.",
+    note: "Tekshirish usuli: da / de ni olib tashlasangiz ham gap buzilmasa — bu bogʻlovchi, alohida yoziladi.",
+    ex: ["Ben [de] çay istiyorum.", "Men ham choy xohlayman."] }],
+  ["A2", "KOʻMAKCHI VA VAQT", { code: "A2.30", tr: "Sıklık zarfları", uz: "Takror ravishlari (har doim, baʼzan)", f: ["SIKLIK ZARFI + FİİL", "RAVISH + FEʼL"],
+    forms: { h: ["Turkcha", "Oʻzbekcha"], r: [["her zaman", "har doim"], ["genellikle / çoğunlukla", "odatda / koʻpincha"], ["sık sık", "tez-tez"], ["bazen / ara sıra", "baʼzan / goh-goh"], ["nadiren", "kamdan-kam"], ["hiç (+ inkor)", "hech qachon"], ["her gün / her hafta", "har kuni / har hafta"], ["günde iki kez", "kuniga ikki marta"]] },
+    rule: "Takror ravishlari odatda feʼldan oldin, koʻpincha gap boshida yoki egadan keyin keladi. Ular bilan koʻproq geniş zaman (-Ir) yoki hozirgi zamon (-iyor) ishlatiladi. “Hiç” inkor feʼl bilan keladi: Hiç sigara içmem.",
+    ex: ["Sabahları [genellikle] kahve iç[er]im.", "Ertalablari odatda kofe ichaman."], neg: ["[Hiç] et ye[mem].", "Hech goʻsht yemayman."], q: ["Ne [sıklıkla] spor yap[ar]sın?", "Qanchalik tez-tez sport bilan shugʻullanasan?"] }],
+  ["A2", "FEʼL: MAYL", { code: "A2.31", tr: "-mAyA başlamak / -mAyI sevmek", uz: "-ishga boshlamoq, -ishni yaxshi koʻrmoq", f: ["FİİL + mAyA / mAyI + FİİL", "FEʼL + -ishga / -ishni + FEʼL"],
+    forms: { h: ["Feʼl", "Qoʻshimcha", "Misol"], r: [["başlamak", "-mAyA", "yağmur yağ[maya] başladı"], ["devam etmek", "-mAyA", "çalış[maya] devam et"], ["çalışmak (harakat qilmoq)", "-mAyA", "anla[maya] çalışıyorum"], ["karar vermek", "-mAyA", "taşın[maya] karar verdik"], ["sevmek", "-mAyI", "yüz[meyi] severim"], ["unutmak", "-mAyI", "ara[mayı] unuttum"], ["bırakmak (tashlamoq)", "-mAyI", "sigara iç[meyi] bıraktı"]] },
+    rule: "Ayrim feʼllar harakat nomini (-mA) maʼlum kelishikda talab qiladi: başlamak, devam etmek, çalışmak, karar vermek → -mAyA; sevmek, unutmak, bırakmak, denemek → -mAyI. -mA dan keyin y qoʻshiladi: -maya / -meye, -mayı / -meyi.",
+    ex: ["Türkçe öğren[meye] başla[dı]m.", "Turkcha oʻrganishga boshladim."] }],
+  ["B1", "FEʼL: QOʻSHIMCHA MAʼNOLAR", { code: "B1.28", tr: "-mAsInI istemek", uz: "Kimdir biror ish qilishini xohlamoq", f: ["SAHİP + FİİL + mA + İYELİK + HAL", "KIM + FEʼL + -ish + EGALIK (+ kelishik)"],
+    forms: { h: ["Shaxs", "Shakl", "Misol"], r: [["ben", "-mAm", "(benim) gel[mem]"], ["sen", "-mAn", "(senin) gel[men]"], ["o", "-mAsI", "(onun) gel[mesi]"], ["biz", "-mAmIz", "(bizim) gel[memiz]"], ["siz", "-mAnIz", "(sizin) gel[meniz]"], ["onlar", "-mAlArI", "(onların) gel[meleri]"]] },
+    rule: "Harakatni boshqa odam bajarsa, -mAk emas, egalik qoʻshimchali -mA ishlatiladi: Gelmek istiyorum (oʻzim kelmoqchiman) — Gelmeni istiyorum (sening kelishingni xohlayman). Keyin feʼl talab qilgan kelishik qoʻshiladi: istemek, söylemek → -I (gelmeni); gerek, lazım → kelishiksiz (gelmen gerek); için → gelmen için.",
+    ex: ["Annem doktor ol[mamı] istiyor.", "Onam mening shifokor boʻlishimni xohlaydi."], neg: ["Geç gel[memeni] istiyorum.", "Kechikmasligingni xohlayman."], q: ["Erken gel[memi] ister misin?", "Erta kelishimni xohlaysanmi?"] }],
+  ["B1", "FIKR VA BOGʻLOVCHILAR", { code: "B1.29", tr: "-DIğI kadar / -DIğI gibi", uz: "-gancha / -ganidek", f: ["FİİL + DIK + İYELİK + kadar / gibi", "FEʼL + -gan + -cha / -dek"],
+    forms: "bil[diğim] kadar — bilishimcha · iste[diğin] kadar — xohlaganingcha · söyle[diğim] gibi — aytganimdek · plan[ladığımız] gibi — rejalashtirganimizdek",
+    rule: "-DIğI kadar miqdor yoki darajani bildiradi (…gancha), -DIğI gibi esa oʻxshashlikni (…ganidek). Egalik qoʻshimchasi bajaruvchini koʻrsatadi: bildiğim (men), bildiğin (sen), bildiği (u). Kelajak uchun -(y)AcAğI kadar / gibi ishlatiladi.",
+    ex: ["Bil[diğim] kadar, toplantı yarın.", "Bilishimcha, majlis ertaga."] }],
+  ["B2", "SHART VA TAXMIN", { code: "B2.24", tr: "-DIğI sürece / -mAdIkçA", uz: "-ar ekan / -maguncha", f: ["FİİL + DIğI sürece · FİİL + mAdIkçA", "FEʼL + -ar ekan · FEʼL + -maguncha"],
+    forms: "çalış[tığın] sürece — ishlar ekansan · yağmur yağ[madıkça] — yomgʻir yogʻmaguncha · sen söyle[medikçe] — sen aytmaguningcha",
+    rule: "-DIğI sürece shart va davomiylikni bildiradi: “shu holat davom etar ekan”. -mAdIkçA “qilmaguncha / qilmasa” maʼnosini beradi; asosiy gap koʻpincha inkor yoki cheklov boʻladi. -mAdIkçA shaxs qoʻshimchasini olmaydi, bajaruvchi gapdan bilinadi.",
+    ex: ["Düzenli çalış[tığın] sürece başarılı olursun.", "Muntazam ishlar ekansan, muvaffaqiyatga erishasan."], neg: ["Ödevini bitir[medikçe] dışarı çıkamazsın.", "Uy vazifangni tugatmaguningcha tashqariga chiqa olmaysan."] }],
+  ["B2", "MURAKKAB FEʼLLAR", { code: "B2.25", tr: "-(y)Adur / -(y)Agel / -(y)Akal / -(y)Ayaz", uz: "Murakkab feʼllar: davom, qotib qolish, oz qolish", f: ["FİİL + (y)A + durmak / gelmek / kalmak / yazmak", "FEʼL + -a + yordamchi feʼl (bitta soʻz)"],
+    forms: { h: ["Shakl", "Maʼno", "Misol"], r: [["-(y)Adurmak", "-ib turmoq (davom et)", "siz otur[adur]un"], ["-(y)Agelmek", "azaldan davom etib kelmoq", "yüzyıllardır sür[e]gel[en] gelenek"], ["-(y)Akalmak", "qotib qolmoq", "şaşırıp bak[a]kal[dı]"], ["-(y)Ayazmak", "oz qoldi, sal boʻlmasa", "düş[e]yaz[dı]m"]] },
+    rule: "Feʼl negiziga -(y)A va ikkinchi feʼl qoʻshilib, bitta soʻz qilib yoziladi. -(y)Ayaz “oz qoldi, sal boʻlmasa” maʼnosini beradi va asosan oʻtgan zamonda ishlatiladi; -(y)Akal kutilmagan holatda qotib qolishni; -(y)Adur “shu orada davom eting” maʼnosini; -(y)Agel uzoq vaqtdan beri davom etib kelayotgan ishni bildiradi.",
+    note: "Bu shakllar koʻproq yozma va badiiy nutqda uchraydi; kundalik nutqda “az kalsın düşüyordum” ham deyiladi.",
+    ex: ["Merdivenden düş[e]yaz[dı]m.", "Zinadan yiqilishimga oz qoldi."] }],
+  ["B2", "MURAKKAB ZAMONLAR", { code: "B2.26", tr: "-mIş olmak / -(y)AcAk olmak", uz: "-gan boʻlmoq / -adigan boʻlmoq", f: ["FİİL + mIş / (y)AcAk + olmak", "FEʼL + -gan / -adigan + boʻlmoq"],
+    forms: "bitir[miş] ol[acağ]ım — tugatgan boʻlaman · gör[müş] ol[malı]sın — koʻrgan boʻlishing kerak · git[miş] ol[sa] — ketgan boʻlsa · gid[ecek] ol[ur]san — boradigan boʻlsang",
+    rule: "-mIş olmak harakat maʼlum paytgacha tugallangan boʻlishini bildiradi: Saat beşte işi bitirmiş olacağım (soat beshda ishni tugatgan boʻlaman). Zamon va mayl qoʻshimchalari “olmak” ga qoʻshiladi. -(y)AcAk olmak shart va farazda reja yoki niyatni bildiradi: Gelecek olursan haber ver.",
+    ex: ["Yarın bu saatte İstanbul'a var[mış] ol[acağ]ız.", "Ertaga shu vaqtda Istanbulga yetib borgan boʻlamiz."] }],
+  ["B2", "MURAKKAB FEʼLLAR", { code: "B2.27", tr: "-(y)AsI gelmek / -(y)AsI var", uz: "-gim kelmoq (kuchli istak)", f: ["FİİL + (y)AsI + İYELİK + gelmek / var / yok", "FEʼL + -gi + EGALIK + kelmoq / bor / yoʻq"],
+    forms: { h: ["Shaxs", "Shakl", "Misol"], r: [["ben", "-(y)AsIm", "gid[esim] geldi"], ["sen", "-(y)AsIn", "gül[esin] geldi"], ["o", "-(y)AsI", "ağla[yası] geldi"], ["biz", "-(y)AsImIz", "gez[esimiz] var"], ["siz", "-(y)AsInIz", "uyu[yasınız] var mı?"], ["onlar", "-(y)AsIlArI", "oyna[yasıları] var"]] },
+    rule: "Kuchli istak yoki ichki xohishni bildiradi: Seni göresim geldi — Seni koʻrgim keldi. Asosan “gelmek” va “var / yok” bilan ishlatiladi va kundalik nutqqa xos. Oddiy istak uchun -mAk istemek ishlatiladi.",
+    ex: ["Bu havada deniz[e] gid[esim] var.", "Bu havoda dengizga borgim kelyapti."], neg: ["Bugün hiç çalış[asım] yok.", "Bugun hech ishlagim yoʻq."], q: ["Çay iç[esin] var mı?", "Choy ichging keladimi?"] }],
+  ["B2", "ZIDLIK VA QIYOS", { code: "B2.28", tr: "sanki / -mIş gibi / -mIşçAsInA", uz: "Goʻyo, -gandek", f: ["sanki + CÜMLE · FİİL + mIş gibi / mIşçAsInA", "goʻyo + GAP · FEʼL + -gandek"],
+    forms: "Sanki her şeyi bil[iyor]. — Goʻyo hamma narsani biladi. · Hiçbir şey ol[mamış] gibi davrandı. — Hech narsa boʻlmagandek oʻzini tutdi. · Bizi tanı[mıyormuş] gibi geçti. — Bizni tanimaydigandek oʻtib ketdi. · Uyu[muşçasına] sessizdi. — Uxlab qolgandek jim edi.",
+    rule: "“Sanki” gap boshida keladi, feʼl odatdagi zamon qoʻshimchasini oladi va koʻpincha gap oxirida -mIş yoki gibi bilan kuchaytiriladi: Sanki yağmur yağacakmış gibi. -mIş gibi feʼlga qoʻshilib “xuddi …gandek” maʼnosini beradi; -mIşçAsInA — uning yozma, kuchliroq shakli (B2.16 dagi -cAsInA bilan solishtiring).",
+    ex: ["Sanki beni hiç tanı[mıyormuş] gibi bakıyor.", "Goʻyo meni umuman tanimaydigandek qarayapti."] }]
+].forEach(([lv, group, item]) => {
+  const L = GUIDE.find(l => l.id === lv);
+  let g = L.groups.find(x => x.name === group);
+  if (!g) { g = { name: group, items: [] }; L.groups.push(g); }
+  g.items.push(item);
+});

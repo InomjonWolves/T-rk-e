@@ -40,6 +40,25 @@ test("rule exercises: every topic exists and every item is answerable", () => {
   for (const lv of ["A1", "A2", "B1", "B2"]) assert.ok(Object.keys(C.BX).some(c => c.startsWith(lv + ".")), `no exercises for ${lv}`);
 });
 
+test("vocabulary base: A1–B2 packs, one \"turkcha=oʻzbekcha\" pair per line, every level well filled", () => {
+  const ids = new Set(), perLv = {};
+  for (const p of C.LUGAT) {
+    assert.ok(["A1", "A2", "B1", "B2"].includes(p.lv), `${p.id}: level`);
+    assert.ok(!ids.has(p.id) && /^[a-z0-9-]+$/.test(p.id), `${p.id}: id`); ids.add(p.id);
+    assert.ok(p.tr && p.uz, `${p.id}: titles`);
+    const lines = p.w.trim().split("\n");
+    assert.ok(lines.length >= 30, `${p.id}: only ${lines.length} words`);
+    for (const l of lines) {
+      const parts = l.split("=");
+      assert.equal(parts.length, 2, `${p.id}: "${l}"`);
+      assert.ok(parts[0].trim() && parts[1].trim(), `${p.id}: empty side in "${l}"`);
+      assert.ok(!/[‘’']/.test(parts[1]), `${p.id}: use ʻ / ʼ in Uzbek, not quotes: "${l}"`);
+    }
+    perLv[p.lv] = (perLv[p.lv] || 0) + lines.length;
+  }
+  for (const lv of ["A1", "A2", "B1", "B2"]) assert.ok(perLv[lv] >= 500, `${lv}: ${perLv[lv]} words`);
+});
+
 test("course: 32 units, tests answerable, reading answers match questions", () => {
   assert.equal(C.COURSE.units.length, 32);
   for (const l of C.COURSE.levels) {
@@ -54,7 +73,7 @@ test("course: 32 units, tests answerable, reading answers match questions", () =
 
 test("project rule: no exam brand names or military vocabulary in the content", () => {
   const bad = /\bTYS\b|\b(asker|askeri|komutan|kışla|nöbet|tatbikat)\b/i;
-  for (const f of ["content.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js", "app.js", "index.html"]) {
+  for (const f of ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js", "app.js", "index.html"]) {
     const m = read(f).match(bad);
     assert.equal(m, null, `${f} contains "${m && m[0]}"`);
   }

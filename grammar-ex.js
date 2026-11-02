@@ -915,3 +915,87 @@ Object.assign(BX, {
     { t: "t", q: "Ali ağzı ___ biridir, ona güvenebilirsin. (sir saqlaydigan)", ans: ["sıkı"], uz: "Ali sir saqlaydigan odam, unga ishonsang boʻladi." }
   ]
 });
+
+// Qoʻshimcha mavzular mashqlari (2026-11)
+Object.assign(BX, {
+  "A1.34": [
+    { t: "c", q: "Men ham talabaman.", o: ["Ben de öğrenciyim.", "Bende öğrenciyim.", "Ben te öğrenciyim."], a: 0 },
+    { t: "c", q: "Kitob stolda. (joy)", o: ["Kitap masada.", "Kitap masa da.", "Kitap masa ta."], a: 0 },
+    { t: "t", q: "Annem ___ gelecek. (ham)", ans: ["de"], uz: "Onam ham keladi." },
+    { t: "t", q: "Arkadaşım ___ çok yorgun. (ham)", ans: ["da"], uz: "Doʻstim ham juda charchagan.", e: "Oxirgi unli a — da." },
+    { t: "c", q: "Ham choy, ham kofe ichdik.", o: ["Çay da kahve de içtik.", "Çayda kahvede içtik.", "Çay ta kahve te içtik."], a: 0 },
+    { t: "o", s: "Biz de sinemaya gidiyoruz", uz: "Biz ham kinoga ketyapmiz." }
+  ],
+  "A2.30": [
+    { t: "c", q: "Men baʼzan kinoga boraman.", o: ["Bazen sinemaya giderim.", "Hiç sinemaya giderim.", "Her zaman sinemaya gitmem."], a: 0 },
+    { t: "c", q: "U hech qachon kechikmaydi.", o: ["O hiç geç kalmaz.", "O hiç geç kalır.", "O sık sık geç kalmaz."], a: 0 },
+    { t: "t", q: "Ben ___ spor yaparım, haftada dört gün. (tez-tez)", ans: ["sık sık"], uz: "Men tez-tez sport bilan shugʻullanaman, haftasiga toʻrt kun." },
+    { t: "t", q: "Kardeşim ___ kitap okur, belki ayda bir. (kamdan-kam)", ans: ["nadiren"], uz: "Ukam kamdan-kam kitob oʻqiydi, balki oyda bir marta." },
+    { t: "c", q: "kuniga uch marta", o: ["günde üç kez", "günü üç kez", "gün üç kezde"], a: 0 },
+    { t: "o", s: "Her sabah erken kalkarım", uz: "Har tong erta turaman." }
+  ],
+  "A2.31": [
+    { t: "c", q: "Yomgʻir yogʻa boshladi.", o: ["Yağmur yağmaya başladı.", "Yağmur yağmayı başladı.", "Yağmur yağmakta başladı."], a: 0 },
+    { t: "c", q: "Men suzishni yaxshi koʻraman.", o: ["Yüzmeyi severim.", "Yüzmeye severim.", "Yüzmekte severim."], a: 0 },
+    { t: "t", q: "Kapıyı ___ unuttum. (kilitlemek)", ans: ["kilitlemeyi"], uz: "Eshikni qulflashni unutdim." },
+    { t: "t", q: "Yeni bir eve ___ karar verdik. (taşınmak)", ans: ["taşınmaya"], uz: "Yangi uyga koʻchishga qaror qildik." },
+    { t: "t", q: "Babam sigara ___ bıraktı. (içmek)", ans: ["içmeyi"], uz: "Otam chekishni tashladi." },
+    { t: "o", s: "Ders çalışmaya devam ediyorum", uz: "Dars qilishni davom ettiryapman." }
+  ],
+  "B1.28": [
+    { t: "c", q: "Sening kelishingni xohlayman.", o: ["Gelmeni istiyorum.", "Gelmek istiyorum.", "Gelmenin istiyorum."], a: 0 },
+    { t: "c", q: "Ertaga kelishimiz kerak.", o: ["Yarın gelmemiz gerek.", "Yarın gelmemizi gerek.", "Yarın gelmeğimiz gerek."], a: 0 },
+    { t: "t", q: "Öğretmen ödevi ___ istiyor. (bitirmek, biz)", ans: ["bitirmemizi"], uz: "Oʻqituvchi uy vazifasini tugatishimizni xohlaydi." },
+    { t: "t", q: "Doktor çok su ___ söyledi. (içmek, ben)", ans: ["içmemi"], uz: "Shifokor koʻp suv ichishimni aytdi." },
+    { t: "t", q: "Biraz ___ rica ediyorum. (beklemek, siz)", ans: ["beklemenizi"], uz: "Biroz kutishingizni soʻrayman." },
+    { t: "o", s: "Kardeşimin erken gelmesini istiyorum", uz: "Ukamning erta kelishini xohlayman." }
+  ],
+  "B1.29": [
+    { t: "c", q: "Xohlaganingcha ye.", o: ["İstediğin kadar ye.", "İstediğinden kadar ye.", "İsteyen kadar ye."], a: 0 },
+    { t: "c", q: "Aytganimdek, avtobus kechikdi.", o: ["Söylediğim gibi, otobüs gecikti.", "Söylediğim kadar, otobüs gecikti.", "Söylemek gibi, otobüs gecikti."], a: 0 },
+    { t: "t", q: "Elimden ___ kadar yardım ederim. (gelmek)", ans: ["geldiği"], uz: "Qoʻlimdan kelgancha yordam beraman." },
+    { t: "t", q: "Tahmin ___ gibi, sınav çok zordu. (etmek, ben)", ans: ["ettiğim"], uz: "Taxmin qilganimdek, imtihon juda qiyin edi." },
+    { t: "t", q: "___ kadar, müze pazartesi kapalı. (bilmek, ben)", ans: ["Bildiğim", "bildiğim"], uz: "Bilishimcha, muzey dushanba kuni yopiq." },
+    { t: "o", s: "Her şey planladığımız gibi gitti", uz: "Hammasi rejalashtirganimizdek ketdi." }
+  ],
+  "B2.24": [
+    { t: "c", q: "Menga ishonar ekansan, hammasi yaxshi boʻladi.", o: ["Bana güvendiğin sürece her şey iyi olacak.", "Bana güvenmedikçe her şey iyi olacak.", "Bana güvenmek sürece her şey iyi olacak."], a: 0 },
+    { t: "c", q: "Bilet olmaguningizcha kira olmaysiz.", o: ["Bilet almadıkça giremezsiniz.", "Bilet aldıkça giremezsiniz.", "Bilet almadıkçanız giremezsiniz."], a: 0 },
+    { t: "t", q: "Sağlıklı ___ sürece hasta olmazsın. (beslenmek)", ans: ["beslendiğin"], uz: "Sogʻlom ovqatlanar ekansan, kasal boʻlmaysan." },
+    { t: "t", q: "Doktor izin ___ spor yapma. (vermek, inkor)", ans: ["vermedikçe"], uz: "Shifokor ruxsat bermaguncha sport bilan shugʻullanma." },
+    { t: "t", q: "Hep birlikte ___ sürece bu proje bitmez. (çalışmak, inkor, biz)", ans: ["çalışmadığımız"], uz: "Hammamiz birga ishlamas ekanmiz, bu loyiha tugamaydi." },
+    { t: "o", s: "Sen istemedikçe kimseye söylemem", uz: "Sen xohlamaguningcha hech kimga aytmayman." }
+  ],
+  "B2.25": [
+    { t: "c", q: "Yiqilishimga oz qoldi.", o: ["Düşeyazdım.", "Düşedurdum.", "Düşegeldim."], a: 0 },
+    { t: "c", q: "U hayron boʻlib qarab qoldi.", o: ["Şaşırıp bakakaldı.", "Şaşırıp bakayazdı.", "Şaşırıp bakagelir."], a: 0 },
+    { t: "c", q: "Siz oʻtirib turing, men hozir kelaman.", o: ["Siz oturadurun, ben hemen geliyorum.", "Siz oturayazın, ben hemen geliyorum.", "Siz oturakalın, ben hemen geliyorum."], a: 0 },
+    { t: "c", q: "asrlardan beri davom etib kelayotgan anʼana", o: ["yüzyıllardır süregelen gelenek", "yüzyıllardır süreyazan gelenek", "yüzyıllardır sürekalan gelenek"], a: 0 },
+    { t: "t", q: "Az kalsın treni ___. (kaçırmak, oz qoldi, ben)", ans: ["kaçırayazdım"], uz: "Poyezdni oʻtkazib yuborishimga oz qoldi." },
+    { t: "o", s: "Kapıda öylece bakakaldı", uz: "Eshik oldida qotib qarab qoldi." }
+  ],
+  "B2.26": [
+    { t: "c", q: "Soat oltida ishni tugatgan boʻlaman.", o: ["Saat altıda işi bitirmiş olacağım.", "Saat altıda işi bitirecek olmuşum.", "Saat altıda işi bitirmiş oldum."], a: 0 },
+    { t: "c", q: "U xatni olgan boʻlishi kerak.", o: ["Mektubu almış olmalı.", "Mektubu alacak olmalı.", "Mektubu almış olmuş."], a: 0 },
+    { t: "t", q: "Siz geldiğinizde biz yemeği ___ olacağız. (bitirmek)", ans: ["bitirmiş"], uz: "Siz kelganingizda biz ovqatni tugatgan boʻlamiz." },
+    { t: "t", q: "Ankara'ya ___ olursan bana haber ver. (gitmek, -acak)", ans: ["gidecek"], uz: "Anqaraga boradigan boʻlsang, menga xabar ber." },
+    { t: "c", q: "Agar u buni bilgan boʻlsa…", o: ["Eğer o bunu bilmiş olsa…", "Eğer o bunu bilecek olmuş…", "Eğer o bunu bilmiş olursa olsa…"], a: 0 },
+    { t: "o", s: "Mektubu çoktan göndermiş olmalı", uz: "U xatni allaqachon yuborgan boʻlishi kerak." }
+  ],
+  "B2.27": [
+    { t: "c", q: "Onamni koʻrgim keldi.", o: ["Annemi göresim geldi.", "Annemi görmesim geldi.", "Annemi göreceğim geldi."], a: 0 },
+    { t: "c", q: "Bugun hech ishlagim yoʻq.", o: ["Bugün hiç çalışasım yok.", "Bugün hiç çalışmasım yok.", "Bugün hiç çalışasın yok."], a: 0 },
+    { t: "t", q: "Bu filmi izleyince ___ geldi. (ağlamak, ben)", ans: ["ağlayasım"], uz: "Bu filmni koʻrib yigʻlagim keldi." },
+    { t: "t", q: "Tatilde hiç eve ___ yoktu. (dönmek, ben)", ans: ["dönesim"], uz: "Taʼtilda hech uyga qaytgim kelmadi." },
+    { t: "t", q: "Seni çok ___ geldi. (görmek, ben)", ans: ["göresim"], uz: "Seni juda koʻrgim keldi." },
+    { t: "o", s: "Bu akşam dışarı çıkasım var", uz: "Bu oqshom tashqariga chiqqim kelyapti." }
+  ],
+  "B2.28": [
+    { t: "c", q: "Hech narsa boʻlmagandek kulib qoʻydi.", o: ["Hiçbir şey olmamış gibi güldü.", "Hiçbir şey olmamak gibi güldü.", "Hiçbir şey olmamışça gibi güldü."], a: 0 },
+    { t: "c", q: "Goʻyo yomgʻir yogʻadigandek.", o: ["Sanki yağmur yağacak gibi.", "Sanki yağmur yağmak gibi.", "Sanki yağmur yağacağı gibi."], a: 0 },
+    { t: "t", q: "Yüz yıl ___ gibi yorgunum. (çalışmak, -mış)", ans: ["çalışmış"], uz: "Yuz yil ishlagandek charchaganman." },
+    { t: "t", q: "Beni ___ gibi yanımdan geçti. (görmemek, -mış)", ans: ["görmemiş"], uz: "Meni koʻrmagandek yonimdan oʻtib ketdi." },
+    { t: "t", q: "___ her şeyi o biliyor. (goʻyo)", ans: ["Sanki", "sanki"], uz: "Goʻyo hamma narsani u biladi." },
+    { t: "o", s: "Sanki rüyadaymış gibi hissediyorum", uz: "Xuddi tushdagidek his qilyapman." }
+  ]
+});

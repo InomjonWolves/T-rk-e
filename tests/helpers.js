@@ -9,8 +9,8 @@ const BASE = "file://" + path.join(ROOT, "index.html");
 
 // Content files evaluated without a browser: returns { UNITS, LETTERS, GRAMMAR, BX, COURSE, GUIDE }
 function loadContent() {
-  const code = ["content.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js"].map(f => fs.readFileSync(path.join(ROOT, f), "utf8")).join("\n;\n");
-  return vm.runInNewContext(code + "\n;({ UNITS, LETTERS, GRAMMAR, BX, COURSE, GUIDE })", {});
+  const code = ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js"].map(f => fs.readFileSync(path.join(ROOT, f), "utf8")).join("\n;\n");
+  return vm.runInNewContext(code + "\n;({ UNITS, LETTERS, GRAMMAR, BX, COURSE, GUIDE, LUGAT })", {});
 }
 
 const launch = () => chromium.launch();
