@@ -1214,6 +1214,28 @@ ALL.forEach(w => { const k = fold(w.tr); if (!(k in ALL_BY_TR)) ALL_BY_TR[k] = w
 /* ---------- A1–B2 course (course.js): levels, units, level tests ---------- */
 const KU = {};
 COURSE.units.forEach((u, i) => { KU[u.id] = u; u.idx = i; });
+// index.html loads course-core.js (titles, goals, vocabulary); the full course.js (dialogs, texts, exercises)
+// arrives right after the first paint. Until then those fields throw NEED_COURSE: route() and taps wait for it.
+const NEED_COURSE = new Error("NEED_COURSE");
+const COURSE_CORE = COURSE, COURSE_BODY = ["sections", "reading", "exercises"];
+let COURSE_FULL = COURSE.units.every(u => Array.isArray(u.sections)), COURSE_P = null;
+if (!COURSE_FULL) COURSE.units.forEach(u => COURSE_BODY.forEach(k => Object.defineProperty(u, k, { get() { throw NEED_COURSE; }, configurable: true })));
+function loadCourse() {
+  if (COURSE_FULL) return Promise.resolve();
+  return COURSE_P || (COURSE_P = new Promise((ok, fail) => {
+    const s = document.createElement("script");
+    s.src = "course.js";
+    s.onload = () => {
+      // course.js declares the same global COURSE: keep the core object (KU and indexes point to it), copy the bodies in
+      const full = COURSE; COURSE = COURSE_CORE;
+      full.units.forEach(f => { const u = KU[f.id]; if (u) COURSE_BODY.forEach(k => Object.defineProperty(u, k, { value: f[k], writable: true, enumerable: true, configurable: true })); });
+      COURSE_FULL = true; ok();
+    };
+    s.onerror = () => { COURSE_P = null; s.remove(); fail(new Error("course.js")); };
+    document.head.appendChild(s);
+  }));
+}
+function courseOffline() { toast("Kurs maʼlumotlari yuklanmadi. Internetni tekshirib, qayta urinib koʻring"); }
 const kHash = id => "k-" + id;
 const KLEVEL = id => COURSE.levels.find(l => l.id === id);
 // Vocabulary of each unit, resolved to entries of the shared word list (SRS state is shared by Turkish spelling)
@@ -1235,7 +1257,7 @@ function kKeys(u) {
   return keys;
 }
 function kProgress(id) {
-  const u = KU[id], keys = kKeys(u), st = S.k[id];
+  const u = KU[id], keys = u.keys || kKeys(u), st = S.k[id];
   if (!keys.length) return st && st.done ? 1 : 0;
   return st ? keys.filter(k => st.e[k] === 1).length / keys.length : 0;
 }
@@ -1718,6 +1740,14 @@ function maybeOnboard() {
 
 /* ---------- Router ---------- */
 function route() {
+  try { routeNow(); }
+  catch (err) {
+    if (err !== NEED_COURSE) throw err;
+    app.innerHTML = `<div class="view"><div class="glass empty"><div class="spin"></div><b>Yuklanmoqda…</b></div></div>`;
+    loadCourse().then(route, () => { app.innerHTML = `<div class="view"><div class="glass empty"><b>Kurs yuklanmadi</b><span class="muted">Internetni tekshiring.</span><button class="btn btn-grad" data-act="course-retry">Qayta urinish</button></div></div>`; });
+  }
+}
+function routeNow() {
   const h = (location.hash || "#home").slice(1);
   { const ps = $("pamuk-say"); if (ps) { clearTimeout(sayT); ps.classList.remove("show"); } }
   let html, tab = h, after = null;
@@ -3123,12 +3153,13 @@ function renderResult() {
 }
 
 /* ---------- Events ---------- */
-document.addEventListener("click", e => {
+function onAct(e) {
   const b = e.target.closest("[data-act]");
   if (!b) return;
   const act = b.dataset.act;
   if (act === "sheet-close") { if (e.target === b && !$("sheet").dataset.locked) closeSheet(); return; }
   if (act === "welcome-close") { hideWelcome(); return; }
+  if (act === "course-retry") { route(); return; }
   if (act === "say") speak(b.dataset.t, b.classList.contains("say") ? b : null);
   else if (act === "go") { go(b.dataset.to); if (b.dataset.focus) setTimeout(() => $("q") && $("q").focus(), 50); }
   else if (act === "start") startSession(b.dataset.mode, b.dataset.u || "all");
@@ -3310,6 +3341,11 @@ document.addEventListener("click", e => {
     inp.value = inp.value.slice(0, s) + b.dataset.k + inp.value.slice(en);
     inp.focus(); inp.setSelectionRange(s + 1, s + 1);
   }
+}
+// A tap that needs the full course before it has arrived waits for it, then runs again
+document.addEventListener("click", e => {
+  try { onAct(e); }
+  catch (err) { if (err !== NEED_COURSE) throw err; toast("Yuklanmoqda…"); loadCourse().then(() => onAct(e), courseOffline); }
 });
 document.addEventListener("change", e => {
   if (e.target.dataset && e.target.dataset.act === "k-match") { kSubmit(e.target.dataset.id, e.target.dataset.key, e.target.value); kRerender(); }
@@ -3590,6 +3626,8 @@ if (FB) {
   route();
   showWelcome();
 }
+// The rest of the course downloads right after the first screen is drawn
+setTimeout(() => loadCourse().catch(() => {}), 0);
 if ("serviceWorker" in navigator && location.protocol === "https:") {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }

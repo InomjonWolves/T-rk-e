@@ -104,3 +104,51 @@ test("index.html does not load the Firebase SDK with blocking script tags", () =
   const html = require("fs").readFileSync(require("path").join(__dirname, "..", "index.html"), "utf8");
   assert.ok(!/<script[^>]+gstatic\.com\/firebasejs/.test(html));
 });
+
+// ---- The full course arrives after the first paint
+test("course-core.js is up to date and its answer keys match the app's kKeys()", async () => {
+  const fs = require("fs"), path = require("path");
+  const { build } = require("../tools/course-core");
+  assert.equal(fs.readFileSync(path.join(__dirname, "..", "course-core.js"), "utf8"), build(), "run `npm run build` after editing course.js");
+  const { openApp } = require("./helpers");
+  const { page, errors } = await openApp(browser, "#home");
+  await page.waitForFunction(() => COURSE_FULL);
+  const bad = await page.evaluate(() => COURSE.units.filter(u => JSON.stringify(u.keys) !== JSON.stringify(kKeys(u))).map(u => u.id));
+  assert.deepEqual(bad, []);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("home is drawn without course.js; a unit page and a tap wait for it", async () => {
+  const { BASE } = require("./helpers");
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const errors = [];
+  page.on("pageerror", e => errors.push(e.message));
+  let release;
+  const gate = new Promise(r => { release = r; });
+  await page.route("**/firebase-config.js", r => r.fulfill({ body: "window.FIREBASE_CONFIG=null", contentType: "text/javascript" }));
+  await page.route(/\/course\.js$/, async r => { await gate; r.continue(); });
+  await page.route(/^https?:\/\//, r => r.abort());
+  await page.addInitScript(() => { sessionStorage["ty-welcomed"] = "1"; localStorage["turkce-yol-v1"] = JSON.stringify({ onb: 1 }); });
+  await page.goto(BASE + "#home", { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => document.querySelector("#app .view"));
+  const home = await page.evaluate(() => ({ full: COURSE_FULL, loading: !!document.querySelector("#app .spin"), next: kNext().id, progress: kProgress("a1-1") }));
+  assert.deepEqual(home, { full: false, loading: false, next: "a1-1", progress: 0 });
+  // Other pages that do not need the course body also work
+  for (const h of ["#course", "#practice", "#guide", "#profile", "#skills"]) {
+    await page.evaluate(h => { location.hash = h; }, h);
+    await page.waitForTimeout(50);
+    assert.equal(await page.evaluate(() => !!document.querySelector("#app .spin")), false, `${h} waited for the course`);
+  }
+  await page.evaluate(() => { location.hash = "#k-a1-2"; });
+  await page.waitForTimeout(50);
+  assert.equal(await page.evaluate(() => !!document.querySelector("#app .spin")), true);
+  // A tap that needs dialogs (speaking practice sheet) is replayed once the course is there
+  await page.evaluate(() => { const b = document.createElement("button"); b.dataset.act = "start"; b.dataset.mode = "lsent"; b.dataset.u = "auto"; b.id = "t-lsent"; document.body.appendChild(b); b.click(); });
+  release();
+  await page.waitForFunction(() => COURSE_FULL && !document.querySelector("#app .spin"));
+  await page.waitForFunction(() => SES && SES.mode === "lsent" && SES.items.length > 0);
+  assert.equal(await page.evaluate(() => KU["a1-2"].exercises.length > 0 && COURSE.units[0] === KU["a1-1"]), true);
+  assert.deepEqual(errors, []);
+  await page.close();
+});

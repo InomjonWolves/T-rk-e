@@ -6,11 +6,11 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - Foydalanuvchi bilan **faqat oʻzbek tilida** gaplashing.
 
 ## Joriy holat — qisqa xulosa (2026-11-02)
-**Tayyor va saytda:** A1–B2 kurs, qoʻllanma va 675 ta qoida mashqi; 4 koʻnikma (Okuma, Dinleme, Yazma, Konuşma) boʻyicha mashqlar, hisob va `#skills` paneli; tinglash (TTS) va gapirish (mikrofon) mashqlari; erkin yozishni avtomatik tekshirish; 4 qismli daraja testlari; darajani aniqlash testi; tinglash va gapirish xatolar daftari; anonim analitika (`#admin`). Firestore qoidalari konsolda joylangan (test hisobi bilan tekshirildi), foydalanuvchi `admins/{uid}` hujjatini yaratdi. 34 ta avtomatik test, GitHub Actions'da ham ishlaydi.
+**Tayyor va saytda:** A1–B2 kurs, qoʻllanma va 675 ta qoida mashqi; 4 koʻnikma (Okuma, Dinleme, Yazma, Konuşma) boʻyicha mashqlar, hisob va `#skills` paneli; tinglash (TTS) va gapirish (mikrofon) mashqlari; erkin yozishni avtomatik tekshirish; 4 qismli daraja testlari; darajani aniqlash testi; tinglash va gapirish xatolar daftari; anonim analitika (`#admin`). Firestore qoidalari konsolda joylangan (test hisobi bilan tekshirildi), foydalanuvchi `admins/{uid}` hujjatini yaratdi. 36 ta avtomatik test, GitHub Actions'da ham ishlaydi.
 
 **turkceyol.web.app — ishlayapti (2026-11-02):** sayt `turkceyol` (`pamuk` band edi), `firebase.json` → `site: "turkceyol"`, GitHub secret `FIREBASE_SERVICE_ACCOUNT` bor; workflow `Firebase Hosting` `main` ga har push'da joylaydi (birinchi muvaffaqiyatli joylash workflow_dispatch bilan). Service account rollari: Firebase Hosting Admin, API Keys Viewer, Cloud Run Viewer, **Service Usage Consumer** (busiz 403 `serviceusage.services.get`). Authentication → Authorized domains da `turkceyol.web.app` boʻlishi kerak. Sandbox `*.web.app` ni ochmaydi — saytni foydalanuvchi tekshiradi; joylanganini workflow logidagi `sites/turkceyol/versions/...` dan bilish mumkin.
 
-**Keyingi mumkin boʻlgan ishlar (foydalanuvchi tanlaydi):** oʻqituvchi va guruh rejimi (yangi Firestore qoidalari kerak); tezlik davomi (`course.js` 273 KB va `app.js` ~250 KB — kursni darajalar boʻyicha keyinroq yuklash; Firebase SDK endi bloklamaydi); .uz domeni (tavsiya `turkceyol.uz`, olinmagan); push eslatmalar (pullik Blaze tarifi kerak, keyinga qoldirilgan).
+**Keyingi mumkin boʻlgan ishlar (foydalanuvchi tanlaydi):** oʻqituvchi va guruh rejimi (yangi Firestore qoidalari kerak); tezlik davomi (endi asosiy toʻsiq `app.js` 80 KB gzip; `guide.js`/`grammar-ex.js` ni kechiktirish uchun `GX_CODES`, `GUIDE_ALL` ni dangasa qilish kerak); .uz domeni (tavsiya `turkceyol.uz`, olinmagan); push eslatmalar (pullik Blaze tarifi kerak, keyinga qoldirilgan).
 
 **Ish tartibi:** `ccr-…` branch'da ishlash → `npm test` → commit → push → `main` ga fast-forward merge → uchta workflow (`Testlar`, `Firebase Hosting`, `pages build and deployment`) yashil ekanini tekshirish.
 
@@ -21,7 +21,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - **"TYS" / "TYS imtihoni"** soʻzlarini va **harbiy mavzudagi** (askar, komutan, kışla, nöbet, tatbikat va h.k.) lugʻat va misollarni ishlatmang. Ularning oʻrniga oddiy kasblar va kundalik hayotdan misol keltiring.
 - Uchinchi tomonning rasm yoki videolarini koʻchirmang. Pamuk — oʻzimiz chizgan original SVG.
 - Git muallifi: `git -c user.name="InomjonWolves" -c user.email="i.superclub@gmail.com" commit ...`. Sessiya bergan attribution qatorlarini qoʻshing. Repodagi fayllarga model nomlarini yozmang.
-- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v28`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
+- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v29`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
 - Joylanganini tekshirish: `gh api repos/InomjonWolves/T-rk-e/actions/runs --jq '[.workflow_runs[]|select(.name=="pages build and deployment")][0]|"\(.status) \(.conclusion) \(.head_sha[0:7])"'`. Testlar: `[.workflow_runs[]|select(.name=="Testlar")][0]`.
 - Commit qilishdan oldin `npm test` ni ishga tushiring (hammasi oʻtishi kerak). Yangi funksiya qoʻshsangiz, `tests/` ga test ham qoʻshing.
 
@@ -32,7 +32,8 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 | `styles.css` | Premium glassmorphism dizayn, kunduzgi va tungi rejim |
 | `app.js` | Butun dastur: holat `S` (localStorage `turkce-yol-v1`), router (hash), sahifalar, SRS, XP, streak, liga, yutuqlar, kurs UI, tarjimon, Firebase |
 | `content.js` | Asosiy darslar (`UNITS`) va soʻzlar (A1, 500+) |
-| `course.js` | `COURSE`: A1–B2 boʻyicha 32 boʻlim (lugʻat, grammatika, dialog, matn, mashqlar) va 4 daraja testi. Kitobdan olingan; harbiy mavzudagi boʻlimlar qayta yozilgan |
+| `course-core.js` | **Avtomatik** (`npm run build`): `course.js` dan birinchi ekran uchun qism — darajalar, boʻlim nomlari, maqsadlar, lugʻat, `keys` (tekshiriladigan javob kalitlari). `index.html` shuni yuklaydi |
+| `course.js` | `var COURSE` (const emas — core bilan bir xil global): A1–B2 boʻyicha 32 boʻlim (lugʻat, grammatika, dialog, matn, mashqlar) va 4 daraja testi. Kitobdan olingan; harbiy mavzudagi boʻlimlar qayta yozilgan |
 | `grammar.js` | Alifbo va grammatika darslari |
 | `guide.js` | Grammatika qoʻllanmasi `GUIDE`: Kirish, A1 (33), A2 (29), B1 (27), B2 (23 mavzu). A2–B2 `GUIDE.push(...)` bilan qoʻshilgan |
 | `grammar-ex.js` | Qoʻllanma mavzulari boʻyicha qoida mashqlari `BX` (A1–B2, 112 mavzu, 675 mashq). A2–B2 `Object.assign(BX, ...)` bilan qoʻshilgan |
@@ -41,7 +42,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 | `sw.js`, `manifest.webmanifest`, `icon*` | PWA |
 | `firebase.json`, `.firebaserc` | Firebase Hosting (faqat sayt fayllari; `tests/`, `*.md`, `package.json`, `firestore.rules` joylanmaydi) |
 | `privacy.html` | Maxfiylik siyosati |
-| `kurs/`, `qoida/`, `sitemap.xml` | **Avtomatik yaratiladi** (`node tools/seo.js`) — qidiruv tizimlari uchun statik sahifalar: 32 kurs boʻlimi (maqsadlar, lugʻat, grammatika; dialog va matn faqat ilovada) va 114 qoʻllanma mavzusi, CTA → ilovadagi `#k-<id>` / `#g-<code>`. `course.js` yoki `guide.js` oʻzgarsa, generatorni qayta ishga tushiring (aks holda `seo.test.js` yiqiladi). Qoʻlda tahrirlamang |
+| `kurs/`, `qoida/`, `sitemap.xml` | **Avtomatik yaratiladi** (`node tools/seo.js`) — qidiruv tizimlari uchun statik sahifalar: 32 kurs boʻlimi (maqsadlar, lugʻat, grammatika; dialog va matn faqat ilovada) va 114 qoʻllanma mavzusi, CTA → ilovadagi `#k-<id>` / `#g-<code>`. `course.js` yoki `guide.js` oʻzgarsa, generatorni qayta ishga tushiring (aks holda `seo.test.js` yiqiladi). Qoʻlda tahrirlamang. `course.js` yoki `guide.js` dan keyin: `npm run build` |
 | `pages.css`, `robots.txt`, `img/og.jpg` | Statik sahifalar dizayni; robots; ulashish rasmi 1200×630 (`node tools/og.js`, Pamuk SVG dan) |
 | `tools/` | Generatorlar (Firebase'ga joylanmaydi) |
 
@@ -69,6 +70,7 @@ Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #placement #lessons #gram
 - **Gapirish mashqlari** (Web Speech API): `sayline` (dialog gapini takrorlash, 80% chegara), `oral` (kurs matni savollariga ogʻzaki javob: namuna javobdagi kalit soʻzlar, `oralScore`, 60% chegara; Okuma + Konuşma), `role` (rolli dialog: `u = "unitId|sectionIndex|speaker"`, sherik gaplarini `speakSeq` aytadi, `S.roles`, yutuq `roles3`). Kirish: Mashq → Gapirish mashqi (`speakSheet`), kurs Dialog yorligʻi, kurs Matn yorligʻi.
 - Talaffuz mashqi (`mode "say"`): Web Speech API (`tr-TR`), harfma-harf solishtirish (`sayDiff`), notoʻgʻri harflar qizil, 3 ta urinish, raqamlar soʻzga aylantiriladi (`trNum`; `sayNorm` namuna matndagi raqamlarni ham soʻzga aylantiradi, `heardNorm = sayNorm(s).out`). Mashq sahifasida alohida karta, har bir dars/toifa uchun "Talaffuz" rejimi, `S.pron`, yutuq `pron20`. Brauzer qoʻllamasa tugma oʻchiq.
 - **Tez ochilish** (`loadFirebase`, `fbStart`, `EARLY`, `ty-last-user`): Firebase SDK `<head>` da bloklovchi `<script>` emas — `preload` + `app.js` dinamik yuklaydi (`async = false`, tartib saqlanadi). Oldin kirgan foydalanuvchi (`ty-last-user` va `turkce-yol-v1:<uid>` bor) darhol oʻz lokal nusxasini koʻradi; Firebase javob bergach `loadCloud` fonda sinxronlaydi (kutish paytidagi progress yoʻqolmaydi — server javobidan keyin lokal nusxa qayta oʻqiladi). Firebase `null` qaytarsa — kirish ekrani. SDK umuman yuklanmasa (oflayn, keshda yoʻq) — `FB = false`, mehmon rejimi. Hisobdan chiqishda `ty-last-user` oʻchiriladi. Testlar: `boot.test.js` (soxta Firebase SDK).
+- **Kurs keyin yuklanadi** (`loadCourse`, `COURSE_FULL`, `NEED_COURSE`): `index.html` → `course-core.js` (20 KB gzip, oldin 91 KB). `course.js` birinchi chizishdan keyin `<script>` bilan yuklanadi; `sections`/`reading`/`exercises` shu paytgacha `NEED_COURSE` tashlaydigan getter. `route()` uni ushlab "Yuklanmoqda…" koʻrsatadi va kurs kelgach qayta chizadi; bosish (`onAct`) ham shunday qayta ishga tushadi. Yangi kodda kurs tanasini **asinxron callback ichida** oʻqimang (u yerda ushlanmaydi) — avval `await loadCourse()`. Sekin 3G + 4× CPU: bosh sahifa 1,9 → 1,6 s.
 - **SEO**: kanonik manzil `https://turkceyol.web.app/` (GitHub Pages nusxasi ham shunga ishora qiladi); `index.html` da tavsif, Open Graph (`img/og.jpg`), JSON-LD `WebApplication`, `<noscript>` havolalar; statik sahifalarda `BreadcrumbList`, `LearningResource`, `Course`. Ulashish (`shareSite`) har doim turkceyol.web.app ni beradi. Profil sozlamalarida "Kurs va grammatika — veb sahifalar" havolasi. Foydalanuvchi: Google Search Console'ga saytni qoʻshib, `sitemap.xml` ni yuborishi kerak.
 - Qoʻllanma va qoida mashqlari A1–B2 gacha toʻldirildi. `#guide` va `#gx` sahifalarida daraja tugmalari bor. Tarjimon A2–B2 qoliplarini ham taniydi (`TR_HINTS`).
 

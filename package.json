@@ -1,8 +1,9 @@
 {
   "name": "turkce-yol",
   "private": true,
-  "description": "Türkçe Yoʻl — testlar. Saytning oʻzi build talab qilmaydi.",
+  "description": "Türkçe Yoʻl — testlar. Sayt statik; course.js yoki guide.js oʻzgarsa: npm run build.",
   "scripts": {
+    "build": "node tools/course-core.js && node tools/seo.js",
     "test": "node --test --test-concurrency=2 \"tests/*.test.js\""
   },
   "devDependencies": {

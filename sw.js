@@ -1,7 +1,7 @@
 // Offline support. App files: network first (so a new version shows at once), cache when offline or slow.
 // Fonts and the Firebase SDK: cache first.
-const CACHE = "turkce-yol-v28";
-const ASSETS = ["./", "./index.html", "./firebase-config.js", "./content.js", "./grammar.js", "./grammar-ex.js", "./course.js", "./app.js", "./cat.js", "./guide.js", "./styles.css", "./privacy.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
+const CACHE = "turkce-yol-v29";
+const ASSETS = ["./", "./index.html", "./firebase-config.js", "./content.js", "./grammar.js", "./grammar-ex.js", "./course-core.js", "./course.js", "./app.js", "./cat.js", "./guide.js", "./styles.css", "./privacy.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", e => {
   // cache: "reload" skips the browser's HTTP cache, so the new cache really gets the new files
