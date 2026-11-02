@@ -74,3 +74,31 @@ test("skills dashboard: balance and the weakest skill", async () => {
   assert.notEqual(r.weak, "l");
   assert.deepEqual(errors, []);
 });
+
+test("listening and speaking mistakes go to the notebook and leave it after two right answers", async () => {
+  const { page, errors } = await openApp(browser, "#practice", { sr: true });
+  // A wrong listening answer
+  await run(page, "listen", "pron");
+  const tr = await page.evaluate(() => { const w = SES.items[0]; document.querySelector('[data-act=answer][data-ok="0"]').click(); return w.tr; });
+  assert.deepEqual(await page.evaluate(() => Object.keys(S.lsm)), ["lw|" + tr]);
+  // A failed sentence in the dialog listening exercise and a failed spoken word
+  await run(page, "lsent", "a2-7");
+  await page.evaluate(() => { const it = SES.items[0]; document.querySelector(`[data-act=ls-ans][data-o="${(it.opts.indexOf(it.t) + 1) % 3}"]`).click(); });
+  await run(page, "say", "pron");
+  await page.evaluate(() => { window.__say = () => "tamamen yanlış"; });
+  for (let i = 0; i < 3; i++) { await page.click("#mic-btn"); await page.waitForTimeout(100); }
+  await page.evaluate(() => { window.__say = null; closeSession(); location.hash = "#practice"; });
+  await page.waitForTimeout(100);
+  assert.deepEqual(await page.evaluate(() => [lsmList("l").length, lsmList("s").length]), [2, 1]);
+  assert.ok(await page.evaluate(() => !!document.querySelector('[data-mode=lmis]') && !!document.querySelector('[data-mode=smis]')));
+  // Two right rounds empty the notebook
+  for (let round = 0; round < 2; round++) {
+    await run(page, "lmis", "lmis");
+    assert.equal(await page.evaluate(() => SES.items.length), 2);
+    assert.equal(await answerAllRight(page), "2/2");
+    await run(page, "smis", "smis");
+    assert.equal(await answerAllRight(page), "1/1");
+  }
+  assert.deepEqual(await page.evaluate(() => S.lsm), {});
+  assert.deepEqual(errors, []);
+});

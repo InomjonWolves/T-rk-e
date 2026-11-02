@@ -858,6 +858,8 @@ function viewPractice() {
     : `<p class="muted">Xato qilgan soʻzlaringiz shu yerga tushadi va alohida mashq qilinadi.</p>`}
   </div>
 
+  ${lsmCard()}
+
   <div class="pcard glass">
     <div class="pcard-head"><b>${ICON.cap}Qoidalar mashqi</b><span>${gxDoneCount()}/${GX_CODES.length}</span></div>
     <div class="tags"><span class="tag sky-t">${esc(gxNext())}</span><span class="tag violet-t">${esc((gxTopic(gxNext()) || {}).uz || "")}</span>${gxMistakes().length ? `<span class="tag pink-t">${gxMistakes().length} ta xato</span>` : ""}</div>
@@ -1775,6 +1777,10 @@ function startSession(mode, u) {
   } else if (mode === "gxm") {
     items = shuffle(gxMistakes()).slice(0, 15).map(k => { const [c, i] = k.split("#"); return { gx: true, code: c, i: +i, ex: BX[c][+i] }; });
     if (!items.length) { toast("Qoida xatolari yoʻq"); return; }
+  } else if (mode === "lmis" || mode === "smis") {
+    if (mode === "lmis" ? !canSpeak() : !canListen()) { toast(mode === "lmis" ? "Bu brauzerda ovoz yoʻq" : "Bu brauzer nutqni tanimaydi. Chrome yoki Safari'da oching"); return; }
+    items = shuffle(lsmList(mode[0])).slice(0, 12).map(lsmItem).filter(Boolean);
+    if (!items.length) { toast("Xatolar daftari boʻsh"); return; }
   } else if (mode === "listen" || mode === "dict" || mode === "lsent") {
     if (!canSpeak()) { toast("Bu brauzerda ovoz yoʻq"); return; }
     items = mode === "lsent" ? lsItems(u) : sayItems(u, mode === "dict" ? w => sayable(w) && typeable(w) : sayable, 10);
@@ -1814,9 +1820,10 @@ function renderStep() {
   SES.answered = false;
   progressBar();
   const w = SES.items[SES.i];
-  if (w.gx) return renderGx(w);
-  if (w.ls) return renderLs(w);
+  if (w.gx) { SES.m = "gx"; return renderGx(w); }
+  if (w.ls) { SES.m = "ls"; return renderLs(w); }
   const m = itemMode(w);
+  SES.m = m;
   if (m === "cards") renderCard(w);
   else if (m === "quiz") renderQuiz(w);
   else if (m === "say" || m === "sayline") renderSay(w);
@@ -1828,6 +1835,7 @@ function renderStep() {
 }
 // Review sessions mix modes: new words are shown as cards, known ones are tested
 function itemMode(w) {
+  if (w._m) return w._m;
   if (SES.mode !== "review" && SES.mode !== "mistakes") return SES.mode;
   const st = srs(w);
   if (!st) return "cards";
@@ -1987,9 +1995,80 @@ function playBtns(t) {
   return `<div class="mic-wrap"><button class="mic-btn play-btn" data-act="ls-play" data-t="${esc(t)}" aria-label="Yana tinglash">${ICON.speak}</button>
     <button class="link" data-act="ls-play" data-t="${esc(t)}" data-slow="1">Sekinroq tinglash</button></div>`;
 }
+/* ---------- Listening and speaking mistakes notebook ----------
+   A missed listening or speaking item is saved in S.lsm by a small text key and comes back in
+   "lmis" / "smis" sessions. Two correct answers (anywhere) take it out of the notebook. */
+const LSM_MAX = 60;
+const LSM_CLEAN = /[.,!?;:«»"…—]/g;
+function lsmKey(it, m) {
+  if (!it) return null;
+  if (it.ls === "pick") return "lp|" + it.t;
+  if (it.ls === "cloze") return "lc|" + it.t + "|" + it.word;
+  if (it.oral) return "so|" + it.unit + "|" + it.q;
+  if (it.line || it.role) return "sl|" + it.tr;
+  if (m === "listen") return "lw|" + it.tr;
+  if (m === "dict") return "ld|" + it.tr;
+  if (m === "say") return "sw|" + it.tr;
+  return null;
+}
+function lsmMiss(it, m) {
+  const k = lsmKey(it, m);
+  if (!k) return;
+  S.lsm = S.lsm || {};
+  S.lsm[k] = { n: 2, d: dayNum() };
+  const keys = Object.keys(S.lsm);
+  if (keys.length > LSM_MAX) keys.sort((a, b) => S.lsm[a].d - S.lsm[b].d).slice(0, keys.length - LSM_MAX).forEach(x => delete S.lsm[x]);
+}
+function lsmHit(it, m) {
+  const k = lsmKey(it, m);
+  if (!k || !S.lsm || !S.lsm[k]) return;
+  if (--S.lsm[k].n <= 0) delete S.lsm[k];
+}
+const lsmList = kind => Object.keys(S.lsm || {}).filter(k => k[0] === kind);
+// Rebuilds a practice item from its notebook key
+function lsmItem(k) {
+  const [t, a, b] = k.split("|");
+  if (t === "lw" || t === "ld" || t === "sw") {
+    const w = ALL.find(x => x.tr === a);
+    return w ? Object.assign({}, w, { _m: { lw: "listen", ld: "dict", sw: "say" }[t] }) : null;
+  }
+  if (t === "lp") {
+    const near = lsLines("auto").filter(x => x.t !== a).sort((x, y) => Math.abs(x.t.length - a.length) - Math.abs(y.t.length - a.length)).slice(0, 6);
+    return near.length < 2 ? null : { ls: "pick", t: a, opts: shuffle([a, ...shuffle(near).slice(0, 2).map(x => x.t)]) };
+  }
+  if (t === "lc") {
+    let done = false;
+    const shown = a.split(" ").map(w => { if (!done && w.replace(LSM_CLEAN, "") === b) { done = true; return w.replace(b, "___"); } return w; }).join(" ");
+    return done ? { ls: "cloze", t: a, word: b, shown } : null;
+  }
+  if (t === "sl") return { tr: a, uz: "Xatolar daftaridan", line: true, _m: "sayline" };
+  if (t === "so") {
+    const un = KU[a], r = un && un.reading, i = r ? r.qs.indexOf(b) : -1;
+    if (i < 0 || !r.ans[String(i + 1)]) return null;
+    return { oral: true, tr: cleanLine(r.ans[String(i + 1)]), q: b, unit: a, rtitle: r.title, rtext: r.text, _m: "oral" };
+  }
+  return null;
+}
+function lsmCard() {
+  const l = lsmList("l").length, s = lsmList("s").length;
+  if (!l && !s) return "";
+  return `<div class="pcard glass">
+    <div class="pcard-head"><b>${ICON.target}Tinglash va gapirish xatolari</b><span class="badge">${l + s}</span></div>
+    <div class="facts"><span>${ICON.ear}Tinglash: ${l} ta</span><span>${ICON.mic}Gapirish: ${s} ta</span><span>${ICON.quiz}Ikki marta toʻgʻri boʻlsa, daftardan chiqadi</span></div>
+    <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+      ${l ? `<button class="btn btn-soft" style="flex:1" data-act="start" data-mode="lmis" data-u="lmis">${ICON.ear}Tinglash</button>` : ""}
+      ${s && canListen() ? `<button class="btn btn-soft" style="flex:1" data-act="start" data-mode="smis" data-u="smis">${ICON.mic}Gapirish</button>` : ""}
+    </div>
+  </div>`;
+}
+const lsmSheetRow = kind => {
+  const n = lsmList(kind).length;
+  return n ? `<button class="mode glass" data-act="start" data-mode="${kind}mis" data-u="${kind}mis"><span class="ico pink-t">${ICON.target}</span><span><b>Xatolarni takrorlash</b><span>Daftarda ${n} ta ${kind === "l" ? "tinglash" : "gapirish"} xatosi</span></span>${ICON.chev}</button>` : "";
+};
 function listenSheet() {
   if (!canSpeak()) { toast("Bu brauzerda ovoz yoʻq"); return; }
   openSheet(`<h3>Tinglash mashqi</h3>
+    ${lsmSheetRow("l")}
     <button class="mode glass" data-act="start" data-mode="listen" data-u="pron"><span class="ico violet-t">${ICON.ear}</span><span><b>Tinglab toping</b><span>Soʻzni eshitasiz, maʼnosini tanlaysiz</span></span>${ICON.chev}</button>
     <button class="mode glass" data-act="start" data-mode="dict" data-u="pron"><span class="ico pink-t">${ICON.type}</span><span><b>Diktant</b><span>Eshitganingizni turkcha yozasiz</span></span>${ICON.chev}</button>
     <button class="mode glass" data-act="start" data-mode="lsent" data-u="auto"><span class="ico sky-t">${ICON.chat}</span><span><b>Gaplarni tinglash</b><span>Kurs dialoglaridan gaplar, matnsiz</span></span>${ICON.chev}</button>`);
@@ -2082,6 +2161,7 @@ function lsFinish(ok, html) {
   SES.answered = true;
   tick();
   const it = SES.items[SES.i], fb = $("fb");
+  if (ok) lsmHit(it); else lsmMiss(it);
   if (ok) { SES.right++; SES.xp += 10; skillLog(SES.sk, true, 10); addXP(10); CatLife.mood(sCat(), "happy", 1000); }
   else {
     skillLog(SES.sk, false); save(); CatLife.mood(sCat(), "sad", 1600);
@@ -2131,6 +2211,7 @@ function speakSheet() {
   if (!canListen()) { toast("Bu brauzer nutqni tanimaydi. Chrome yoki Safari'da oching"); return; }
   const ru = roleUnit();
   openSheet(`<h3>Gapirish mashqi</h3>
+    ${lsmSheetRow("s")}
     <button class="mode glass" data-act="start" data-mode="say" data-u="pron"><span class="ico green-t">${ICON.mic}</span><span><b>Soʻzlar talaffuzi</b><span>Soʻzni ovoz chiqarib ayting</span></span>${ICON.chev}</button>
     <button class="mode glass" data-act="start" data-mode="sayline" data-u="auto"><span class="ico sky-t">${ICON.speak}</span><span><b>Gaplarni takrorlash</b><span>Dialog gapini tinglab, oʻzingiz ayting</span></span>${ICON.chev}</button>
     <button class="mode glass" data-act="start" data-mode="oral" data-u="auto"><span class="ico violet-t">${ICON.quiz}</span><span><b>Savollarga ogʻzaki javob</b><span>Kurs matnlari boʻyicha, ovoz bilan</span></span>${ICON.chev}</button>
@@ -2873,6 +2954,7 @@ function sayFinish(ok, skipped) {
   if (!skipped) {
     S.pron[1]++; dayRec().rev++;
     skillLog(SES.sk || "s", ok, ok ? 10 : 0);
+    if (ok) lsmHit(SES.items[SES.i], SES.m); else lsmMiss(SES.items[SES.i], SES.m);
     if (ok) { S.pron[0]++; SES.right++; SES.xp += 10; addXP(10); CatLife.mood(sCat(), "happy", 1000); }
     else { save(); CatLife.mood(sCat(), "sad", 1600); }
   }
@@ -2974,12 +3056,13 @@ function gxBad(it) {
   if (!SES.re.has(key) && SES.items.length < 40) { SES.re.add(key); SES.items.push(it); }
 }
 const sCat = () => $("s-cat").querySelector(".cat");
-function good() { tick(); const w = SES.items[SES.i]; SES.right++; SES.xp += 10; grade(w, true); skillLog(SES.sk, true, 10); addXP(10); CatLife.mood(sCat(), "happy", 1000); }
+function good() { tick(); const w = SES.items[SES.i]; SES.right++; SES.xp += 10; grade(w, true); skillLog(SES.sk, true, 10); lsmHit(w, SES.m); addXP(10); CatLife.mood(sCat(), "happy", 1000); }
 function bad() {
   tick();
   const w = SES.items[SES.i];
   grade(w, false);
   skillLog(SES.sk, false);
+  lsmMiss(w, SES.m);
   CatLife.mood(sCat(), "sad", 1600);
   // Show a missed word once more at the end of the session
   if (!SES.re.has(w.tr) && SES.items.length < 40) { SES.re.add(w.tr); SES.items.push(w); }
@@ -3012,7 +3095,7 @@ function renderResult() {
   </div>`;
   CatLife.scan();
   setTimeout(() => CatLife.mood(stage.querySelector(".cat"), r >= 0.7 ? "happy" : "sad", 1500), 250);
-  foot.innerHTML = `<button class="btn btn-ghost" data-act="close-session">Yopish</button>${SES.mode === "gx" ? (() => { const nx = GX_CODES[GX_CODES.indexOf(SES.u) + 1]; return nx ? `<button class="btn btn-grad" data-act="gx-start" data-c="${nx}">Keyingi: ${esc(nx)}</button>` : ""; })() : SES.mode === "review" || SES.mode === "mistakes" || SES.mode === "gxm" ? "" : `<button class="btn btn-grad" data-act="again">Yana mashq</button>`}`;
+  foot.innerHTML = `<button class="btn btn-ghost" data-act="close-session">Yopish</button>${SES.mode === "gx" ? (() => { const nx = GX_CODES[GX_CODES.indexOf(SES.u) + 1]; return nx ? `<button class="btn btn-grad" data-act="gx-start" data-c="${nx}">Keyingi: ${esc(nx)}</button>` : ""; })() : ["review", "mistakes", "gxm", "lmis", "smis"].includes(SES.mode) ? "" : `<button class="btn btn-grad" data-act="again">Yana mashq</button>`}`;
 }
 
 /* ---------- Events ---------- */
