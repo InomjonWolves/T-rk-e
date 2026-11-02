@@ -1013,6 +1013,7 @@ function viewProfile() {
       ${ADMIN ? `<a class="set-row" href="#admin" style="color:inherit;text-decoration:none"><span><b>Umumiy analitika</b><small>Faqat admin: barcha foydalanuvchilar boʻyicha</small></span>${ICON.chev}</a>` : ""}` : ""}
       <a class="set-row" href="#help" style="color:inherit;text-decoration:none"><span><b>Yordam va qoʻllanma</b><small>Ilovani oʻrnatish, saytdan foydalanish, savollar</small></span>${ICON.chev}</a>
       <button class="set-row" data-act="share"><span><b>Doʻstlarni taklif qilish</b><small>Turk tilini birga, bepul oʻrganing</small></span>${ICON.heart}</button>
+      <a class="set-row" href="kurs/" style="color:inherit;text-decoration:none"><span><b>Kurs va grammatika — veb sahifalar</b><small>Mavzuni havola bilan ulashish uchun</small></span>${ICON.chev}</a>
       <a class="set-row" href="privacy.html" style="color:inherit;text-decoration:none"><span><b>Maxfiylik siyosati</b></span>${ICON.chev}</a>
     </div>
   </section>
@@ -1613,7 +1614,7 @@ const TIPS = [
 ];
 const tipOfDay = () => TIPS[dayNum() % TIPS.length];
 async function shareSite(text) {
-  const url = location.origin + location.pathname;
+  const url = /^https?:$/.test(location.protocol) ? "https://turkceyol.web.app/" : location.origin + location.pathname;
   const msg = text || "Turk tilini oʻzbek tilida bepul oʻrganing — Pamuk bilan har kuni 10 daqiqa:";
   try {
     if (navigator.share) { await navigator.share({ title: "Türkçe Yoʻl", text: msg, url }); }
@@ -1651,7 +1652,7 @@ function viewHelp() {
   <section class="section"><div class="section-head"><h2>Ilovani oʻrnatish (PWA)</h2>${isStandalone() ? `<span class="tag green-t">${ICON.check}Oʻrnatilgan</span>` : ""}</div>
     ${INSTALL_EVT ? `<button class="btn btn-grad btn-block" data-act="install">${ICON.download}Hozir oʻrnatish</button>` : ""}
     <div class="glass pad help-box"><b>Android (Chrome)</b>
-      ${step(1, "Saytni Chrome brauzerida oching", "inomjonwolves.github.io/T-rk-e")}
+      ${step(1, "Saytni Chrome brauzerida oching", "turkceyol.web.app")}
       ${step(2, "Yuqori oʻng burchakdagi ⋮ menyusini bosing", "Uch nuqta belgisi")}
       ${step(3, "«Ilovani oʻrnatish» yoki «Bosh ekranga qoʻshish» ni tanlang", "Keyin «Oʻrnatish» ni tasdiqlang")}
       ${step(4, "Bosh ekranda Pamuk belgisi paydo boʻladi", "Endi sayt alohida ilova boʻlib ochiladi")}</div>

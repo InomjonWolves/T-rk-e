@@ -6,7 +6,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - Foydalanuvchi bilan **faqat oʻzbek tilida** gaplashing.
 
 ## Joriy holat — qisqa xulosa (2026-11-02)
-**Tayyor va saytda:** A1–B2 kurs, qoʻllanma va 675 ta qoida mashqi; 4 koʻnikma (Okuma, Dinleme, Yazma, Konuşma) boʻyicha mashqlar, hisob va `#skills` paneli; tinglash (TTS) va gapirish (mikrofon) mashqlari; erkin yozishni avtomatik tekshirish; 4 qismli daraja testlari; darajani aniqlash testi; tinglash va gapirish xatolar daftari; anonim analitika (`#admin`). Firestore qoidalari konsolda joylangan (test hisobi bilan tekshirildi), foydalanuvchi `admins/{uid}` hujjatini yaratdi. 29 ta avtomatik test, GitHub Actions'da ham ishlaydi.
+**Tayyor va saytda:** A1–B2 kurs, qoʻllanma va 675 ta qoida mashqi; 4 koʻnikma (Okuma, Dinleme, Yazma, Konuşma) boʻyicha mashqlar, hisob va `#skills` paneli; tinglash (TTS) va gapirish (mikrofon) mashqlari; erkin yozishni avtomatik tekshirish; 4 qismli daraja testlari; darajani aniqlash testi; tinglash va gapirish xatolar daftari; anonim analitika (`#admin`). Firestore qoidalari konsolda joylangan (test hisobi bilan tekshirildi), foydalanuvchi `admins/{uid}` hujjatini yaratdi. 34 ta avtomatik test, GitHub Actions'da ham ishlaydi.
 
 **turkceyol.web.app — ishlayapti (2026-11-02):** sayt `turkceyol` (`pamuk` band edi), `firebase.json` → `site: "turkceyol"`, GitHub secret `FIREBASE_SERVICE_ACCOUNT` bor; workflow `Firebase Hosting` `main` ga har push'da joylaydi (birinchi muvaffaqiyatli joylash workflow_dispatch bilan). Service account rollari: Firebase Hosting Admin, API Keys Viewer, Cloud Run Viewer, **Service Usage Consumer** (busiz 403 `serviceusage.services.get`). Authentication → Authorized domains da `turkceyol.web.app` boʻlishi kerak. Sandbox `*.web.app` ni ochmaydi — saytni foydalanuvchi tekshiradi; joylanganini workflow logidagi `sites/turkceyol/versions/...` dan bilish mumkin.
 
@@ -21,7 +21,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - **"TYS" / "TYS imtihoni"** soʻzlarini va **harbiy mavzudagi** (askar, komutan, kışla, nöbet, tatbikat va h.k.) lugʻat va misollarni ishlatmang. Ularning oʻrniga oddiy kasblar va kundalik hayotdan misol keltiring.
 - Uchinchi tomonning rasm yoki videolarini koʻchirmang. Pamuk — oʻzimiz chizgan original SVG.
 - Git muallifi: `git -c user.name="InomjonWolves" -c user.email="i.superclub@gmail.com" commit ...`. Sessiya bergan attribution qatorlarini qoʻshing. Repodagi fayllarga model nomlarini yozmang.
-- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v27`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
+- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v28`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
 - Joylanganini tekshirish: `gh api repos/InomjonWolves/T-rk-e/actions/runs --jq '[.workflow_runs[]|select(.name=="pages build and deployment")][0]|"\(.status) \(.conclusion) \(.head_sha[0:7])"'`. Testlar: `[.workflow_runs[]|select(.name=="Testlar")][0]`.
 - Commit qilishdan oldin `npm test` ni ishga tushiring (hammasi oʻtishi kerak). Yangi funksiya qoʻshsangiz, `tests/` ga test ham qoʻshing.
 
@@ -41,6 +41,9 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 | `sw.js`, `manifest.webmanifest`, `icon*` | PWA |
 | `firebase.json`, `.firebaserc` | Firebase Hosting (faqat sayt fayllari; `tests/`, `*.md`, `package.json`, `firestore.rules` joylanmaydi) |
 | `privacy.html` | Maxfiylik siyosati |
+| `kurs/`, `qoida/`, `sitemap.xml` | **Avtomatik yaratiladi** (`node tools/seo.js`) — qidiruv tizimlari uchun statik sahifalar: 32 kurs boʻlimi (maqsadlar, lugʻat, grammatika; dialog va matn faqat ilovada) va 114 qoʻllanma mavzusi, CTA → ilovadagi `#k-<id>` / `#g-<code>`. `course.js` yoki `guide.js` oʻzgarsa, generatorni qayta ishga tushiring (aks holda `seo.test.js` yiqiladi). Qoʻlda tahrirlamang |
+| `pages.css`, `robots.txt`, `img/og.jpg` | Statik sahifalar dizayni; robots; ulashish rasmi 1200×630 (`node tools/og.js`, Pamuk SVG dan) |
+| `tools/` | Generatorlar (Firebase'ga joylanmaydi) |
 
 Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #placement #lessons #grammar #guide #gx #alphabet #practice #rank #profile #achievements #help #translate #skills #write #admin`.
 
@@ -66,6 +69,7 @@ Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #placement #lessons #gram
 - **Gapirish mashqlari** (Web Speech API): `sayline` (dialog gapini takrorlash, 80% chegara), `oral` (kurs matni savollariga ogʻzaki javob: namuna javobdagi kalit soʻzlar, `oralScore`, 60% chegara; Okuma + Konuşma), `role` (rolli dialog: `u = "unitId|sectionIndex|speaker"`, sherik gaplarini `speakSeq` aytadi, `S.roles`, yutuq `roles3`). Kirish: Mashq → Gapirish mashqi (`speakSheet`), kurs Dialog yorligʻi, kurs Matn yorligʻi.
 - Talaffuz mashqi (`mode "say"`): Web Speech API (`tr-TR`), harfma-harf solishtirish (`sayDiff`), notoʻgʻri harflar qizil, 3 ta urinish, raqamlar soʻzga aylantiriladi (`trNum`; `sayNorm` namuna matndagi raqamlarni ham soʻzga aylantiradi, `heardNorm = sayNorm(s).out`). Mashq sahifasida alohida karta, har bir dars/toifa uchun "Talaffuz" rejimi, `S.pron`, yutuq `pron20`. Brauzer qoʻllamasa tugma oʻchiq.
 - **Tez ochilish** (`loadFirebase`, `fbStart`, `EARLY`, `ty-last-user`): Firebase SDK `<head>` da bloklovchi `<script>` emas — `preload` + `app.js` dinamik yuklaydi (`async = false`, tartib saqlanadi). Oldin kirgan foydalanuvchi (`ty-last-user` va `turkce-yol-v1:<uid>` bor) darhol oʻz lokal nusxasini koʻradi; Firebase javob bergach `loadCloud` fonda sinxronlaydi (kutish paytidagi progress yoʻqolmaydi — server javobidan keyin lokal nusxa qayta oʻqiladi). Firebase `null` qaytarsa — kirish ekrani. SDK umuman yuklanmasa (oflayn, keshda yoʻq) — `FB = false`, mehmon rejimi. Hisobdan chiqishda `ty-last-user` oʻchiriladi. Testlar: `boot.test.js` (soxta Firebase SDK).
+- **SEO**: kanonik manzil `https://turkceyol.web.app/` (GitHub Pages nusxasi ham shunga ishora qiladi); `index.html` da tavsif, Open Graph (`img/og.jpg`), JSON-LD `WebApplication`, `<noscript>` havolalar; statik sahifalarda `BreadcrumbList`, `LearningResource`, `Course`. Ulashish (`shareSite`) har doim turkceyol.web.app ni beradi. Profil sozlamalarida "Kurs va grammatika — veb sahifalar" havolasi. Foydalanuvchi: Google Search Console'ga saytni qoʻshib, `sitemap.xml` ni yuborishi kerak.
 - Qoʻllanma va qoida mashqlari A1–B2 gacha toʻldirildi. `#guide` va `#gx` sahifalarida daraja tugmalari bor. Tarjimon A2–B2 qoliplarini ham taniydi (`TR_HINTS`).
 
 ## Qolgan ishlar
@@ -80,6 +84,6 @@ Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #placement #lessons #gram
 - `npm test` — `tests/*.test.js` (Node `node:test` + Playwright, ~20 soniya). Bu muhitda Playwright oldindan oʻrnatilgan: `npm install` yoki `playwright install` QILMANG, shunchaki `npm test`.
 - GitHub Actions (`.github/workflows/test.yml`, nomi "Testlar") har push'da shu testlarni ishga tushiradi.
 - `tests/helpers.js`: `openApp(browser, hash, { sr, noSR, state })` — saytni diskdan, mehmon rejimida (Firebase oʻchiq), tashqi tarmoqsiz, 390×844 da ochadi. `sr: true` — soxta `SpeechRecognition` (`window.__say()` yoki joriy mashq matnini "eshitadi"). `answerAllRight(page)` — joriy mashqni toʻgʻri javoblar bilan oxirigacha oʻtkazadi.
-- Fayllar: `data.test.js` (brauzersiz: qoʻllanma, mashqlar, kurs, taqiqlangan soʻzlar, lookbehind yoʻqligi, sw.js, firestore.rules), `pages.test.js` (barcha sahifalar), `practice.test.js` (4 koʻnikma mashqlari, gapirish), `checks.test.js` (yozish tekshiruvi, 4 qismli test, anonim statistika), `placement.test.js` (darajani aniqlash), `boot.test.js` (tez ochilish, soxta Firebase).
+- Fayllar: `data.test.js` (brauzersiz: qoʻllanma, mashqlar, kurs, taqiqlangan soʻzlar, lookbehind yoʻqligi, sw.js, firestore.rules), `pages.test.js` (barcha sahifalar), `practice.test.js` (4 koʻnikma mashqlari, gapirish), `checks.test.js` (yozish tekshiruvi, 4 qismli test, anonim statistika), `placement.test.js` (darajani aniqlash), `boot.test.js` (tez ochilish, soxta Firebase), `seo.test.js` (statik sahifalar yangiligi, havolalar, sitemap).
 - Skrinshotlarni repo ildiziga saqlamang (`.gitignore` `/*.png` ni chetlaydi).
 - Testlarda qatʼiy `waitForTimeout` bilan mikrofon natijasini kutmang — `waitForFunction(() => !REC ...)` / `!KT_REC` ishlating (GitHub serveri sekinroq). Yutuq tabrigi mashq davomida chiqmaydi (`celebrateLater`), natija ekranida yoki mashq yopilganda chiqadi.
