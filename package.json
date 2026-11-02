@@ -1,0 +1,11 @@
+{
+  "name": "turkce-yol",
+  "private": true,
+  "description": "Türkçe Yoʻl — testlar. Saytning oʻzi build talab qilmaydi.",
+  "scripts": {
+    "test": "node --test --test-concurrency=2 \"tests/*.test.js\""
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

@@ -1,0 +1,7 @@
+node_modules/
+test-results/
+# Test skrinshotlari repoga tushmasin (ildizdagi ikonkalar bundan mustasno)
+/*.png
+!/icon-192.png
+!/icon-512.png
+!/icon-maskable-512.png

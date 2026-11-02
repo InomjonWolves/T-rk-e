@@ -11,7 +11,8 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - Uchinchi tomonning rasm yoki videolarini koʻchirmang. Pamuk — oʻzimiz chizgan original SVG.
 - Git muallifi: `git -c user.name="InomjonWolves" -c user.email="i.superclub@gmail.com" commit ...`. Sessiya bergan attribution qatorlarini qoʻshing. Repodagi fayllarga model nomlarini yozmang.
 - JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v21`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
-- Joylanganini tekshirish: `gh api repos/InomjonWolves/T-rk-e/actions/runs --jq '.workflow_runs[0]|"\(.status) \(.conclusion) \(.head_sha[0:7])"'`.
+- Joylanganini tekshirish: `gh api repos/InomjonWolves/T-rk-e/actions/runs --jq '[.workflow_runs[]|select(.name=="pages build and deployment")][0]|"\(.status) \(.conclusion) \(.head_sha[0:7])"'`. Testlar: `[.workflow_runs[]|select(.name=="Testlar")][0]`.
+- Commit qilishdan oldin `npm test` ni ishga tushiring (hammasi oʻtishi kerak). Yangi funksiya qoʻshsangiz, `tests/` ga test ham qoʻshing.
 
 ## Fayllar
 | Fayl | Vazifasi |
@@ -62,4 +63,8 @@ Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #lessons #grammar #guide 
 7. Gʻoyalar: push eslatmalar, doʻstlar va guruh ligalari, kurs boʻlimlari uchun audio.
 
 ## Test qilish
-Playwright oʻrnatilgan. Sinov 390×844 oʻlchamda, `file:///home/user/T-rk-e/index.html` orqali oʻtkaziladi. Bunda `**/firebase-config.js` soʻrovi `window.FIREBASE_CONFIG=null` bilan almashtiriladi (mehmon rejimi), `sessionStorage['ty-welcomed']='1'` va localStorage'da `{onb:1}` qoʻyiladi. Yutuq tabrigi oynasi bosishlarni toʻsishi mumkin. Testda uni yopish uchun: `ACH_QUEUE.length=0; document.getElementById('celebrate').hidden=true`.
+- `npm test` — `tests/*.test.js` (Node `node:test` + Playwright, ~20 soniya). Bu muhitda Playwright oldindan oʻrnatilgan: `npm install` yoki `playwright install` QILMANG, shunchaki `npm test`.
+- GitHub Actions (`.github/workflows/test.yml`, nomi "Testlar") har push'da shu testlarni ishga tushiradi.
+- `tests/helpers.js`: `openApp(browser, hash, { sr, noSR, state })` — saytni diskdan, mehmon rejimida (Firebase oʻchiq), tashqi tarmoqsiz, 390×844 da ochadi. `sr: true` — soxta `SpeechRecognition` (`window.__say()` yoki joriy mashq matnini "eshitadi"). `answerAllRight(page)` — joriy mashqni toʻgʻri javoblar bilan oxirigacha oʻtkazadi.
+- Fayllar: `data.test.js` (brauzersiz: qoʻllanma, mashqlar, kurs, taqiqlangan soʻzlar, lookbehind yoʻqligi, sw.js, firestore.rules), `pages.test.js` (barcha sahifalar), `practice.test.js` (4 koʻnikma mashqlari, gapirish), `checks.test.js` (yozish tekshiruvi, 4 qismli test, anonim statistika).
+- Skrinshotlarni repo ildiziga saqlamang (`.gitignore` `/*.png` ni chetlaydi).

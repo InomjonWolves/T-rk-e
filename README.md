@@ -5,3 +5,6 @@ Oʻzbeklar uchun turk tilini oʻrganish sayti: 36 ta dars (A1, 539 ta soʻz va i
 Fayllar: `index.html` (sahifa), `styles.css` (dizayn), `app.js` (dastur), `content.js` (darslar), `grammar.js` (alifbo va grammatika), `grammar-ex.js` (A1–B2 qoidalar mashqlari, qoʻllanma mavzulari boʻyicha), `course.js` (A1–B2 kurs: 32 boʻlim, lugʻat, mashqlar, testlar), `cat.js` (brend mushukcha Pamuk va animatsiyalari), `guide.js` (A1–B2 grammatika qoʻllanmasi, sayt dizaynida), `firestore.rules` (Firestore qoidalari).
 
 Bitta statik sahifa (`index.html`), hech qanday server talab qilmaydi. Telefonga ilova sifatida oʻrnatiladi va internetsiz ham ishlaydi.
+
+## Testlar
+`npm test` — sayt sahifalari, mashqlar, 4 qismli daraja testi va maʼlumotlar tekshiruvi (Node + Playwright). Har push'da GitHub Actions'da ham ishlaydi.
