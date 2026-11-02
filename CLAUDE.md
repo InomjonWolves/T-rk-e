@@ -5,6 +5,17 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - Repo: InomjonWolves/T-rk-e, `main` branch. GitHub Pages `main` ildizidan avtomatik joylanadi (build yoʻq, oddiy statik fayllar).
 - Foydalanuvchi bilan **faqat oʻzbek tilida** gaplashing.
 
+## Joriy holat — qisqa xulosa (2026-11-02)
+**Tayyor va saytda:** A1–B2 kurs, qoʻllanma va 675 ta qoida mashqi; 4 koʻnikma (Okuma, Dinleme, Yazma, Konuşma) boʻyicha mashqlar, hisob va `#skills` paneli; tinglash (TTS) va gapirish (mikrofon) mashqlari; erkin yozishni avtomatik tekshirish; 4 qismli daraja testlari; darajani aniqlash testi; tinglash va gapirish xatolar daftari; anonim analitika (`#admin`). Firestore qoidalari konsolda joylangan (test hisobi bilan tekshirildi), foydalanuvchi `admins/{uid}` hujjatini yaratdi. 24 ta avtomatik test, GitHub Actions'da ham ishlaydi.
+
+**Kutilayotgan ish — pamuk.web.app (foydalanuvchi qiladi):** repo tayyor (`firebase.json` → `site: "pamuk"`, workflow `Firebase Hosting`). Foydalanuvchi: 1) Firebase Hosting'da `pamuk` nomli sayt yaratadi (band boʻlsa boshqa nom → `firebase.json` dagi `site` ni oʻzgartirish); 2) Service account kaliti (rollar: Firebase Hosting Admin, API Keys Viewer, Cloud Run Viewer) → GitHub secret `FIREBASE_SERVICE_ACCOUNT`; 3) Authentication → Authorized domains ga `pamuk.web.app`. Shundan keyin workflow'ni ishga tushirib (`workflow_dispatch` yoki `main` ga push), saytni va Google orqali kirishni tekshirish.
+
+**Keyingi mumkin boʻlgan ishlar (foydalanuvchi tanlaydi):** oʻqituvchi va guruh rejimi (yangi Firestore qoidalari kerak); tezlik (`course.js` 273 KB va `app.js` ~240 KB — kursni darajalar boʻyicha keyinroq yuklash); .uz domeni (tavsiya `turkceyol.uz`, olinmagan); push eslatmalar (pullik Blaze tarifi kerak, keyinga qoldirilgan).
+
+**Ish tartibi:** `ccr-…` branch'da ishlash → `npm test` → commit → push → `main` ga fast-forward merge → uchta workflow (`Testlar`, `Firebase Hosting`, `pages build and deployment`) yashil ekanini tekshirish.
+
+**Muhit cheklovlari:** sandbox tarmogʻi koʻp saytlarni toʻsadi (sinavmultilevel.uz, MyMemory, `*.web.app`, domen RDAP/cctld.uz). `firestore.googleapis.com` va `identitytoolkit.googleapis.com` ochiq. Firebase konsoliga kirish yoʻq — konsol ishlarini foydalanuvchi qiladi.
+
 ## Majburiy qoidalar
 - PDF kitob sahifalarini saytda **toʻgʻridan-toʻgʻri koʻrsatmang**, ulardan faqat maʼlumot manbai sifatida foydalaning.
 - **"TYS" / "TYS imtihoni"** soʻzlarini va **harbiy mavzudagi** (askar, komutan, kışla, nöbet, tatbikat va h.k.) lugʻat va misollarni ishlatmang. Ularning oʻrniga oddiy kasblar va kundalik hayotdan misol keltiring.
@@ -57,13 +68,12 @@ Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #placement #lessons #gram
 - Qoʻllanma va qoida mashqlari A1–B2 gacha toʻldirildi. `#guide` va `#gx` sahifalarida daraja tugmalari bor. Tarjimon A2–B2 qoliplarini ham taniydi (`TR_HINTS`).
 
 ## Qolgan ishlar
-1. **Raqobatchi tahlili: sinavmultilevel.uz.** Sandbox tarmogʻi bu saytga kirishni toʻsgan. Foydalanuvchi Network sozlamalarida ruxsat berishi yoki skrinshot yuborishi kerak.
-2. **Kurs matnlarini tekshirish.** A2.7–8, B1 va B2 boʻlimlari hamda A2–B2 testlari bir marta koʻrib chiqildi va topilgan xatolar tuzatildi (toplatırım, Doktor sayesinde, Bilgilerinizi rica ederim, ikki toʻgʻri variantli test savollari va h.k.). Baribir turk tilini ona tili darajasida biladigan odam oxirgi marta koʻrib chiqishi foydali.
-3. **Qoʻllanma va qoida mashqlarining A2–B2 qismini tekshirish.** Mavzular va mashqlar yozildi (79 mavzu, 470+ mashq). Ularni ham turk tilini yaxshi biladigan odam koʻrib chiqishi kerak.
-4. Tarjimon (MyMemory) CORS bilan real brauzerda ishlashini tekshirish. Sandbox tarmogʻi `api.mymemory.translated.net` ga kirishni ham toʻsadi (403).
-5. **Analitikani ishga tushirish (foydalanuvchi qiladi):** Firebase konsolida yangi `firestore.rules` ni joylash va `admins/{oʻz uid}` hujjatini yaratish. Shundan keyin `#admin` ishlaydi.
-6. Talaffuz mashqini real telefonda (Android Chrome, iPhone Safari) sinab koʻrish. Playwright testida `SpeechRecognition` soxta klass bilan almashtiriladi.
-7. Gʻoyalar: push eslatmalar, doʻstlar va guruh ligalari, kurs boʻlimlari uchun audio.
+1. **pamuk.web.app** — yuqoridagi "Kutilayotgan ish" (foydalanuvchi qadamlari, keyin tekshirish).
+2. **Real telefonda sinash (foydalanuvchi):** gapirish mashqlari va daraja testining gapirish qismi (Android Chrome, iPhone Safari), turkcha TTS ovozi, tarjimon (MyMemory CORS). Testlarda mikrofon soxta.
+3. **Turk tilini ona tili darajasida biladigan odam koʻrigi:** A2–B2 qoʻllanma (79 mavzu) va 470+ qoida mashqi, kurs matnlari (A2.7–8, B1, B2 bir marta tekshirilib, xatolar tuzatilgan).
+4. **Raqobatchi tahlili: sinavmultilevel.uz** — sandbox toʻsadi; foydalanuvchi ruxsat berishi yoki skrinshot yuborishi kerak.
+5. **Gʻoyalar:** oʻqituvchi va guruh rejimi, tezlikni oshirish, doʻstlar ligalari, kurs boʻlimlari uchun audio, push eslatmalar.
+6. Analitika ishlayapti: `admins` toʻplami nomi aynan `admins` boʻlishi kerak (foydalanuvchi avval `admin` deb yaratgan edi, tuzatildi). `#admin` sahifasi muammo boʻlsa sababini va UID'ni koʻrsatadi.
 
 ## Test qilish
 - `npm test` — `tests/*.test.js` (Node `node:test` + Playwright, ~20 soniya). Bu muhitda Playwright oldindan oʻrnatilgan: `npm install` yoki `playwright install` QILMANG, shunchaki `npm test`.
