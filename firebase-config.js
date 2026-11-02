@@ -9,14 +9,7 @@ window.FIREBASE_CONFIG = {
   messagingSenderId: "614558378510",
   appId: "1:614558378510:web:59588bcf1bb2d9a7846a5f"
 };
-// Qoʻshimcha kirish usullari (sozlanmaguncha tugmalar koʻrinmaydi).
-// apple: Firebase konsolida Apple provayderi yoqilgach true qiling.
-// telegram: botId — bot tokenidagi ":" dan oldingi raqam (maxfiy emas); url — Cloudflare Worker manzili.
-window.AUTH_PROVIDERS = {
-  apple: false,
-  telegram: { botId: "", url: "" }
-};
-// Google/Apple oynasi sayt bilan bir domenda ochiladigan saytlar (Firebase Hosting'dagi saytlar).
+// Google kirish oynasi sayt bilan bir domenda ochiladigan saytlar (Firebase Hosting'dagi saytlar).
 // Shart: Google Cloud → Credentials → Web client → "Authorized redirect URIs" da https://<domen>/__/auth/handler bor boʻlishi.
 // Boʻsh boʻlsa, oyna t-rk-e.firebaseapp.com da ochiladi.
 window.AUTH_SAME_DOMAIN = [];

@@ -61,6 +61,30 @@ test("vocabulary base: A1–B2 packs, one \"turkcha=oʻzbekcha\" pair per line, 
   for (const lv of ["A1", "A2", "B1", "B2"]) assert.ok(perLv[lv] >= 500, `${lv}: ${perLv[lv]} words`);
 });
 
+test("one address: the old GitHub Pages copy sends every page to the same page on turkceyol.web.app", () => {
+  const vm = require("vm");
+  const run = (file, pathname, hash = "", hostname = "inomjonwolves.github.io") => {
+    const code = read(file).match(/<script>\/\* Yagona manzil[\s\S]*?<\/script>/)[0].replace(/^<script>|<\/script>$/g, "");
+    let to = null;
+    vm.runInNewContext(code, { location: { hostname, pathname, hash, replace: u => { to = u; } } });
+    return to;
+  };
+  assert.equal(run("index.html", "/T-rk-e/", "#k-a1-1"), "https://turkceyol.web.app/#k-a1-1");
+  assert.equal(run("index.html", "/T-rk-e/index.html", "#join-K7M2QX"), "https://turkceyol.web.app/#join-K7M2QX");
+  assert.equal(run("index.html", "/T-rk-e"), "https://turkceyol.web.app/");
+  assert.equal(run("privacy.html", "/T-rk-e/privacy.html"), "https://turkceyol.web.app/privacy.html");
+  assert.equal(run("kurs/a1-1.html", "/T-rk-e/kurs/a1-1.html"), "https://turkceyol.web.app/kurs/a1-1.html");
+  assert.equal(run("lugat/index.html", "/T-rk-e/lugat/"), "https://turkceyol.web.app/lugat/");
+  // On the real address nothing happens
+  assert.equal(run("index.html", "/", "#home", "turkceyol.web.app"), null);
+  // No other address is offered anywhere on the site
+  for (const f of ["index.html", "app.js", "privacy.html", "sitemap.xml", "robots.txt", "manifest.webmanifest"]) {
+    // (the verification e-mail really comes from noreply@t-rk-e.firebaseapp.com — that sender is not a site address)
+    const t = read(f).replace(/<script>\/\* Yagona manzil[\s\S]*?<\/script>/, "").replace(/noreply@t-rk-e\.firebaseapp\.com/g, "");
+    assert.ok(!/github\.io|firebaseapp\.com|t-rk-e\.web\.app/.test(t), `${f} mentions another address`);
+  }
+});
+
 test("course: 32 units, tests answerable, reading answers match questions", () => {
   assert.equal(C.COURSE.units.length, 32);
   for (const l of C.COURSE.levels) {
@@ -96,8 +120,8 @@ test("firestore rules: stats are writable only by their owner and readable only 
   const r = read("firestore.rules");
   assert.match(r, /match \/stats\/\{uid\}[\s\S]*allow read: if isAdmin\(\);/);
   assert.match(r, /match \/stats\/\{uid\}[\s\S]*request\.auth\.uid == uid/);
-  // Only confirmed accounts (verified e-mail, Google, Apple, Telegram) read or write anything
-  assert.match(r, /function okUser\(\) \{\s*return request\.auth != null && \(request\.auth\.token\.get\('email_verified', false\) == true\s*\|\| request\.auth\.token\.firebase\.sign_in_provider in \['apple\.com', 'custom'\]\);/);
+  // Only confirmed accounts (verified e-mail or Google) read or write anything
+  assert.match(r, /function okUser\(\) \{\s*return request\.auth != null && request\.auth\.token\.get\('email_verified', false\) == true;\s*\}/);
   assert.equal((r.match(/request\.auth != null/g) || []).length, 1, "every rule goes through okUser()");
   assert.match(r, /match \/admins\/\{uid\}\s*\{\s*allow get: if okUser\(\) && request\.auth\.uid == uid;\s*\}/);
 });

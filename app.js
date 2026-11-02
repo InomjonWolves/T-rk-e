@@ -3347,8 +3347,6 @@ function onAct(e) {
   else if (act === "photo-remove") { setMyPhoto(""); const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "auth-tab") setAuthTab(b.dataset.t);
   else if (act === "auth-google") googleSignIn();
-  else if (act === "auth-apple") appleSignIn();
-  else if (act === "auth-tg") telegramSignIn();
   else if (act === "auth-reset") resetPassword();
   else if (act === "logout") { ADMIN = false; ADMIN_DATA = null; setLastUser(null); cloudFlush().then(() => auth && auth.signOut()); go("home"); }
   else if (act === "verify-again") verifySend();
@@ -3833,50 +3831,9 @@ document.addEventListener("input", e => {
   const k = Math.min(1, e.target.value.length / 26);
   CatLife.look(c, -6 + 12 * k, 6);
 });
-/* ---------- More ways to sign in: Apple (iCloud) and Telegram ---------- */
-const AUTHP = Object.assign({ apple: false, telegram: {} }, window.AUTH_PROVIDERS || {});
-// A Telegram bot serves one domain (BotFather → /setdomain), so the button shows only there
-const tgReady = () => !!(AUTHP.telegram && AUTHP.telegram.botId && AUTHP.telegram.url)
-  && (!/^https?:$/.test(location.protocol) || location.hostname === (AUTHP.telegram.host || "turkceyol.web.app"));
-function authProviders() { $("auth-apple").hidden = !AUTHP.apple; $("auth-tg").hidden = !tgReady(); }
-function appleSignIn() {
-  const p = new firebase.auth.OAuthProvider("apple.com");
-  p.addScope("email"); p.addScope("name");
-  oauthSignIn(p);
-}
-let TG_JS = null;
-function loadTgWidget() {
-  return TG_JS || (TG_JS = new Promise((ok, fail) => {
-    const s = document.createElement("script");
-    s.src = "https://telegram.org/js/telegram-widget.js?22"; s.async = true;
-    s.onload = () => window.Telegram && window.Telegram.Login ? ok() : fail(new Error("tg"));
-    s.onerror = () => { TG_JS = null; s.remove(); fail(new Error("tg")); };
-    document.head.appendChild(s);
-  }));
-}
-async function telegramSignIn() {
-  authError("");
-  try { await loadTgWidget(); } catch (e) { authError("Telegram'ga ulanib boʻlmadi. Internetni tekshirib, qayta urinib koʻring."); return; }
-  // Telegram opens its own window: the person confirms there, then the data comes back here
-  window.Telegram.Login.auth({ bot_id: AUTHP.telegram.botId, request_access: "write", lang: "uz" }, data => { if (data) tgFinish(data); });
-}
-async function tgFinish(data) {
-  showAuth(true);
-  try {
-    const r = await fetch(AUTHP.telegram.url.replace(/\/+$/, "") + "/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok || !j.token) throw new Error(j.error || "tg");
-    PENDING_NAME = j.name || "";
-    const cred = await auth.signInWithCustomToken(j.token);
-    if (j.name && cred && cred.user && !cred.user.displayName) cred.user.updateProfile({ displayName: j.name }).catch(() => {});
-  } catch (e) {
-    showAuth(false);
-    authError("Telegram orqali kirib boʻlmadi. Birozdan keyin qayta urinib koʻring.");
-  }
-}
 function googleSignIn() { oauthSignIn(new firebase.auth.GoogleAuthProvider()); }
 // A popup first, also in the installed app: the page-redirect flow loses the sign-in on browsers that block
-// cross-site storage (Chrome, Safari) when the sign-in page is on another domain (t-rk-e.firebaseapp.com).
+// cross-site storage (Chrome, Safari) when the sign-in page is on the Firebase auth domain, not the site's own.
 // The redirect is only a fallback when the popup cannot open.
 function oauthSignIn(provider) {
   REDIR_MSG = "";
@@ -4052,7 +4009,6 @@ function fbStart() {
   });
 }
 if (FB) {
-  authProviders();
   const last = lastUser();
   if (last && localStorage.getItem(KEY + ":" + last.uid)) {
     // Returning user: open their local copy at once, Firebase confirms the sign-in later

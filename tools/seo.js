@@ -33,6 +33,7 @@ function page({ file, title, desc, crumbs, body, ld }) {
 <html lang="uz">
 <head>
 <meta charset="utf-8">
+<script>/* Yagona manzil: turkceyol.web.app — eski GitHub Pages manzilidan oʻsha sahifaga oʻtkaziladi */if(location.hostname==="inomjonwolves.github.io")location.replace("https://turkceyol.web.app/"+location.pathname.replace(/^\\/T-rk-e\\/?/,"").replace(/^index\\.html$/,"")+location.hash)</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">

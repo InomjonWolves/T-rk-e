@@ -20,27 +20,28 @@ const KINDS = {
   emailOk: { email: "a@x.uz", email_verified: true, firebase: { sign_in_provider: "password" } },
   emailNo: { email: "b@x.uz", email_verified: false, firebase: { sign_in_provider: "password" } },
   google: { email: "g@gmail.com", email_verified: true, firebase: { sign_in_provider: "google.com" } },
-  apple: { email: "x@privaterelay.appleid.com", firebase: { sign_in_provider: "apple.com" } },
-  telegram: { name: "Aziz", firebase: { sign_in_provider: "custom" } }
+  googleNo: { email: "x@example.com", email_verified: false, firebase: { sign_in_provider: "google.com" } },
+  custom: { name: "Aziz", firebase: { sign_in_provider: "custom" } }
 };
 const as = (uid, kind) => env.authenticatedContext(uid, KINDS[kind]).firestore();
 const card = () => ({ name: "A", week: "2026-11-02", wxp: 1, xp: 1, streak: 0, last: "", sk: {}, units: 0, lv: "A1", act: 0, at: serverTimestamp() });
 
 test("own progress: every confirmed kind may write, an unconfirmed e-mail may not", async () => {
-  for (const k of ["emailOk", "google", "apple", "telegram"]) await assertSucceeds(setDoc(doc(as("u-" + k, k), "users/u-" + k), { progress: { xp: 1 } }));
+  for (const k of ["emailOk", "google"]) await assertSucceeds(setDoc(doc(as("u-" + k, k), "users/u-" + k), { progress: { xp: 1 } }));
+  for (const k of ["googleNo", "custom"]) await assertFails(setDoc(doc(as("u-" + k, k), "users/u-" + k), { progress: { xp: 1 } }));
   await assertFails(setDoc(doc(as("u-no", "emailNo"), "users/u-no"), { progress: { xp: 1 } }));
   await assertFails(getDoc(doc(as("u-no", "emailNo"), "users/u-no")));
   await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), "users/u-google")));
-  await assertFails(getDoc(doc(as("u-apple", "apple"), "users/u-google")), "someone else's progress");
+  await assertFails(getDoc(doc(as("u-emailOk", "emailOk"), "users/u-google")), "someone else's progress");
 });
 
 test("league, avatars, stats need a confirmed account", async () => {
   const row = { name: "A", week: "2026-11-02", wxp: 1, xp: 1, streak: 0 };
-  await assertSucceeds(setDoc(doc(as("t1", "telegram"), "league/t1"), row));
+  await assertSucceeds(setDoc(doc(as("t1", "google"), "league/t1"), row));
   await assertFails(setDoc(doc(as("n1", "emailNo"), "league/n1"), row));
-  await assertSucceeds(getDocs(collection(as("t1", "telegram"), "league")));
+  await assertSucceeds(getDocs(collection(as("t1", "google"), "league")));
   await assertFails(getDocs(collection(as("n1", "emailNo"), "league")));
-  await assertSucceeds(setDoc(doc(as("p1", "apple"), "avatars/p1"), { photo: "data:image/jpeg;base64,AAAA" }));
+  await assertSucceeds(setDoc(doc(as("p1", "emailOk"), "avatars/p1"), { photo: "data:image/jpeg;base64,AAAA" }));
   await assertFails(setDoc(doc(as("n1", "emailNo"), "avatars/n1"), { photo: "data:image/jpeg;base64,AAAA" }));
   const st = { v: 1, d: "2026-11-02", lv: "A1", units: 0, t: {}, w: {}, bal: 0, lvl: {}, kt: {}, act: 0 };
   await assertSucceeds(setDoc(doc(as("g1", "google"), "stats/g1"), st));
@@ -55,8 +56,8 @@ test("admins: only a confirmed admin reads the stats", async () => {
   await assertFails(getDoc(doc(as("adm", "google"), "admins/other")));
 });
 
-test("groups: Telegram teacher, Apple and e-mail learners; unconfirmed accounts stay out", async () => {
-  const T = as("tt", "telegram"), A = as("aa", "apple"), E = as("ee", "emailOk"), N = as("nn", "emailNo");
+test("groups: Google teacher, Google and e-mail learners; unconfirmed accounts stay out", async () => {
+  const T = as("tt", "google"), A = as("aa", "google"), E = as("ee", "emailOk"), N = as("nn", "emailNo");
   await assertFails(setDoc(doc(N, "groups/NOPE22"), { name: "G", owner: "nn", oname: "N", at: serverTimestamp() }));
   await assertSucceeds(setDoc(doc(T, "groups/ABC234"), { name: "Guruh", owner: "tt", oname: "Ustoz", at: serverTimestamp() }));
   await assertSucceeds(getDoc(doc(A, "groups/ABC234")));

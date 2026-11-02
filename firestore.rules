@@ -1,11 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Tasdiqlangan hisob: pochtasi tasdiqlangan (email/parol, Google) yoki Apple / Telegram orqali kirgan.
-    // Telegram hisoblari server bergan maxsus token bilan kiradi (sign_in_provider "custom").
+    // Tasdiqlangan hisob: pochtasi tasdiqlangan (email/parol yoki Google)
     function okUser() {
-      return request.auth != null && (request.auth.token.get('email_verified', false) == true
-        || request.auth.token.firebase.sign_in_provider in ['apple.com', 'custom']);
+      return request.auth != null && request.auth.token.get('email_verified', false) == true;
     }
     // Admin: Firebase konsolida qoʻlda yaratilgan admins/{uid} hujjati bor hisob
     function isAdmin() {

@@ -44,11 +44,9 @@ const FAKE_FIREBASE = `
     createUserWithEmailAndPassword: (email) => { window.__fbUser({ uid: "new1", email, providerData: [{ providerId: "password" }], emailVerified: false, updateProfile(p) { Object.assign(this, p); return Promise.resolve(); } }); return Promise.resolve({ user }); },
     signInWithPopup: p => { if (window.__popupFail) { window.__popups = (window.__popups || []).concat(["failed:" + p.providerId]); return err(window.__popupFail); } window.__popups = (window.__popups || []).concat([p.providerId + ":" + (p.scopes || []).join(",")]); return Promise.resolve(); },
     signInWithRedirect: p => { window.__popups = (window.__popups || []).concat(["redirect:" + p.providerId]); return Promise.resolve(); },
-    signInWithCustomToken: tok => { window.__tokens = (window.__tokens || []).concat([tok]); window.__fbUser({ uid: "tg" + tok.split("-").pop(), providerData: [], emailVerified: false, updateProfile(p) { Object.assign(this, p); return Promise.resolve(); } }); return Promise.resolve({ user }); },
     signOut: () => { window.__fbUser(null); return Promise.resolve(); }
   });
   auth.GoogleAuthProvider = function () { this.providerId = "google.com"; };
-  auth.OAuthProvider = function (id) { this.providerId = id; this.scopes = []; this.addScope = sc => this.scopes.push(sc); this.setCustomParameters = () => {}; };
   window.firebase = { initializeApp: c => { window.__fbConfig = c; }, auth, firestore: fs };
 })();`;
 
@@ -58,7 +56,7 @@ async function openFb(browser, hash = "#home", opts = {}) {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));
-  await page.route("**/firebase-config.js", r => r.fulfill({ body: "window.FIREBASE_CONFIG={apiKey:'test',projectId:'test'};window.AUTH_PROVIDERS=" + JSON.stringify(opts.providers || {}), contentType: "text/javascript" }));
+  await page.route("**/firebase-config.js", r => r.fulfill({ body: "window.FIREBASE_CONFIG={apiKey:'test',projectId:'test'}", contentType: "text/javascript" }));
   await page.route(/gstatic\.com\/firebasejs\//, r => r.fulfill({ body: r.request().url().includes("-app-") ? FAKE_FIREBASE : "", contentType: "text/javascript" }));
   await page.route(/^https?:\/\/(?!www\.gstatic\.com\/firebasejs\/)/, r => r.abort());
   await page.addInitScript(([user, seed, ss]) => {
