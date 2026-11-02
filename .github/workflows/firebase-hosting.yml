@@ -1,0 +1,39 @@
+name: Firebase Hosting
+
+# main ga har push'da: testlar oʻtsa, sayt Firebase Hosting'ga (firebase.json dagi "site") joylanadi.
+# FIREBASE_SERVICE_ACCOUNT kaliti hali qoʻshilmagan boʻlsa, joylash xatosiz oʻtkazib yuboriladi.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HAS_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+    steps:
+      - name: Kalit tekshiruvi
+        if: env.HAS_KEY != 'true'
+        run: echo "FIREBASE_SERVICE_ACCOUNT kaliti sozlanmagan — Firebase'ga joylash oʻtkazib yuborildi."
+      - uses: actions/checkout@v4
+        if: env.HAS_KEY == 'true'
+      - uses: actions/setup-node@v4
+        if: env.HAS_KEY == 'true'
+        with:
+          node-version: 22
+      - name: Testlar
+        if: env.HAS_KEY == 'true'
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          npm test
+      - name: Firebase Hosting'ga joylash
+        if: env.HAS_KEY == 'true'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: t-rk-e

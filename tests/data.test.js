@@ -77,3 +77,11 @@ test("firestore rules: stats are writable only by their owner and readable only 
   assert.match(r, /match \/stats\/\{uid\}[\s\S]*request\.auth\.uid == uid/);
   assert.match(r, /match \/admins\/\{uid\}\s*\{\s*allow get: if request\.auth != null && request\.auth\.uid == uid;\s*\}/);
 });
+
+test("firebase hosting: publishes the site files only, never tests or project notes", () => {
+  const cfg = JSON.parse(read("firebase.json")).hosting;
+  assert.equal(cfg.public, ".");
+  assert.match(cfg.site, /^[a-z0-9-]{4,30}$/, "site name");
+  for (const x of ["tests/**", "*.md", "package.json", "firestore.rules", "**/.*"]) assert.ok(cfg.ignore.includes(x), `should ignore ${x}`);
+  assert.equal(JSON.parse(read(".firebaserc")).projects.default, "t-rk-e");
+});

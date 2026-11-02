@@ -1,7 +1,7 @@
 # Türkçe Yoʻl — loyiha xulosasi (yangi sessiya uchun)
 
 Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uchun moʻljallangan PWA sayt.
-- Sayt: https://inomjonwolves.github.io/T-rk-e/
+- Sayt: https://inomjonwolves.github.io/T-rk-e/ (GitHub Pages). Qisqa manzil: Firebase Hosting, sayt nomi `firebase.json` → `hosting.site` (hozir `pamuk` → https://pamuk.web.app). Joylash `.github/workflows/firebase-hosting.yml` orqali `main` ga har push'da (avval testlar); GitHub secret `FIREBASE_SERVICE_ACCOUNT` boʻlmasa oʻtkazib yuboriladi. Sayt nomi band boʻlsa, konsolda boshqa nom bilan sayt yaratib, `firebase.json` dagi `site` ni oʻzgartiring. Yangi domen Firebase Authentication → Authorized domains da boʻlishi kerak.
 - Repo: InomjonWolves/T-rk-e, `main` branch. GitHub Pages `main` ildizidan avtomatik joylanadi (build yoʻq, oddiy statik fayllar).
 - Foydalanuvchi bilan **faqat oʻzbek tilida** gaplashing.
 
@@ -28,6 +28,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 | `cat.js` | Pamuk mushugi: `catSVG({pose,acc,cls})` va `CatLife` (koʻz qisish, qarash, `mood(svg,"happy"/"sad")`) |
 | `firebase-config.js`, `firestore.rules` | Firebase (loyiha `t-rk-e`): Auth (email va Google), Firestore `users`, `league`, `avatars`, `stats`, `admins`. **Qoidalar repo’dan avtomatik joylanmaydi** — Firebase konsolida (Firestore → Rules) qoʻlda yangilanadi |
 | `sw.js`, `manifest.webmanifest`, `icon*` | PWA |
+| `firebase.json`, `.firebaserc` | Firebase Hosting (faqat sayt fayllari; `tests/`, `*.md`, `package.json`, `firestore.rules` joylanmaydi) |
 | `privacy.html` | Maxfiylik siyosati |
 
 Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #placement #lessons #grammar #guide #gx #alphabet #practice #rank #profile #achievements #help #translate #skills #write #admin`.
