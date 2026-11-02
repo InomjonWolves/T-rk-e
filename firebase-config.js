@@ -16,6 +16,10 @@ window.AUTH_PROVIDERS = {
   apple: false,
   telegram: { botId: "", url: "" }
 };
+// Google/Apple oynasi sayt bilan bir domenda ochiladigan saytlar (Firebase Hosting'dagi saytlar).
+// Shart: Google Cloud → Credentials → Web client → "Authorized redirect URIs" da https://<domen>/__/auth/handler bor boʻlishi.
+// Boʻsh boʻlsa, oyna t-rk-e.firebaseapp.com da ochiladi.
+window.AUTH_SAME_DOMAIN = [];
 /* Namuna:
 window.FIREBASE_CONFIG = {
   apiKey: "AIza...",

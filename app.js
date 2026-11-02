@@ -3730,6 +3730,8 @@ function cloudFlush() {
 }
 const authEl = $("auth");
 let authMode = "login";
+// Shown on the sign-in form when a redirect sign-in came back empty (kept when the form is redrawn)
+let REDIR_MSG = "";
 const AUTH_ERR = {
   "auth/invalid-email": "Elektron pochta manzili notoʻgʻri yozilgan.",
   "auth/missing-email": "Elektron pochtani kiriting.",
@@ -3744,7 +3746,11 @@ const AUTH_ERR = {
   "auth/network-request-failed": "Internetga ulanib boʻlmadi. Aloqani tekshiring.",
   "auth/unauthorized-domain": "Bu sayt manzili Firebase sozlamalarida ruxsat etilmagan.",
   "auth/operation-not-allowed": "Bu kirish usuli Firebase’da hali yoqilmagan.",
-  "auth/account-exists-with-different-credential": "Bu pochta boshqa usul bilan roʻyxatdan oʻtgan. Oʻsha usul bilan kiring."
+  "auth/account-exists-with-different-credential": "Bu pochta boshqa usul bilan roʻyxatdan oʻtgan. Oʻsha usul bilan kiring.",
+  "auth/popup-blocked": "Brauzer kirish oynasini toʻsib qoʻydi. Qalqib chiquvchi oynalarga (popup) ruxsat bering.",
+  "auth/web-storage-unsupported": "Brauzerda saytlar maʼlumot saqlashi oʻchirilgan (cookie). Uni yoqing yoki boshqa brauzerda oching.",
+  "auth/internal-error": "Kirishda ichki xatolik. Sahifani yangilab, qayta urinib koʻring.",
+  "auth/redirect-cancelled-by-user": "Kirish bekor qilindi."
 };
 const authMsg = e => AUTH_ERR[e && e.code] || ("Xatolik yuz berdi" + (e && e.code ? ` (${e.code})` : "") + ". Qayta urinib koʻring.");
 function authError(e, ok) {
@@ -3764,7 +3770,7 @@ function setAuthTab(t) {
   $("a-pass").setAttribute("autocomplete", up ? "new-password" : "current-password");
   $("auth-submit").textContent = up ? "Roʻyxatdan oʻtish" : "Kirish";
   $("auth-submit").disabled = false;
-  $("auth-err").textContent = "";
+  $("auth-err").className = "auth-err"; $("auth-err").textContent = REDIR_MSG;
 }
 function showAuth(loading) {
   document.body.classList.add("locked");
@@ -3869,12 +3875,17 @@ async function tgFinish(data) {
   }
 }
 function googleSignIn() { oauthSignIn(new firebase.auth.GoogleAuthProvider()); }
+// A popup first, also in the installed app: the page-redirect flow loses the sign-in on browsers that block
+// cross-site storage (Chrome, Safari) when the sign-in page is on another domain (t-rk-e.firebaseapp.com).
+// The redirect is only a fallback when the popup cannot open.
 function oauthSignIn(provider) {
-  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
-  if (standalone) { auth.signInWithRedirect(provider); return; }
+  REDIR_MSG = "";
+  authError("");
   auth.signInWithPopup(provider).catch(err => {
-    if (err.code === "auth/popup-blocked" || err.code === "auth/operation-not-supported-in-this-environment") auth.signInWithRedirect(provider);
-    else authError(err);
+    if (err && (err.code === "auth/popup-blocked" || err.code === "auth/operation-not-supported-in-this-environment")) {
+      try { sessionStorage.setItem("ty-redirect", String(Date.now())); } catch (e) {}
+      auth.signInWithRedirect(provider).catch(authError);
+    } else authError(err);
   });
 }
 function resetPassword() {
@@ -4006,10 +4017,18 @@ async function enterApp(u, quiet) {
   else if (!quiet) showWelcome();
 }
 function fbStart() {
-  firebase.initializeApp(window.FIREBASE_CONFIG);
+  // On a Firebase Hosting site whose sign-in handler is registered with Google, sign in on the same domain
+  const cfg = Object.assign({}, window.FIREBASE_CONFIG);
+  if ((window.AUTH_SAME_DOMAIN || []).includes(location.hostname)) cfg.authDomain = location.hostname;
+  firebase.initializeApp(cfg);
   auth = firebase.auth(); auth.languageCode = "uz";
   db = firebase.firestore();
-  auth.getRedirectResult().catch(err => { showAuth(false); authError(err); });
+  // Back from a redirect sign-in: if the browser lost it, say so instead of silently showing the form again
+  let redirAt = 0;
+  try { redirAt = +sessionStorage.getItem("ty-redirect") || 0; sessionStorage.removeItem("ty-redirect"); } catch (e) {}
+  auth.getRedirectResult().then(r => {
+    if (redirAt && Date.now() - redirAt < 600000 && !(r && r.user) && !auth.currentUser) { REDIR_MSG = "Google bilan kirish yakunlanmadi: brauzer uni toʻxtatib qoʻydi. Qalqib chiquvchi oynalarga (popup) ruxsat bering yoki saytni oddiy brauzer oynasida oching."; showAuth(false); setAuthTab(authMode); }
+  }).catch(err => { showAuth(false); authError(err); });
   auth.onAuthStateChanged(async u => {
     if (!u) {
       EARLY = null; setLastUser(null);

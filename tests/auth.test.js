@@ -123,3 +123,32 @@ test("Telegram: the signed login goes to the server, its token signs in, no e-ma
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+test("Google: a popup even in the installed app; redirect only when the popup is blocked; a lost redirect is explained", async () => {
+  let { page, errors } = await openFb(browser, "#home");
+  // Installed app (standalone display mode)
+  await page.evaluate(() => { const mm = window.matchMedia; window.matchMedia = q => /standalone/.test(q) ? { matches: true, addListener() {}, addEventListener() {} } : mm(q); });
+  await page.waitForFunction(() => !document.getElementById("auth-body").hidden);
+  await page.click("[data-act=auth-google]");
+  assert.deepEqual(await page.evaluate(() => window.__popups), ["google.com:"]);
+  // A blocked popup falls back to the redirect and remembers it
+  await page.evaluate(() => { window.__popupFail = "auth/popup-blocked"; });
+  await page.click("[data-act=auth-google]");
+  await page.waitForFunction(() => window.__popups.length === 3);
+  assert.deepEqual(await page.evaluate(() => window.__popups.slice(1)), ["failed:google.com", "redirect:google.com"]);
+  assert.ok(await page.evaluate(() => +sessionStorage.getItem("ty-redirect") > 0));
+  await page.close();
+  // Back from Google with no signed-in user (the browser dropped it): a clear message, not a silent login form
+  ({ page, errors } = await openFb(browser, "#home", { session: { "ty-redirect": String(Date.now() - 5000) } }));
+  await page.waitForFunction(() => /Google bilan kirish yakunlanmadi/.test(document.getElementById("auth-err").textContent));
+  assert.equal(await page.evaluate(() => sessionStorage.getItem("ty-redirect")), null);
+  // The message stays when the form is redrawn, and a new attempt clears it
+  await page.click("#tab-signup"); await page.click("#tab-login");
+  assert.match(await page.textContent("#auth-err"), /yakunlanmadi/);
+  await page.click("[data-act=auth-google]");
+  assert.equal(await page.textContent("#auth-err"), "");
+  // Default config keeps the Firebase sign-in domain
+  assert.equal(await page.evaluate(() => window.__fbConfig.authDomain), undefined);
+  assert.deepEqual(errors, []);
+  await page.close();
+});

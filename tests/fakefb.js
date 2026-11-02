@@ -1,6 +1,6 @@
 // An in-memory stand-in for the Firebase compat SDK (auth + firestore), enough for the app's own calls.
 // Sign in/out from a test with window.__fbUser({ uid, displayName, email }) or window.__fbUser(null).
-// opts.seed prefills documents. window.__db holds the documents by path ("groups/ABC123/members/u1"); window.__deny(fn) can refuse writes like rules would.
+// opts.seed prefills documents, opts.session sets sessionStorage entries before the app starts. window.__db holds the documents by path ("groups/ABC123/members/u1"); window.__deny(fn) can refuse writes like rules would.
 const FAKE_FIREBASE = `
 (function () {
   const db = window.__db = Object.assign({}, window.__seed || {}), listeners = [];
@@ -42,14 +42,14 @@ const FAKE_FIREBASE = `
     getRedirectResult: () => Promise.resolve(null),
     onAuthStateChanged: f => { listeners.push(f); if (user !== undefined) f(user); },
     createUserWithEmailAndPassword: (email) => { window.__fbUser({ uid: "new1", email, providerData: [{ providerId: "password" }], emailVerified: false, updateProfile(p) { Object.assign(this, p); return Promise.resolve(); } }); return Promise.resolve({ user }); },
-    signInWithPopup: p => { window.__popups = (window.__popups || []).concat([p.providerId + ":" + (p.scopes || []).join(",")]); return Promise.resolve(); },
+    signInWithPopup: p => { if (window.__popupFail) { window.__popups = (window.__popups || []).concat(["failed:" + p.providerId]); return err(window.__popupFail); } window.__popups = (window.__popups || []).concat([p.providerId + ":" + (p.scopes || []).join(",")]); return Promise.resolve(); },
     signInWithRedirect: p => { window.__popups = (window.__popups || []).concat(["redirect:" + p.providerId]); return Promise.resolve(); },
     signInWithCustomToken: tok => { window.__tokens = (window.__tokens || []).concat([tok]); window.__fbUser({ uid: "tg" + tok.split("-").pop(), providerData: [], emailVerified: false, updateProfile(p) { Object.assign(this, p); return Promise.resolve(); } }); return Promise.resolve({ user }); },
     signOut: () => { window.__fbUser(null); return Promise.resolve(); }
   });
   auth.GoogleAuthProvider = function () { this.providerId = "google.com"; };
   auth.OAuthProvider = function (id) { this.providerId = id; this.scopes = []; this.addScope = sc => this.scopes.push(sc); this.setCustomParameters = () => {}; };
-  window.firebase = { initializeApp: () => {}, auth, firestore: fs };
+  window.firebase = { initializeApp: c => { window.__fbConfig = c; }, auth, firestore: fs };
 })();`;
 
 // Opens the app with the fake Firebase; the visitor starts signed out unless opts.user is given
@@ -61,15 +61,16 @@ async function openFb(browser, hash = "#home", opts = {}) {
   await page.route("**/firebase-config.js", r => r.fulfill({ body: "window.FIREBASE_CONFIG={apiKey:'test',projectId:'test'};window.AUTH_PROVIDERS=" + JSON.stringify(opts.providers || {}), contentType: "text/javascript" }));
   await page.route(/gstatic\.com\/firebasejs\//, r => r.fulfill({ body: r.request().url().includes("-app-") ? FAKE_FIREBASE : "", contentType: "text/javascript" }));
   await page.route(/^https?:\/\/(?!www\.gstatic\.com\/firebasejs\/)/, r => r.abort());
-  await page.addInitScript(([user, seed]) => {
+  await page.addInitScript(([user, seed, ss]) => {
     sessionStorage["ty-welcomed"] = "1";
+    Object.assign(sessionStorage, ss);
     window.__seed = seed;
     if (!window.__fbWrapped) {
       window.__fbWrapped = 1;
       // Sign the user in as soon as the SDK is there
       Object.defineProperty(window, "firebase", { configurable: true, set(v) { Object.defineProperty(window, "firebase", { value: v, writable: true, configurable: true }); if (user) setTimeout(() => window.__fbUser(user), 0); else setTimeout(() => window.__fbUser(null), 0); } });
     }
-  }, [opts.user || null, opts.seed || {}]);
+  }, [opts.user || null, opts.seed || {}, opts.session || {}]);
   await page.goto(BASE + hash);
   await page.waitForFunction(() => typeof db !== "undefined" && db);
   if (opts.user) await page.waitForFunction(() => USER && !EARLY);
