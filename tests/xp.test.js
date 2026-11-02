@@ -180,7 +180,9 @@ test("signed-in leagues: last week's table decides promotion; three leaderboards
   await page.waitForFunction(() => __db["league/u1"] && __db["league/u1"].lg === 2);
   const row = await page.evaluate(() => __db["league/u1"]);
   assert.deepEqual(Object.keys(row).sort(), ["at", "day", "dxp", "lg", "lgw", "name", "plg", "pw", "pwxp", "streak", "week", "wxp", "xp"]);
-  assert.deepEqual([row.pw, row.pwxp, row.plg, row.day, row.dxp, row.wxp], [LAST_WEEK, 900, 1, TODAY, 40, 40]);
+  // (an achievement unlocked meanwhile may add +20 on top of the 40)
+  assert.deepEqual([row.pw, row.pwxp, row.plg, row.day], [LAST_WEEK, 900, 1, TODAY]);
+  assert.ok(row.dxp >= 40 && row.wxp === row.dxp, `dxp ${row.dxp}, wxp ${row.wxp}`);
   // Weekly table = my league only (Silver): Dilnoza and me, not Olim (Bronze)
   await page.evaluate(() => { RANK_TAB = "week"; location.hash = "#rank"; });
   await page.waitForSelector(".podium");
