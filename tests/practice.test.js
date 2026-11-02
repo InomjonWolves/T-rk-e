@@ -50,7 +50,8 @@ test("speaking: words, sentences, oral answers and role play with a fake microph
   assert.equal(await page.evaluate(() => S.roles), 1);
   // A wrong answer: letters are marked and a retry is offered
   await run(page, "say", "pron");
-  await page.evaluate(() => { window.__say = () => "yanlış bir şey"; });
+  // A sound no target word contains (a real phrase could hide a short target such as "bir")
+  await page.evaluate(() => { window.__say = () => "ğğğğ ğğğğ"; });
   await page.click("#mic-btn");
   await page.waitForFunction(() => !REC && SES.tries === 1);
   assert.equal(await page.evaluate(() => SES.answered), false);
