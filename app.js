@@ -2850,15 +2850,23 @@ function trNum(n) {
 // Lower-case letters only, with a map back to the original characters (to colour them)
 function sayNorm(s) {
   let out = "", map = [];
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i].toLocaleLowerCase("tr").replace(/[âáà]/, "a").replace(/[îí]/, "i").replace(/[ûú]/, "u");
+  const add = (c, i) => {
     if (/[a-zçğıöşü]/.test(c)) { out += c; map.push(i); }
     else if (/[\s\-]/.test(c) && out && out[out.length - 1] !== " ") { out += " "; map.push(-1); }
+  };
+  for (let i = 0; i < s.length; i++) {
+    // Digits are said as words ("112" → "yüz on iki"), mapped back to the first digit
+    if (/\d/.test(s[i])) {
+      let j = i; while (j < s.length && /\d/.test(s[j])) j++;
+      for (const c of " " + trNum(Math.min(+s.slice(i, j), 999999)) + " ") add(c, c === " " ? -1 : i);
+      i = j - 1; continue;
+    }
+    add(s[i].toLocaleLowerCase("tr").replace(/[âáà]/, "a").replace(/[îí]/, "i").replace(/[ûú]/, "u"), i);
   }
   if (out.endsWith(" ")) { out = out.slice(0, -1); map.pop(); }
   return { out, map };
 }
-const heardNorm = s => sayNorm(s.replace(/\d+/g, d => " " + trNum(Math.min(+d, 999999)) + " ")).out;
+const heardNorm = s => sayNorm(s).out;
 // Edit distance plus, for each target letter, whether it was matched
 function sayDiff(a, b) {
   const m = a.length, n = b.length, d = [];

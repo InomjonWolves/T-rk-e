@@ -62,3 +62,22 @@ test("home page offers the placement test to new learners until skipped", async 
   assert.equal(await page.evaluate(() => !!document.querySelector("[data-act=pl-skip]")), false);
   assert.deepEqual(errors, []);
 });
+
+test("speaking: a sentence with digits is scored right when said correctly", async () => {
+  const { page, errors } = await openApp(browser, "#placement");
+  const r = await page.evaluate(() => {
+    const t = sayNorm("Gerekirse 112'yi ararız.").out;
+    const one = [heardNorm("gerekirse 112'yi ararız"), heardNorm("Gerekirse yüz on iki yi ararız")].map(h => sayDiff(t, h).score);
+    // Every speaking item the tests can pick passes when its own text is heard
+    const low = [];
+    for (let k = 0; k < 150; k++) plGen().it.s.forEach(q => {
+      const sc = q.kind === "oral" ? oralScore(q.tr, q.tr).score : sayDiff(sayNorm(q.tr).out, heardNorm(q.tr)).score;
+      if (sc < ktNeed(q)) low.push(q.tr);
+    });
+    return { t, one, low: [...new Set(low)] };
+  });
+  assert.equal(r.t, "gerekirse yüz on iki yi ararız");
+  assert.deepEqual(r.one, [1, 1]);
+  assert.deepEqual(r.low, []);
+  assert.deepEqual(errors, []);
+});
