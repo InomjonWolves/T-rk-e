@@ -6,7 +6,10 @@ const FAKE_FIREBASE = `
   const db = window.__db = Object.assign({}, window.__seed || {}), listeners = [];
   let user, deny = () => false;
   window.__deny = f => { deny = f; };
-  window.__fbUser = u => { user = u ? Object.assign({ providerData: [], emailVerified: true, delete: () => Promise.resolve() }, u) : null; listeners.forEach(f => f(user)); };
+  window.__fbUser = u => { user = u ? Object.assign({ providerData: [], emailVerified: true, delete: () => Promise.resolve(), reload: () => Promise.resolve(), getIdToken: () => Promise.resolve("t"),
+    sendEmailVerification: () => { window.__mails = (window.__mails || 0) + 1; return Promise.resolve(); } }, u) : null; listeners.forEach(f => f(user)); };
+  // Confirm the address "in the mail app": the next reload() sees it
+  window.__fbVerify = () => { if (user) user.emailVerified = true; };
   const err = code => Promise.reject(Object.assign(new Error(code), { code }));
   const clone = v => v === undefined ? v : JSON.parse(JSON.stringify(v));
   const kids = (path) => Object.keys(db).filter(k => k.startsWith(path + "/") && !k.slice(path.length + 1).includes("/"));
@@ -38,6 +41,7 @@ const FAKE_FIREBASE = `
     languageCode: "", get currentUser() { return user; },
     getRedirectResult: () => Promise.resolve(null),
     onAuthStateChanged: f => { listeners.push(f); if (user !== undefined) f(user); },
+    createUserWithEmailAndPassword: (email) => { window.__fbUser({ uid: "new1", email, providerData: [{ providerId: "password" }], emailVerified: false, updateProfile(p) { Object.assign(this, p); return Promise.resolve(); } }); return Promise.resolve({ user }); },
     signOut: () => { window.__fbUser(null); return Promise.resolve(); }
   });
   auth.GoogleAuthProvider = function () {};

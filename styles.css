@@ -952,3 +952,10 @@ a.mode { color: inherit; text-decoration: none; }
 .grp-detail { display: flex; flex-direction: column; gap: 12px; padding: 12px 14px 16px; }
 .grp-invite { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
 .grp-invite .mascot { width: 120px; height: 104px; }
+
+/* E-mail verification gate */
+.auth-verify { display: flex; flex-direction: column; gap: 12px; }
+.auth-verify[hidden] { display: none; }
+.auth-verify h2 { margin: 0; font-size: 20px; font-weight: 800; }
+.auth-verify p { margin: 0; color: var(--ink-2); line-height: 1.5; }
+.auth-verify b { color: var(--ink); overflow-wrap: anywhere; }

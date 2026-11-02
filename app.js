@@ -3267,7 +3267,9 @@ function onAct(e) {
   else if (act === "auth-google") googleSignIn();
   else if (act === "auth-reset") resetPassword();
   else if (act === "logout") { ADMIN = false; ADMIN_DATA = null; setLastUser(null); cloudFlush().then(() => auth && auth.signOut()); go("home"); }
-  else if (act === "verify-again") { USER.sendEmailVerification().then(() => toast("Xat yuborildi. Pochtangizni tekshiring")).catch(err => toast(authMsg(err))); }
+  else if (act === "verify-again") verifySend();
+  else if (act === "verify-check") verifyCheck(false);
+  else if (act === "verify-out") { setLastUser(null); if (auth) auth.signOut(); }
   else if (act === "delete-ask") {
     $("del-box").innerHTML = `<div class="notice"><div><b>Hisob butunlay oʻchirilsinmi?</b> Barcha natijalaringiz yoʻqoladi va buni qaytarib boʻlmaydi.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button class="btn btn-ghost" data-act="go" data-to="profile">Bekor qilish</button><button class="btn btn-danger" data-act="delete-yes">Ha, oʻchirish</button></div></div>`;
@@ -3677,6 +3679,7 @@ function setAuthTab(t) {
   $("auth-speech").textContent = up ? "Tanishaylik! Men Pamuk." : "Salom! Men Pamuk.";
   $("a-pass").setAttribute("autocomplete", up ? "new-password" : "current-password");
   $("auth-submit").textContent = up ? "Roʻyxatdan oʻtish" : "Kirish";
+  $("auth-submit").disabled = false;
   $("auth-err").textContent = "";
 }
 function showAuth(loading) {
@@ -3715,6 +3718,7 @@ $("auth-form").addEventListener("submit", async e => {
       const cred = await auth.createUserWithEmailAndPassword(email, pass);
       await cred.user.updateProfile({ displayName: name });
       USERNAME = name;
+      markVerifySent();
       cred.user.sendEmailVerification().catch(() => {});
     } catch (err) { busy(false); authError(err); }
   } else {
@@ -3817,6 +3821,65 @@ S = loadLocal(KEY);
 loadMyPhoto();
 try { PROFILE = Object.assign(PROFILE, JSON.parse(localStorage.getItem("ty-profile") || "{}")); } catch (e) {}
 document.querySelector("#f-birth .birth").innerHTML = birthSelects("b", "");
+/* ---------- E-mail verification: a password account enters the app only after confirming its address ---------- */
+const needsVerify = u => !!u && !u.emailVerified && (u.providerData || []).some(p => p && p.providerId === "password");
+const VERIFY_GAP = 60000;
+let VERIFY_U = null, verifyTimer = null;
+function verifyLeft() { let t = 0; try { t = +localStorage.getItem("ty-verify-at") || 0; } catch (e) {} return Math.max(0, VERIFY_GAP - (Date.now() - t)); }
+function markVerifySent() { try { localStorage.setItem("ty-verify-at", String(Date.now())); } catch (e) {} if (VERIFY_U) verifyTick(); }
+function verifyTick() {
+  clearInterval(verifyTimer);
+  const b = $("v-again"), upd = () => {
+    const sec = Math.ceil(verifyLeft() / 1000);
+    b.disabled = sec > 0; b.textContent = sec > 0 ? `Qayta yuborish (${sec} s)` : "Xatni qayta yuborish";
+    if (!sec) clearInterval(verifyTimer);
+  };
+  upd(); verifyTimer = setInterval(upd, 1000);
+}
+function showVerify(u) {
+  VERIFY_U = u;
+  showAuth(false);
+  $("auth-body").hidden = true; $("auth-body").style.display = "none";
+  $("auth-verify").hidden = false;
+  $("v-email").textContent = u.email || "";
+  $("v-msg").textContent = ""; $("v-msg").className = "auth-err";
+  verifyTick();
+}
+function hideVerify() { VERIFY_U = null; clearInterval(verifyTimer); $("auth-verify").hidden = true; }
+async function verifyCheck(silent) {
+  const u = auth && auth.currentUser;
+  if (!u) return;
+  try { await u.reload(); } catch (e) { if (!silent) $("v-msg").textContent = authMsg(e); return; }
+  const cur = auth.currentUser;
+  if (cur && cur.emailVerified) {
+    // A fresh token carries email_verified for the database rules
+    await cur.getIdToken(true).catch(() => {});
+    hideVerify();
+    enterApp(cur, false);
+  } else if (!silent) { $("v-msg").className = "auth-err"; $("v-msg").textContent = "Pochta hali tasdiqlanmagan. Xatdagi havolani bosib, keyin qayta urinib koʻring."; }
+}
+function verifySend() {
+  const u = auth && auth.currentUser;
+  if (!u || verifyLeft()) return;
+  markVerifySent();
+  u.sendEmailVerification()
+    .then(() => { $("v-msg").className = "auth-err ok"; $("v-msg").textContent = `Xat ${u.email} manziliga qayta yuborildi.`; })
+    .catch(err => { $("v-msg").className = "auth-err"; $("v-msg").textContent = err && err.code === "auth/too-many-requests" ? "Xat yaqinda yuborilgan. Bir necha daqiqadan keyin qayta urinib koʻring va Spam papkasini tekshiring." : authMsg(err); });
+}
+// Coming back from the mail app: check again without a tap
+document.addEventListener("visibilitychange", () => { if (!document.hidden && VERIFY_U) verifyCheck(true); });
+
+async function enterApp(u, quiet) {
+  EARLY = null;
+  hideVerify();
+  if (!quiet) showAuth(true);
+  USER = u;
+  await loadCloud(u);
+  if (!quiet) hideAuth();
+  if (!quiet || !SES) route();
+  if (!PROFILE.gender || !PROFILE.birth) { if ($("sheet").hidden && !SES) profileSheet(true); }
+  else if (!quiet) showWelcome();
+}
 function fbStart() {
   firebase.initializeApp(window.FIREBASE_CONFIG);
   auth = firebase.auth(); auth.languageCode = "uz";
@@ -3828,19 +3891,20 @@ function fbStart() {
       USER = null; USERNAME = ""; S = blank(); KEYU = KEY; RANK_CACHE = {}; GRP = {}; GRP_OWN = null; GRP_SYNC_AT = 0; MYPHOTO = ""; PROFILE = { gender: "", birth: "" };
       try { sessionStorage.removeItem("ty-welcomed"); } catch (e) {}
       if (SES) closeSession();
+      hideVerify();
       showAuth(false); setAuthTab(authMode);
       return;
     }
+    if (needsVerify(u)) {
+      // Not confirmed yet: none of the app (and no cloud writes) until the address is verified
+      if (EARLY) { EARLY = null; S = blank(); KEYU = KEY; USERNAME = ""; MYPHOTO = ""; if (SES) closeSession(); }
+      setLastUser(null);
+      USER = null;
+      showVerify(u);
+      return;
+    }
     // Same user as the local copy already on screen: sync quietly in the background
-    const quiet = EARLY === u.uid;
-    EARLY = null;
-    if (!quiet) showAuth(true);
-    USER = u;
-    await loadCloud(u);
-    if (!quiet) hideAuth();
-    if (!quiet || !SES) route();
-    if (!PROFILE.gender || !PROFILE.birth) { if ($("sheet").hidden && !SES) profileSheet(true); }
-    else if (!quiet) showWelcome();
+    enterApp(u, EARLY === u.uid);
   });
 }
 if (FB) {
