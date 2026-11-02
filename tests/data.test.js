@@ -75,7 +75,10 @@ test("firestore rules: stats are writable only by their owner and readable only 
   const r = read("firestore.rules");
   assert.match(r, /match \/stats\/\{uid\}[\s\S]*allow read: if isAdmin\(\);/);
   assert.match(r, /match \/stats\/\{uid\}[\s\S]*request\.auth\.uid == uid/);
-  assert.match(r, /match \/admins\/\{uid\}\s*\{\s*allow get: if request\.auth != null && request\.auth\.uid == uid;\s*\}/);
+  // Only confirmed accounts (verified e-mail, Google, Apple, Telegram) read or write anything
+  assert.match(r, /function okUser\(\) \{\s*return request\.auth != null && \(request\.auth\.token\.get\('email_verified', false\) == true\s*\|\| request\.auth\.token\.firebase\.sign_in_provider in \['apple\.com', 'custom'\]\);/);
+  assert.equal((r.match(/request\.auth != null/g) || []).length, 1, "every rule goes through okUser()");
+  assert.match(r, /match \/admins\/\{uid\}\s*\{\s*allow get: if okUser\(\) && request\.auth\.uid == uid;\s*\}/);
 });
 
 test("firebase hosting: publishes the site files only, never tests or project notes", () => {

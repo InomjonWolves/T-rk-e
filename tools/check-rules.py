@@ -1,5 +1,6 @@
 # Usage: python3 -I tools/check-rules.py  (needs network to identitytoolkit/firestore; creates and deletes 3 test accounts)
-# Checks the deployed Firestore rules for groups with three throwaway accounts, then deletes everything it created.
+# Confirms the rules DEPLOYED in the console refuse unconfirmed e-mail accounts. If anything is allowed, the console still has older rules.
+# Checks the deployed Firestore rules with three throwaway accounts, then deletes everything it created.
 import json, os, random, re, ssl, string, urllib.request, urllib.error
 CFG = open("/home/user/T-rk-e/firebase-config.js").read()
 KEY = re.search(r'apiKey: "([^"]+)"', CFG).group(1)
@@ -43,34 +44,22 @@ def check(name, got, want):
     ok = (got == 200) == want
     results.append(ok); print(("OK  " if ok else "FAIL"), name, "->", got)
 G = f"groups/{code}"
+# These accounts have an UNCONFIRMED e-mail (REST cannot confirm one), so the deployed rules must refuse them everywhere.
+# What confirmed accounts may do is covered by tools/rules-emulator.test.js in the official emulator.
 try:
-    check("teacher: group with someone else as owner is refused", write(T, G, {"name": "X", "owner": A["uid"], "oname": "T"}, exists=False), False)
-    check("teacher: lower-case code is refused", write(T, f"groups/{code.lower()}", {"name": "X", "owner": T["uid"], "oname": "T"}, exists=False), False)
-    check("teacher: extra field is refused", write(T, G, {"name": "X", "owner": T["uid"], "oname": "T", "hack": 1}, exists=False), False)
-    check("teacher: creates the group", write(T, G, {"name": "Sinov guruhi", "owner": T["uid"], "oname": "Sinov oʻqituvchi"}, exists=False), True)
-    check("learner: reads the group by code", get(A, G), True)
-    check("learner: cannot rename the group", write(A, G, {"name": "Buzildi", "owner": T["uid"], "oname": "T"}), False)
-    check("learner: cannot take the group over", write(A, G, {"name": "X", "owner": A["uid"], "oname": "T"}), False)
-    check("outsider: cannot list members before joining", lst(C, G + "/members"), False)
-    check("learner: writes a card for someone else — refused", write(A, f"{G}/members/{C['uid']}", card("Soxta")), False)
-    check("learner: card with an extra field — refused", write(A, f"{G}/members/{A['uid']}", dict(card("A"), email="x@y.z")), False)
-    check("learner: card with a client time — refused", write(A, f"{G}/members/{A['uid']}", dict(card("A"), at="2020"), ts=False), False)
-    check("learner: joins (own card)", write(A, f"{G}/members/{A['uid']}", card("Sinov oʻquvchi")), True)
-    check("learner: updates own card", write(A, f"{G}/members/{A['uid']}", dict(card("Sinov oʻquvchi"), wxp=40), exists=True), True)
-    check("teacher: cannot add a card for themselves", write(T, f"{G}/members/{T['uid']}", card("T")), False)
-    check("teacher: lists members", lst(T, G + "/members"), True)
-    check("learner: lists group members", lst(A, G + "/members"), True)
-    check("outsider: still cannot list members", lst(C, G + "/members"), False)
-    check("outsider: cannot read a learner's card", get(C, f"{G}/members/{A['uid']}"), False)
-    check("outsider: cannot remove a learner", delete(C, f"{G}/members/{A['uid']}"), False)
-    check("teacher: removes the learner", delete(T, f"{G}/members/{A['uid']}"), True)
-    check("learner: update after removal fails (app then forgets the group)", write(A, f"{G}/members/{A['uid']}", card("A"), exists=True), False)
-    check("learner: joins again and leaves", write(A, f"{G}/members/{A['uid']}", card("A")) == 200 and delete(A, f"{G}/members/{A['uid']}") or 0, True)
-    check("outsider: cannot delete the group", delete(C, G), False)
-    check("existing rules still work: own users doc", write(A, f"users/{A['uid']}", {"progress": {"xp": 0}}, ts=False), True)
-    check("existing rules still work: someone else's users doc refused", get(C, f"users/{A['uid']}"), False)
+    check("unconfirmed: own progress write refused", write(A, f"users/{A['uid']}", {"progress": {"xp": 0}}, ts=False), False)
+    check("unconfirmed: own progress read refused", get(A, f"users/{A['uid']}"), False)
+    check("unconfirmed: league write refused", write(A, f"league/{A['uid']}", {"name": "A", "week": "2026-11-02", "wxp": 1, "xp": 1, "streak": 0}, ts=False), False)
+    check("unconfirmed: league read refused", lst(A, "league"), False)
+    check("unconfirmed: avatar write refused", write(A, f"avatars/{A['uid']}", {"photo": "data:image/jpeg;base64,AAAA"}, ts=False), False)
+    check("unconfirmed: stats write refused", write(A, f"stats/{A['uid']}", {"v": 1, "d": "2026-11-02", "lv": "A1", "units": 0, "t": {}, "w": {}, "bal": 0, "lvl": {}, "kt": {}, "act": 0}, ts=False), False)
+    check("unconfirmed: group create refused", write(T, G, {"name": "Sinov", "owner": T["uid"], "oname": "T"}, exists=False), False)
+    check("unconfirmed: group read refused", get(C, G), False)
+    check("unconfirmed: member card refused", write(A, f"{G}/members/{A['uid']}", card("A")), False)
 finally:
-    for u in (A, C): delete(u, f"{G}/members/{u['uid']}"); delete(u, f"users/{u['uid']}")
+    # Remove everything a run may have written (with older rules the writes succeed)
+    for u in (T, A, C):
+        for p in (f"{G}/members/{u['uid']}", f"users/{u['uid']}", f"league/{u['uid']}", f"avatars/{u['uid']}", f"stats/{u['uid']}"): delete(u, p)
     print("cleanup group:", delete(T, G))
     for u in (T, A, C):
         s, _ = req("POST", f"https://identitytoolkit.googleapis.com/v1/accounts:delete?key={KEY}", {"idToken": u["tok"]})

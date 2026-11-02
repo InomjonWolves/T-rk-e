@@ -1,0 +1,76 @@
+// Firestore rules in the official emulator, with every kind of account the site has.
+// Not part of `npm test` (needs Java and the emulator). Run:
+//   cd <scratch> && npm i firebase-tools@15 @firebase/rules-unit-testing@6 firebase@13
+//   npx firebase emulators:exec --only firestore --project demo-turkce "node --test <repo>/tools/rules-emulator.test.js"
+// (set NODE_PATH=<scratch>/node_modules so the packages resolve)
+const { test, before, after } = require("node:test");
+const fs = require("fs");
+const path = require("path");
+const { initializeTestEnvironment, assertSucceeds, assertFails } = require("@firebase/rules-unit-testing");
+const { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, serverTimestamp } = require("firebase/firestore");
+
+let env;
+before(async () => {
+  env = await initializeTestEnvironment({ projectId: "demo-turkce", firestore: { rules: fs.readFileSync(path.join(__dirname, "..", "firestore.rules"), "utf8"), host: "127.0.0.1", port: 8080 } });
+});
+after(async () => { await env.cleanup(); });
+
+// Token claims of each sign-in kind
+const KINDS = {
+  emailOk: { email: "a@x.uz", email_verified: true, firebase: { sign_in_provider: "password" } },
+  emailNo: { email: "b@x.uz", email_verified: false, firebase: { sign_in_provider: "password" } },
+  google: { email: "g@gmail.com", email_verified: true, firebase: { sign_in_provider: "google.com" } },
+  apple: { email: "x@privaterelay.appleid.com", firebase: { sign_in_provider: "apple.com" } },
+  telegram: { name: "Aziz", firebase: { sign_in_provider: "custom" } }
+};
+const as = (uid, kind) => env.authenticatedContext(uid, KINDS[kind]).firestore();
+const card = () => ({ name: "A", week: "2026-11-02", wxp: 1, xp: 1, streak: 0, last: "", sk: {}, units: 0, lv: "A1", act: 0, at: serverTimestamp() });
+
+test("own progress: every confirmed kind may write, an unconfirmed e-mail may not", async () => {
+  for (const k of ["emailOk", "google", "apple", "telegram"]) await assertSucceeds(setDoc(doc(as("u-" + k, k), "users/u-" + k), { progress: { xp: 1 } }));
+  await assertFails(setDoc(doc(as("u-no", "emailNo"), "users/u-no"), { progress: { xp: 1 } }));
+  await assertFails(getDoc(doc(as("u-no", "emailNo"), "users/u-no")));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), "users/u-google")));
+  await assertFails(getDoc(doc(as("u-apple", "apple"), "users/u-google")), "someone else's progress");
+});
+
+test("league, avatars, stats need a confirmed account", async () => {
+  const row = { name: "A", week: "2026-11-02", wxp: 1, xp: 1, streak: 0 };
+  await assertSucceeds(setDoc(doc(as("t1", "telegram"), "league/t1"), row));
+  await assertFails(setDoc(doc(as("n1", "emailNo"), "league/n1"), row));
+  await assertSucceeds(getDocs(collection(as("t1", "telegram"), "league")));
+  await assertFails(getDocs(collection(as("n1", "emailNo"), "league")));
+  await assertSucceeds(setDoc(doc(as("p1", "apple"), "avatars/p1"), { photo: "data:image/jpeg;base64,AAAA" }));
+  await assertFails(setDoc(doc(as("n1", "emailNo"), "avatars/n1"), { photo: "data:image/jpeg;base64,AAAA" }));
+  const st = { v: 1, d: "2026-11-02", lv: "A1", units: 0, t: {}, w: {}, bal: 0, lvl: {}, kt: {}, act: 0 };
+  await assertSucceeds(setDoc(doc(as("g1", "google"), "stats/g1"), st));
+  await assertFails(setDoc(doc(as("n1", "emailNo"), "stats/n1"), st));
+  await assertFails(getDocs(collection(as("g1", "google"), "stats")), "stats are admin-only");
+});
+
+test("admins: only a confirmed admin reads the stats", async () => {
+  await env.withSecurityRulesDisabled(async c => { await setDoc(doc(c.firestore(), "admins/adm"), { on: true }); });
+  await assertSucceeds(getDocs(collection(as("adm", "google"), "stats")));
+  await assertSucceeds(getDoc(doc(as("adm", "google"), "admins/adm")));
+  await assertFails(getDoc(doc(as("adm", "google"), "admins/other")));
+});
+
+test("groups: Telegram teacher, Apple and e-mail learners; unconfirmed accounts stay out", async () => {
+  const T = as("tt", "telegram"), A = as("aa", "apple"), E = as("ee", "emailOk"), N = as("nn", "emailNo");
+  await assertFails(setDoc(doc(N, "groups/NOPE22"), { name: "G", owner: "nn", oname: "N", at: serverTimestamp() }));
+  await assertSucceeds(setDoc(doc(T, "groups/ABC234"), { name: "Guruh", owner: "tt", oname: "Ustoz", at: serverTimestamp() }));
+  await assertSucceeds(getDoc(doc(A, "groups/ABC234")));
+  await assertFails(getDoc(doc(N, "groups/ABC234")));
+  await assertSucceeds(setDoc(doc(A, "groups/ABC234/members/aa"), card()));
+  await assertSucceeds(setDoc(doc(E, "groups/ABC234/members/ee"), card()));
+  await assertFails(setDoc(doc(N, "groups/ABC234/members/nn"), card()));
+  await assertSucceeds(updateDoc(doc(A, "groups/ABC234/members/aa"), { wxp: 5, at: serverTimestamp() }));
+  await assertFails(setDoc(doc(A, "groups/ABC234/members/ee"), card()), "a card for someone else");
+  await assertSucceeds(getDocs(collection(T, "groups/ABC234/members")));
+  await assertSucceeds(getDocs(collection(E, "groups/ABC234/members")));
+  await assertFails(getDocs(collection(as("zz", "google"), "groups/ABC234/members")), "outsider");
+  await assertFails(updateDoc(doc(A, "groups/ABC234"), { name: "Buzildi" }));
+  await assertSucceeds(deleteDoc(doc(T, "groups/ABC234/members/ee")));
+  await assertSucceeds(deleteDoc(doc(A, "groups/ABC234/members/aa")));
+  await assertSucceeds(deleteDoc(doc(T, "groups/ABC234")));
+});

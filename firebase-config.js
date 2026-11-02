@@ -9,6 +9,13 @@ window.FIREBASE_CONFIG = {
   messagingSenderId: "614558378510",
   appId: "1:614558378510:web:59588bcf1bb2d9a7846a5f"
 };
+// Qoʻshimcha kirish usullari (sozlanmaguncha tugmalar koʻrinmaydi).
+// apple: Firebase konsolida Apple provayderi yoqilgach true qiling.
+// telegram: botId — bot tokenidagi ":" dan oldingi raqam (maxfiy emas); url — Cloudflare Worker manzili.
+window.AUTH_PROVIDERS = {
+  apple: false,
+  telegram: { botId: "", url: "" }
+};
 /* Namuna:
 window.FIREBASE_CONFIG = {
   apiKey: "AIza...",

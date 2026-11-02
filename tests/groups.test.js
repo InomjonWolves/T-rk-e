@@ -142,12 +142,12 @@ test("groups need an account; the profile links to them", async () => {
 test("firestore rules: groups are created by their owner, member cards are written only by the member", () => {
   const r = fs.readFileSync(path.join(ROOT, "firestore.rules"), "utf8");
   const g = r.slice(r.indexOf("match /groups/{gid}"), r.indexOf("// Profil rasmlari"));
-  assert.match(g, /allow create: if request\.auth != null && gid\.matches\('\^\[A-Z0-9\]\{6\}\$'\)\s*&& request\.resource\.data\.owner == request\.auth\.uid/);
-  assert.match(g, /allow update: if request\.auth != null && resource\.data\.owner == request\.auth\.uid\s*&& request\.resource\.data\.owner == resource\.data\.owner/);
+  assert.match(g, /allow create: if okUser\(\) && gid\.matches\('\^\[A-Z0-9\]\{6\}\$'\)\s*&& request\.resource\.data\.owner == request\.auth\.uid/);
+  assert.match(g, /allow update: if okUser\(\) && resource\.data\.owner == request\.auth\.uid\s*&& request\.resource\.data\.owner == resource\.data\.owner/);
   const m = g.slice(g.indexOf("match /members/{uid}"));
-  assert.match(m, /allow create, update: if request\.auth != null && request\.auth\.uid == uid/);
+  assert.match(m, /allow create, update: if okUser\(\) && request\.auth\.uid == uid/);
   assert.match(m, /hasOnly\(\['name', 'week', 'wxp', 'xp', 'streak', 'last', 'sk', 'units', 'lv', 'act', 'at'\]\)/);
-  assert.match(m, /allow delete: if request\.auth != null && \(request\.auth\.uid == uid \|\| g\(\)\.owner == request\.auth\.uid\)/);
+  assert.match(m, /allow delete: if okUser\(\) && \(request\.auth\.uid == uid \|\| g\(\)\.owner == request\.auth\.uid\)/);
   // Brace balance
   assert.equal((r.match(/\{/g) || []).length, (r.match(/\}/g) || []).length);
 });
