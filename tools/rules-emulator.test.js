@@ -75,3 +75,27 @@ test("groups: Google teacher, Google and e-mail learners; unconfirmed accounts s
   await assertSucceeds(deleteDoc(doc(A, "groups/ABC234/members/aa")));
   await assertSucceeds(deleteDoc(doc(T, "groups/ABC234")));
 });
+
+test("league rows: today/week/league fields, limits, a league step once a week, XP growth rate", async () => {
+  const U = as("lg1", "google");
+  const ref = doc(U, "league/lg1");
+  const row = { name: "A", week: "2026-11-02", wxp: 100, xp: 2000, streak: 3, day: "2026-11-02", dxp: 100, lg: 2, lgw: "2026-11-02", pw: "2026-10-26", pwxp: 900, plg: 1, at: serverTimestamp() };
+  await assertSucceeds(setDoc(ref, row));
+  await assertFails(setDoc(doc(as("lg2", "google"), "league/lg2"), Object.assign({}, row, { hack: 1 })), "unknown field");
+  await assertFails(setDoc(doc(as("lg2", "google"), "league/lg2"), Object.assign({}, row, { dxp: 9000 })), "daily ceiling");
+  await assertFails(setDoc(doc(as("lg2", "google"), "league/lg2"), Object.assign({}, row, { wxp: 3000 })), "week above all time");
+  await assertFails(setDoc(doc(as("lg2", "google"), "league/lg2"), Object.assign({}, row, { lg: 7, xp: 1500 })), "Legend with 1500 XP");
+  await assertFails(setDoc(doc(as("lg2", "google"), "league/lg2"), Object.assign({}, row, { at: 5 })), "at must be the server time");
+  // Ordinary progress
+  await assertSucceeds(setDoc(ref, Object.assign({}, row, { wxp: 160, xp: 2060, dxp: 160 })));
+  // League: no change within the same settling week, one step when a new week is settled
+  await assertFails(setDoc(ref, Object.assign({}, row, { wxp: 160, xp: 2060, lg: 3 })));
+  await assertFails(setDoc(ref, Object.assign({}, row, { week: "2026-11-09", lgw: "2026-11-09", wxp: 0, xp: 2060, lg: 4 })), "two steps");
+  await assertSucceeds(setDoc(ref, Object.assign({}, row, { week: "2026-11-09", lgw: "2026-11-09", wxp: 0, xp: 2060, lg: 3 })));
+  // XP cannot jump by thousands at once
+  await assertFails(setDoc(ref, Object.assign({}, row, { week: "2026-11-09", lgw: "2026-11-09", wxp: 0, xp: 9000, lg: 3 })));
+  // Old rows without the new fields still update
+  const O = as("lg3", "emailOk");
+  await assertSucceeds(setDoc(doc(O, "league/lg3"), { name: "B", week: "2026-11-02", wxp: 1, xp: 1, streak: 0 }));
+  await assertSucceeds(setDoc(doc(O, "league/lg3"), { name: "B", week: "2026-11-02", wxp: 40, xp: 41, streak: 1, day: "2026-11-02", dxp: 40, lg: 1, lgw: "", pw: "", pwxp: 0, plg: 1, at: serverTimestamp() }));
+});

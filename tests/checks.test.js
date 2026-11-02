@@ -25,13 +25,13 @@ test("writing check: a good text scores high, a careless one gets concrete advic
   // Turkish-aware word boundaries: "önce" is found, "erken" is not a -ken form
   const b = await page.evaluate(() => { const t = (u, i, s) => WT[u][i][1].test(" " + s.toLocaleLowerCase("tr") + " "); return [t("a1-5", 2, "Önce geldim."), t("a2-8", 1, "Erken kalktım."), t("a2-8", 1, "Eve dönerken")]; });
   assert.deepEqual(b, [true, false, true]);
-  // Through the page: the check counts once for Yazma and gives XP once
+  // Through the page: the check counts once for Yazma and gives the writing reward (60 XP) once
   await page.evaluate(() => { KTAB = "ex"; location.hash = "#k-a2-8"; });
   await page.waitForTimeout(150);
   await page.evaluate(g => { const ta = document.querySelector("textarea[data-act=k-write]"); ta.value = g; ta.dispatchEvent(new Event("input", { bubbles: true })); }, GOOD);
   await page.click("[data-act=wr-check]"); await closeCelebrate(page);
   await page.click("[data-act=wr-check]"); await closeCelebrate(page);
-  assert.deepEqual(await page.evaluate(() => [S.sk.w[0], S.sk.w[1], S.xp]), [1, 1, 15]);
+  assert.deepEqual(await page.evaluate(() => [S.sk.w[0], S.sk.w[1], S.xp, S.sk.w[2]]), [1, 1, 60, 60]);
   assert.deepEqual(errors, []);
 });
 

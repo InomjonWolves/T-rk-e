@@ -33,13 +33,37 @@ service cloud.firestore {
     match /users/{uid} {
       allow read, write: if okUser() && request.auth.uid == uid;
     }
-    // Reyting: hisobga kirganlar oʻqiydi, har kim faqat oʻz qatorini yozadi
+    // Reyting: hisobga kirganlar oʻqiydi, har kim faqat oʻz qatorini yozadi.
+    // Kunlik (day, dxp), haftalik liga ichida (week, wxp, lg) va umumiy (xp). Oʻtgan hafta (pw, pwxp, plg) — ligalarni hisoblash uchun.
+    // Halollik: kunlik va haftalik XP chegarasi, XP oʻsish tezligi (at — server vaqti), liga haftasiga bir marta ±1.
     match /league/{uid} {
+      function lgOk(d) {
+        return d.keys().hasOnly(['name', 'week', 'wxp', 'xp', 'streak', 'day', 'dxp', 'lg', 'lgw', 'pw', 'pwxp', 'plg', 'at'])
+          && d.name is string && d.name.size() <= 24
+          && d.wxp is int && d.xp is int && d.wxp >= 0 && d.wxp <= d.xp && d.wxp <= 25000
+          && d.get('dxp', 0) is int && d.get('dxp', 0) >= 0 && d.get('dxp', 0) <= 3500
+          && d.get('pwxp', 0) is int && d.get('pwxp', 0) >= 0 && d.get('pwxp', 0) <= 25000
+          && d.get('lg', 1) is int && d.get('lg', 1) >= 1 && d.get('lg', 1) <= 7
+          && d.get('plg', 1) is int && d.get('plg', 1) >= 1 && d.get('plg', 1) <= 7
+          && d.xp >= (d.get('lg', 1) - 1) * 300
+          && d.get('week', '') is string && d.get('week', '').size() <= 10
+          && d.get('day', '') is string && d.get('day', '').size() <= 10
+          && d.get('lgw', '') is string && d.get('lgw', '').size() <= 10
+          && d.get('pw', '') is string && d.get('pw', '').size() <= 10
+          && (!('at' in d) || d.at == request.time);
+      }
       allow read: if okUser();
-      allow create, update: if okUser() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['name', 'week', 'wxp', 'xp', 'streak'])
-        && request.resource.data.name is string && request.resource.data.name.size() <= 24
-        && request.resource.data.wxp is int && request.resource.data.xp is int;
+      allow create: if okUser() && request.auth.uid == uid && lgOk(request.resource.data);
+      allow update: if okUser() && request.auth.uid == uid && lgOk(request.resource.data)
+        // Liga faqat yangi hafta hisob-kitobida (lgw = shu hafta) bir pogʻonaga oʻzgaradi
+        && (request.resource.data.get('lg', 1) == resource.data.get('lg', 1)
+          || (request.resource.data.get('lgw', '') != resource.data.get('lgw', '')
+            && request.resource.data.get('lgw', '') == request.resource.data.week
+            && request.resource.data.get('lg', 1) - resource.data.get('lg', 1) <= 1
+            && resource.data.get('lg', 1) - request.resource.data.get('lg', 1) <= 1))
+        // XP birdaniga 3000 dan, keyin sutkasiga ~3500 dan tez oʻsmaydi
+        && (!('at' in resource.data)
+          || request.resource.data.xp - resource.data.xp <= 3000 + (request.time.toMillis() - resource.data.at.toMillis()) / 25000);
       allow delete: if okUser() && request.auth.uid == uid;
     }
     // Guruhlar: oʻqituvchi (owner) yaratadi. Hujjat ID — 6 belgili kod; kodni bilgan hisob guruh nomini koʻra oladi.

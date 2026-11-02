@@ -959,3 +959,50 @@ a.mode { color: inherit; text-decoration: none; }
 .auth-verify h2 { margin: 0; font-size: 20px; font-weight: 800; }
 .auth-verify p { margin: 0; color: var(--ink-2); line-height: 1.5; }
 .auth-verify b { color: var(--ink); overflow-wrap: anywhere; }
+
+/* ---------- Level, Pamuk's growth, daily tasks, weekly challenge, leagues ---------- */
+.lvl-card { flex-direction: row; align-items: center; gap: 12px; }
+.lvl-cat { flex: none; width: 64px; height: 64px; display: grid; place-items: center; }
+.lvl-cat .cat { width: 64px; height: 64px; }
+.lvl-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.lvl-body .pcard-head b { font-size: 16px; }
+.lg-badge { width: 22px; height: 26px; flex: none; }
+.lg-badge.lg-big { width: 44px; height: 52px; }
+.lg-badge.lg-cel { width: 46px; height: 54px; }
+.dq-card, .wc-card { display: flex; flex-direction: column; gap: 10px; }
+.dq-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 10px 12px; border-radius: 16px; background: var(--hair); border: 0; color: inherit; font: inherit; cursor: pointer; }
+.dq-row > span:nth-child(2) { flex: 1; min-width: 0; }
+.dq-row b { display: block; font-weight: 800; font-size: 15px; }
+.dq-row small { color: var(--muted); font-size: 12px; font-weight: 600; }
+.dq-row .chev, .dq-row > svg { width: 18px; height: 18px; color: var(--muted); }
+.dq-row.ok { cursor: default; opacity: 0.75; }
+.dq-row.ok b { text-decoration: line-through; }
+.dq-ico { width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; }
+.dq-ico svg { width: 18px; height: 18px; }
+.dq-row.ok .dq-ico { background: var(--green); color: #fff; }
+.wc-card p { font-size: 14px; }
+.comeback { display: flex; gap: 12px; align-items: flex-start; }
+.comeback > div:last-child { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.comeback p { font-size: 14px; }
+.grow-card { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.grow-card .bar { width: 100%; }
+.grow-hero .cat { width: 150px; height: 160px; }
+.grow-path { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; width: 100%; margin-top: 6px; }
+.grow-step { display: flex; flex-direction: column; align-items: center; gap: 2px; opacity: 0.55; }
+.grow-step.on { opacity: 1; }
+.grow-step .cat { width: 40px; height: 40px; }
+.grow-step.now .cat { filter: drop-shadow(0 0 6px var(--accent)); }
+.grow-step small { font-size: 11px; font-weight: 800; color: var(--muted); }
+.grow-lock { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--hair); color: var(--muted); }
+.grow-lock svg { width: 18px; height: 18px; }
+.lg-card { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; }
+.lg-card > div:nth-child(2) { display: flex; flex-direction: column; gap: 2px; }
+.lg-card b { font-size: 17px; font-weight: 800; }
+.lg-card small { font-size: 12px; }
+.lg-path { grid-column: 1 / -1; display: flex; justify-content: space-between; padding-top: 6px; }
+.lg-path span { opacity: 0.4; }
+.lg-path span.on { opacity: 1; transform: scale(1.25); }
+.lg-zone { text-align: center; font-size: 12px; font-weight: 800; color: var(--green); padding: 4px; border-top: 1px dashed var(--green); border-bottom: 1px dashed var(--green); }
+.xp-why { font-size: 14px; color: var(--orange); font-weight: 700; }
+.cel-num { font-size: 26px; font-weight: 900; }
+.cel-medal:has(.lg-badge) { background: var(--card-strong); }

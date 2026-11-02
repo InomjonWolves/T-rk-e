@@ -30,11 +30,63 @@ function furStrokes(cx, cy, rx, ry, n, seed) {
     <path d="${darkD}" stroke="${CAT_C.furDeep}" stroke-opacity=".32" stroke-width="1.5" stroke-linecap="round"/>`;
 }
 
-/* pose: "sit" | "wave" | "head"; acc: "cap" | "stars" | null; lite skips fur detail for tiny sizes */
-function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "" } = {}) {
+/* Pamuk grows with the learner's level: every stage adds or swaps hand-drawn accessories.
+   kitten (1) → student (5, bow tie) → smart (10, glasses) → grad (20, mortarboard and diploma)
+   → wizard (30, wizard hat and wand) → royal (40, crown and cape) → legend (50, golden aura and sparkles) */
+const CAT_LOOKS = {
+  kitten: [], student: ["tie"], smart: ["tie", "glasses"], grad: ["tie", "glasses", "cap", "diploma"],
+  wizard: ["tie", "glasses", "wizhat", "wand"], royal: ["cape", "glasses", "crown"], legend: ["aura", "cape", "glasses", "crown", "stars"]
+};
+function catLookParts(look) {
+  const p = (CAT_LOOKS[look] || []).slice();
+  return { has: k => p.includes(k), hat: p.includes("wizhat") ? "wizhat" : p.includes("crown") ? "crown" : p.includes("cap") ? "cap" : "" };
+}
+function catAcc(part, id) {
+  switch (part) {
+    case "aura": return `<g class="cat-aura"><circle cx="120" cy="128" r="122" fill="url(#${id("au")})"/></g>`;
+    case "cape": return `<g class="cat-cape"><path d="M42 150q-30 50-12 86h180q18-36-12-86q-78-26-156 0z" fill="#b3243b"/><path d="M42 150q-30 50-12 86h18q-10-40 14-82z" fill="#7d1529" opacity=".55"/><path d="M198 150q30 50 12 86h-18q10-40-14-82z" fill="#7d1529" opacity=".55"/></g>`;
+    case "ermine": return `<g class="cat-ermine"><path d="M40 168q80-22 160 0q4 12-4 20q-76-18-152 0q-8-8-4-20z" fill="#fbf7ef"/><path d="M62 172l2.5 4-2.5 4-2.5-4zM92 166l2.5 4-2.5 4-2.5-4zM148 166l2.5 4-2.5 4-2.5-4zM178 172l2.5 4-2.5 4-2.5-4z" fill="#1d1b26"/></g>`;
+    case "tie": return `<g class="cat-tie"><path d="M120 176l-24-12v24zM120 176l24-12v24z" fill="#e5484d"/><path d="M120 176l-24-12v6z" fill="#fff" opacity=".18"/><circle cx="120" cy="176" r="6.5" fill="#c22f3a"/></g>`;
+    case "glasses": return `<g class="cat-glasses" fill="none" stroke="#2a1f45" stroke-width="5" stroke-linecap="round">
+      <circle cx="86" cy="100" r="29" fill="#fff" fill-opacity=".1"/><circle cx="154" cy="100" r="29" fill="#fff" fill-opacity=".1"/>
+      <path d="M115 97q5-6 10 0M57 94l-14-6M183 94l14-6"/><path d="M70 84q8-6 16-6M138 84q8-6 16-6" stroke="#fff" stroke-opacity=".55" stroke-width="3"/></g>`;
+    case "cap": return `<g class="cat-acc">
+      <path d="M86 46h68v16c0 6-15 10-34 10s-34-4-34-10z" fill="#232a63"/>
+      <path d="M120 16l66 24-66 24-66-24z" fill="#2c3577"/>
+      <path d="M120 16l66 24-66 24-66-24z" fill="#fff" opacity=".08"/>
+      <path d="M120 40l40 12v24" stroke="#ffc83d" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <rect x="155" y="72" width="10" height="16" rx="4" fill="#ffc83d"/></g>`;
+    case "wizhat": return `<g class="cat-acc cat-wizhat">
+      <path d="M72 58Q96 30 110-6Q124-36 154-44Q140-14 148 14Q156 42 168 58z" fill="#5a3fd1"/>
+      <path d="M72 58Q96 30 110-6Q124-36 154-44Q122-20 118 10Q112 40 100 58z" fill="#fff" opacity=".1"/>
+      <ellipse cx="120" cy="60" rx="74" ry="13" fill="#47309f"/>
+      <path d="M78 54q42 10 84 0" stroke="#ffc83d" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M118 8l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#ffc83d"/><path d="M146 30l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#ffe28f"/>
+      <path d="M96 30a8 8 0 1 0 8 10a6 6 0 1 1-8-10z" fill="#ffe28f"/></g>`;
+    case "crown": return `<g class="cat-acc cat-crown">
+      <path d="M76 58l-6-40 26 18 24-28 24 28 26-18-6 40z" fill="url(#${id("gd")})" stroke="#b97b06" stroke-width="2.5" stroke-linejoin="round"/>
+      <rect x="74" y="52" width="92" height="12" rx="5" fill="#f2b31c" stroke="#b97b06" stroke-width="2.5"/>
+      <circle cx="120" cy="58" r="5" fill="#e5484d"/><circle cx="96" cy="58" r="4" fill="#4aa8e8"/><circle cx="144" cy="58" r="4" fill="#45d29b"/>
+      <circle cx="70" cy="17" r="4" fill="#ffe28f"/><circle cx="120" cy="7" r="4.5" fill="#ffe28f"/><circle cx="170" cy="17" r="4" fill="#ffe28f"/></g>`;
+    case "diploma": return `<g class="cat-diploma"><rect x="146" y="196" width="66" height="16" rx="8" fill="#fff6dc" stroke="#d9c38c" stroke-width="2"/><ellipse cx="208" cy="204" rx="5" ry="8" fill="#efe0b4"/><path d="M178 196v16" stroke="#e5484d" stroke-width="5"/><path d="M178 212l-5 12M178 212l5 12" stroke="#e5484d" stroke-width="3.5" stroke-linecap="round"/></g>`;
+    case "wand": return `<g class="cat-wand"><path d="M150 212l58-62" stroke="#3a2b1c" stroke-width="7" stroke-linecap="round"/><path d="M198 161l10-11" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+      <g class="cat-stars" fill="#ffc83d"><path d="M212 130l4 9 9 4-9 4-4 9-4-9-9-4 9-4z"/><path d="M226 158l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/><path d="M194 132l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/></g></g>`;
+    case "stars": return `<g class="cat-acc cat-stars" fill="#ffc83d"><path d="M24 92l4 10 10 4-10 4-4 10-4-10-10-4 10-4z"/><path d="M214 70l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/><path d="M30 190l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5z"/></g>`;
+  }
+  return "";
+}
+
+/* pose: "sit" | "wave" | "head"; acc: "cap" | "stars" | null; look: a growth stage (CAT_LOOKS); lite skips fur detail for tiny sizes */
+function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "", look = "" } = {}) {
   const n = ++catSeq, id = s => `${s}${n}`;
   const head = pose === "head";
-  const vb = head ? "30 14 180 160" : acc === "cap" ? "0 -6 240 250" : "0 8 240 236";
+  const L = catLookParts(look);
+  // A stage hat replaces the plain graduation cap
+  if (acc === "cap" && L.hat) acc = null;
+  const hat = L.hat || (acc === "cap" ? "cap" : "");
+  const top = hat === "wizhat" ? -48 : hat === "crown" ? 0 : hat === "cap" ? -6 : head ? 14 : 8;
+  const vb = head ? `30 ${Math.min(14, top)} 180 ${174 - Math.min(14, top)}` : `0 ${top} 240 ${244 - top}`;
+  const part = k => L.has(k) ? catAcc(k, id) : "";
   const fur = lite ? "" : `filter="url(#${id("ff")})"`;
   const eye = (x, side) => `
     <g class="cat-eye" data-x="${x}" data-y="100" transform="translate(${x} 100)">
@@ -81,14 +133,6 @@ function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "" }
         <ellipse cx="216.5" cy="111.5" rx="4" ry="4.6" fill="url(#${id("pd")})"/>
       </g>
     </g>` : "";
-  const cap = acc === "cap" ? `
-    <g class="cat-acc">
-      <path d="M86 46h68v16c0 6-15 10-34 10s-34-4-34-10z" fill="#232a63"/>
-      <path d="M120 16l66 24-66 24-66-24z" fill="#2c3577"/>
-      <path d="M120 16l66 24-66 24-66-24z" fill="#fff" opacity=".08"/>
-      <path d="M120 40l40 12v24" stroke="#ffc83d" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-      <rect x="155" y="72" width="10" height="16" rx="4" fill="#ffc83d"/>
-    </g>` : "";
   const stars = acc === "stars" ? `
     <g class="cat-acc cat-stars" fill="#ffc83d">
       <path d="M28 70l4 10 10 4-10 4-4 10-4-10-10-4 10-4z"/><path d="M212 54l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/><path d="M206 132l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5z"/>
@@ -100,10 +144,17 @@ function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "" }
     <radialGradient id="${id("pd")}" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="${CAT_C.padHi}"/><stop offset="1" stop-color="${CAT_C.pad}"/></radialGradient>
     <clipPath id="${id("ec")}"><circle r="23"/></clipPath>
     <filter id="${id("sb")}" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
+    ${L.has("crown") ? `<linearGradient id="${id("gd")}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe58a"/><stop offset="1" stop-color="#f2a90f"/></linearGradient>` : ""}
+    ${L.has("aura") ? `<radialGradient id="${id("au")}"><stop offset=".35" stop-color="#ffd54a" stop-opacity=".55"/><stop offset="1" stop-color="#ffd54a" stop-opacity="0"/></radialGradient>` : ""}
     ${lite ? "" : `<filter id="${id("ff")}" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency=".55" numOctaves="3" seed="${3 + n % 5}" result="t"/><feDisplacementMap in="SourceGraphic" in2="t" scale="6" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation=".35"/></filter>`}
   </defs>
+  ${part("aura")}
   ${stars}
+  ${head ? "" : part("cape")}
   ${body}
+  ${head ? "" : part("diploma") + part("wand")}
+  ${!head && L.has("cape") ? catAcc("ermine", id) : ""}
+  ${part("tie")}
   <g class="cat-head">
     <g ${fur}>
       <path d="M54 70q2-28 32-30q4 2 2 8q-10 14-28 28z" fill="url(#${id("fg")})"/>
@@ -121,9 +172,11 @@ function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "" }
     <path d="M113 122q7-4 14 0q-3 7-7 8q-4-1-7-8z" fill="${CAT_C.nose}"/>
     <path class="cat-mouth" d="M120 130v4M120 134q-6 6-12 1M120 134q6 6 12 1" stroke="${CAT_C.line}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
     <path d="M96 132l-38-6M96 138l-36 2M144 132l38-6M144 138l36 2" stroke="#dfe6ff" stroke-opacity=".55" stroke-width="1.3" stroke-linecap="round"/>
+    ${part("glasses")}
+    ${hat ? catAcc(hat, id) : ""}
+    ${part("stars")}
   </g>
   ${arm}
-  ${cap}
   ${pose === "wave" ? `<g class="cat-cover">
     <g ${fur}><ellipse cx="88" cy="106" rx="30" ry="24" fill="url(#${id("fg")})"/><ellipse cx="152" cy="106" rx="30" ry="24" fill="url(#${id("fg")})"/></g>
     <path d="M76 92v10M88 89v11M100 92v10M140 92v10M152 89v11M164 92v10" stroke="${CAT_C.furDeep}" stroke-opacity=".45" stroke-width="2.2" stroke-linecap="round"/>

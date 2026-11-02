@@ -37,7 +37,7 @@ function blank() {
     xp: 0, streak: 0, best: 0, lastDay: null, day: todayKey(), dayXp: 0,
     known: {}, gram: {}, srs: {}, newDay: { d: 0, n: 0 },
     days: {}, sessions: 0, perfect: 0, acc: [0, 0], ust: {},
-    week: "", wxp: 0, goal: 50, pub: true, gx: {}, gxm: {}, k: {}, ktest: {}, onb: 0, trUses: 0, shared: 0, night: 0, early: 0, pron: [0, 0], sk: skBlank(), roles: 0, anon: true
+    week: "", wxp: 0, lg: 1, goal: 50, pub: true, gx: {}, gxm: {}, k: {}, ktest: {}, onb: 0, trUses: 0, shared: 0, night: 0, early: 0, pron: [0, 0], sk: skBlank(), roles: 0, anon: true
   };
 }
 let S = blank();
@@ -47,7 +47,7 @@ function loadLocal(key) {
   try { const raw = localStorage.getItem(key); if (raw) v = Object.assign(blank(), JSON.parse(raw)); } catch (e) {}
   return migrate(v);
 }
-function save() { S.savedAt = Date.now(); try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {} cloudSave(); clearTimeout(achTimer); achTimer = setTimeout(checkAch, 450); }
+function save() { lvlCheck(); S.savedAt = Date.now(); try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {} cloudSave(); clearTimeout(achTimer); achTimer = setTimeout(checkAch, 450); }
 
 /* ---------- Spaced repetition (simplified SM-2) ----------
    Each word: i = interval in days, e = ease, d = due day, r = successful reviews in a row,
@@ -67,7 +67,7 @@ function migrate(st) {
   st.known = {};
   if (!st.newDay) st.newDay = { d: 0, n: 0 };
   if (st.day !== todayKey()) { st.day = todayKey(); st.dayXp = 0; }
-  if (st.week !== weekKey()) { st.week = weekKey(); st.wxp = 0; }
+  rollWeek(st);
   st.best = Math.max(st.best || 0, st.streak || 0);
   // Skill stats arrived later: start them from what we already know (pronunciation)
   if (!st.skv) { st.skv = 1; st.sk = skBlank(); const p = st.pron || [0, 0]; st.sk.s[0] = p[0]; st.sk.s[1] = p[1]; }
@@ -128,23 +128,216 @@ function streakNow() {
   if (!S.lastDay) return 0;
   return S.lastDay === todayKey() || S.lastDay === keyOf(dayNum() - 1) ? S.streak : 0;
 }
-function addXP(n) {
+// A new week: remember last week's result for the league table, then start from zero
+function rollWeek(st = S) {
+  const wk = weekKey();
+  if (st.week === wk) return;
+  const prev = keyOf(weekStart(dayNum()) - 7);
+  if (st.week) { st.pw = prev; st.pwxp = st.week === prev ? st.wxp || 0 : 0; st.plg = st.lg || 1; }
+  st.week = wk; st.wxp = 0;
+  if (st === S) setTimeout(lgSettle, 0);
+}
+// Any answer keeps the streak alive (XP may be zero for a careless session, the day still counts)
+function touchDay() {
   const t = todayKey();
   if (S.day !== t) { S.day = t; S.dayXp = 0; }
-  if (S.week !== weekKey()) { S.week = weekKey(); S.wxp = 0; }
-  if (S.lastDay !== t) {
-    S.streak = S.lastDay === keyOf(dayNum() - 1) ? S.streak + 1 : 1;
-    S.lastDay = t;
-    S.best = Math.max(S.best, S.streak);
-    // Keep about four months of history
-    const old = keyOf(dayNum() - 120);
-    Object.keys(S.days).forEach(k => { if (k < old) delete S.days[k]; });
-  }
+  rollWeek();
+  if (S.lastDay === t) return;
+  const back = S.lastDay ? dayNum() - Math.round(Date.parse(S.lastDay) / DAY) : 0;
+  S.streak = S.lastDay === keyOf(dayNum() - 1) ? S.streak + 1 : 1;
+  S.lastDay = t;
+  S.best = Math.max(S.best, S.streak);
+  // Keep about four months of history
+  const old = keyOf(dayNum() - 120);
+  Object.keys(S.days).forEach(k => { if (k < old) delete S.days[k]; });
+  catStreakCheer(back);
+}
+function addXP(n) {
+  touchDay();
   S.xp += n; S.dayXp += n; S.wxp += n; dayRec().xp += n;
   const hr = new Date().getHours();
   if (hr >= 22) S.night = 1;
   if (hr < 7) S.early = 1;
   save();
+}
+
+/* ---------- XP: a fixed reward for each finished task, guarded against farming ----------
+   Vocabulary test 30, grammar 40, reading 40, listening 40, writing 60, speaking 60;
+   all daily tasks 100, every 7th day of a streak 150, the weekly challenge 250.
+   The reward shrinks with a low share of right answers, a short set, repeating the same exercise on
+   the same day and random fast tapping; activity XP per day has a ceiling (bonuses come on top). */
+const XP_VAL = { vocab: 30, grammar: 40, reading: 40, listening: 40, writing: 60, speaking: 60, daily: 100, streak7: 150, weekly: 250 };
+const XP_KIND = { vocab: "Lugʻat testi", grammar: "Grammatika mashqi", reading: "Oʻqish", listening: "Tinglash", writing: "Yozish topshirigʻi", speaking: "Gapirish" };
+const XP_DAY_CAP = 1500;
+const XP_MIN_ACC = 0.4, XP_FULL_ACC = 0.8;
+const XP_REPEAT = [1, 0.5, 0.25];
+const XP_MIN_ITEMS = 5;
+let XP_FAST_MS = 900;
+function xpDay() {
+  const t = todayKey();
+  if (!S.xpr || S.xpr.d !== t) S.xpr = { d: t, a: 0, k: {} };
+  return S.xpr;
+}
+const median = a => { const b = a.slice().sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+// o: { right, n } or { acc }, key (same exercise = same key), times (ms per answer), half (self-rated cards)
+function xpCalc(kind, o) {
+  const base = XP_VAL[kind] || 0, d = xpDay();
+  const acc = o.acc !== undefined ? o.acc : o.n ? o.right / o.n : 0;
+  const rep = o.key ? d.k[o.key] || 0 : 0;
+  const out = { kind, acc, base, xp: 0, why: "", rep, q: false };
+  if (o.times && o.times.length >= 3 && median(o.times) < XP_FAST_MS) { out.why = "fast"; return out; }
+  if (acc < XP_MIN_ACC) { out.why = "low"; return out; }
+  out.q = acc >= 0.5 && rep < 2;
+  let k = Math.min(1, (acc - 0.3) / (XP_FULL_ACC - 0.3));
+  if (o.n !== undefined && o.acc === undefined) k *= Math.min(1, o.n / XP_MIN_ITEMS);
+  if (o.half) k *= 0.5;
+  const f = rep < XP_REPEAT.length ? XP_REPEAT[rep] : 0;
+  if (f < 1) out.why = "repeat";
+  let xp = Math.round(base * k * f);
+  if (xp > XP_DAY_CAP - d.a) { xp = Math.max(0, XP_DAY_CAP - d.a); out.why = "cap"; }
+  out.xp = xp;
+  return out;
+}
+// Grants the reward, counts the attempt, moves daily tasks and the weekly challenge forward
+function xpAward(kind, o = {}) {
+  const r = xpCalc(kind, o), d = xpDay();
+  if (o.key) d.k[o.key] = (d.k[o.key] || 0) + 1;
+  touchDay();
+  if (r.xp > 0) {
+    d.a += r.xp;
+    const sk = [].concat(o.sk || XP_SKILL[kind] || []);
+    sk.forEach(id => { if (S.sk[id]) S.sk[id][2] += Math.round(r.xp / sk.length); });
+    addXP(r.xp);
+  } else save();
+  if (r.q) { dqMark(kind); wcMark(o.sk || XP_SKILL[kind]); }
+  return r;
+}
+const XP_SKILL = { vocab: ["r"], grammar: ["r"], reading: ["r"], listening: ["l"], writing: ["w"], speaking: ["s"] };
+const xpWhy = r => r.why === "fast" ? "Javoblar juda tez bosildi — bu safar XP berilmadi. Har bir savolni oʻqib javob bering."
+  : r.why === "low" ? `Toʻgʻri javoblar ${Math.round(r.acc * 100)}% — XP uchun kamida ${Math.round(XP_MIN_ACC * 100)}% kerak.`
+  : r.why === "repeat" ? (r.xp ? `Bu mashq bugun ${r.rep + 1}-marta — XP kamaydi. Yangi mashq tanlang!` : "Bu mashqni bugun koʻp takrorladingiz — XP endi ertaga. Boshqa mashq tanlang!")
+  : r.why === "cap" ? `Bugungi XP chegarasi (${XP_DAY_CAP}) toʻldi. Dam oling, ertaga davom etamiz!` : "";
+
+/* Levels: level n needs 50·n·(n−1) XP (2 → 100, 5 → 1000, 10 → 4500, 20 → 19000, 50 → 122500) */
+const lvlXP = n => 50 * n * (n - 1);
+const lvlOf = xp => Math.max(1, Math.floor((1 + Math.sqrt(1 + Math.max(0, xp) / 12.5)) / 2));
+const CAT_STAGES = [
+  { lv: 1, id: "kitten", uz: "Mushukcha", d: "Qiziquvchan, endi oʻrganishni boshlagan mushukcha" },
+  { lv: 5, id: "student", uz: "Oʻquvchi mushuk", d: "Bantikli tirishqoq oʻquvchi" },
+  { lv: 10, id: "smart", uz: "Bilimdon mushuk", d: "Koʻzoynak taqqan bilimdon" },
+  { lv: 20, id: "grad", uz: "Diplomli mushuk", d: "Qalpoq va diplom — haqiqiy bitiruvchi" },
+  { lv: 30, id: "wizard", uz: "Sehrgar mushuk", d: "Turk tilining sehrini egallagan" },
+  { lv: 40, id: "royal", uz: "Qirollik mushugi", d: "Toj va qirollik plashi" },
+  { lv: 50, id: "legend", uz: "Afsonaviy mushuk", d: "Oltin nur taratuvchi afsona" }
+];
+const catStage = (lv = lvlOf(S.xp)) => CAT_STAGES.filter(s => s.lv <= lv).pop();
+const catLook = () => catStage().id;
+// A new level is a small party; a new look for Pamuk is a big one
+function lvlCheck() {
+  const lv = lvlOf(S.xp);
+  if (!S.lvl) { S.lvl = lv; return; }
+  if (lv <= S.lvl) return;
+  const was = catStage(S.lvl), now = catStage(lv);
+  S.lvl = lv;
+  celebrate({ eyebrow: "Yangi daraja!", badge: lv, title: `${lv}-daraja ochildi!`, c: "violet",
+    text: now !== was ? `Pamuk endi — «${now.uz}»! ${now.d}.` : `Pamuk bayram qilyapti! Keyingi daraja uchun ${lvlXP(lv + 1) - S.xp} XP qoldi.`,
+    look: now.id, share: now !== was, shareText: `Türkçe Yoʻl'da ${lv}-darajaga chiqdim! Turk tilini bepul oʻrganing:` });
+}
+
+/* Pamuk's mood follows the learner: a streak makes him glad, a long break makes him miss you */
+let PAMUK_LATER = null;
+function pamukSoon(mood, text) { if (SES && !SES.done) PAMUK_LATER = [mood, text]; else setTimeout(() => pamukSay(mood, text), 400); }
+function catStreakCheer(back) {
+  if (S.streak > 1 && S.streak % 7 === 0) {
+    addXPBonus(XP_VAL.streak7);
+    celebrate({ eyebrow: "Ketma-ket kunlar", badge: S.streak, title: `${S.streak} kun ketma-ket!`, text: `Pamuk quvonchdan sakrayapti! Seriya uchun +${XP_VAL.streak7} XP.`, ico: "flame", c: "orange", share: true });
+  } else if (S.streak > 1) pamukSoon("happy", `${S.streak} kun ketma-ket! Pamuk sizdan juda xursand`);
+  else if (back >= 3) pamukSoon("happy", "Qaytganingizdan xursandman! Bugun ozgina boʻlsa ham mashq qilamiz");
+}
+// Bonus XP (daily tasks, streak, weekly challenge) — outside the daily activity ceiling
+function addXPBonus(n) { S.xp += n; S.dayXp += n; S.wxp += n; dayRec().xp += n; }
+const daysAway = () => S.lastDay ? dayNum() - Math.round(Date.parse(S.lastDay) / DAY) : 0;
+
+/* ---------- Daily tasks (+100 for all three) and the weekly challenge (+250) ---------- */
+function dqToday() {
+  const t = todayKey();
+  if (!S.dq || S.dq.d !== t) {
+    const third = dayNum() % 2 && canListen() ? "speaking" : "listening";
+    S.dq = { d: t, k: ["vocab", "grammar", third], ok: {}, paid: 0 };
+  }
+  return S.dq;
+}
+function dqMark(kind) {
+  const q = dqToday();
+  if (!q.k.includes(kind) || q.ok[kind]) return;
+  q.ok[kind] = 1;
+  if (q.k.every(k => q.ok[k]) && !q.paid) {
+    q.paid = 1; addXPBonus(XP_VAL.daily); save();
+    celebrate({ eyebrow: "Kunlik vazifalar", title: "Bugungi vazifalar bajarildi!", text: `Uchala vazifa tayyor. Pamuk xursand! +${XP_VAL.daily} XP`, ico: "check", c: "green" });
+  }
+}
+const WC = [
+  { id: "days", t: "5 kun mashq", d: "Bu hafta 5 xil kunda mashq qiling", n: 5, v: w => w.days.length },
+  { id: "tasks", t: "15 ta mashq", d: "Bu hafta 15 ta mashqni sifatli yakunlang", n: 15, v: w => w.n },
+  { id: "four", t: "4 koʻnikma", d: "Oʻqish, tinglash, yozish va gapirish — har biridan 2 tadan mashq", n: 8, v: w => ["r", "l", "w", "s"].reduce((a, k) => a + Math.min(2, w.sk[k] || 0), 0) }
+];
+function wcWeek() {
+  const wk = weekKey();
+  if (!S.wc || S.wc.w !== wk) S.wc = { w: wk, c: Math.floor(weekStart(dayNum()) / 7) % WC.length, n: 0, days: [], sk: {}, paid: 0 };
+  return S.wc;
+}
+function wcMark(sk) {
+  const w = wcWeek(), ch = WC[w.c], t = todayKey();
+  w.n++;
+  if (!w.days.includes(t)) w.days.push(t);
+  [].concat(sk || []).forEach(k => { w.sk[k] = (w.sk[k] || 0) + 1; });
+  if (!w.paid && ch.v(w) >= ch.n) {
+    w.paid = 1; addXPBonus(XP_VAL.weekly); save();
+    celebrate({ eyebrow: "Haftalik challenge", title: `«${ch.t}» bajarildi!`, text: `Haftaning eng katta mukofoti sizniki. +${XP_VAL.weekly} XP`, ico: "crown", c: "pink", share: true });
+  }
+}
+
+/* ---------- Leagues: Bronze → Legend, settled by each client at the start of a week ----------
+   The top 30% of a league (with at least LG_MIN XP last week) move up, an idle week (< LG_DOWN XP) moves down. */
+const LEAGUES = [
+  { n: 1, uz: "Bronza", c: "#cd7f32" }, { n: 2, uz: "Kumush", c: "#9aa7b4" }, { n: 3, uz: "Oltin", c: "#f2b31c" },
+  { n: 4, uz: "Platina", c: "#3fb8ae" }, { n: 5, uz: "Olmos", c: "#4a9cff" }, { n: 6, uz: "Usta", c: "#9b5cff" }, { n: 7, uz: "Afsona", c: "#ff4f87" }
+];
+const LG_UP = 0.3, LG_MIN = 300, LG_SOLO = 1000, LG_DOWN = 50;
+const lgOf = n => LEAGUES[Math.min(7, Math.max(1, n || 1)) - 1];
+const lgBadge = (n, cls = "") => { const l = lgOf(n); return `<svg class="lg-badge ${cls}" viewBox="0 0 24 28" aria-label="${l.uz} ligasi"><path d="M12 1l10 4v8c0 7-4.5 11.5-10 14C6.5 24.5 2 20 2 13V5z" fill="${l.c}"/><path d="M12 1l10 4v8c0 7-4.5 11.5-10 14z" fill="#000" opacity=".12"/><text x="12" y="17.5" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">${l.n}</text></svg>`; };
+let LG_BUSY = false;
+async function lgSettle() {
+  const wk = weekKey();
+  if (S.lgw === wk || LG_BUSY) return;
+  // A signed-in user waits for the cloud copy before settling
+  if (FB && !(USER && db)) return;
+  if (!S.pw) { S.lgw = wk; S.lg = S.lg || 1; return; }
+  const me = S.lg || 1, mine = S.pwxp || 0;
+  let rank = 0, n = 0;
+  if (USER && db && S.pub && mine > 0) {
+    LG_BUSY = true;
+    try {
+      const ref = db.collection("league");
+      const [a, b] = await Promise.all([ref.where("week", "==", S.pw).limit(300).get(), ref.where("pw", "==", S.pw).limit(300).get()]);
+      const map = {};
+      a.docs.forEach(d => { const x = d.data(); map[d.id] = { lg: x.lg || 1, xp: x.wxp || 0 }; });
+      b.docs.forEach(d => { const x = d.data(); map[d.id] = { lg: x.plg || 1, xp: x.pwxp || 0 }; });
+      map[USER.uid] = { lg: me, xp: mine, me: 1 };
+      const peers = Object.values(map).filter(p => p.lg === me && p.xp > 0).sort((x, y) => y.xp - x.xp || (y.me || 0) - (x.me || 0));
+      n = peers.length; rank = peers.findIndex(p => p.me) + 1;
+    } catch (e) { LG_BUSY = false; return; }
+    LG_BUSY = false;
+    if (S.lgw === wk) return;
+  }
+  const up = mine >= LG_MIN && me < 7 && (rank ? rank <= Math.max(1, Math.ceil(n * LG_UP)) : mine >= LG_SOLO);
+  const to = up ? me + 1 : mine < LG_DOWN && me > 1 ? me - 1 : me;
+  S.lg = to; S.lgw = wk;
+  S.lgr = { w: S.pw, from: me, to, rank, n, xp: mine };
+  save();
+  if (to > me) celebrate({ eyebrow: "Liga", title: `${lgOf(to).uz} ligasiga koʻtarildingiz!`, text: rank ? `Oʻtgan hafta ${lgOf(me).uz} ligasida ${rank}-oʻrin (${mine} XP). Pamuk faxrlanadi!` : `Oʻtgan hafta ${mine} XP toʻpladingiz. Pamuk faxrlanadi!`, ico: "crown", c: "orange", share: true, league: to });
+  else if (to < me) setTimeout(() => pamukSay("sad", `Oʻtgan hafta dam oldik — liga ${lgOf(to).uz} boʻldi. Bu hafta qaytarib olamiz!`), 1200);
+  if (location.hash === "#rank") route();
 }
 function record(w, ok) {
   dayRec().rev++;
@@ -155,6 +348,8 @@ function record(w, ok) {
 function tick() {
   if (!SES) return;
   const now = Date.now(), sec = Math.min(now - SES.last, 45000) / 1000;
+  // Time from showing a question to the answer: the anti-tapping check uses the median
+  if (SES.shown) { (SES.times = SES.times || []).push(now - SES.shown); SES.shown = 0; }
   dayRec().sec += sec;
   if (SES.sk) skillTime(SES.sk, sec);
   SES.last = now;
@@ -170,11 +365,13 @@ const SKILLS = [
 ];
 function skBlank() { return { r: [0, 0, 0, 0], l: [0, 0, 0, 0], w: [0, 0, 0, 0], s: [0, 0, 0, 0] }; }
 function skDay(id) { const d = dayRec(); d.sk = d.sk || {}; return d.sk[id] || (d.sk[id] = [0, 0, 0]); }
-function skillLog(ids, ok, xp = 0) {
+function skillLog(ids, ok) {
   ids = [].concat(ids || []);
+  touchDay();
+  if (SES && !SES.done) ids.forEach(id => SES.skAll.add(id));
   ids.forEach(id => {
     const a = S.sk[id]; if (!a) return;
-    a[1]++; if (ok) a[0]++; a[2] += Math.round(xp / ids.length);
+    a[1]++; if (ok) a[0]++;
     const b = skDay(id); b[1]++; if (ok) b[0]++;
   });
 }
@@ -264,7 +461,7 @@ const logo = `<span class="logo" aria-hidden="true">${catSVG({ pose: "head", lit
 /* Brand cat poses used across the app (drawn in cat.js) */
 function mascot(kind, cls = "") {
   const opt = { wave: { pose: "wave" }, cap: { pose: "sit", acc: "cap" }, trophy: { pose: "sit", acc: "stars" }, sit: { pose: "sit" }, head: { pose: "head" } }[kind] || { pose: "sit" };
-  return catSVG(Object.assign({ cls: "mascot " + cls }, opt));
+  return catSVG(Object.assign({ cls: "mascot " + cls, look: catLook() }, opt));
 }
 
 function ring(p, size, stroke, color, cls) {
@@ -439,7 +636,8 @@ let lastPart = dayPart().k;
 setInterval(() => { const k = dayPart().k; if (k !== lastPart) { lastPart = k; if ((location.hash || "#home") === "#home" && !SES) route(); } }, 60000);
 function showWelcome() {
   try { if (sessionStorage.getItem("ty-welcomed")) return; sessionStorage.setItem("ty-welcomed", "1"); } catch (e) {}
-  const g = greetText();
+  const g = greetText(), away = daysAway();
+  if (away >= 3 && !isBirthday()) { g.tr = `Seni özledim${firstName() ? ", " + firstName() : ""}!`; g.uz = "Pamuk sizni sogʻindi. Bugun ozgina takrorlashdan boshlaymizmi?"; }
   $("welcome-card").innerHTML = `${mascot(isBirthday() ? "trophy" : "wave")}<h2 lang="tr">${esc(g.tr)}</h2><p>${esc(g.uz)}</p>`;
   const w = $("welcome");
   w.hidden = false; w.classList.remove("out");
@@ -514,7 +712,7 @@ function viewHome() {
   </div>
 
   <div class="week glass" aria-label="Shu hafta">
-    ${wk.map(d => `<div class="day${d.n === tn ? " today" : ""}${dayGet(d.k).xp ? " on" : ""}"><small>${d.l}</small><b>${new Date(d.n * DAY).getUTCDate()}</b><svg class="mark" viewBox="0 0 24 24" fill="currentColor" aria-label="${dayGet(d.k).xp ? "Mashq qilingan" : "Mashq yoʻq"}">${pawPath}</svg></div>`).join("")}
+    ${wk.map(d => { const on = dayGet(d.k).xp || dayGet(d.k).rev; return `<div class="day${d.n === tn ? " today" : ""}${on ? " on" : ""}"><small>${d.l}</small><b>${new Date(d.n * DAY).getUTCDate()}</b><svg class="mark" viewBox="0 0 24 24" fill="currentColor" aria-label="${on ? "Mashq qilingan" : "Mashq yoʻq"}">${pawPath}</svg></div>`; }).join("")}
   </div>
 
   ${todo ? `<section class="hero">
@@ -531,6 +729,10 @@ function viewHome() {
     <button class="btn btn-white" data-act="go" data-to="practice">Erkin mashq</button>
   </section>`}
 
+  ${comebackCard()}
+  ${lvlHomeCard()}
+  ${dqCard()}
+  ${wcCard()}
   ${plHomeCard()}
   ${skillsHomeCard()}
 
@@ -581,7 +783,7 @@ function viewHome() {
     </div>
   </section>
 
-  ${(() => { const t = tipOfDay(); return `<div class="tip-card glass"><div class="tip-cat">${catSVG({ pose: "head" })}</div><div><small class="eyebrow">Pamuk maslahati</small><b>${esc(t[0])}</b><p class="muted">${esc(t[1])}</p></div></div>`; })()}
+  ${(() => { const t = tipOfDay(); return `<div class="tip-card glass"><div class="tip-cat">${catSVG({ pose: "head", look: catLook() })}</div><div><small class="eyebrow">Pamuk maslahati</small><b>${esc(t[0])}</b><p class="muted">${esc(t[1])}</p></div></div>`; })()}
   ${installCard()}
 
   <a class="pcard ai" href="#translate" style="text-decoration:none">
@@ -596,6 +798,74 @@ function viewHome() {
       <span class="unit-body"><span class="unit-title">${nb(g.uz)}</span><span class="unit-sub" lang="tr">${esc(g.tr)}</span></span>
       ${ICON.chev}
     </button>
+  </section>`;
+}
+
+/* ---------- Level, Pamuk's growth, daily tasks, weekly challenge (home and profile cards) ---------- */
+function lvlInfo() {
+  const lv = lvlOf(S.xp), a = lvlXP(lv), b = lvlXP(lv + 1);
+  return { lv, from: a, to: b, p: (S.xp - a) / (b - a), st: catStage(lv), next: CAT_STAGES.find(s => s.lv > lv) };
+}
+function lvlHomeCard() {
+  const L = lvlInfo();
+  return `<a class="pcard glass lvl-card" href="#profile" style="color:inherit;text-decoration:none">
+    <div class="lvl-cat">${catSVG({ pose: "head", look: L.st.id })}</div>
+    <div class="lvl-body"><div class="pcard-head"><b>${L.lv}-daraja · ${esc(L.st.uz)}</b>${lgBadge(S.lg)}</div>
+      <div class="bar"><i style="width:${Math.round(L.p * 100)}%"></i></div>
+      <small class="muted">${S.xp - L.from}/${L.to - L.from} XP · ${L.next ? `${L.next.lv}-darajada: ${esc(L.next.uz)}` : "Pamuk afsonaga aylandi!"}</small></div></a>`;
+}
+const DQ_GO = {
+  vocab: ["Lugʻat testi", "Kamida 50% toʻgʻri javob bilan", "quiz", "start", "review"],
+  grammar: ["Qoida mashqi", "Bitta grammatika mavzusi mashqi", "cap", "gx", ""],
+  listening: ["Tinglash mashqi", "Eshitib, maʼnosini toping", "ear", "start", "listen"],
+  speaking: ["Gapirish mashqi", "Soʻzlarni ovoz chiqarib ayting", "mic", "start", "say"]
+};
+function dqBtn(k) {
+  const g = DQ_GO[k];
+  return g[3] === "gx" ? `data-act="gx-start" data-c="${esc(gxNext())}"` : `data-act="start" data-mode="${g[4]}" data-u="all"`;
+}
+function dqCard() {
+  const q = dqToday(), done = q.k.filter(k => q.ok[k]).length;
+  return `<section class="glass pad dq-card">
+    <div class="pcard-head"><b>${ICON.target}Kunlik vazifalar</b><span class="tag ${q.paid ? "green-t" : "violet-t"}">${q.paid ? `${ICON.check}+${XP_VAL.daily} XP olindi` : `${done}/3 · +${XP_VAL.daily} XP`}</span></div>
+    ${q.k.map(k => { const g = DQ_GO[k], ok = q.ok[k]; return `<button class="dq-row${ok ? " ok" : ""}" ${ok ? "disabled" : dqBtn(k)}>
+      <span class="dq-ico">${ok ? ICON.check : ICON[g[2]]}</span><span><b>${g[0]}</b><small>${g[1]} · +${XP_VAL[k]} XP</small></span>${ok ? "" : ICON.chev}</button>`; }).join("")}
+  </section>`;
+}
+function dqMini() {
+  const q = dqToday(), done = q.k.filter(k => q.ok[k]).length;
+  return `<p class="muted">Kunlik vazifalar: ${done}/3${q.paid ? " ✔" : ` · hammasi uchun +${XP_VAL.daily} XP`}</p>`;
+}
+function wcCard() {
+  const w = wcWeek(), ch = WC[w.c], v = Math.min(ch.n, ch.v(w)), left = 7 - (dayNum() - weekStart(dayNum()));
+  return `<section class="glass pad wc-card">
+    <div class="pcard-head"><b>${ICON.crown}Haftalik challenge</b><span class="tag ${w.paid ? "green-t" : "pink-t"}">${w.paid ? `${ICON.check}bajarildi` : `+${XP_VAL.weekly} XP`}</span></div>
+    <div><b>${esc(ch.t)}</b><p class="muted">${esc(ch.d)}</p></div>
+    <div class="bar"><i style="width:${Math.round(v / ch.n * 100)}%"></i></div>
+    <small class="muted">${v}/${ch.n}${w.paid ? "" : ` · ${left} kun qoldi`}</small>
+  </section>`;
+}
+function comebackCard() {
+  const away = daysAway();
+  if (away < 3 || dayGet(todayKey()).rev) return "";
+  return `<section class="glass pad comeback">
+    <div class="lvl-cat">${catSVG({ pose: "head", look: catLook() })}</div>
+    <div><b>Pamuk sizni sogʻindi!</b><p class="muted">${away} kun koʻrishmadik. Hech gap emas — 5 daqiqalik takrorlashdan boshlaymiz, soʻzlar tezda esga tushadi.</p>
+    <button class="btn btn-grad" data-act="start" data-mode="review">5 daqiqa takrorlash</button></div>
+  </section>`;
+}
+function pamukGrowCard() {
+  const L = lvlInfo();
+  return `<section class="section">
+    <div class="section-head"><h2>Pamuk rivoji</h2><span class="tag violet-t">${L.lv}-daraja</span></div>
+    <div class="glass pad grow-card">
+      <div class="grow-hero">${catSVG({ pose: "sit", look: L.st.id, cls: "mascot" })}</div>
+      <b>${esc(L.st.uz)}</b><p class="muted">${esc(L.st.d)}</p>
+      <div class="bar"><i style="width:${Math.round(L.p * 100)}%"></i></div>
+      <small class="muted">${L.lv + 1}-darajagacha ${L.to - S.xp} XP${L.next ? ` · ${L.next.lv}-darajada «${esc(L.next.uz)}»` : ""}</small>
+      <div class="grow-path">${CAT_STAGES.map(st => `<div class="grow-step${st.lv <= L.lv ? " on" : ""}${st === L.st ? " now" : ""}" title="${esc(st.uz)}">
+        ${st.lv <= L.lv ? catSVG({ pose: "head", look: st.id, lite: true }) : `<span class="grow-lock">${ICON.lock}</span>`}<small>${st.lv}</small></div>`).join("")}</div>
+    </div>
   </section>`;
 }
 
@@ -950,13 +1220,20 @@ function viewPractice() {
 
 /* ---------- Leaderboard ---------- */
 let RANK_TAB = "week", RANK_CACHE = {};
+const RANK_TABS = { day: ["Bugun", "Bugun eng koʻp XP toʻplaganlar"], week: ["Hafta", "Liga ichidagi haftalik reyting · har dushanba yangilanadi"], all: ["Umumiy", "Eng yuqori darajali oʻquvchilar"] };
 function viewRank() {
+  const lg = lgOf(S.lg), r = S.lgr;
   return `${topbar()}
-  <div><h1 class="page-title">Reyting</h1><p class="sub">Har dushanba haftalik reyting yangilanadi</p></div>
+  <div><h1 class="page-title">Reyting</h1><p class="sub">${RANK_TABS[RANK_TAB][1]}</p></div>
   <div class="seg glass" role="tablist">
-    <button role="tab" data-act="rank-tab" data-t="week" aria-selected="${RANK_TAB === "week"}">Bu hafta</button>
-    <button role="tab" data-act="rank-tab" data-t="all" aria-selected="${RANK_TAB === "all"}">Umumiy</button>
+    ${Object.keys(RANK_TABS).map(t => `<button role="tab" data-act="rank-tab" data-t="${t}" aria-selected="${RANK_TAB === t}">${RANK_TABS[t][0]}</button>`).join("")}
   </div>
+  ${RANK_TAB === "week" ? `<div class="glass pad lg-card">
+    ${lgBadge(lg.n, "lg-big")}
+    <div><b>${lg.uz} ligasi</b><small class="muted">${lg.n < 7 ? `Haftaning eng yaxshi ${Math.round(LG_UP * 100)}% oʻquvchisi (kamida ${LG_MIN} XP) ${lgOf(lg.n + 1).uz} ligasiga chiqadi` : "Eng yuqori liga — chempionlar shu yerda"}</small>
+    ${r && r.w ? `<small class="muted">Oʻtgan hafta: ${r.xp} XP${r.rank ? ` · ${r.rank}-oʻrin (${r.n} kishi)` : ""} · ${r.to > r.from ? "koʻtarildingiz ⬆" : r.to < r.from ? "tushdingiz ⬇" : "oʻz ligangizda qoldingiz"}</small>` : ""}</div>
+    <div class="lg-path">${LEAGUES.map(l => `<span class="${l.n === lg.n ? "on" : ""}" title="${l.uz}">${lgBadge(l.n)}</span>`).join("")}</div>
+  </div>` : ""}
   <div id="rank-body"><div class="glass empty"><div class="spin"></div>Yuklanmoqda…</div></div>`;
 }
 // Fetch leaderboard photos once per session and drop them into the rendered rows
@@ -984,7 +1261,9 @@ async function loadRank() {
   else {
     try {
       const ref = db.collection("league");
-      const snap = tab === "week" ? await ref.where("week", "==", weekKey()).limit(200).get() : await ref.orderBy("xp", "desc").limit(100).get();
+      const snap = tab === "week" ? await ref.where("week", "==", weekKey()).limit(300).get()
+        : tab === "day" ? await ref.where("day", "==", todayKey()).limit(300).get()
+        : await ref.orderBy("xp", "desc").limit(100).get();
       rows = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
       RANK_CACHE[tab] = { t: Date.now(), rows };
     } catch (e) {
@@ -993,8 +1272,13 @@ async function loadRank() {
     }
   }
   if (tab !== RANK_TAB || !$("rank-body")) return;
-  const key = tab === "week" ? "wxp" : "xp";
-  rows = rows.filter(r => r[key] > 0).sort((a, b) => b[key] - a[key]);
+  const key = tab === "week" ? "wxp" : tab === "day" ? "dxp" : "xp";
+  // My own row always shows the latest local numbers; the weekly table is the table of my league
+  const mine = rows.find(r => r.id === USER.uid);
+  if (mine) { mine.wxp = S.wxp; mine.xp = S.xp; mine.lg = S.lg; if (S.day === todayKey()) mine.dxp = S.dayXp; }
+  rows = rows.filter(r => r[key] > 0 && (tab !== "week" || (r.lg || 1) === (S.lg || 1))).sort((a, b) => b[key] - a[key]);
+  const upN = tab === "week" && S.lg < 7 ? Math.max(1, Math.ceil(rows.length * LG_UP)) : 0;
+  const sub = r => tab === "all" ? `${lvlOf(r.xp)}-daraja · ${lgOf(r.lg).uz}` : `${r.streak || 0} kun ketma-ket`;
   if (!rows.length) {
     $("rank-body").innerHTML = `<div class="glass empty">${mascot("trophy")}<b>Hali hech kim yoʻq</b><span class="muted">Pamuk birinchi boʻlishingizni kutyapti: mashq qilib XP toʻplang.</span></div>`;
     return;
@@ -1003,11 +1287,11 @@ async function loadRank() {
   const pod = i => { const r = rows[i]; if (!r) return "<div></div>"; return `<div class="pod${i === 0 ? " first" : ""}">
       ${i === 0 ? `<svg class="crown" viewBox="0 0 24 18" fill="#ffc83d" aria-hidden="true"><path d="M2 5l5 4 5-8 5 8 5-4-2 12H4z"/></svg>` : `<span class="place">${i + 1}</span>`}
       <span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id)}</span>
-      <b>${esc(r.name || "Oʻquvchi")}</b><span>${r[key]} XP</span></div>`; };
+      <b>${esc(r.name || "Oʻquvchi")}</b><span>${r[key]} XP${tab === "all" ? ` · ${lvlOf(r.xp)}-dar.` : ""}</span></div>`; };
   $("rank-body").innerHTML = `<div class="glass podium">${pod(1)}${pod(0)}${pod(2)}</div>
     ${rows.length > 3 ? `<div class="glass words" style="margin-top:12px">${rows.slice(3, 50).map((r, i) => `<div class="rank-row${r.id === USER.uid ? " me" : ""}">
       <span class="n">${i + 4}</span><span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id)}</span>
-      <span style="min-width:0"><b>${esc(r.name || "Oʻquvchi")}</b><small>${r.streak || 0} kun ketma-ket</small></span><span class="xp">${r[key]} XP</span></div>`).join("")}</div>` : ""}
+      <span style="min-width:0"><b>${esc(r.name || "Oʻquvchi")}</b><small>${sub(r)}</small></span><span class="xp">${r[key]} XP</span></div>${i + 4 === upN && rows.length > upN ? `<div class="lg-zone">⬆ Koʻtarilish zonasi</div>` : ""}`).join("")}</div>` : ""}
     <p class="sub" style="text-align:center;margin-top:12px">${me >= 0 ? `Siz ${me + 1}-oʻrindasiz · eng yaxshi ${Math.max(1, Math.round((me + 1) / rows.length * 100))}%` : S.pub ? "Mashq qilib XP toʻplang, shunda reytingda paydo boʻlasiz." : "Siz reytingda koʻrinmaysiz. Buni Profil → Sozlamalarda yoqish mumkin."}</p>`;
   loadRankPhotos(rows.slice(0, 50).map(r => r.id));
 }
@@ -1032,12 +1316,13 @@ function viewProfile() {
     <div class="section-head"><h2>Statistika</h2></div>
     <div class="stat-grid">
       <div class="stat glass"><span class="ico orange-t">${ICON.flame}</span><span><b>${streakNow()}</b><span>Ketma-ket kun · eng yaxshi ${S.best}</span></span></div>
-      <div class="stat glass"><span class="ico violet-t">${ICON.star}</span><span><b>${S.xp}</b><span>Jami XP</span></span></div>
+      <div class="stat glass"><span class="ico violet-t">${ICON.star}</span><span><b>${S.xp}</b><span>Jami XP · ${lvlOf(S.xp)}-daraja</span></span></div>
       <div class="stat glass"><span class="ico sky-t">${ICON.book}</span><span><b>${learnedCount()}</b><span>Oʻrganilgan soʻz</span></span></div>
       <div class="stat glass"><span class="ico green-t">${ICON.quiz}</span><span><b>${S.acc[1] ? pct(S.acc[0], S.acc[1]) + "%" : "—"}</b><span>Toʻgʻri javoblar</span></span></div>
     </div>
   </section>
 
+  ${pamukGrowCard()}
   ${skillsProfileCard()}
   <div class="chart-card glass"><h3>Haftalik faollik (XP)</h3><span class="range">${range}</span>${lineChart(xpv, l7.map(d => d.l))}</div>
   <div class="chart-card glass"><h3>Oʻqish vaqti (daqiqa)</h3><span class="range">${range}</span>${barChart(minv, l7.map(d => d.l))}</div>
@@ -1358,7 +1643,7 @@ const COMFORT = ["Afsus… Hech gap emas, yana urinib koʻramiz.", "Xato — oʻ
 let sayT;
 function pamukSay(mood, text) {
   const box = $("pamuk-say");
-  box.innerHTML = `${catSVG({ pose: "head", cls: mood === "sad" ? "sad" : "happy" })}<p>${esc(text)}</p>`;
+  box.innerHTML = `${catSVG({ pose: "head", cls: mood === "sad" ? "sad" : "happy", look: catLook() })}<p>${esc(text)}</p>`;
   box.className = "pamuk-say show " + mood;
   CatLife.scan();
   const c = box.querySelector(".cat");
@@ -1536,20 +1821,38 @@ function kSubmit(id, key, value) {
   const m = ansMatch(value, right);
   const was = st.e[key];
   const isMatch = !key.startsWith("r-") && (u.exercises.find(x => String(x.n) === key.split("-")[0]) || {}).match;
-  skillLog(key.startsWith("r-") || isMatch ? "r" : "w", !!m, m && was !== 1 ? 5 : 0);
+  skillLog(key.startsWith("r-") || isMatch ? "r" : "w", !!m);
   st.v[key] = value;
   st.e[key] = m ? 1 : 0;
+  // The first try of every answer decides the reward for the whole exercise
+  st.f = st.f || {};
+  if (!(key in st.f)) st.f[key] = m ? 1 : 0;
   dayRec().rev++; S.acc[1]++; if (m) S.acc[0]++;
-  if (m && was !== 1) addXP(5); else save();
-  if (m === 2) pamukSay("happy", praise());
-  else if (m === 1) pamukSay("happy", "Deyarli toʻgʻri! Harflarga eʼtibor bering: " + right);
-  else pamukSay("sad", comfort());
+  save();
+  const paid = kBlockAward(id, key);
+  if (!paid) {
+    if (m === 2) pamukSay("happy", praise());
+    else if (m === 1) pamukSay("happy", "Deyarli toʻgʻri! Harflarga eʼtibor bering: " + right);
+    else pamukSay("sad", comfort());
+  }
   // A unit counts as finished at 70% correct
   if (!st.done && kProgress(id) >= 0.7) {
-    st.done = todayKey(); addXP(30);
-    celebrate({ title: `${u.level}.${u.n} tugallandi!`, text: `«${u.title}» boʻlimini bepul va mustaqil tugatdingiz. +30 XP`, ico: "check", c: "green" });
+    st.done = todayKey(); addXPBonus(50); save();
+    celebrate({ title: `${u.level}.${u.n} tugallandi!`, text: `«${u.title}» boʻlimini bepul va mustaqil tugatdingiz. +50 XP`, ico: "check", c: "green" });
   }
   return m;
+}
+// When every answer of one course exercise (or of the reading questions) is in: reading 40 / grammar 40 XP once
+function kBlockAward(id, key) {
+  const u = KU[id], st = kState(id), blk = key.split("-")[0];
+  const keys = (u.keys || kKeys(u)).filter(k => k.split("-")[0] === blk);
+  st.xb = st.xb || {};
+  if (st.xb[blk] || !keys.length || keys.some(k => st.e[k] === undefined)) return null;
+  st.xb[blk] = 1;
+  const f = st.f || {}, right = keys.filter(k => (k in f ? f[k] : st.e[k]) === 1).length;
+  const r = xpAward(blk === "r" ? "reading" : "grammar", { right, n: keys.length, key: `k|${id}|${blk}`, sk: [blk === "r" ? "r" : "w"] });
+  pamukSay(r.xp ? "happy" : "sad", r.xp ? `Mashq bajarildi! +${r.xp} XP` : xpWhy(r) || "Mashq bajarildi!");
+  return r;
 }
 function kRerender() { const y = window.scrollY; route(); window.scrollTo(0, y); }
 
@@ -1631,7 +1934,8 @@ function checkAch() {
   }
   const fresh = ACH.filter(a => !S.achv[a.id] && achDone(a));
   if (!fresh.length) return;
-  fresh.forEach(a => { S.achv[a.id] = todayKey(); S.xp += 20; S.dayXp += 20; S.wxp += 20; dayRec().xp += 20; });
+  fresh.forEach(a => { S.achv[a.id] = todayKey(); addXPBonus(20); });
+  lvlCheck();
   try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {}
   cloudSave();
   fresh.forEach(a => celebrate({ title: a.t, text: `${a.d}. Pamuk sizdan faxrlanadi! +20 XP`, ico: a.ico, c: a.c, share: true }));
@@ -1649,13 +1953,13 @@ function showCelebrate() {
   const el = $("celebrate");
   const colors = ["#ffcf4a", "#ff7aa8", "#6f8dff", "#45d29b", "#a98bff", "#ffa552"];
   el.innerHTML = `<div class="confetti" aria-hidden="true">${Array.from({ length: 36 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 0.6).toFixed(2)}s;animation-duration:${(2 + Math.random() * 1.5).toFixed(2)}s;transform:rotate(${Math.random() * 360}deg)"></i>`).join("")}</div>
-    <div class="cel-card" role="dialog" aria-modal="true" aria-label="Yangi yutuq">
-      <div class="cel-cat">${mascot("trophy")}</div>
-      <span class="medal art ${c.c} cel-medal">${ICON[c.ico] || ICON.star}</span>
-      <small class="eyebrow">Yangi yutuq!</small>
+    <div class="cel-card" role="dialog" aria-modal="true" aria-label="${esc(c.eyebrow || "Yangi yutuq")}">
+      <div class="cel-cat">${c.look ? catSVG({ pose: "sit", acc: "stars", look: c.look, cls: "mascot" }) : mascot("trophy")}</div>
+      ${c.league ? `<span class="cel-medal">${lgBadge(c.league, "lg-cel")}</span>` : `<span class="medal art ${c.c} cel-medal">${c.badge !== undefined ? `<b class="cel-num">${esc(c.badge)}</b>` : ICON[c.ico] || ICON.star}</span>`}
+      <small class="eyebrow">${esc(c.eyebrow || "Yangi yutuq!")}</small>
       <h2>${esc(c.title)}</h2>
       <p>${esc(c.text)}</p>
-      <div class="cel-actions">${c.share ? `<button class="btn btn-ghost" data-act="share" data-text="${esc(`Türkçe Yoʻl'da «${c.title}» yutugʻini oldim! Turk tilini bepul oʻrganing:`)}">${ICON.heart}Ulashish</button>` : ""}<button class="btn btn-grad" data-act="cel-next">Davom etish</button></div>
+      <div class="cel-actions">${c.share ? `<button class="btn btn-ghost" data-act="share" data-text="${esc(c.shareText || `Türkçe Yoʻl'da «${c.title}» yutugʻini oldim! Turk tilini bepul oʻrganing:`)}">${ICON.heart}Ulashish</button>` : ""}<button class="btn btn-grad" data-act="cel-next">Davom etish</button></div>
     </div>`;
   el.hidden = false;
   CatLife.scan();
@@ -1917,21 +2221,22 @@ function startSession(mode, u) {
     // Least-known words first, with a little randomness
     items = shuffle(shuffle(pool).sort((a, b) => known(a) - known(b)).slice(0, 10));
   }
-  SES = { mode, u, items, i: 0, right: 0, xp: 0, answered: false, re: new Set(), last: Date.now(), had: ACH.filter(achDone).map(a => a.id) };
+  SES = { mode, u, items, i: 0, right: 0, xp: 0, answered: false, re: new Set(), skAll: new Set(), times: [], last: Date.now(), had: ACH.filter(achDone).map(a => a.id) };
   sessionEl.hidden = false;
   document.body.style.overflow = "hidden";
-  $("s-cat").innerHTML = catSVG({ pose: "head" });
+  $("s-cat").innerHTML = catSVG({ pose: "head", look: catLook() });
   renderStep();
   CatLife.scan();
 }
 function closeSession() {
   try { speechSynthesis.cancel(); } catch (e) {}
   micStop(true);
-  if (SES) { tick(); save(); }
+  if (SES) { SES.shown = 0; tick(); save(); }
   sessionEl.hidden = true; SES = null;
   document.body.style.overflow = "";
   route();
   celebrateQueued();
+  if (PAMUK_LATER) { const [m, t] = PAMUK_LATER; PAMUK_LATER = null; setTimeout(() => pamukSay(m, t), 500); }
 }
 function progressBar() {
   const n = SES.items.length;
@@ -1941,6 +2246,7 @@ function progressBar() {
 function renderStep() {
   if (SES.i >= SES.items.length) return renderResult();
   SES.answered = false;
+  SES.shown = Date.now();
   progressBar();
   const w = SES.items[SES.i];
   if (w.gx) { SES.m = "gx"; return renderGx(w); }
@@ -2285,7 +2591,7 @@ function lsFinish(ok, html) {
   tick();
   const it = SES.items[SES.i], fb = $("fb");
   if (ok) lsmHit(it); else lsmMiss(it);
-  if (ok) { SES.right++; SES.xp += 10; skillLog(SES.sk, true, 10); addXP(10); CatLife.mood(sCat(), "happy", 1000); }
+  if (ok) { SES.right++; skillLog(SES.sk, true); save(); CatLife.mood(sCat(), "happy", 1000); }
   else {
     skillLog(SES.sk, false); save(); CatLife.mood(sCat(), "sad", 1600);
     if (!SES.re.has(it.t) && SES.items.length < 40) { SES.re.add(it.t); SES.items.push(it); }
@@ -2545,8 +2851,8 @@ function wrRun(id, key) {
   if (st.wl[key] !== text.length + ":" + r.score) {
     st.wl[key] = text.length + ":" + r.score;
     const first = r.score >= 70 && !(st.wb[key] >= 70);
-    skillLog("w", r.score >= 70, first ? 15 : 0);
-    if (first) addXP(15); else save();
+    skillLog("w", r.score >= 70);
+    if (first) { const a = xpAward("writing", { acc: r.score / 100, key: `wr|${id}|${key}` }); if (a.xp) pamukSay("happy", `Yozish topshirigʻi bajarildi! +${a.xp} XP`); } else save();
   }
   st.wb[key] = Math.max(st.wb[key] || 0, r.score);
   const box = $(`wr-${id}-${key}`);
@@ -2767,7 +3073,7 @@ function plFinish() {
   rows.forEach(x => skillLog(x.sk, x.ok));
   P.res = { byLv, passed, start, sk };
   S.place = { at: todayKey(), passed, start, sk };
-  addXP(rows.filter(x => x.ok).length);
+  xpAward("reading", { right: rows.filter(x => x.ok).length, n: rows.length, key: "placement", sk: SKILLS.map(s => s.id) });
   pamukSay("happy", passed ? `Ajoyib! ${passed} darajasidagi savollarni yaxshi bildingiz.` : "Zoʻr, endi qayerdan boshlashni bilamiz!");
   window.scrollTo(0, 0); route();
 }
@@ -2814,8 +3120,9 @@ function ktFinish(lv) {
   S.ktsk = S.ktsk || {};
   const best = S.ktsk[lv] || (S.ktsk[lv] = {});
   Object.keys(parts).forEach(k => { if (parts[k] !== null) best[k] = Math.max(best[k] || 0, parts[k]); });
-  const right = [...rOk, ...lOk, ...wOk, ...(sTried ? sOk : [])].filter(Boolean).length;
-  addXP(right * 2);
+  // Each part pays like its own exercise: Okuma 40, Dinleme 40, Yazma 60, Konuşma 60
+  const kinds = { r: "reading", l: "listening", w: "writing", s: "speaking" }, got = { r: rOk, l: lOk, w: wOk, s: sTried ? sOk : [] };
+  KTEST_RES.xp = Object.keys(kinds).reduce((sum, k) => got[k].length ? sum + xpAward(kinds[k], { right: got[k].filter(Boolean).length, n: got[k].length, key: `kt|${lv}|${k}`, sk: [k] }).xp : sum, 0);
   if (p >= t.pass) pamukSay("happy", `${p}% — Tabriklaymiz! Siz ${lv} darajasini tasdiqladingiz!`); else pamukSay("sad", `${p}% — Afsus, bu safar oʻtmadi. Zaif qismni takrorlab, yana urinib koʻring!`);
   window.scrollTo(0, 0); route();
 }
@@ -2826,6 +3133,7 @@ function ktResultHtml(res, pass) {
       <span class="ico ${s.c}-t">${ICON[s.ico]}</span><span class="sk-name"><b>${s.tr}</b><small>${s.uz}</small></span>
       <span class="sk-track"><i style="width:${v || 0}%;background:var(--${s.c})"></i></span>
       <span class="sk-val">${v === null ? "—" : v + "%"}<small>${v === null ? "topshirilmadi" : v >= pass ? "✔ oʻtdi" : "✘"}</small></span></div>`; }).join("")}</div>` : ""}
+    ${res.xp !== undefined ? `<p><b>+${res.xp} XP</b>${res.xp ? "" : " · bu testni bugun allaqachon topshirgansiz"}</p>` : ""}
   </div>`;
 }
 /* ---------- Anonymous learning statistics ----------
@@ -3094,9 +3402,9 @@ function sayFinish(ok, skipped) {
   tick();
   if (!skipped) {
     S.pron[1]++; dayRec().rev++;
-    skillLog(SES.sk || "s", ok, ok ? 10 : 0);
+    skillLog(SES.sk || "s", ok);
     if (ok) lsmHit(SES.items[SES.i], SES.m); else lsmMiss(SES.items[SES.i], SES.m);
-    if (ok) { S.pron[0]++; SES.right++; SES.xp += 10; addXP(10); CatLife.mood(sCat(), "happy", 1000); }
+    if (ok) { S.pron[0]++; SES.right++; save(); CatLife.mood(sCat(), "happy", 1000); }
     else { save(); CatLife.mood(sCat(), "sad", 1600); }
   }
   const w = SES.items[SES.i];
@@ -3174,15 +3482,15 @@ function gxCheckOrder(skip) {
   gxFinish(ok, ex.s);
 }
 function gxGood(it) {
-  tick(); SES.right++; SES.xp += 10;
+  tick(); SES.right++;
   const arr = S.gx[it.code] || (S.gx[it.code] = []);
   const was = gxDone(it.code);
   arr[it.i] = true;
   const k = it.code + "#" + it.i;
   if (S.gxm[k]) delete S.gxm[k];
   dayRec().rev++; S.acc[0]++; S.acc[1]++;
-  skillLog(SES.sk, true, 10);
-  addXP(10);
+  skillLog(SES.sk, true);
+  save();
   if (!was && gxDone(it.code)) SES.topicDone = it.code;
   CatLife.mood(sCat(), "happy", 1000);
 }
@@ -3197,7 +3505,7 @@ function gxBad(it) {
   if (!SES.re.has(key) && SES.items.length < 40) { SES.re.add(key); SES.items.push(it); }
 }
 const sCat = () => $("s-cat").querySelector(".cat");
-function good() { tick(); const w = SES.items[SES.i]; SES.right++; SES.xp += 10; grade(w, true); skillLog(SES.sk, true, 10); lsmHit(w, SES.m); addXP(10); CatLife.mood(sCat(), "happy", 1000); }
+function good() { tick(); const w = SES.items[SES.i]; SES.right++; skillLog(SES.sk, true); grade(w, true); lsmHit(w, SES.m); CatLife.mood(sCat(), "happy", 1000); }
 function bad() {
   tick();
   const w = SES.items[SES.i];
@@ -3207,6 +3515,13 @@ function bad() {
   CatLife.mood(sCat(), "sad", 1600);
   // Show a missed word once more at the end of the session
   if (!SES.re.has(w.tr) && SES.items.length < 40) { SES.re.add(w.tr); SES.items.push(w); }
+}
+// Which reward a practice session earns
+function sesKind(mode) {
+  if (mode === "gx" || mode === "gxm") return "grammar";
+  if (["listen", "dict", "lsent", "lmis"].includes(mode)) return "listening";
+  if (["say", "sayline", "oral", "role", "smis"].includes(mode)) return "speaking";
+  return "vocab";
 }
 function nextStep() { micStop(true); SES.i++; renderStep(); }
 function renderResult() {
@@ -3218,7 +3533,9 @@ function renderResult() {
     S.sessions++;
     if (SES.right === n && n >= 8) S.perfect++;
     if (SES.mode === "role" && SES.right >= n / 2) S.roles = (S.roles || 0) + 1;
-    tick(); save();
+    SES.shown = 0; tick();
+    SES.award = xpAward(sesKind(SES.mode), { right: SES.right, n, key: SES.mode + "|" + SES.u, times: SES.times, half: SES.mode === "cards", sk: [...SES.skAll] });
+    SES.xp = SES.award.xp;
   }
   const r = SES.right / n;
   const title = r === 1 ? "Mükemmel! Hammasi toʻgʻri" : r >= 0.7 ? "Harika! Juda yaxshi" : r >= 0.4 ? "İyi! Yaxshi boshlanish" : "Pes etme! Taslim boʻlmang";
@@ -3229,7 +3546,9 @@ function renderResult() {
     <h2>${esc(title)}</h2>
     <p>${r >= 0.7 ? "Pamuk sizdan faxrlanadi!" : "Pamuk aytadi: xatolar ham oʻrganishning bir qismi."}</p>
     <p class="muted">Siz bugun yana bir qadam qoʻydingiz — bepul va mustaqil. Ertaga ham kutamiz!</p>
-    <p>+${SES.xp} XP · bugun ${S.dayXp}/${S.goal} XP · ${streakNow()} kun ketma-ket</p>
+    <p><b>+${SES.xp} XP</b> · ${esc(XP_KIND[SES.award.kind])} · bugun ${S.dayXp}/${S.goal} XP · ${streakNow()} kun ketma-ket</p>
+    ${xpWhy(SES.award) ? `<p class="xp-why">${esc(xpWhy(SES.award))}</p>` : ""}
+    ${dqMini()}
     <p>Takrorlash navbatida: ${dueWords().length} ta · Xatolar daftarida: ${mistakeWords().length} ta</p>
     ${SES.topicDone ? `<div class="tags" style="justify-content:center"><span class="tag green-t">${ICON.check}${esc(SES.topicDone)} mavzusi tugallandi</span></div>` : ""}
     ${fresh.length ? `<div class="tags" style="justify-content:center">${fresh.map(a => `<span class="tag violet-t">${ICON.star}Yangi yutuq: ${esc(a.t)}</span>`).join("")}</div>` : ""}
@@ -3302,10 +3621,14 @@ function onAct(e) {
     const r = S.gram[g.id] || (S.gram[g.id] = []);
     if (ok) {
       fb.className = "feedback ok"; fb.textContent = "Doğru! Toʻgʻri.";
-      if (!r[qi]) { r[qi] = true; addXP(5); if (gramDone(g)) toast("Mavzu tugallandi! Tebrikler"); }
+      if (!r[qi]) {
+        r[qi] = true;
+        if (gramDone(g)) { const n = g.quiz.length, a = xpAward("grammar", { right: n, n: n + ((S.gramw || {})[g.id] || 0), key: "gq|" + g.id }); toast(`Mavzu tugallandi! +${a.xp} XP`); }
+      }
       save();
     } else {
       b.classList.add("wrong");
+      if (!r[qi]) { S.gramw = S.gramw || {}; S.gramw[g.id] = (S.gramw[g.id] || 0) + 1; }
       fb.className = "feedback no";
       fb.innerHTML = `Toʻgʻri javob: <b lang="tr">${esc(q.o[q.a])}</b> <button class="link" data-act="gq-retry" data-q="${qi}">Qayta urinish</button>`;
     }
@@ -3402,7 +3725,7 @@ function onAct(e) {
     const right = n === "r" ? u.reading.ans[k] : u.exercises.find(x => String(x.n) === n).ans[k];
     b.outerHTML = `<span class="muted">Namuna: <b lang="tr">${esc(right)}</b></span> <button class="link" data-act="k-self" data-id="${id}" data-key="${key}">Men ham shunday yozdim ✓</button>`;
   }
-  else if (act === "k-self") { const st = kState(b.dataset.id); if (st.e[b.dataset.key] !== 1) { st.e[b.dataset.key] = 1; skillLog("w", true, 5); addXP(5); pamukSay("happy", praise()); } kRerender(); }
+  else if (act === "k-self") { const st = kState(b.dataset.id), key = b.dataset.key; if (st.e[key] !== 1) { st.e[key] = 1; st.f = st.f || {}; if (!(key in st.f)) st.f[key] = 1; skillLog("w", true); save(); if (!kBlockAward(b.dataset.id, key)) pamukSay("happy", praise()); } kRerender(); }
   else if (act === "k-tq") { KTEST_ANS[+b.dataset.i] = +b.dataset.o; b.parentElement.querySelectorAll(".opt").forEach(o => o.classList.toggle("picked", o === b)); }
   else if (act === "k-test-done") ktFinish(b.dataset.l);
   else if (act === "kt-l") { KT_ANS.l[+b.dataset.i] = +b.dataset.o; b.parentElement.querySelectorAll(".opt").forEach(o => o.classList.toggle("picked", o === b)); }
@@ -3714,11 +4037,22 @@ function cloudSave(now) {
     db.collection("users").doc(USER.uid).set({ progress: S, updatedAt: ts }, { merge: true }).catch(() => {});
     if (S.pub) {
       const name = ((USERNAME || "").trim().split(/\s+/)[0] || "Oʻquvchi").slice(0, 20);
-      db.collection("league").doc(USER.uid).set({ name, week: S.week, wxp: S.wxp, xp: S.xp, streak: streakNow() }).catch(() => {});
+      const row = lgDoc(name, ts), ref = db.collection("league").doc(USER.uid);
+      // Until the new Firestore rules are published, the old five-field row still keeps the tables alive
+      if (LG_OLD) ref.set(lgLegacy(row)).catch(() => {});
+      else ref.set(row).catch(e => { if (e && e.code === "permission-denied") { LG_OLD = true; ref.set(lgLegacy(row)).catch(() => {}); } });
     }
     statsPush();
     grpSync();
   }, now ? 0 : 1500);
+}
+// The public leaderboard row: today, this week (inside a league), all time; last week for settling leagues
+let LG_OLD = false;
+const lgLegacy = r => ({ name: r.name, week: r.week, wxp: r.wxp, xp: r.xp, streak: r.streak });
+function lgDoc(name, ts) {
+  const i = v => Math.max(0, Math.round(v || 0)), xp = i(S.xp);
+  return { name, week: S.week, wxp: Math.min(i(S.wxp), xp, 25000), xp, streak: streakNow(), day: S.day, dxp: Math.min(i(S.dayXp), 3500),
+    lg: lgOf(S.lg).n, lgw: S.lgw || "", pw: S.pw || "", pwxp: i(S.pwxp), plg: lgOf(S.plg).n, at: ts };
 }
 // Write a pending save at once (before signing out)
 function cloudFlush() {
@@ -3968,6 +4302,7 @@ async function enterApp(u, quiet) {
   if (!quiet) showAuth(true);
   USER = u;
   await loadCloud(u);
+  lgSettle();
   if (!quiet) hideAuth();
   if (!quiet || !SES) route();
   if (!PROFILE.gender || !PROFILE.birth) { if ($("sheet").hidden && !SES) profileSheet(true); }
@@ -4021,9 +4356,10 @@ if (FB) {
   loadFirebase().then(fbStart).catch(() => {
     // No SDK (offline and not cached): work locally, as before
     if (EARLY) return;
-    FB = false; hideAuth(); route(); showWelcome();
+    FB = false; hideAuth(); lgSettle(); route(); showWelcome();
   });
 } else {
+  lgSettle();
   route();
   showWelcome();
 }
