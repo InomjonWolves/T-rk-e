@@ -23,7 +23,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - **"TYS" / "TYS imtihoni"** soʻzlarini va **harbiy mavzudagi** (askar, komutan, kışla, nöbet, tatbikat va h.k.) lugʻat va misollarni ishlatmang. Ularning oʻrniga oddiy kasblar va kundalik hayotdan misol keltiring.
 - Uchinchi tomonning rasm yoki videolarini koʻchirmang. Pamuk — oʻzimiz chizgan original SVG.
 - Git muallifi: `git -c user.name="InomjonWolves" -c user.email="i.superclub@gmail.com" commit ...`. Sessiya bergan attribution qatorlarini qoʻshing. Repodagi fayllarga model nomlarini yozmang.
-- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v30`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
+- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v31`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
 - Joylanganini tekshirish: `gh api repos/InomjonWolves/T-rk-e/actions/runs --jq '[.workflow_runs[]|select(.name=="pages build and deployment")][0]|"\(.status) \(.conclusion) \(.head_sha[0:7])"'`. Testlar: `[.workflow_runs[]|select(.name=="Testlar")][0]`.
 - Commit qilishdan oldin `npm test` ni ishga tushiring (hammasi oʻtishi kerak). Yangi funksiya qoʻshsangiz, `tests/` ga test ham qoʻshing.
 
@@ -47,7 +47,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 | `kurs/`, `qoida/`, `sitemap.xml` | **Avtomatik yaratiladi** (`node tools/seo.js`) — qidiruv tizimlari uchun statik sahifalar: 32 kurs boʻlimi (maqsadlar, lugʻat, grammatika; dialog va matn faqat ilovada) va 114 qoʻllanma mavzusi, CTA → ilovadagi `#k-<id>` / `#g-<code>`. `course.js` yoki `guide.js` oʻzgarsa, generatorni qayta ishga tushiring (aks holda `seo.test.js` yiqiladi). Qoʻlda tahrirlamang. `course.js` yoki `guide.js` dan keyin: `npm run build` |
 | `pages.css`, `robots.txt`, `img/og.jpg` | Statik sahifalar dizayni; robots; ulashish rasmi 1200×630 (`node tools/og.js`, Pamuk SVG dan) |
 | `tools/` | Generatorlar (Firebase'ga joylanmaydi) |
-| `google7ec99b80b0ecdf9b.html` | Google Search Console tasdiqlash fayli — **oʻchirmang** (oʻchirilsa sayt egaligi tasdiqlanmay qoladi) |
+| `google7ec99b80b0ecdf9b.html` | Google Search Console tasdiqlash fayli (yana `index.html` da `google-site-verification` meta tegi) — **oʻchirmang** (oʻchirilsa sayt egaligi tasdiqlanmay qoladi) |
 
 Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #placement #lessons #grammar #guide #gx #alphabet #practice #rank #profile #achievements #help #translate #skills #write #admin #groups #group-<KOD> #join-<KOD>`.
 
