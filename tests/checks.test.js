@@ -84,3 +84,16 @@ test("anonymous statistics: the summary fits the Firestore rules and the admin n
   assert.deepEqual(a, { total: 4, active: 3, weakL: 2, sumWeak: 3, lvlR: 4 });
   assert.deepEqual(errors, []);
 });
+
+test("admin page explains why access is missing and shows the UID to compare", async () => {
+  const { page, errors } = await openApp(browser, "#home");
+  await page.evaluate(() => { USER = { uid: "abc123XYZ", providerData: [], email: "" }; db = {}; ADMIN = false; ADMIN_ERR = "notfound"; location.hash = "#admin"; });
+  await page.waitForTimeout(150);
+  const text = await page.evaluate(() => document.getElementById("app").innerText);
+  assert.match(text, /abc123XYZ/);
+  assert.match(text, /hujjat topilmadi/);
+  assert.ok(await page.evaluate(() => !!document.querySelector("[data-act=copy-uid]")));
+  await page.evaluate(() => { ADMIN_ERR = "permission-denied"; route(); });
+  assert.match(await page.evaluate(() => document.getElementById("app").innerText), /qoidalar/);
+  assert.deepEqual(errors, []);
+});

@@ -2710,7 +2710,7 @@ function ktResultHtml(res, pass) {
    skill levels and test results. No name, e-mail, answers or texts. Learners can switch it off in Settings.
    Only accounts listed in admins/{uid} (added by hand in the Firebase console) can read the collection;
    their summary page is #admin. */
-let ADMIN = false, ADMIN_DATA = null, ADMIN_BUSY = false;
+let ADMIN = false, ADMIN_DATA = null, ADMIN_BUSY = false, ADMIN_ERR = "";
 const STATS_EVERY = 3 * 3600 * 1000;
 function statsDoc() {
   const st = skStats(14), t = {}, w = {}, lvl = {}, kt = {};
@@ -2734,8 +2734,11 @@ function statsPush(force) {
   db.collection("stats").doc(USER.uid).set(statsDoc()).catch(() => { S.statsAt = 0; });
 }
 function adminCheck(uid) {
-  ADMIN = false;
-  db.collection("admins").doc(uid).get().then(d => { ADMIN = d.exists; if (ADMIN && /^#?(profile|admin)$/.test(location.hash.replace("#", ""))) route(); }).catch(() => {});
+  ADMIN = false; ADMIN_ERR = "";
+  db.collection("admins").doc(uid).get().then(d => {
+    ADMIN = d.exists; ADMIN_ERR = d.exists ? "" : "notfound";
+    if (/^#?(profile|admin)$/.test(location.hash.replace("#", ""))) route();
+  }).catch(e => { ADMIN_ERR = (e && e.code) || "error"; if (location.hash === "#admin") route(); });
 }
 function adminLoad() {
   if (ADMIN_BUSY || !db) return;
@@ -2772,7 +2775,14 @@ function viewAdmin() {
   <div class="lesson-head"><div class="tags"><span class="tag violet-t">${ICON.lock}Faqat admin</span></div><h1>Umumiy analitika</h1>
     <p class="sub">Barcha foydalanuvchilarning anonim koʻnikma koʻrsatkichlari. Ism, pochta va yozilgan matnlar bu yerga kelmaydi.</p></div>`;
   if (!USER || !db) return head + `<div class="glass empty"><b>Hisobga kiring</b></div>`;
-  if (!ADMIN) return head + `<div class="glass empty"><b>Bu sahifa faqat admin uchun</b><p class="muted">Firebase konsolida <code>admins/${esc(USER.uid)}</code> hujjatini yarating.</p></div>`;
+  if (!ADMIN) {
+    const why = ADMIN_ERR === "notfound" ? `Firestore'da <code>admins</code> toʻplamida aynan shu ID bilan hujjat topilmadi. Hujjat ID'si quyidagi UID bilan harfma-harf mos boʻlishi kerak (boʻsh joysiz).`
+      : ADMIN_ERR === "permission-denied" ? "Firestore qoidalari admin tekshiruviga ruxsat bermadi: konsolda yangi qoidalar joylanganini (Publish) tekshiring."
+      : ADMIN_ERR ? `Admin tekshiruvida xato: ${esc(ADMIN_ERR)}. Internetni tekshirib, sahifani yangilang.` : "Admin tekshiruvi hali tugamadi. Bir necha soniyadan keyin sahifani yangilang.";
+    return head + `<div class="glass pad"><b>Bu sahifa faqat admin uchun</b><p class="muted" style="margin-top:6px">${why}</p>
+      <p style="margin-top:10px"><small class="muted">Sizning UID'ingiz:</small><br><code style="word-break:break-all">${esc(USER.uid)}</code></p>
+      <button class="btn btn-soft btn-block" data-act="copy-uid" style="margin-top:8px">${ICON.copy}UID'ni nusxalash</button></div>`;
+  }
   if (!ADMIN_DATA) { adminLoad(); return head + `<div class="glass empty"><b>Yuklanmoqda…</b></div>`; }
   if (ADMIN_DATA.err) return head + `<div class="notice"><div>${esc(ADMIN_DATA.err)}</div></div><button class="btn btn-ghost btn-block" data-act="admin-reload">Qayta urinish</button>`;
   return head + adminHtml(adminAgg(ADMIN_DATA.docs), ADMIN_DATA.at);
@@ -3132,6 +3142,7 @@ document.addEventListener("click", e => {
     const y = window.scrollY; route(); window.scrollTo(0, y);
   }
   else if (act === "admin-reload") { ADMIN_DATA = null; route(); }
+  else if (act === "copy-uid" && USER) { try { navigator.clipboard.writeText(USER.uid).then(() => toast("UID nusxalandi"), () => toast(USER.uid)); } catch (err) { toast(USER.uid); } }
   else if (act === "pub") {
     S.pub = !S.pub; save(); RANK_CACHE = {};
     if (!S.pub && db && USER) db.collection("league").doc(USER.uid).delete().catch(() => {});
