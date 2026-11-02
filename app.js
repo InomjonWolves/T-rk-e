@@ -1328,7 +1328,7 @@ function viewCourse() {
   <div class="list">${lvl.units.map(id => kUnitRow(KU[id])).join("")}
     <a class="unit glass" href="#ktest-${lvl.id.toLowerCase()}">
       <span class="art teal"><span style="font-size:13px">TEST</span></span>
-      <span class="unit-body"><span class="unit-title">${esc(lvl.test.title)}</span><span class="unit-sub">20 savol · oʻtish bali ${lvl.test.pass}%${kTestBest(lvl.id) ? ` · eng yaxshi natija ${kTestBest(lvl.id)}%` : ""}</span></span>
+      <span class="unit-body"><span class="unit-title">${esc(lvl.test.title)}</span><span class="unit-sub">4 qism: Okuma · Dinleme · Yazma · Konuşma · oʻtish bali ${lvl.test.pass}%${kTestBest(lvl.id) ? ` · eng yaxshi natija ${kTestBest(lvl.id)}%` : ""}</span></span>
       ${kTestBest(lvl.id) >= lvl.test.pass ? `<span class="state done">${ICON.check}</span>` : ICON.chev}
     </a></div>`;
 }
@@ -1449,18 +1449,22 @@ function kSubmit(id, key, value) {
 function kRerender() { const y = window.scrollY; route(); window.scrollTo(0, y); }
 
 function viewCourseTest(lv) {
-  const l = KLEVEL(lv), t = l.test, res = KTEST_RES && KTEST_RES.lv === lv ? KTEST_RES : null;
+  if (KT_ANS.lv !== lv) { KT_ANS = { lv, l: {}, w: {}, s: {} }; KTEST_ANS = {}; }
+  const l = KLEVEL(lv), t = l.test, res = KTEST_RES && KTEST_RES.lv === lv ? KTEST_RES : null, g = ktGen(lv);
   let qn = 0;
   return `<div><a class="back" href="#course">${ICON.back}Kurs</a></div>
   <div class="lesson-head"><div class="tags"><span class="tag teal-t">${lv}</span><span class="tag violet-t">Oʻtish bali ${t.pass}%</span></div><h1>${esc(t.title)}</h1>
-    <p class="sub">Har bir savolga javob tanlang, oxirida «Natijani koʻrish» ni bosing. Test bepul va istalgancha qayta topshirish mumkin.</p></div>
-  ${res ? `<div class="glass pad k-result ${res.pct >= t.pass ? "pass" : "fail"}">${mascot(res.pct >= t.pass ? "trophy" : "sit")}<h2>${res.pct}%</h2><p>${res.pct >= t.pass ? "Tabriklaymiz! Siz bu darajani muvaffaqiyatli yakunladingiz." : "Hali biroz mashq kerak. Qiyin boʻlgan boʻlimlarni takrorlab, yana urinib koʻring."}</p></div>` : ""}
-  ${t.parts.map(p => `<section class="section"><div class="section-head"><h2>${esc(p.name)}</h2></div>
+    <p class="sub">Test 4 qismdan iborat: Okuma, Dinleme, Yazma va Konuşma. Har qism alohida baholanadi va koʻnikma boʻyicha darajangizni koʻrsatadi. Oxirida «Natijani koʻrish» ni bosing. Test bepul, istalgancha qayta topshirish mumkin.</p></div>
+  ${res ? ktResultHtml(res, t.pass) : ""}
+  ${t.parts.map(p => `<section class="section">${ktPartHead("r", "Okuma · " + p.name)}
     ${p.text ? `<div class="glass pad k-read" lang="tr">${esc(p.text)}</div>` : ""}
     ${p.qs.map(q => { const i = qn++, chosen = KTEST_ANS[i]; return `<div class="k-item glass">
       <div class="k-q"><b>${i + 1}.</b> <span lang="tr">${esc(q.q)}</span></div>
       <div class="k-opts">${q.o.map((o, oi) => { let cls = chosen === oi ? " picked" : ""; if (res) cls = oi === q.a ? " right" : chosen === oi ? " wrong" : ""; return `<button class="opt${cls}" data-act="k-tq" data-i="${i}" data-o="${oi}" lang="tr" ${res ? "disabled" : ""}>${esc(o)}</button>`; }).join("")}</div></div>`; }).join("")}
   </section>`).join("")}
+  ${ktListenHtml(lv, res, qn)}
+  ${ktWriteHtml(lv, res, qn + g.l.length)}
+  ${ktSpeakHtml(lv, res, qn + g.l.length + g.w.length)}
   ${res ? `<button class="btn btn-ghost btn-block" data-act="k-test-again" data-l="${lv}">Qayta topshirish</button>` : `<button class="btn btn-grad btn-block" data-act="k-test-done" data-l="${lv}">Natijani koʻrish</button>`}`;
 }
 let KTEST_ANS = {}, KTEST_RES = null;
@@ -1498,6 +1502,7 @@ const ACH = [
   { id: "perfect5", cat: "practice", t: "Aniq nishon", d: "5 ta xatosiz mashq", v: () => S.perfect, n: 5, c: "pink", ico: "target" },
   { id: "four", cat: "practice", t: "Toʻrt tomonlama", d: "Bir kunda 4 koʻnikmani mashq qilish", v: () => Math.max(0, ...Object.values(S.days).map(d => d.sk ? Object.values(d.sk).filter(a => a[1]).length : 0)), n: 4, c: "violet", ico: "target" },
   { id: "listen50", cat: "practice", t: "Ziyrak quloq", d: "Tinglashda 50 ta toʻgʻri javob", v: () => S.sk.l[0], n: 50, c: "sky", ico: "ear" },
+  { id: "allA1", cat: "course", t: "Har tomonlama", d: "4 koʻnikmada daraja testidan oʻtish", v: () => SKILLS.filter(s => skLevel(s.id)).length, n: 4, c: "teal", ico: "crown" },
   { id: "writer5", cat: "practice", t: "Yozuvchi", d: "5 ta yozish topshirigʻida 70+ ball", v: () => Object.values(S.k).reduce((a, st) => a + Object.values(st.wb || {}).filter(v => v >= 70).length, 0), n: 5, c: "pink", ico: "type" },
   { id: "roles3", cat: "practice", t: "Aktyor", d: "3 ta rolli dialogni oʻynash", v: () => S.roles || 0, n: 3, c: "orange", ico: "chat" },
   { id: "pron20", cat: "practice", t: "Bulbul", d: "20 ta soʻzni toʻgʻri talaffuz qilish", v: () => S.pron[0], n: 20, c: "green", ico: "mic" },
@@ -1941,6 +1946,7 @@ function viewSkills() {
     <div><b>Muvozanat</b><p class="muted">${!any ? "Hali maʼlumot yoʻq. Mashq qila boshlang, natijalar shu yerda chiqadi." : bal >= 80 ? "Ajoyib! Koʻnikmalaringiz teng rivojlanmoqda." : `Eng koʻp eʼtibor kerak: <b>${weak.tr} (${weak.uz})</b>. Bugun shundan boshlang.`}</p>
     <button class="btn btn-grad" data-act="sk-go" data-s="${weak.id}">${ICON[weak.ico]}${weak.tr} mashqi</button></div>
   </div>
+  ${skLevelsCard()}
   <section class="section"><div class="section-head"><h2>Soʻnggi 14 kun</h2><span class="tag sky-t">toʻgʻri javoblar</span></div>
     <div class="glass pad">${skBars(st)}</div></section>
   <section class="section"><div class="section-head"><h2>Koʻnikmalar</h2></div>
@@ -2350,6 +2356,143 @@ function viewWrite() {
       <span class="art ${best >= 70 ? "green" : "pink"}"><span style="font-size:14px">${t.u.level}.${t.u.n}</span></span>
       <span class="unit-body"><span class="unit-title">${esc(t.e.title.replace(/^Yozish\.?\s*/, ""))}</span><span class="unit-sub">${best !== undefined ? `Eng yaxshi natija: ${best} ball` : locked ? "Kursda hali bu boʻlimga yetmagansiz" : "Hali yozilmagan"}</span></span>
       ${best !== undefined ? pctRing(best / 100) : ICON.chev}</a>`; }).join("")}</div>` : ""; }).join("")}`;
+}
+/* ---------- Level tests in four parts ----------
+   Okuma = the book's own questions (grammar/vocabulary + reading). Dinleme, Yazma and Konuşma are built
+   from the same level's vocabulary, dialogs, exercises and reading questions, fresh for every attempt. */
+const LVS = ["A1", "A2", "B1", "B2"];
+let KT_GEN = {}, KT_ANS = { lv: null, l: {}, w: {}, s: {} }, KT_REC = null;
+function ktGen(lv) {
+  if (KT_GEN[lv]) return KT_GEN[lv];
+  const units = COURSE.units.filter(u => u.level === lv);
+  const words = shuffle(units.flatMap(u => u.vocab.flatMap(v => v.words)).filter(([tr, uz]) => uz && sayable({ tr })));
+  const lines = shuffle(units.flatMap(u => lsLines(u.id)));
+  const l = [];
+  words.slice(0, 3).forEach(([tr, uz]) => {
+    const wrong = [...new Set(shuffle(words.filter(x => x[1] !== uz && x[0] !== tr)).map(x => x[1]))].slice(0, 3);
+    l.push({ kind: "word", t: tr, a: uz, o: shuffle([uz, ...wrong]) });
+  });
+  lines.slice(0, 3).forEach(ln => {
+    const near = lines.filter(x => x.t !== ln.t).sort((a, b) => Math.abs(a.t.length - ln.t.length) - Math.abs(b.t.length - ln.t.length)).slice(0, 6);
+    l.push({ kind: "line", t: ln.t, a: ln.t, o: shuffle([ln.t, ...shuffle(near).slice(0, 2).map(x => x.t)]) });
+  });
+  // Writing: one short fill-in item from each of six different exercises
+  const ex = shuffle(units.flatMap(u => u.exercises.filter(e => !e.match && !e.sample).map(e => ({ e, items: (e.items || []).filter(([k, q]) => {
+    const a = e.ans && e.ans[k];
+    return a && a.split(" ").length <= 4 && !/…/.test(a) && /___|→/.test(q);
+  }) })).filter(x => x.items.length)));
+  const w = ex.slice(0, 6).map(({ e, items }) => { const [k, q] = items[Math.floor(Math.random() * items.length)]; return { title: e.title, q, a: e.ans[k] }; });
+  // Speaking: repeat dialog lines and answer reading questions aloud
+  const oral = shuffle(units.flatMap(u => oralItems(u.id))).slice(0, 2);
+  const s = [...lines.slice(3, 3 + 4 - oral.length).map(ln => ({ kind: "line", tr: ln.t })), ...oral.map(o => ({ kind: "oral", tr: o.tr, q: o.q }))];
+  return (KT_GEN[lv] = { l, w, s });
+}
+const ktNeed = it => it.kind === "oral" ? 0.6 : 0.8;
+// Best result per skill and level, and the highest level passed in each skill
+const ktSkill = (lv, id) => ((S.ktsk || {})[lv] || {})[id];
+function skLevel(id) {
+  let best = null;
+  LVS.forEach(lv => { const v = ktSkill(lv, id); if (v !== undefined && v !== null && v >= KLEVEL(lv).test.pass) best = lv; });
+  return best;
+}
+function skLevelsCard() {
+  // Next test to take: the level after the highest one passed in this skill
+  const next = id => { const lv = skLevel(id); return lv ? LVS[Math.min(LVS.indexOf(lv) + 1, 3)] : "A1"; };
+  return `<section class="section"><div class="section-head"><h2>Koʻnikma boʻyicha daraja</h2><span class="tag teal-t">daraja testlaridan</span></div>
+    <div class="sk-lv">${SKILLS.map(s => { const lv = skLevel(s.id), nx = next(s.id); return `<a class="sk-lv-item glass" href="#ktest-${nx.toLowerCase()}">
+      <span class="ico ${s.c}-t">${ICON[s.ico]}</span><small>${s.tr}</small><b>${lv || "—"}</b><span class="muted">${lv === "B2" ? "Eng yuqori" : `Keyingi: ${nx} testi`}</span></a>`; }).join("")}</div>
+    <p class="muted" style="font-size:13px;margin-top:8px">Daraja testining har bir qismi alohida baholanadi. Qismdan ${KLEVEL("A1").test.pass}% va undan yuqori olsangiz, oʻsha koʻnikmada daraja tasdiqlanadi.</p></section>`;
+}
+function ktPartHead(id, name) {
+  const s = SKILLS.find(x => x.id === id);
+  return `<div class="section-head"><h2><span class="tag ${s.c}-t" style="padding:6px;margin-right:6px">${ICON[s.ico]}</span>${esc(name)}</h2></div>`;
+}
+function ktListenHtml(lv, res, start) {
+  const g = ktGen(lv);
+  return `<section class="section">${ktPartHead("l", "Dinleme · Tinglash")}
+    <p class="sub">Tugmani bosib tinglang va javobni tanlang. Matn koʻrsatilmaydi.</p>
+    ${g.l.map((q, i) => { const chosen = KT_ANS.l[i]; return `<div class="k-item glass">
+      <div class="k-q" style="display:flex;align-items:center;gap:10px"><b>${start + i + 1}.</b><button class="say" data-act="ls-play" data-t="${esc(q.t)}" aria-label="Tinglash">${ICON.speak}</button>
+        <span>${q.kind === "word" ? "Soʻzning maʼnosini toping" : "Qaysi gapni eshitdingiz?"}</span>${res ? `<span lang="tr" class="muted">— ${esc(q.t)}</span>` : ""}</div>
+      <div class="k-opts">${q.o.map((o, oi) => { let cls = chosen === oi ? " picked" : ""; if (res) cls = o === q.a ? " right" : chosen === oi ? " wrong" : ""; return `<button class="opt${cls}" data-act="kt-l" data-i="${i}" data-o="${oi}" ${q.kind === "line" ? 'lang="tr"' : ""} ${res ? "disabled" : ""}>${esc(o)}</button>`; }).join("")}</div></div>`; }).join("")}
+  </section>`;
+}
+function ktWriteHtml(lv, res, start) {
+  const g = ktGen(lv);
+  return `<section class="section">${ktPartHead("w", "Yazma · Yozish")}
+    ${g.w.map((q, i) => { const v = KT_ANS.w[i] || "", m = res ? ansMatch(v, q.a) : -1; return `<div class="k-item glass">
+      <div class="k-q"><b>${start + i + 1}.</b> <small class="muted">${esc(q.title)}</small><div lang="tr" style="margin-top:4px">${esc(q.q)}</div></div>
+      <div class="k-in"><input class="k-input${m > 0 ? " right" : m === 0 ? " wrong" : ""}" data-act="kt-w" data-i="${i}" value="${esc(v)}" lang="tr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Javob…" ${res ? "disabled" : ""}></div>
+      ${res && m <= 0 ? `<div class="k-fb"><span class="no">Toʻgʻri javob: <b lang="tr">${esc(q.a)}</b></span></div>` : ""}</div>`; }).join("")}
+  </section>`;
+}
+function ktSpeakHtml(lv, res, start) {
+  const g = ktGen(lv);
+  if (!canListen()) return `<section class="section">${ktPartHead("s", "Konuşma · Gapirish")}<div class="notice"><div>Bu brauzer nutqni tanimaydi, shuning uchun gapirish qismi ishlamaydi. Natija 3 qism boʻyicha hisoblanadi. Chrome yoki Safari'da oching.</div></div></section>`;
+  return `<section class="section">${ktPartHead("s", "Konuşma · Gapirish")}
+    <p class="sub">Mikrofonni bosib ayting. Har savolni bir necha marta urinib koʻrish mumkin, eng yaxshi natija olinadi. Hozir gapira olmasangiz, bu qismni oʻtkazib yuboring: natija qolgan qismlar boʻyicha chiqadi.</p>
+    ${g.s.map((q, i) => { const r = KT_ANS.s[i]; return `<div class="k-item glass">
+      <div class="k-q"><b>${start + i + 1}.</b> ${q.kind === "oral" ? `<span>Savolga toʻliq gap bilan javob bering:</span><div lang="tr" style="margin-top:4px"><b>${esc(q.q)}</b></div>` : `<span>Gapni ovoz chiqarib ayting:</span><div lang="tr" style="margin-top:4px"><b>${esc(q.tr)}</b></div>`}</div>
+      <div class="kt-mic-row">${res ? "" : `<button class="mic-btn kt-mic" data-act="kt-mic" data-l="${lv}" data-i="${i}" aria-label="Mikrofon">${ICON.mic}</button>`}
+        <div class="kt-heard" id="kt-s-${i}">${r ? ktHeard(q, r) : res ? `<span class="muted">Javob berilmadi</span>` : `<span class="muted">Mikrofonni bosing</span>`}</div></div>
+      ${res && q.kind === "oral" ? `<div class="k-fb"><span class="muted">Namuna: <b lang="tr">${esc(q.tr)}</b></span></div>` : ""}</div>`; }).join("")}
+  </section>`;
+}
+const ktHeard = (q, r) => `<span lang="tr">«${esc(r.text)}»</span> <span class="tag ${r.score >= ktNeed(q) ? "green-t" : "pink-t"}">${Math.round(r.score * 100)}%</span>`;
+function ktMic(lv, i, btn) {
+  if (KT_REC) { try { KT_REC.stop(); } catch (e) {} return; }
+  try { speechSynthesis.cancel(); } catch (e) {}
+  const q = ktGen(lv).s[i], r = new SR();
+  r.lang = "tr-TR"; r.interimResults = false; r.maxAlternatives = 5;
+  let alts = null;
+  r.onresult = ev => { const res = ev.results[ev.results.length - 1]; alts = [...res].map(a => a.transcript); };
+  r.onerror = ev => { if (ev.error === "not-allowed" || ev.error === "service-not-allowed") toast("Mikrofonga ruxsat berilmagan"); else if (ev.error === "no-speech") toast("Ovoz eshitilmadi, yana urinib koʻring"); else if (ev.error === "network") toast("Nutqni tanish uchun internet kerak"); };
+  r.onend = () => {
+    KT_REC = null; btn.classList.remove("on");
+    if (!alts) return;
+    let best = null;
+    alts.forEach(a => { const sc = q.kind === "oral" ? oralScore(q.tr, a).score : sayDiff(sayNorm(q.tr).out, heardNorm(a)).score; if (!best || sc > best.score) best = { score: sc, text: a }; });
+    const prev = KT_ANS.s[i];
+    if (!prev || best.score > prev.score) KT_ANS.s[i] = best;
+    const el = $(`kt-s-${i}`); if (el) el.innerHTML = ktHeard(q, KT_ANS.s[i]);
+  };
+  try { r.start(); KT_REC = r; btn.classList.add("on"); } catch (e) { toast("Mikrofonni ishga tushirib boʻlmadi"); }
+}
+function ktFinish(lv) {
+  const t = KLEVEL(lv).test, qs = t.parts.flatMap(p => p.qs), g = ktGen(lv);
+  const miss = qs.findIndex((q, i) => KTEST_ANS[i] === undefined);
+  if (miss >= 0) { toast(`Okuma: ${miss + 1}-savolga javob tanlanmagan`); return; }
+  const lMiss = g.l.findIndex((q, i) => KT_ANS.l[i] === undefined);
+  if (lMiss >= 0) { toast(`Dinleme: ${qs.length + lMiss + 1}-savolga javob tanlanmagan`); return; }
+  if (KT_REC) { try { KT_REC.abort(); } catch (e) {} KT_REC = null; }
+  const rOk = qs.map((q, i) => KTEST_ANS[i] === q.a);
+  const lOk = g.l.map((q, i) => q.o[KT_ANS.l[i]] === q.a);
+  const wOk = g.w.map((q, i) => ansMatch(KT_ANS.w[i] || "", q.a) > 0);
+  const sTried = canListen() && Object.keys(KT_ANS.s).length > 0;
+  const sOk = g.s.map((q, i) => !!KT_ANS.s[i] && KT_ANS.s[i].score >= ktNeed(q));
+  const share = a => a.length ? Math.round(a.filter(Boolean).length / a.length * 100) : null;
+  const parts = { r: share(rOk), l: share(lOk), w: share(wOk), s: sTried ? share(sOk) : null };
+  const vals = Object.values(parts).filter(v => v !== null), p = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+  KTEST_RES = { lv, pct: p, parts };
+  rOk.forEach(ok => skillLog("r", ok)); lOk.forEach(ok => skillLog("l", ok)); wOk.forEach(ok => skillLog("w", ok));
+  if (sTried) sOk.forEach(ok => skillLog("s", ok));
+  S.ktest[lv] = Math.max(kTestBest(lv), p);
+  S.ktsk = S.ktsk || {};
+  const best = S.ktsk[lv] || (S.ktsk[lv] = {});
+  Object.keys(parts).forEach(k => { if (parts[k] !== null) best[k] = Math.max(best[k] || 0, parts[k]); });
+  const right = [...rOk, ...lOk, ...wOk, ...(sTried ? sOk : [])].filter(Boolean).length;
+  addXP(right * 2);
+  if (p >= t.pass) pamukSay("happy", `${p}% — Tabriklaymiz! Siz ${lv} darajasini tasdiqladingiz!`); else pamukSay("sad", `${p}% — Afsus, bu safar oʻtmadi. Zaif qismni takrorlab, yana urinib koʻring!`);
+  window.scrollTo(0, 0); route();
+}
+function ktResultHtml(res, pass) {
+  return `<div class="glass pad k-result ${res.pct >= pass ? "pass" : "fail"}">${mascot(res.pct >= pass ? "trophy" : "sit")}<h2>${res.pct}%</h2>
+    <p>${res.pct >= pass ? "Tabriklaymiz! Siz bu darajani muvaffaqiyatli yakunladingiz." : "Hali biroz mashq kerak. Zaif qismni takrorlab, yana urinib koʻring."}</p>
+    ${res.parts ? `<div class="sk-bars" style="text-align:left;margin-top:10px;width:100%;align-self:stretch">${SKILLS.map(s => { const v = res.parts[s.id]; return `<div class="sk-line">
+      <span class="ico ${s.c}-t">${ICON[s.ico]}</span><span class="sk-name"><b>${s.tr}</b><small>${s.uz}</small></span>
+      <span class="sk-track"><i style="width:${v || 0}%;background:var(--${s.c})"></i></span>
+      <span class="sk-val">${v === null ? "—" : v + "%"}<small>${v === null ? "topshirilmadi" : v >= pass ? "✔ oʻtdi" : "✘"}</small></span></div>`; }).join("")}</div>` : ""}
+  </div>`;
 }
 /* ---------- Pronunciation practice ----------
    Uses the browser's own speech recognition (Web Speech API, tr-TR). Nothing is recorded or stored by the site:
@@ -2775,20 +2918,10 @@ document.addEventListener("click", e => {
   }
   else if (act === "k-self") { const st = kState(b.dataset.id); if (st.e[b.dataset.key] !== 1) { st.e[b.dataset.key] = 1; skillLog("w", true, 5); addXP(5); pamukSay("happy", praise()); } kRerender(); }
   else if (act === "k-tq") { KTEST_ANS[+b.dataset.i] = +b.dataset.o; b.parentElement.querySelectorAll(".opt").forEach(o => o.classList.toggle("picked", o === b)); }
-  else if (act === "k-test-done") {
-    const lv = b.dataset.l, t = KLEVEL(lv).test, qs = t.parts.flatMap(p => p.qs);
-    const miss = qs.findIndex((q, i) => KTEST_ANS[i] === undefined);
-    if (miss >= 0) { toast(`${miss + 1}-savolga javob tanlanmagan`); return; }
-    const right = qs.filter((q, i) => KTEST_ANS[i] === q.a).length, p = Math.round(right / qs.length * 100);
-    KTEST_RES = { lv, pct: p };
-    qs.forEach((q, i) => skillLog("r", KTEST_ANS[i] === q.a));
-    const was = kTestBest(lv);
-    S.ktest[lv] = Math.max(was, p);
-    addXP(right * 2);
-    if (p >= t.pass) pamukSay("happy", `${p}% — Tabriklaymiz! Siz ${lv} darajasini tasdiqladingiz!`); else pamukSay("sad", `${p}% — Afsus, bu safar oʻtmadi. Qiyin boʻlimlarni takrorlab, yana urinib koʻring!`);
-    window.scrollTo(0, 0); route();
-  }
-  else if (act === "k-test-again") { KTEST_ANS = {}; KTEST_RES = null; route(); window.scrollTo(0, 0); }
+  else if (act === "k-test-done") ktFinish(b.dataset.l);
+  else if (act === "kt-l") { KT_ANS.l[+b.dataset.i] = +b.dataset.o; b.parentElement.querySelectorAll(".opt").forEach(o => o.classList.toggle("picked", o === b)); }
+  else if (act === "kt-mic") ktMic(b.dataset.l, +b.dataset.i, b);
+  else if (act === "k-test-again") { KTEST_ANS = {}; KTEST_RES = null; KT_GEN[b.dataset.l] = null; KT_ANS = { lv: b.dataset.l, l: {}, w: {}, s: {} }; route(); window.scrollTo(0, 0); }
   else if (act === "say-seq") speakSeq(JSON.parse(b.dataset.lines));
   else if (act === "cel-next") nextCelebrate();
   else if (act === "share") shareSite(b.dataset.text);
@@ -2832,6 +2965,9 @@ document.addEventListener("input", e => {
   if (!e.target.dataset || e.target.dataset.act !== "k-write") return;
   const st = kState(e.target.dataset.id), key = e.target.dataset.key; st.v[key] = e.target.value;
   clearTimeout(kWriteT); kWriteT = setTimeout(save, 800);
+});
+document.addEventListener("input", e => {
+  if (e.target.dataset && e.target.dataset.act === "kt-w") KT_ANS.w[+e.target.dataset.i] = e.target.value;
 });
 document.addEventListener("keydown", e => {
   if (e.key === "Enter" && e.target.classList && e.target.classList.contains("k-input")) { const btn = e.target.parentElement.querySelector("[data-act=k-check]"); if (btn) btn.click(); }

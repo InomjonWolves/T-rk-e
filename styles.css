@@ -914,3 +914,18 @@ details.glass summary { cursor: pointer; }
 .wr-row .sub { font-size: 14px; margin-top: 2px; }
 .state.warn { border-radius: 50%; background: var(--orange-soft); color: var(--orange); display: grid; place-items: center; font-weight: 900; font-size: 15px; }
 a.mode { color: inherit; text-decoration: none; }
+
+/* Level tests in four parts */
+.sk-lv { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.sk-lv-item { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 14px; border-radius: 20px; color: inherit; text-decoration: none; }
+.sk-lv-item .ico { width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center; }
+.sk-lv-item .ico svg { width: 18px; height: 18px; }
+.sk-lv-item small { font-weight: 700; color: var(--ink-2); }
+.sk-lv-item b { font-size: 26px; line-height: 1; }
+.sk-lv-item .muted { font-size: 12px; }
+.kt-mic-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.mic-btn.kt-mic { width: 52px; height: 52px; flex: none; }
+.mic-btn.kt-mic svg { width: 24px; height: 24px; }
+.kt-heard { font-size: 15px; font-weight: 600; min-width: 0; }
+.k-input.right { border-color: var(--green); background: var(--green-soft); }
+.k-input.wrong { border-color: var(--pink); background: var(--pink-soft); }
