@@ -8,7 +8,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 ## Joriy holat — qisqa xulosa (2026-11-02)
 **Tayyor va saytda:** A1–B2 kurs, qoʻllanma va 675 ta qoida mashqi; 4 koʻnikma (Okuma, Dinleme, Yazma, Konuşma) boʻyicha mashqlar, hisob va `#skills` paneli; tinglash (TTS) va gapirish (mikrofon) mashqlari; erkin yozishni avtomatik tekshirish; 4 qismli daraja testlari; darajani aniqlash testi; tinglash va gapirish xatolar daftari; anonim analitika (`#admin`). Firestore qoidalari konsolda joylangan (test hisobi bilan tekshirildi), foydalanuvchi `admins/{uid}` hujjatini yaratdi. 29 ta avtomatik test, GitHub Actions'da ham ishlaydi.
 
-**Kutilayotgan ish — pamuk.web.app (foydalanuvchi qiladi):** repo tayyor (`firebase.json` → `site: "pamuk"`, workflow `Firebase Hosting`). Foydalanuvchi: 1) Firebase Hosting'da `pamuk` nomli sayt yaratadi (band boʻlsa boshqa nom → `firebase.json` dagi `site` ni oʻzgartirish); 2) Service account kaliti (rollar: Firebase Hosting Admin, API Keys Viewer, Cloud Run Viewer) → GitHub secret `FIREBASE_SERVICE_ACCOUNT`; 3) Authentication → Authorized domains ga `pamuk.web.app`. Shundan keyin workflow'ni ishga tushirib (`workflow_dispatch` yoki `main` ga push), saytni va Google orqali kirishni tekshirish.
+**Kutilayotgan ish — turkceyol.web.app:** sayt `turkceyol` yaratilgan, `firebase.json` → `site: "turkceyol"`, GitHub secret `FIREBASE_SERVICE_ACCOUNT` qoʻshilgan (2026-11-02). Birinchi joylash 403 bilan yiqildi: `serviceusage.services.get` ruxsati yoʻq → foydalanuvchi Google Cloud IAM da service account'ga **Service Usage Consumer** (`roles/serviceusage.serviceUsageConsumer`) rolini qoʻshadi. Kerakli rollar jami: Firebase Hosting Admin, API Keys Viewer, Cloud Run Viewer, Service Usage Consumer. Yana: Authentication → Authorized domains ga `turkceyol.web.app`. Shundan keyin workflow'ni ishga tushirib (`workflow_dispatch` yoki `main` ga push), saytni va Google orqali kirishni tekshirish.
 
 **Keyingi mumkin boʻlgan ishlar (foydalanuvchi tanlaydi):** oʻqituvchi va guruh rejimi (yangi Firestore qoidalari kerak); tezlik davomi (`course.js` 273 KB va `app.js` ~250 KB — kursni darajalar boʻyicha keyinroq yuklash; Firebase SDK endi bloklamaydi); .uz domeni (tavsiya `turkceyol.uz`, olinmagan); push eslatmalar (pullik Blaze tarifi kerak, keyinga qoldirilgan).
 
@@ -69,7 +69,7 @@ Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #placement #lessons #gram
 - Qoʻllanma va qoida mashqlari A1–B2 gacha toʻldirildi. `#guide` va `#gx` sahifalarida daraja tugmalari bor. Tarjimon A2–B2 qoliplarini ham taniydi (`TR_HINTS`).
 
 ## Qolgan ishlar
-1. **pamuk.web.app** — yuqoridagi "Kutilayotgan ish" (foydalanuvchi qadamlari, keyin tekshirish).
+1. **turkceyol.web.app** — yuqoridagi "Kutilayotgan ish" (foydalanuvchi qadamlari, keyin tekshirish).
 2. **Real telefonda sinash (foydalanuvchi):** gapirish mashqlari va daraja testining gapirish qismi (Android Chrome, iPhone Safari), turkcha TTS ovozi, tarjimon (MyMemory CORS). Testlarda mikrofon soxta.
 3. **Turk tilini ona tili darajasida biladigan odam koʻrigi:** A2–B2 qoʻllanma (79 mavzu) va 470+ qoida mashqi, kurs matnlari (A2.7–8, B1, B2 bir marta tekshirilib, xatolar tuzatilgan).
 4. **Raqobatchi tahlili: sinavmultilevel.uz** — sandbox toʻsadi; foydalanuvchi ruxsat berishi yoki skrinshot yuborishi kerak.
