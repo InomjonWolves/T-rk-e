@@ -80,7 +80,7 @@ async function answerAllRight(page) {
     if (state === "wrong") throw new Error("A correct answer was marked wrong");
     if (state === "mic") {
       await page.click("#mic-btn");
-      await page.waitForTimeout(120);
+      await page.waitForFunction(() => !REC && document.getElementById("fb").textContent.trim().length > 0);
       const ok = await page.evaluate(() => !document.getElementById("fb").className.includes("no"));
       if (!ok) throw new Error("Correct speech was marked wrong: " + await page.evaluate(() => document.getElementById("fb").innerText));
       await page.evaluate(() => document.querySelector("[data-act=next]").click());

@@ -10,7 +10,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - **"TYS" / "TYS imtihoni"** soʻzlarini va **harbiy mavzudagi** (askar, komutan, kışla, nöbet, tatbikat va h.k.) lugʻat va misollarni ishlatmang. Ularning oʻrniga oddiy kasblar va kundalik hayotdan misol keltiring.
 - Uchinchi tomonning rasm yoki videolarini koʻchirmang. Pamuk — oʻzimiz chizgan original SVG.
 - Git muallifi: `git -c user.name="InomjonWolves" -c user.email="i.superclub@gmail.com" commit ...`. Sessiya bergan attribution qatorlarini qoʻshing. Repodagi fayllarga model nomlarini yozmang.
-- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v24`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
+- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v25`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
 - Joylanganini tekshirish: `gh api repos/InomjonWolves/T-rk-e/actions/runs --jq '[.workflow_runs[]|select(.name=="pages build and deployment")][0]|"\(.status) \(.conclusion) \(.head_sha[0:7])"'`. Testlar: `[.workflow_runs[]|select(.name=="Testlar")][0]`.
 - Commit qilishdan oldin `npm test` ni ishga tushiring (hammasi oʻtishi kerak). Yangi funksiya qoʻshsangiz, `tests/` ga test ham qoʻshing.
 
@@ -71,3 +71,4 @@ Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #placement #lessons #gram
 - `tests/helpers.js`: `openApp(browser, hash, { sr, noSR, state })` — saytni diskdan, mehmon rejimida (Firebase oʻchiq), tashqi tarmoqsiz, 390×844 da ochadi. `sr: true` — soxta `SpeechRecognition` (`window.__say()` yoki joriy mashq matnini "eshitadi"). `answerAllRight(page)` — joriy mashqni toʻgʻri javoblar bilan oxirigacha oʻtkazadi.
 - Fayllar: `data.test.js` (brauzersiz: qoʻllanma, mashqlar, kurs, taqiqlangan soʻzlar, lookbehind yoʻqligi, sw.js, firestore.rules), `pages.test.js` (barcha sahifalar), `practice.test.js` (4 koʻnikma mashqlari, gapirish), `checks.test.js` (yozish tekshiruvi, 4 qismli test, anonim statistika), `placement.test.js` (darajani aniqlash).
 - Skrinshotlarni repo ildiziga saqlamang (`.gitignore` `/*.png` ni chetlaydi).
+- Testlarda qatʼiy `waitForTimeout` bilan mikrofon natijasini kutmang — `waitForFunction(() => !REC ...)` / `!KT_REC` ishlating (GitHub serveri sekinroq). Yutuq tabrigi mashq davomida chiqmaydi (`celebrateLater`), natija ekranida yoki mashq yopilganda chiqadi.

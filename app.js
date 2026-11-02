@@ -1540,10 +1540,13 @@ function checkAch() {
   cloudSave();
   fresh.forEach(a => celebrate({ title: a.t, text: `${a.d}. Pamuk sizdan faxrlanadi! +20 XP`, ico: a.ico, c: a.c, share: true }));
 }
+// During an exercise the pop-up waits for the result screen, so it never covers the answer buttons
+const celebrateLater = () => !!(SES && !SES.done);
 function celebrate(c) {
   ACH_QUEUE.push(c);
-  if (ACH_QUEUE.length === 1) showCelebrate();
+  if (ACH_QUEUE.length === 1 && !celebrateLater()) showCelebrate();
 }
+function celebrateQueued() { if (ACH_QUEUE.length && $("celebrate").hidden && !celebrateLater()) showCelebrate(); }
 function showCelebrate() {
   const c = ACH_QUEUE[0];
   if (!c) return;
@@ -1809,6 +1812,7 @@ function closeSession() {
   sessionEl.hidden = true; SES = null;
   document.body.style.overflow = "";
   route();
+  celebrateQueued();
 }
 function progressBar() {
   const n = SES.items.length;
@@ -3105,6 +3109,7 @@ function renderResult() {
   </div>`;
   CatLife.scan();
   setTimeout(() => CatLife.mood(stage.querySelector(".cat"), r >= 0.7 ? "happy" : "sad", 1500), 250);
+  setTimeout(celebrateQueued, 900);
   foot.innerHTML = `<button class="btn btn-ghost" data-act="close-session">Yopish</button>${SES.mode === "gx" ? (() => { const nx = GX_CODES[GX_CODES.indexOf(SES.u) + 1]; return nx ? `<button class="btn btn-grad" data-act="gx-start" data-c="${nx}">Keyingi: ${esc(nx)}</button>` : ""; })() : ["review", "mistakes", "gxm", "lmis", "smis"].includes(SES.mode) ? "" : `<button class="btn btn-grad" data-act="again">Yana mashq</button>`}`;
 }
 

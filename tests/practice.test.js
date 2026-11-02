@@ -7,7 +7,8 @@ let browser;
 before(async () => { browser = await launch(); });
 after(async () => { await browser.close(); });
 
-const run = (page, mode, u) => page.evaluate(([m, u]) => { closeSheet(true); if (SES) closeSession(); startSession(m, u); }, [mode, u]);
+// Starts a session the way a learner would: any achievement pop-up from the previous one is dismissed first
+const run = (page, mode, u) => page.evaluate(([m, u]) => { closeSheet(true); if (SES) closeSession(); ACH_QUEUE.length = 0; document.getElementById("celebrate").hidden = true; startSession(m, u); }, [mode, u]);
 const sk = page => page.evaluate(() => JSON.parse(JSON.stringify(S.sk)));
 
 test("word, writing and listening sessions: all right, counted per skill", async () => {
@@ -50,7 +51,8 @@ test("speaking: words, sentences, oral answers and role play with a fake microph
   // A wrong answer: letters are marked and a retry is offered
   await run(page, "say", "pron");
   await page.evaluate(() => { window.__say = () => "yanlış bir şey"; });
-  await page.click("#mic-btn"); await page.waitForTimeout(120);
+  await page.click("#mic-btn");
+  await page.waitForFunction(() => !REC && SES.tries === 1);
   assert.equal(await page.evaluate(() => SES.answered), false);
   assert.ok(await page.evaluate(() => document.querySelectorAll("#say-target .miss").length > 0));
   // Oral answers are scored by key words, tolerant to suffixes
@@ -86,7 +88,7 @@ test("listening and speaking mistakes go to the notebook and leave it after two 
   await page.evaluate(() => { const it = SES.items[0]; document.querySelector(`[data-act=ls-ans][data-o="${(it.opts.indexOf(it.t) + 1) % 3}"]`).click(); });
   await run(page, "say", "pron");
   await page.evaluate(() => { window.__say = () => "tamamen yanlış"; });
-  for (let i = 0; i < 3; i++) { await page.click("#mic-btn"); await page.waitForTimeout(100); }
+  for (let i = 0; i < 3; i++) { await page.click("#mic-btn"); await page.waitForFunction(n => !REC && (SES.tries >= n || SES.answered), i + 1); }
   await page.evaluate(() => { window.__say = null; closeSession(); location.hash = "#practice"; });
   await page.waitForTimeout(100);
   assert.deepEqual(await page.evaluate(() => [lsmList("l").length, lsmList("s").length]), [2, 1]);
@@ -100,5 +102,19 @@ test("listening and speaking mistakes go to the notebook and leave it after two 
     assert.equal(await answerAllRight(page), "1/1");
   }
   assert.deepEqual(await page.evaluate(() => S.lsm), {});
+  assert.deepEqual(errors, []);
+});
+
+test("an achievement earned during an exercise waits for the result screen", async () => {
+  const { page, errors } = await openApp(browser, "#practice", { state: { achv: { first: "x" }, skv: 1, sk: { r: [0, 0, 0, 0], l: [49, 49, 0, 0], w: [0, 0, 0, 0], s: [0, 0, 0, 0] } } });
+  await run(page, "listen", "pron");
+  await page.evaluate(() => { document.querySelector('[data-act=answer][data-ok="1"]').click(); });
+  await page.waitForTimeout(700);
+  assert.equal(await page.evaluate(() => S.achv.listen50 !== undefined), true, "achievement recorded");
+  assert.equal(await page.evaluate(() => document.getElementById("celebrate").hidden), true, "no pop-up during the exercise");
+  await page.evaluate(() => document.querySelector("[data-act=next]").click());
+  await answerAllRight(page);
+  await page.waitForTimeout(1100);
+  assert.equal(await page.evaluate(() => document.getElementById("celebrate").hidden), false, "pop-up on the result screen");
   assert.deepEqual(errors, []);
 });

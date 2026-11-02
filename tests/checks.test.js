@@ -48,7 +48,8 @@ test("level test: four parts are generated for every level and scored per skill"
   const n = await page.evaluate(() => ktGen("A2").s.length);
   for (let i = 0; i < n; i++) {
     await page.evaluate(i => { window.__say = () => ktGen("A2").s[i].tr; }, i);
-    await page.click(`[data-act=kt-mic][data-i="${i}"]`); await page.waitForTimeout(100);
+    await page.click(`[data-act=kt-mic][data-i="${i}"]`);
+    await page.waitForFunction(i => !KT_REC && !!KT_ANS.s[i], i);
   }
   await page.click("[data-act=k-test-done]"); await page.waitForTimeout(200); await closeCelebrate(page);
   const res = await page.evaluate(() => ({ r: KTEST_RES, lv: SKILLS.map(s => skLevel(s.id)) }));

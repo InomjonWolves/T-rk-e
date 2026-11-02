@@ -25,7 +25,8 @@ test("placement: every level right → B2; the speaking part is optional", async
   const n = await page.evaluate(() => plGet().it.s.length);
   for (let i = 0; i < n; i++) {
     await page.evaluate(i => { window.__say = () => plGet().it.s[i].tr; }, i);
-    await page.click(`[data-act=pl-mic][data-i="${i}"]`); await page.waitForTimeout(100);
+    await page.click(`[data-act=pl-mic][data-i="${i}"]`);
+    await page.waitForFunction(i => !KT_REC && !!plGet().ans.s[i], i);
   }
   await page.click("[data-act=pl-done]"); await page.waitForTimeout(150); await closeCelebrate(page);
   const r = await page.evaluate(() => plGet().res);
