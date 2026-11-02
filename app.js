@@ -47,7 +47,7 @@ function loadLocal(key) {
   try { const raw = localStorage.getItem(key); if (raw) v = Object.assign(blank(), JSON.parse(raw)); } catch (e) {}
   return migrate(v);
 }
-function save() { try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {} cloudSave(); clearTimeout(achTimer); achTimer = setTimeout(checkAch, 450); }
+function save() { S.savedAt = Date.now(); try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {} cloudSave(); clearTimeout(achTimer); achTimer = setTimeout(checkAch, 450); }
 
 /* ---------- Spaced repetition (simplified SM-2) ----------
    Each word: i = interval in days, e = ease, d = due day, r = successful reviews in a row,
@@ -251,6 +251,7 @@ const ICON = {
   female: sv('<circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/>'),
   download: sv('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'),
   heart: sv('<path d="M12 20s-7-4.5-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.5-9 9-9 9z"/>'),
+  users: sv('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.8.7 3 2.3 3.5 5.2"/>'),
   moon: sv('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'),
   sun: sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
   globe: sv('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>'),
@@ -1011,6 +1012,7 @@ function viewProfile() {
       ${USER ? `<button class="set-row" data-act="pub" role="switch" aria-checked="${S.pub}"><span><b>Reytingda koʻrinish</b><small>Ismingiz va XP boshqa oʻquvchilarga koʻrinadi</small></span><span class="switch" aria-checked="${S.pub}"></span></button>
       <button class="set-row" data-act="anon" role="switch" aria-checked="${S.anon !== false}"><span><b>Anonim statistika</b><small>Ism va pochtasiz koʻnikma koʻrsatkichlari saytni yaxshilash uchun yuboriladi</small></span><span class="switch" aria-checked="${S.anon !== false}"></span></button>
       ${ADMIN ? `<a class="set-row" href="#admin" style="color:inherit;text-decoration:none"><span><b>Umumiy analitika</b><small>Faqat admin: barcha foydalanuvchilar boʻyicha</small></span>${ICON.chev}</a>` : ""}` : ""}
+      <a class="set-row" href="#groups" style="color:inherit;text-decoration:none"><span><b>Guruhlar</b><small>Oʻqituvchi va sinf bilan birga oʻrganish</small></span>${ICON.users}</a>
       <a class="set-row" href="#help" style="color:inherit;text-decoration:none"><span><b>Yordam va qoʻllanma</b><small>Ilovani oʻrnatish, saytdan foydalanish, savollar</small></span>${ICON.chev}</a>
       <button class="set-row" data-act="share"><span><b>Doʻstlarni taklif qilish</b><small>Turk tilini birga, bepul oʻrganing</small></span>${ICON.heart}</button>
       <a class="set-row" href="kurs/" style="color:inherit;text-decoration:none"><span><b>Kurs va grammatika — veb sahifalar</b><small>Mavzuni havola bilan ulashish uchun</small></span>${ICON.chev}</a>
@@ -1644,6 +1646,15 @@ async function shareSite(text) {
     S.shared = (S.shared || 0) + 1; save();
   } catch (e) { /* the viewer closed the share sheet */ }
 }
+async function shareLink(url, msg) {
+  try {
+    if (navigator.share) await navigator.share({ title: "Türkçe Yoʻl", text: msg, url });
+    else copyText(msg + " " + url, "Havola nusxalandi — oʻquvchilaringizga yuboring");
+  } catch (e) { /* the viewer closed the share sheet */ }
+}
+function copyText(t, done) {
+  try { navigator.clipboard.writeText(t).then(() => toast(done), () => toast(t)); } catch (e) { toast(t); }
+}
 
 /* ---------- Install (PWA) and help ---------- */
 let INSTALL_EVT = null;
@@ -1765,6 +1776,9 @@ function routeNow() {
   else if (h === "write") { html = viewWrite(); tab = "practice"; }
   else if (h === "placement") { html = viewPlacement(); tab = "lessons"; }
   else if (h === "admin") { html = viewAdmin(); tab = "profile"; }
+  else if (h === "groups") { html = viewGroups(); tab = "profile"; after = loadGroups; }
+  else if (/^group-[A-Z0-9]{6}$/.test(h)) { html = viewGroup(h.slice(6)); tab = "profile"; after = () => loadGroup(h.slice(6)); }
+  else if (/^join-[A-Za-z0-9]{6}$/.test(h)) { const c = grpNorm(h.slice(5)); html = viewJoin(c); tab = "profile"; after = () => viewJoinLoad(c); }
   else if (h === "help") { html = viewHelp(); tab = "profile"; }
   else if (h === "gx") { html = viewGx(); tab = "lessons"; }
   else if (h === "lessons") html = viewLessons();
@@ -3160,6 +3174,15 @@ function onAct(e) {
   if (act === "sheet-close") { if (e.target === b && !$("sheet").dataset.locked) closeSheet(); return; }
   if (act === "welcome-close") { hideWelcome(); return; }
   if (act === "course-retry") { route(); return; }
+  if (act === "grp-join") { grpJoin(b.dataset.c); return; }
+  if (act === "grp-share") { shareLink(grpLink(b.dataset.c), "Turk tili guruhimizga qoʻshiling:"); return; }
+  if (act === "grp-copy") { copyText(grpLink(b.dataset.c), "Havola nusxalandi"); return; }
+  if (act === "grp-reload") { loadGroup(b.dataset.c, true); return; }
+  if (act === "grp-leave") { grpLeave(b.dataset.c); return; }
+  if (act === "grp-kick") { if (b.dataset.sure) grpKick(b.dataset.c, b.dataset.u); else { b.dataset.sure = "1"; b.textContent = `${b.dataset.n || "Oʻquvchi"} chiqarilsinmi? Yana bosing`; } return; }
+  if (act === "grp-del-ask") { $("grp-del").innerHTML = `<div class="notice"><div><b>Guruh oʻchirilsinmi?</b> Oʻquvchilar roʻyxati va natijalari guruhdan oʻchadi (ularning oʻz natijalari saqlanib qoladi).</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button class="btn btn-ghost" data-act="grp-reload" data-c="${esc(b.dataset.c)}">Bekor qilish</button><button class="btn btn-danger" data-act="grp-del-yes" data-c="${esc(b.dataset.c)}">Ha, oʻchirish</button></div></div>`; return; }
+  if (act === "grp-del-yes") { b.disabled = true; grpDelete(b.dataset.c); return; }
   if (act === "say") speak(b.dataset.t, b.classList.contains("say") ? b : null);
   else if (act === "go") { go(b.dataset.to); if (b.dataset.focus) setTimeout(() => $("q") && $("q").focus(), 50); }
   else if (act === "start") startSession(b.dataset.mode, b.dataset.u || "all");
@@ -3243,7 +3266,7 @@ function onAct(e) {
   else if (act === "auth-tab") setAuthTab(b.dataset.t);
   else if (act === "auth-google") googleSignIn();
   else if (act === "auth-reset") resetPassword();
-  else if (act === "logout") { ADMIN = false; ADMIN_DATA = null; setLastUser(null); if (auth) auth.signOut(); go("home"); }
+  else if (act === "logout") { ADMIN = false; ADMIN_DATA = null; setLastUser(null); cloudFlush().then(() => auth && auth.signOut()); go("home"); }
   else if (act === "verify-again") { USER.sendEmailVerification().then(() => toast("Xat yuborildi. Pochtangizni tekshiring")).catch(err => toast(authMsg(err))); }
   else if (act === "delete-ask") {
     $("del-box").innerHTML = `<div class="notice"><div><b>Hisob butunlay oʻchirilsinmi?</b> Barcha natijalaringiz yoʻqoladi va buni qaytarib boʻlmaydi.</div>
@@ -3385,6 +3408,200 @@ document.addEventListener("keydown", e => {
   if (!$("sheet").hidden) { if (!$("sheet").dataset.locked) closeSheet(); } else if (SES) closeSession();
 });
 
+/* ---------- Groups: a teacher creates a class, learners join with a code or link ----------
+   Firestore: groups/{CODE} = { name, owner, oname, at }; groups/{CODE}/members/{uid} = a short progress card.
+   Joined groups live in S.grp (synced with the progress); the member card is refreshed by grpSync(). */
+const GRP_ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", GRP_MAX = 5, GRP_EVERY = 3 * 60 * 1000;
+const GRP_SITE = "https://turkceyol.web.app/";
+let GRP = {}, GRP_OWN = null, GRP_SYNC_AT = 0, GRP_ERR = "";
+const grpCode = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), b => GRP_ABC[b % GRP_ABC.length]).join("");
+const grpNorm = c => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+const grpLink = c => GRP_SITE + "#join-" + c;
+const grpMine = () => (S.grp || []).filter(c => /^[A-Z0-9]{6}$/.test(c));
+const grpRef = c => db.collection("groups").doc(c);
+const grpName = () => (USERNAME || (USER && USER.email ? USER.email.split("@")[0] : "") || "Oʻquvchi").trim().slice(0, 40);
+function grpCard() {
+  const st = skStats(14), sk = {};
+  SKILLS.forEach(s => { sk[s.id] = [st[s.id].o, st[s.id].n, Math.round(st[s.id].t / 60)]; });
+  let act = 0;
+  for (let i = 0; i < 14; i++) if (dayGet(keyOf(dayNum() - i)).xp) act++;
+  return { name: grpName(), week: weekKey(), wxp: S.week === weekKey() ? S.wxp : 0, xp: S.xp, streak: streakNow(), last: S.lastDay || "",
+    sk, units: kDoneCount(), lv: kNext().level, act, at: firebase.firestore.FieldValue.serverTimestamp() };
+}
+// Refresh my card in every joined group; a missing card means the teacher removed me or deleted the group
+function grpSync(force) {
+  if (!USER || !db || !grpMine().length) return;
+  if (!force && Date.now() - GRP_SYNC_AT < GRP_EVERY) return;
+  GRP_SYNC_AT = Date.now();
+  const card = grpCard();
+  grpMine().forEach(c => grpRef(c).collection("members").doc(USER.uid).update(card).catch(e => {
+    if (e && (e.code === "not-found" || e.code === "permission-denied")) grpForget(c, "Siz guruhdan chiqarilgansiz yoki guruh oʻchirilgan");
+  }));
+}
+function grpForget(c, msg) {
+  if (!grpMine().includes(c)) return;
+  S.grp = grpMine().filter(x => x !== c); delete GRP[c]; save(); cloudSave(true);
+  if (msg) toast(msg);
+  if (/^#(groups|group-)/.test(location.hash)) route();
+}
+async function grpJoin(code) {
+  code = grpNorm(code);
+  if (code.length !== 6) { toast("Guruh kodi 6 ta belgidan iborat"); return; }
+  if (!USER || !db) { toast("Guruhga qoʻshilish uchun hisobga kiring"); return; }
+  if (grpMine().includes(code)) { go("group-" + code); return; }
+  if (grpMine().length >= GRP_MAX) { toast(`Eng koʻpi bilan ${GRP_MAX} ta guruhga qoʻshilish mumkin`); return; }
+  try {
+    const g = await grpRef(code).get();
+    if (!g.exists) { toast("Bunday guruh topilmadi. Kodni tekshiring"); return; }
+    if (g.data().owner === USER.uid) { go("group-" + code); return; }
+    await grpRef(code).collection("members").doc(USER.uid).set(grpCard());
+    S.grp = grpMine().concat(code); delete GRP[code]; save(); cloudSave(true);
+    try { localStorage.removeItem("ty-join"); } catch (e) {}
+    GRP_SYNC_AT = Date.now();
+    pamukSay("happy", `“${g.data().name}” guruhiga qoʻshildingiz!`);
+    go("group-" + code);
+  } catch (e) { toast(grpErr(e)); }
+}
+async function grpCreate(name) {
+  name = String(name || "").trim().slice(0, 40);
+  if (!name) { toast("Guruh nomini yozing, masalan: “A1 kechki guruh”"); $("grp-name") && $("grp-name").focus(); return; }
+  if (!USER || !db) return;
+  for (let k = 0; k < 3; k++) {
+    const code = grpCode();
+    try {
+      await grpRef(code).set({ name, owner: USER.uid, oname: grpName(), at: firebase.firestore.FieldValue.serverTimestamp() });
+      GRP_OWN = null;
+      go("group-" + code);
+      return;
+    } catch (e) { if (!(e && e.code === "permission-denied") || k === 2) { toast(grpErr(e)); return; } }
+  }
+}
+const grpErr = e => e && e.code === "permission-denied" ? "Ruxsat yoʻq: Firestore qoidalari yangilanmagan boʻlishi mumkin" : "Internet aloqasini tekshiring";
+const grpDay = d => { if (!d) return "hali faol emas"; const n = dayNum() - dayNum(new Date(d + "T12:00:00")); return n <= 0 ? "bugun" : n === 1 ? "kecha" : `${n} kun oldin`; };
+const grpSt = m => { const st = {}; SKILLS.forEach(s => { const a = (m.sk || {})[s.id] || [0, 0, 0]; st[s.id] = { o: a[0] || 0, n: a[1] || 0, t: (a[2] || 0) * 60 }; }); return st; };
+
+function viewGroups() {
+  const head = `<div><a class="back" href="#profile">${ICON.back}Profil</a></div>
+  <div class="lesson-head"><div class="tags"><span class="tag violet-t">${ICON.users}Sinf bilan oʻrganish</span></div>
+    <h1>Guruhlar</h1><p class="sub">Oʻqituvchi guruh yaratadi va havolani ulashadi. Oʻquvchilar qoʻshiladi, oʻqituvchi esa har kimning 4 koʻnikma boʻyicha natijasini koʻradi.</p></div>`;
+  if (!FB || !USER) return head + `<div class="glass empty">${mascot("trophy")}<b>Guruhlar hisob bilan ishlaydi</b><span class="muted">Hisobga kirsangiz, sinfingiz bilan birga oʻrganasiz.</span></div>`;
+  return head + `
+  <section class="section"><div class="section-head"><h2>Guruhga qoʻshilish</h2></div>
+    <form class="glass pad grp-form" data-form="grp-join"><label for="grp-code" class="muted">Oʻqituvchingiz bergan 6 belgili kod</label>
+      <div class="grp-row"><input id="grp-code" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Masalan: K7M2QX" value="${esc(grpNorm(localStorage.getItem("ty-join") || ""))}">
+      <button class="btn btn-grad" type="submit">Qoʻshilish</button></div></form></section>
+  <section class="section"><div class="section-head"><h2>Mening guruhlarim</h2></div><div id="grp-list"><div class="glass empty"><div class="spin"></div>Yuklanmoqda…</div></div></section>
+  <section class="section"><div class="section-head"><h2>Oʻqituvchimisiz?</h2></div>
+    <form class="glass pad grp-form" data-form="grp-create"><label for="grp-name" class="muted">Guruh yarating — oʻquvchilaringiz natijasini bir joyda koʻrasiz. Bepul.</label>
+      <div class="grp-row"><input id="grp-name" maxlength="40" autocomplete="off" placeholder="Guruh nomi: A1 kechki guruh"><button class="btn btn-soft" type="submit">Yaratish</button></div></form></section>
+  <div class="tip glass">${ICON.bulb}<div><b>Guruhda nima koʻrinadi?</b>Ismingiz, XP, ketma-ket kunlar, oxirgi faollik, kurs darajasi va soʻnggi 14 kundagi 4 koʻnikma natijalari. Pochta, tugʻilgan sana va rasm koʻrinmaydi. Guruhdan istalgan payt chiqishingiz mumkin.</div></div>`;
+}
+async function loadGroups() {
+  const box = $("grp-list");
+  if (!box || !USER || !db) return;
+  try {
+    if (!GRP_OWN) { const snap = await db.collection("groups").where("owner", "==", USER.uid).limit(20).get(); GRP_OWN = snap.docs.map(d => Object.assign({ id: d.id }, d.data())); }
+    const joined = await Promise.all(grpMine().map(c => GRP[c] ? Promise.resolve(Object.assign({ id: c }, GRP[c].g)) : grpRef(c).get().then(d => d.exists ? Object.assign({ id: c }, d.data()) : (grpForget(c), null)).catch(() => ({ id: c, name: c }))));
+    if (!$("grp-list")) return;
+    const row = (g, own) => `<a class="unit glass" href="#group-${esc(g.id)}"><span class="art ${own ? "violet" : "sky"}">${ICON.users}</span>
+      <span class="unit-body"><span class="unit-title">${esc(g.name)}</span><span class="unit-sub">${own ? "Siz — oʻqituvchi" : "Oʻqituvchi: " + esc(g.oname || "—")} · kod ${esc(g.id)}</span></span>${ICON.chev}</a>`;
+    const list = GRP_OWN.map(g => row(g, true)).concat(joined.filter(Boolean).map(g => row(g, false)));
+    $("grp-list").innerHTML = list.length ? `<div class="list">${list.join("")}</div>` : `<div class="glass empty"><b>Hali guruh yoʻq</b><span class="muted">Kod bilan qoʻshiling yoki oʻzingiz yarating.</span></div>`;
+  } catch (e) { if ($("grp-list")) $("grp-list").innerHTML = `<div class="glass empty"><b>Guruhlarni yuklab boʻlmadi</b><span class="muted">${esc(grpErr(e))}</span></div>`; }
+}
+function viewGroup(code) {
+  return `<div><a class="back" href="#groups">${ICON.back}Guruhlar</a></div><div id="grp-body" data-code="${esc(code)}"><div class="glass empty"><div class="spin"></div>Yuklanmoqda…</div></div>`;
+}
+async function loadGroup(code, fresh) {
+  if (!USER || !db) { if ($("grp-body")) $("grp-body").innerHTML = `<div class="glass empty"><b>Hisobga kiring</b></div>`; return; }
+  try {
+    let c = GRP[code];
+    if (!c || fresh || Date.now() - c.t > 60000) {
+      const g = await grpRef(code).get();
+      if (!g.exists) { grpForget(code); if ($("grp-body")) $("grp-body").innerHTML = `<div class="glass empty"><b>Guruh topilmadi</b><span class="muted">U oʻchirilgan boʻlishi mumkin.</span></div>`; return; }
+      const own = g.data().owner === USER.uid;
+      if (!own && grpMine().includes(code)) await grpRef(code).collection("members").doc(USER.uid).update(grpCard()).catch(() => {});
+      const snap = await grpRef(code).collection("members").limit(200).get();
+      c = GRP[code] = { g: g.data(), m: snap.docs.map(d => Object.assign({ id: d.id }, d.data())), t: Date.now() };
+    }
+    const box = $("grp-body");
+    if (box && box.dataset.code === code) box.innerHTML = groupHTML(code, c);
+  } catch (e) {
+    if (e && e.code === "permission-denied" && !grpMine().includes(code)) { go("join-" + code); return; }
+    if ($("grp-body")) $("grp-body").innerHTML = `<div class="glass empty"><b>Guruhni yuklab boʻlmadi</b><span class="muted">${esc(grpErr(e))}</span></div>`;
+  }
+}
+function groupHTML(code, c) {
+  const own = c.g.owner === USER.uid, wk = weekKey();
+  const ms = c.m.map(m => Object.assign({}, m, { w: m.week === wk ? m.wxp || 0 : 0 })).sort((a, b) => b.w - a.w || (b.xp || 0) - (a.xp || 0));
+  const total = {}; SKILLS.forEach(s => total[s.id] = { o: 0, n: 0, t: 0 });
+  ms.forEach(m => { const st = grpSt(m); SKILLS.forEach(s => { total[s.id].o += st[s.id].o; total[s.id].n += st[s.id].n; total[s.id].t += st[s.id].t; }); });
+  const activeWeek = ms.filter(m => m.w > 0).length, any = SKILLS.some(s => total[s.id].n), weak = skWeakest(total);
+  const head = `<div class="lesson-head"><div class="tags"><span class="tag violet-t">${ICON.users}${ms.length} aʼzo</span><span class="tag sky-t">kod ${esc(code)}</span>${own ? `<span class="tag green-t">${ICON.crown}Siz — oʻqituvchi</span>` : ""}</div>
+    <h1>${esc(c.g.name)}</h1><p class="sub">${own ? "Havolani oʻquvchilaringizga yuboring: ular bir bosishda qoʻshiladi." : "Oʻqituvchi: " + esc(c.g.oname || "—")}</p></div>`;
+  const share = own ? `<div class="glass pad grp-share"><div><small class="muted">Qoʻshilish havolasi</small><code>${esc(grpLink(code))}</code></div>
+    <div class="grp-row"><button class="btn btn-grad" data-act="grp-share" data-c="${esc(code)}">${ICON.heart}Ulashish</button><button class="btn btn-ghost" data-act="grp-copy" data-c="${esc(code)}">${ICON.copy}Nusxa</button></div></div>` : "";
+  const sum = own && ms.length ? `<section class="section"><div class="section-head"><h2>Guruh — soʻnggi 14 kun</h2><span class="tag sky-t">${activeWeek}/${ms.length} bu hafta faol</span></div>
+    <div class="glass pad">${skBars(total)}${any ? `<p class="muted" style="margin-top:10px">Guruhning eng zaif koʻnikmasi: <b>${weak.tr} (${weak.uz})</b>. Darsda shunga koʻproq vaqt ajrating.</p>` : `<p class="muted" style="margin-top:10px">Oʻquvchilar mashq qila boshlaganda natijalar shu yerda chiqadi.</p>`}</div></section>` : "";
+  const rows = ms.length ? ms.map((m, i) => {
+    const st = grpSt(m), me = m.id === USER.uid, mins = SKILLS.reduce((a, s) => a + st[s.id].t, 0) / 60;
+    const line = `<span class="n">${i + 1}</span><span class="grp-name"><b>${esc(m.name || "Oʻquvchi")}${me ? " (siz)" : ""}</b><small>${ICON.flame}${m.streak || 0} kun · ${grpDay(m.last)}</small></span><span class="grp-xp">${m.w} XP</span>`;
+    if (!own) return `<div class="rank-row${me ? " me" : ""}">${line}</div>`;
+    return `<details class="grp-m"><summary class="rank-row">${line}</summary><div class="grp-detail">
+      <div class="facts"><span>${ICON.book}Kurs: ${esc(m.lv || "A1")} · ${m.units || 0}/${COURSE.units.length} boʻlim</span><span>${ICON.clock}14 kunda: ${Math.round(mins)} daqiqa, ${m.act || 0} faol kun</span><span>${ICON.star}Jami: ${m.xp || 0} XP</span></div>
+      ${skBars(st)}
+      <button class="link" data-act="grp-kick" data-c="${esc(code)}" data-u="${esc(m.id)}" data-n="${esc(m.name || "")}" style="color:var(--pink);align-self:flex-start">Guruhdan chiqarish</button></div></details>`;
+  }).join("") : "";
+  const list = `<section class="section"><div class="section-head"><h2>${own ? "Oʻquvchilar" : "Guruh reytingi"}</h2><span class="tag violet-t">bu hafta XP</span></div>
+    ${ms.length ? `<div class="glass words grp-list">${rows}</div>` : `<div class="glass empty">${mascot("trophy")}<b>Hali hech kim qoʻshilmagan</b><span class="muted">Havolani oʻquvchilaringizga yuboring.</span></div>`}</section>`;
+  const foot = own ? `<div id="grp-del" style="display:flex;flex-direction:column;gap:10px"><button class="btn btn-ghost btn-block" data-act="grp-reload" data-c="${esc(code)}">Yangilash</button><button class="link" data-act="grp-del-ask" data-c="${esc(code)}" style="align-self:center;color:var(--pink)">Guruhni oʻchirish</button></div>`
+    : `<button class="btn btn-ghost btn-block" data-act="grp-leave" data-c="${esc(code)}">Guruhdan chiqish</button>`;
+  return head + share + sum + list + foot;
+}
+async function viewJoinLoad(code) {
+  const box = $("grp-join");
+  if (!box) return;
+  if (!USER || !db) { box.innerHTML = `<div class="glass empty"><b>Hisobga kiring</b><span class="muted">Guruhga qoʻshilish uchun avval hisobga kiring yoki roʻyxatdan oʻting.</span></div>`; return; }
+  if (grpMine().includes(code)) { go("group-" + code); return; }
+  try {
+    const g = await grpRef(code).get();
+    if (!$("grp-join")) return;
+    if (!g.exists) { $("grp-join").innerHTML = `<div class="glass empty"><b>Guruh topilmadi</b><span class="muted">Havola eskirgan yoki kod notoʻgʻri. Oʻqituvchingizdan yangisini soʻrang.</span></div>`; return; }
+    if (g.data().owner === USER.uid) { go("group-" + code); return; }
+    $("grp-join").innerHTML = `<div class="glass pad grp-invite">${mascot("wave")}<h2>${esc(g.data().name)}</h2><p class="muted">Oʻqituvchi: ${esc(g.data().oname || "—")}</p>
+      <p class="muted">Qoʻshilsangiz, oʻqituvchi va guruhdoshlar ismingiz, XP va 4 koʻnikma natijalaringizni koʻradi.</p>
+      <button class="btn btn-grad btn-block" data-act="grp-join" data-c="${esc(code)}">Guruhga qoʻshilish</button></div>`;
+    CatLife.scan();
+  } catch (e) { if ($("grp-join")) $("grp-join").innerHTML = `<div class="glass empty"><b>Guruhni ochib boʻlmadi</b><span class="muted">${esc(grpErr(e))}</span></div>`; }
+}
+function viewJoin(code) {
+  try { localStorage.setItem("ty-join", code); } catch (e) {}
+  return `<div><a class="back" href="#groups">${ICON.back}Guruhlar</a></div><div class="lesson-head"><div class="tags"><span class="tag violet-t">${ICON.users}Taklif</span></div><h1>Guruhga taklif</h1></div><div id="grp-join"><div class="glass empty"><div class="spin"></div>Yuklanmoqda…</div></div>`;
+}
+async function grpLeave(code) {
+  try { await grpRef(code).collection("members").doc(USER.uid).delete(); } catch (e) { toast(grpErr(e)); return; }
+  grpForget(code); toast("Guruhdan chiqdingiz"); go("groups");
+}
+async function grpKick(code, uid) {
+  try { await grpRef(code).collection("members").doc(uid).delete(); } catch (e) { toast(grpErr(e)); return; }
+  if (GRP[code]) GRP[code].m = GRP[code].m.filter(m => m.id !== uid);
+  route();
+}
+async function grpDelete(code) {
+  try {
+    const snap = await grpRef(code).collection("members").get();
+    await Promise.all(snap.docs.map(d => d.ref.delete()));
+    await grpRef(code).delete();
+  } catch (e) { toast(grpErr(e)); return; }
+  delete GRP[code]; GRP_OWN = null; toast("Guruh oʻchirildi"); go("groups");
+}
+// Account deletion: leave joined groups, delete own groups
+async function grpWipe(uid) {
+  await Promise.all(grpMine().map(c => grpRef(c).collection("members").doc(uid).delete().catch(() => {})));
+  const own = await db.collection("groups").where("owner", "==", uid).get().catch(() => null);
+  if (own) for (const g of own.docs) { const m = await g.ref.collection("members").get().catch(() => null); if (m) await Promise.all(m.docs.map(d => d.ref.delete().catch(() => {}))); await g.ref.delete().catch(() => {}); }
+}
+
 /* ---------- Accounts (Firebase) ---------- */
 let FB = !!(window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey);
 // EARLY: uid of the last signed-in user while the app runs on their local copy, before Firebase confirms the sign-in
@@ -3403,10 +3620,12 @@ const LAST_KEY = "ty-last-user";
 function lastUser() { try { const v = JSON.parse(localStorage.getItem(LAST_KEY) || "null"); return v && v.uid ? v : null; } catch (e) { return null; } }
 function setLastUser(v) { try { if (v) localStorage.setItem(LAST_KEY, JSON.stringify(v)); else localStorage.removeItem(LAST_KEY); } catch (e) {} }
 let auth = null, db = null, USER = null, USERNAME = "", PENDING_NAME = "", cloudTimer;
-function cloudSave() {
+function cloudSave(now) {
   if (!USER || !db) return;
   clearTimeout(cloudTimer);
   cloudTimer = setTimeout(() => {
+    cloudTimer = null;
+    if (!USER || !db) return;
     const ts = firebase.firestore.FieldValue.serverTimestamp();
     db.collection("users").doc(USER.uid).set({ progress: S, updatedAt: ts }, { merge: true }).catch(() => {});
     if (S.pub) {
@@ -3414,7 +3633,14 @@ function cloudSave() {
       db.collection("league").doc(USER.uid).set({ name, week: S.week, wxp: S.wxp, xp: S.xp, streak: streakNow() }).catch(() => {});
     }
     statsPush();
-  }, 1500);
+    grpSync();
+  }, now ? 0 : 1500);
+}
+// Write a pending save at once (before signing out)
+function cloudFlush() {
+  if (!USER || !db || !cloudTimer) return Promise.resolve();
+  clearTimeout(cloudTimer); cloudTimer = null;
+  return db.collection("users").doc(USER.uid).set({ progress: S, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(() => {});
 }
 const authEl = $("auth");
 let authMode = "login";
@@ -3464,6 +3690,13 @@ function showAuth(loading) {
 function hideAuth() { authEl.hidden = true; document.body.classList.remove("locked"); }
 function busy(on) { const b = $("auth-submit"); b.disabled = on; if (on) b.textContent = "Kuting…"; else setAuthTab(authMode); }
 
+document.addEventListener("submit", e => {
+  const f = e.target.closest("[data-form]");
+  if (!f) return;
+  e.preventDefault();
+  if (f.dataset.form === "grp-join") grpJoin($("grp-code").value);
+  else if (f.dataset.form === "grp-create") grpCreate($("grp-name").value);
+});
 $("auth-form").addEventListener("submit", async e => {
   e.preventDefault();
   const email = $("a-email").value.trim(), pass = $("a-pass").value;
@@ -3529,6 +3762,7 @@ async function deleteAccount(btn) {
     await db.collection("league").doc(u.uid).delete().catch(() => {});
     await db.collection("avatars").doc(u.uid).delete().catch(() => {});
     await db.collection("stats").doc(u.uid).delete().catch(() => {});
+    await grpWipe(u.uid).catch(() => {});
     try { localStorage.removeItem("ty-photo:" + u.uid); } catch (e) {}
     await db.collection("users").doc(u.uid).delete();
     await u.delete();
@@ -3555,7 +3789,9 @@ async function loadCloud(u) {
     PROFILE = { gender: (d && d.gender) || "", birth: (d && d.birth) || "" };
     if (PENDING_PROFILE) { PROFILE = PENDING_PROFILE; PENDING_PROFILE = null; }
     const cloud = d && d.progress ? Object.assign(blank(), d.progress) : null;
-    S = migrate(cloud && cloud.xp >= local.xp ? cloud : local);
+    // More XP wins; with equal XP the copy saved last wins (e.g. a group joined just before signing out)
+    const newer = cloud && (cloud.xp > local.xp || (cloud.xp === local.xp && (cloud.savedAt || 0) >= (local.savedAt || 0)));
+    S = migrate(newer ? cloud : local);
     const base = { name: USERNAME, email: u.email || "", progress: S, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
     if (PROFILE.gender) { base.gender = PROFILE.gender; base.birth = PROFILE.birth; }
     if (!d) base.createdAt = firebase.firestore.FieldValue.serverTimestamp();
@@ -3589,7 +3825,7 @@ function fbStart() {
   auth.onAuthStateChanged(async u => {
     if (!u) {
       EARLY = null; setLastUser(null);
-      USER = null; USERNAME = ""; S = blank(); KEYU = KEY; RANK_CACHE = {}; MYPHOTO = ""; PROFILE = { gender: "", birth: "" };
+      USER = null; USERNAME = ""; S = blank(); KEYU = KEY; RANK_CACHE = {}; GRP = {}; GRP_OWN = null; GRP_SYNC_AT = 0; MYPHOTO = ""; PROFILE = { gender: "", birth: "" };
       try { sessionStorage.removeItem("ty-welcomed"); } catch (e) {}
       if (SES) closeSession();
       showAuth(false); setAuthTab(authMode);

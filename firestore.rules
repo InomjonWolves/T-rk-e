@@ -38,6 +38,38 @@ service cloud.firestore {
         && request.resource.data.wxp is int && request.resource.data.xp is int;
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
+    // Guruhlar: oʻqituvchi (owner) yaratadi. Hujjat ID — 6 belgili kod; kodni bilgan hisob guruh nomini koʻra oladi.
+    match /groups/{gid} {
+      function g() { return get(/databases/$(database)/documents/groups/$(gid)).data; }
+      function okGroup(d) {
+        return d.keys().hasOnly(['name', 'owner', 'oname', 'at'])
+          && d.name is string && d.name.size() > 0 && d.name.size() <= 40
+          && d.oname is string && d.oname.size() <= 40;
+      }
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && gid.matches('^[A-Z0-9]{6}$')
+        && request.resource.data.owner == request.auth.uid && okGroup(request.resource.data);
+      allow update: if request.auth != null && resource.data.owner == request.auth.uid
+        && request.resource.data.owner == resource.data.owner && okGroup(request.resource.data);
+      allow delete: if request.auth != null && resource.data.owner == request.auth.uid;
+      // Aʼzo kartochkasi: ism, XP va 4 koʻnikma natijasi. Yozadi — faqat oʻzi; oʻqiydi — oʻqituvchi va guruhdoshlar;
+      // oʻchiradi — oʻzi (chiqish) yoki oʻqituvchi (chiqarish)
+      match /members/{uid} {
+        allow read: if request.auth != null && (request.auth.uid == uid || g().owner == request.auth.uid
+          || exists(/databases/$(database)/documents/groups/$(gid)/members/$(request.auth.uid)));
+        allow create, update: if request.auth != null && request.auth.uid == uid
+          && exists(/databases/$(database)/documents/groups/$(gid)) && g().owner != uid
+          && request.resource.data.keys().hasOnly(['name', 'week', 'wxp', 'xp', 'streak', 'last', 'sk', 'units', 'lv', 'act', 'at'])
+          && request.resource.data.name is string && request.resource.data.name.size() <= 40
+          && request.resource.data.week is string && request.resource.data.week.size() <= 12
+          && request.resource.data.last is string && request.resource.data.last.size() <= 10
+          && request.resource.data.lv is string && request.resource.data.lv.size() <= 2
+          && request.resource.data.wxp is int && request.resource.data.xp is int && request.resource.data.streak is int
+          && request.resource.data.units is int && request.resource.data.act is int
+          && request.resource.data.sk is map && request.resource.data.at == request.time;
+        allow delete: if request.auth != null && (request.auth.uid == uid || g().owner == request.auth.uid);
+      }
+    }
     // Profil rasmlari: kichik JPEG (100 KB gacha), faqat egasi yozadi
     match /avatars/{uid} {
       allow read: if request.auth != null;
