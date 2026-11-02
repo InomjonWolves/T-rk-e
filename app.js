@@ -37,7 +37,7 @@ function blank() {
     xp: 0, streak: 0, best: 0, lastDay: null, day: todayKey(), dayXp: 0,
     known: {}, gram: {}, srs: {}, newDay: { d: 0, n: 0 },
     days: {}, sessions: 0, perfect: 0, acc: [0, 0], ust: {},
-    week: "", wxp: 0, goal: 50, pub: true, gx: {}, gxm: {}, k: {}, ktest: {}, onb: 0, trUses: 0, shared: 0, night: 0, early: 0, pron: [0, 0], sk: skBlank(), roles: 0
+    week: "", wxp: 0, goal: 50, pub: true, gx: {}, gxm: {}, k: {}, ktest: {}, onb: 0, trUses: 0, shared: 0, night: 0, early: 0, pron: [0, 0], sk: skBlank(), roles: 0, anon: true
   };
 }
 let S = blank();
@@ -1005,7 +1005,9 @@ function viewProfile() {
         <span class="mini-seg">${[["auto", "Avto"], ["light", "Yorugʻ"], ["dark", "Tun"]].map(([v, l]) => `<button data-act="theme" data-v="${v}" aria-pressed="${th === v}">${l}</button>`).join("")}</span></div>
       <div class="set-row"><span><b>Kunlik maqsad</b><small>Har kuni toʻplanadigan XP</small></span>
         <span class="mini-seg">${[30, 50, 100].map(v => `<button data-act="goal" data-v="${v}" aria-pressed="${S.goal === v}">${v}</button>`).join("")}</span></div>
-      ${USER ? `<button class="set-row" data-act="pub" role="switch" aria-checked="${S.pub}"><span><b>Reytingda koʻrinish</b><small>Ismingiz va XP boshqa oʻquvchilarga koʻrinadi</small></span><span class="switch" aria-checked="${S.pub}"></span></button>` : ""}
+      ${USER ? `<button class="set-row" data-act="pub" role="switch" aria-checked="${S.pub}"><span><b>Reytingda koʻrinish</b><small>Ismingiz va XP boshqa oʻquvchilarga koʻrinadi</small></span><span class="switch" aria-checked="${S.pub}"></span></button>
+      <button class="set-row" data-act="anon" role="switch" aria-checked="${S.anon !== false}"><span><b>Anonim statistika</b><small>Ism va pochtasiz koʻnikma koʻrsatkichlari saytni yaxshilash uchun yuboriladi</small></span><span class="switch" aria-checked="${S.anon !== false}"></span></button>
+      ${ADMIN ? `<a class="set-row" href="#admin" style="color:inherit;text-decoration:none"><span><b>Umumiy analitika</b><small>Faqat admin: barcha foydalanuvchilar boʻyicha</small></span>${ICON.chev}</a>` : ""}` : ""}
       <a class="set-row" href="#help" style="color:inherit;text-decoration:none"><span><b>Yordam va qoʻllanma</b><small>Ilovani oʻrnatish, saytdan foydalanish, savollar</small></span>${ICON.chev}</a>
       <button class="set-row" data-act="share"><span><b>Doʻstlarni taklif qilish</b><small>Turk tilini birga, bepul oʻrganing</small></span>${ICON.heart}</button>
       <a class="set-row" href="privacy.html" style="color:inherit;text-decoration:none"><span><b>Maxfiylik siyosati</b></span>${ICON.chev}</a>
@@ -1720,6 +1722,7 @@ function route() {
   else if (h === "achievements") { html = viewAchievements(); tab = "profile"; }
   else if (h === "skills") { html = viewSkills(); tab = "profile"; }
   else if (h === "write") { html = viewWrite(); tab = "practice"; }
+  else if (h === "admin") { html = viewAdmin(); tab = "profile"; }
   else if (h === "help") { html = viewHelp(); tab = "profile"; }
   else if (h === "gx") { html = viewGx(); tab = "lessons"; }
   else if (h === "lessons") html = viewLessons();
@@ -2494,6 +2497,109 @@ function ktResultHtml(res, pass) {
       <span class="sk-val">${v === null ? "—" : v + "%"}<small>${v === null ? "topshirilmadi" : v >= pass ? "✔ oʻtdi" : "✘"}</small></span></div>`; }).join("")}</div>` : ""}
   </div>`;
 }
+/* ---------- Anonymous learning statistics ----------
+   Every few hours a signed-in learner's app writes a small summary to stats/{uid}: skill counts, balance,
+   skill levels and test results. No name, e-mail, answers or texts. Learners can switch it off in Settings.
+   Only accounts listed in admins/{uid} (added by hand in the Firebase console) can read the collection;
+   their summary page is #admin. */
+let ADMIN = false, ADMIN_DATA = null, ADMIN_BUSY = false;
+const STATS_EVERY = 3 * 3600 * 1000;
+function statsDoc() {
+  const st = skStats(14), t = {}, w = {}, lvl = {}, kt = {};
+  SKILLS.forEach(s => {
+    t[s.id] = [S.sk[s.id][0], S.sk[s.id][1]];
+    w[s.id] = [st[s.id].o, st[s.id].n, Math.round(st[s.id].t / 60)];
+    lvl[s.id] = skLevel(s.id) || "";
+  });
+  LVS.forEach(lv => {
+    const x = (S.ktsk || {})[lv];
+    if (x) kt[lv] = { r: x.r ?? null, l: x.l ?? null, w: x.w ?? null, s: x.s ?? null };
+  });
+  let act = 0;
+  for (let i = 0; i < 14; i++) if (dayGet(keyOf(dayNum() - i)).xp) act++;
+  return { v: 1, d: todayKey(), lv: kNext().level, units: kDoneCount(), t, w, bal: skBalance(st), lvl, kt, act };
+}
+function statsPush(force) {
+  if (!USER || !db || S.anon === false) return;
+  if (!force && S.statsAt && Date.now() - S.statsAt < STATS_EVERY) return;
+  S.statsAt = Date.now();
+  db.collection("stats").doc(USER.uid).set(statsDoc()).catch(() => { S.statsAt = 0; });
+}
+function adminCheck(uid) {
+  ADMIN = false;
+  db.collection("admins").doc(uid).get().then(d => { ADMIN = d.exists; if (ADMIN && /^#?(profile|admin)$/.test(location.hash.replace("#", ""))) route(); }).catch(() => {});
+}
+function adminLoad() {
+  if (ADMIN_BUSY || !db) return;
+  ADMIN_BUSY = true;
+  db.collection("stats").get().then(snap => {
+    ADMIN_DATA = { at: new Date(), docs: snap.docs.map(d => d.data()) };
+  }).catch(e => { ADMIN_DATA = { err: e && e.code === "permission-denied" ? "Ruxsat yoʻq: Firestore qoidalari yangilanmagan yoki hisobingiz admins roʻyxatida emas." : "Maʼlumotni yuklab boʻlmadi. Internetni tekshiring." }; })
+    .finally(() => { ADMIN_BUSY = false; if (location.hash === "#admin") route(); });
+}
+// Turns the raw summaries into the numbers shown on #admin
+function adminAgg(docs) {
+  const all = docs.filter(x => x && x.v === 1), from = keyOf(dayNum() - 13);
+  const active = all.filter(x => x.d >= from && SKILLS.some(s => x.w && x.w[s.id] && x.w[s.id][1]));
+  const sk = {};
+  SKILLS.forEach(s => sk[s.id] = { o: 0, n: 0, min: 0, weak: 0, users: 0 });
+  active.forEach(x => {
+    SKILLS.forEach(s => { const a = x.w[s.id] || [0, 0, 0]; sk[s.id].o += a[0]; sk[s.id].n += a[1]; sk[s.id].min += a[2] || 0; if (a[1]) sk[s.id].users++; });
+    const weak = SKILLS.slice().sort((a, b) => (x.w[a.id] || [0])[0] - (x.w[b.id] || [0])[0])[0];
+    sk[weak.id].weak++;
+  });
+  const balB = [0, 0, 0, 0, 0];
+  active.forEach(x => balB[Math.min(4, Math.floor((x.bal || 0) / 20))]++);
+  const lvl = {};
+  SKILLS.forEach(s => { lvl[s.id] = { "": 0, A1: 0, A2: 0, B1: 0, B2: 0 }; all.forEach(x => { const v = (x.lvl || {})[s.id] || ""; if (v in lvl[s.id]) lvl[s.id][v]++; }); });
+  const course = { A1: 0, A2: 0, B1: 0, B2: 0 };
+  all.forEach(x => { if (x.lv in course) course[x.lv]++; });
+  const tests = {};
+  LVS.forEach(lv => { tests[lv] = {}; SKILLS.forEach(s => { const v = all.map(x => ((x.kt || {})[lv] || {})[s.id]).filter(v => typeof v === "number"); tests[lv][s.id] = v.length ? { avg: Math.round(v.reduce((a, b) => a + b, 0) / v.length), n: v.length } : null; }); });
+  const avg = a => a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : 0;
+  return { total: all.length, active: active.length, actDays: avg(active.map(x => x.act || 0)), bal: avg(active.map(x => x.bal || 0)), sk, balB, lvl, course, tests };
+}
+function viewAdmin() {
+  const head = `<div><a class="back" href="#profile">${ICON.back}Profil</a></div>
+  <div class="lesson-head"><div class="tags"><span class="tag violet-t">${ICON.lock}Faqat admin</span></div><h1>Umumiy analitika</h1>
+    <p class="sub">Barcha foydalanuvchilarning anonim koʻnikma koʻrsatkichlari. Ism, pochta va yozilgan matnlar bu yerga kelmaydi.</p></div>`;
+  if (!USER || !db) return head + `<div class="glass empty"><b>Hisobga kiring</b></div>`;
+  if (!ADMIN) return head + `<div class="glass empty"><b>Bu sahifa faqat admin uchun</b><p class="muted">Firebase konsolida <code>admins/${esc(USER.uid)}</code> hujjatini yarating.</p></div>`;
+  if (!ADMIN_DATA) { adminLoad(); return head + `<div class="glass empty"><b>Yuklanmoqda…</b></div>`; }
+  if (ADMIN_DATA.err) return head + `<div class="notice"><div>${esc(ADMIN_DATA.err)}</div></div><button class="btn btn-ghost btn-block" data-act="admin-reload">Qayta urinish</button>`;
+  return head + adminHtml(adminAgg(ADMIN_DATA.docs), ADMIN_DATA.at);
+}
+function adminHtml(a, at) {
+  if (!a.total) return `<div class="glass empty"><b>Hali maʼlumot yoʻq</b><p class="muted">Foydalanuvchilar hisobga kirib mashq qilganda statistikalar shu yerda paydo boʻladi.</p></div>`;
+  const tile = (n, l, c) => `<div class="stat glass"><span class="ico ${c}-t">${ICON.star}</span><span><b>${n}</b><span>${l}</span></span></div>`;
+  const weakest = SKILLS.slice().sort((x, y) => a.sk[y.id].weak - a.sk[x.id].weak)[0];
+  const accOf = s => a.sk[s.id].n ? pct(a.sk[s.id].o, a.sk[s.id].n) : null;
+  const lowAcc = SKILLS.filter(s => accOf(s) !== null).sort((x, y) => accOf(x) - accOf(y))[0];
+  const maxN = Math.max(1, ...SKILLS.map(s => a.sk[s.id].n));
+  const bar = (v, mx, c) => `<span class="sk-track"><i style="width:${Math.round(v / Math.max(1, mx) * 100)}%;background:var(--${c})"></i></span>`;
+  const bMax = Math.max(1, ...a.balB);
+  return `<div class="stat-grid">${tile(a.total, "Jami foydalanuvchi", "violet")}${tile(a.active, "14 kunda faol", "green")}${tile(a.actDays, "Oʻrtacha faol kun (14 dan)", "orange")}${tile(a.bal + "%", "Oʻrtacha muvozanat", "sky")}</div>
+  ${a.active ? `<div class="tip glass">${ICON.bulb}<div><b>Xulosa</b>Faol foydalanuvchilarning ${pct(a.sk[weakest.id].weak, a.active)}% ida eng zaif koʻnikma <b>${weakest.tr} (${weakest.uz})</b> boʻlib chiqdi.${lowAcc ? ` Eng past aniqlik: ${lowAcc.tr} — ${accOf(lowAcc)}%.` : ""} Shu koʻnikma uchun mashqlarni koʻpaytirish va bosh sahifada koʻproq taklif qilish foydali.</div></div>` : ""}
+  <section class="section"><div class="section-head"><h2>Koʻnikmalar · 14 kun</h2><span class="tag sky-t">${a.active} ta faol</span></div>
+    <div class="glass pad"><div class="sk-bars">${SKILLS.map(s => { const x = a.sk[s.id], ac = accOf(s); return `<div class="sk-line"><span class="ico ${s.c}-t">${ICON[s.ico]}</span>
+      <span class="sk-name"><b>${s.tr}</b><small>${x.users} kishi</small></span>${bar(x.n, maxN, s.c)}
+      <span class="sk-val">${x.n}<small>${ac === null ? "—" : ac + "%"}</small></span></div>`; }).join("")}</div>
+    <p class="muted" style="font-size:13px;margin-top:10px">Chiziq — mashqlar soni, raqam ostida — oʻrtacha aniqlik. Sarflangan vaqt: ${SKILLS.map(s => `${s.tr} ${a.sk[s.id].min} daq`).join(" · ")}.</p></div></section>
+  <section class="section"><div class="section-head"><h2>Eng zaif koʻnikma</h2><span class="tag pink-t">foydalanuvchilar ulushi</span></div>
+    <div class="glass pad"><div class="sk-bars">${SKILLS.map(s => `<div class="sk-line"><span class="ico ${s.c}-t">${ICON[s.ico]}</span><span class="sk-name"><b>${s.tr}</b><small>${s.uz}</small></span>${bar(a.sk[s.id].weak, a.active, s.c)}<span class="sk-val">${pct(a.sk[s.id].weak, a.active || 1)}%<small>${a.sk[s.id].weak} kishi</small></span></div>`).join("")}</div></div></section>
+  <section class="section"><div class="section-head"><h2>Muvozanat taqsimoti</h2></div>
+    <div class="glass pad"><div class="sk-bars">${["0–19%", "20–39%", "40–59%", "60–79%", "80–100%"].map((l, i) => `<div class="sk-line"><span></span><span class="sk-name"><b>${l}</b></span>${bar(a.balB[i], bMax, i >= 4 ? "green" : i >= 2 ? "sky" : "pink")}<span class="sk-val">${a.balB[i]}<small>kishi</small></span></div>`).join("")}</div></div></section>
+  <section class="section"><div class="section-head"><h2>Koʻnikma boʻyicha daraja</h2><span class="tag teal-t">jami ${a.total}</span></div>
+    <div class="table-wrap glass"><table class="gtable"><thead><tr><th scope="col">Koʻnikma</th><th>—</th>${LVS.map(l => `<th scope="col">${l}</th>`).join("")}</tr></thead>
+    <tbody>${SKILLS.map(s => `<tr><td><b>${s.tr}</b></td><td>${a.lvl[s.id][""]}</td>${LVS.map(l => `<td>${a.lvl[s.id][l]}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>
+  <section class="section"><div class="section-head"><h2>Daraja testlari · oʻrtacha foiz</h2></div>
+    <div class="table-wrap glass"><table class="gtable"><thead><tr><th scope="col">Test</th>${SKILLS.map(s => `<th scope="col">${s.tr}</th>`).join("")}</tr></thead>
+    <tbody>${LVS.map(l => `<tr><td><b>${l}</b></td>${SKILLS.map(s => { const x = a.tests[l][s.id]; return `<td>${x ? `${x.avg}%<br><small class="muted">${x.n} kishi</small>` : "—"}</td>`; }).join("")}</tr>`).join("")}</tbody></table></div></section>
+  <section class="section"><div class="section-head"><h2>Kursdagi joriy daraja</h2></div>
+    <div class="glass pad"><div class="sk-bars">${LVS.map(l => `<div class="sk-line"><span></span><span class="sk-name"><b>${l}</b></span>${bar(a.course[l], a.total, "violet")}<span class="sk-val">${a.course[l]}<small>kishi</small></span></div>`).join("")}</div></div></section>
+  <p class="muted" style="font-size:13px">Yangilangan: ${at ? at.toLocaleString("uz") : "—"}. Har bir foydalanuvchi maʼlumoti taxminan har 3 soatda yangilanadi (u ilovani ochganda).</p>
+  <button class="btn btn-ghost btn-block" data-act="admin-reload">Yangilash</button>`;
+}
 /* ---------- Pronunciation practice ----------
    Uses the browser's own speech recognition (Web Speech API, tr-TR). Nothing is recorded or stored by the site:
    the browser returns text, and we compare it letter by letter with the target word. */
@@ -2809,6 +2915,13 @@ document.addEventListener("click", e => {
     const y = window.scrollY; route(); window.scrollTo(0, y);
   }
   else if (act === "goal") { S.goal = +b.dataset.v; save(); const y = window.scrollY; route(); window.scrollTo(0, y); }
+  else if (act === "anon") {
+    S.anon = S.anon === false; save();
+    if (S.anon) statsPush(true); else if (db && USER) db.collection("stats").doc(USER.uid).delete().catch(() => {});
+    toast(S.anon ? "Anonim statistika yoqildi" : "Anonim statistika oʻchirildi, maʼlumotlaringiz oʻchirildi");
+    const y = window.scrollY; route(); window.scrollTo(0, y);
+  }
+  else if (act === "admin-reload") { ADMIN_DATA = null; route(); }
   else if (act === "pub") {
     S.pub = !S.pub; save(); RANK_CACHE = {};
     if (!S.pub && db && USER) db.collection("league").doc(USER.uid).delete().catch(() => {});
@@ -2864,7 +2977,7 @@ document.addEventListener("click", e => {
   else if (act === "auth-tab") setAuthTab(b.dataset.t);
   else if (act === "auth-google") googleSignIn();
   else if (act === "auth-reset") resetPassword();
-  else if (act === "logout") { auth.signOut(); go("home"); }
+  else if (act === "logout") { ADMIN = false; ADMIN_DATA = null; auth.signOut(); go("home"); }
   else if (act === "verify-again") { USER.sendEmailVerification().then(() => toast("Xat yuborildi. Pochtangizni tekshiring")).catch(err => toast(authMsg(err))); }
   else if (act === "delete-ask") {
     $("del-box").innerHTML = `<div class="notice"><div><b>Hisob butunlay oʻchirilsinmi?</b> Barcha natijalaringiz yoʻqoladi va buni qaytarib boʻlmaydi.</div>
@@ -3007,6 +3120,7 @@ function cloudSave() {
       const name = ((USERNAME || "").trim().split(/\s+/)[0] || "Oʻquvchi").slice(0, 20);
       db.collection("league").doc(USER.uid).set({ name, week: S.week, wxp: S.wxp, xp: S.xp, streak: streakNow() }).catch(() => {});
     }
+    statsPush();
   }, 1500);
 }
 const authEl = $("auth");
@@ -3121,6 +3235,7 @@ async function deleteAccount(btn) {
   try {
     await db.collection("league").doc(u.uid).delete().catch(() => {});
     await db.collection("avatars").doc(u.uid).delete().catch(() => {});
+    await db.collection("stats").doc(u.uid).delete().catch(() => {});
     try { localStorage.removeItem("ty-photo:" + u.uid); } catch (e) {}
     await db.collection("users").doc(u.uid).delete();
     await u.delete();
@@ -3156,6 +3271,7 @@ async function loadCloud(u) {
   }
   try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {}
   cloudSave();
+  adminCheck(u.uid);
   loadMyPhoto();
   db.collection("avatars").doc(u.uid).get().then(d => {
     const ph = d.exists ? d.data().photo || "" : "";

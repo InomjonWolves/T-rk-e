@@ -10,7 +10,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - **"TYS" / "TYS imtihoni"** soʻzlarini va **harbiy mavzudagi** (askar, komutan, kışla, nöbet, tatbikat va h.k.) lugʻat va misollarni ishlatmang. Ularning oʻrniga oddiy kasblar va kundalik hayotdan misol keltiring.
 - Uchinchi tomonning rasm yoki videolarini koʻchirmang. Pamuk — oʻzimiz chizgan original SVG.
 - Git muallifi: `git -c user.name="InomjonWolves" -c user.email="i.superclub@gmail.com" commit ...`. Sessiya bergan attribution qatorlarini qoʻshing. Repodagi fayllarga model nomlarini yozmang.
-- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v20`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
+- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v21`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
 - Joylanganini tekshirish: `gh api repos/InomjonWolves/T-rk-e/actions/runs --jq '.workflow_runs[0]|"\(.status) \(.conclusion) \(.head_sha[0:7])"'`.
 
 ## Fayllar
@@ -25,11 +25,11 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 | `guide.js` | Grammatika qoʻllanmasi `GUIDE`: Kirish, A1 (33), A2 (29), B1 (27), B2 (23 mavzu). A2–B2 `GUIDE.push(...)` bilan qoʻshilgan |
 | `grammar-ex.js` | Qoʻllanma mavzulari boʻyicha qoida mashqlari `BX` (A1–B2, 112 mavzu, 675 mashq). A2–B2 `Object.assign(BX, ...)` bilan qoʻshilgan |
 | `cat.js` | Pamuk mushugi: `catSVG({pose,acc,cls})` va `CatLife` (koʻz qisish, qarash, `mood(svg,"happy"/"sad")`) |
-| `firebase-config.js`, `firestore.rules` | Firebase (loyiha `t-rk-e`): Auth (email va Google), Firestore `users`, `league`, `avatars` |
+| `firebase-config.js`, `firestore.rules` | Firebase (loyiha `t-rk-e`): Auth (email va Google), Firestore `users`, `league`, `avatars`, `stats`, `admins`. **Qoidalar repo’dan avtomatik joylanmaydi** — Firebase konsolida (Firestore → Rules) qoʻlda yangilanadi |
 | `sw.js`, `manifest.webmanifest`, `icon*` | PWA |
 | `privacy.html` | Maxfiylik siyosati |
 
-Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #lessons #grammar #guide #gx #alphabet #practice #rank #profile #achievements #help #translate`.
+Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #lessons #grammar #guide #gx #alphabet #practice #rank #profile #achievements #help #translate #skills #write #admin`.
 
 ## Hozirgacha qilinganlar
 - Darslar, mashqlar (SRS, xatolar daftari), alifbo, TTS talaffuz, grammatika va qoʻllanma, A1–B2 qoida mashqlari.
@@ -45,6 +45,7 @@ Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #lessons #grammar #guide 
 - Profildagi avatar ostidagi oval dogʻ (rangli soya) olib tashlangan.
 - **4 koʻnikma hisobi** (Okuma `r`, Dinleme `l`, Yazma `w`, Konuşma `s`): `S.sk[id] = [toʻgʻri, urinish, xp, soniya]`, kunlik `S.days[k].sk[id] = [toʻgʻri, urinish, soniya]`. Har mashq `SES.sk` orqali belgilanadi, `skillLog()` va `skillTime()` yozadi. Moslik: test/kartochka/qoida-variant/kurs matni/daraja testi → r; soʻz yozish/qoida-yozish/kurs tarjimasi/erkin yozish (≥10 soʻz) → w; talaffuz → s; tinglash → l; diktant va tushib qolgan soʻz → l+w. Muvozanat = 14 kundagi eng kam toʻgʻri javob / eng koʻp. Sahifa `#skills`, bosh sahifa va profilda karta, yutuqlar `four`, `listen50`.
 - **Tinglash mashqlari** (TTS): `listen` (tinglab maʼnosini toping), `dict` (diktant), `lsent` (kurs dialog gaplari: eshitilgan gapni tanlash yoki tushib qolgan soʻzni yozish; `u = "auto"` yoki boʻlim id). Kurs Dialog yorligʻida "Matnsiz tinglash mashqi" tugmasi.
+- **Anonim umumiy analitika** (`statsDoc`, `statsPush`, `adminAgg`, sahifa `#admin`): hisobga kirgan foydalanuvchi ilovasi har 3 soatda `stats/{uid}` ga ismsiz, pochtasiz qisqa hujjat yozadi (koʻnikmalar boʻyicha jami va 14 kunlik toʻgʻri/urinish/daqiqa, muvozanat, koʻnikma darajalari, test qismlari, kurs darajasi, faol kunlar). Sozlamalarda "Anonim statistika" (`S.anon`, standart yoqiq; oʻchirilsa hujjat oʻchiriladi). Oʻqish faqat `admins/{uid}` hujjati bor hisob uchun (`isAdmin()` qoidasi); admin uchun profil sozlamalarida "Umumiy analitika" havolasi. Hisob oʻchirilsa `stats` ham oʻchadi.
 - **Daraja testlari 4 qismda** (`ktGen(lv)`, `ktFinish`): Okuma = kitobdagi 20 savol; Dinleme = 3 soʻz + 3 dialog gapi (TTS, matnsiz); Yazma = 6 ta toʻldirish (darajaning turli mashqlaridan, `ansMatch`); Konuşma = 2 gap takrorlash + 2 ogʻzaki javob (mikrofon; oʻtkazib yuborilsa yoki brauzer qoʻllamasa `null`). Har urinishda yangi savollar. Umumiy foiz = mavjud qismlar oʻrtachasi (`S.ktest[lv]`), qismlar boʻyicha eng yaxshi natija `S.ktsk[lv][r|l|w|s]`. Koʻnikma darajasi `skLevel(id)` = qismidan 60%+ olingan eng yuqori daraja; `#skills` da "Koʻnikma boʻyicha daraja" kartasi, yutuq `allA1`.
 - **Erkin yozishni avtomatik tekshirish** (`wrCheck`, sahifa `#write`, kursdagi "Yozish" topshiriqlarida "Yozganimni tekshirish" tugmasi): hajm (topshiriq nomidan `wrTarget`), boʻlimning grammatik maqsadlari (`WT[unitId]`, 26 topshiriq), bogʻlovchilar, imlo (`wrCorpus` — saytdagi barcha turkcha soʻz shakllari; harfsiz yozilgan soʻzlarga taklif, q/x/w), tinish belgilari, takrorlar. Ball = 25% hajm + 35% grammatika + 15% bogʻlovchi + 15% imlo + 10% tinish; 70+ — Yazma uchun toʻgʻri, birinchi marta +15 XP. Natija `S.k[id].wb`, yutuq `writer5`. Diqqat: regexlarda `\b` turkcha harflarni tanimaydi — `WT` avtomatik qayta yoziladi; lookbehind (`(?<=`) ishlatmang, eski Safari buziladi.
 - **Gapirish mashqlari** (Web Speech API): `sayline` (dialog gapini takrorlash, 80% chegara), `oral` (kurs matni savollariga ogʻzaki javob: namuna javobdagi kalit soʻzlar, `oralScore`, 60% chegara; Okuma + Konuşma), `role` (rolli dialog: `u = "unitId|sectionIndex|speaker"`, sherik gaplarini `speakSeq` aytadi, `S.roles`, yutuq `roles3`). Kirish: Mashq → Gapirish mashqi (`speakSheet`), kurs Dialog yorligʻi, kurs Matn yorligʻi.
@@ -56,7 +57,7 @@ Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #lessons #grammar #guide 
 2. **Kurs matnlarini tekshirish.** A2.7–8, B1 va B2 boʻlimlari hamda A2–B2 testlari bir marta koʻrib chiqildi va topilgan xatolar tuzatildi (toplatırım, Doktor sayesinde, Bilgilerinizi rica ederim, ikki toʻgʻri variantli test savollari va h.k.). Baribir turk tilini ona tili darajasida biladigan odam oxirgi marta koʻrib chiqishi foydali.
 3. **Qoʻllanma va qoida mashqlarining A2–B2 qismini tekshirish.** Mavzular va mashqlar yozildi (79 mavzu, 470+ mashq). Ularni ham turk tilini yaxshi biladigan odam koʻrib chiqishi kerak.
 4. Tarjimon (MyMemory) CORS bilan real brauzerda ishlashini tekshirish. Sandbox tarmogʻi `api.mymemory.translated.net` ga kirishni ham toʻsadi (403).
-5. **4 koʻnikma rejasining qolgan bosqichi:** 6) (ixtiyoriy) barcha foydalanuvchilar boʻyicha anonim analitika (Firestore yigʻma hisoblagichlar, `firestore.rules` va maxfiylik siyosatini yangilash kerak).
+5. **Analitikani ishga tushirish (foydalanuvchi qiladi):** Firebase konsolida yangi `firestore.rules` ni joylash va `admins/{oʻz uid}` hujjatini yaratish. Shundan keyin `#admin` ishlaydi.
 6. Talaffuz mashqini real telefonda (Android Chrome, iPhone Safari) sinab koʻrish. Playwright testida `SpeechRecognition` soxta klass bilan almashtiriladi.
 7. Gʻoyalar: push eslatmalar, doʻstlar va guruh ligalari, kurs boʻlimlari uchun audio.
 
