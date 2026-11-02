@@ -23,7 +23,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - **"TYS" / "TYS imtihoni"** soʻzlarini va **harbiy mavzudagi** (askar, komutan, kışla, nöbet, tatbikat va h.k.) lugʻat va misollarni ishlatmang. Ularning oʻrniga oddiy kasblar va kundalik hayotdan misol keltiring.
 - Uchinchi tomonning rasm yoki videolarini koʻchirmang. Pamuk — oʻzimiz chizgan original SVG.
 - Git muallifi: `git -c user.name="InomjonWolves" -c user.email="i.superclub@gmail.com" commit ...`. Sessiya bergan attribution qatorlarini qoʻshing. Repodagi fayllarga model nomlarini yozmang.
-- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v37`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
+- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v38`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
 - Joylanganini tekshirish: `gh api repos/InomjonWolves/T-rk-e/actions/runs --jq '[.workflow_runs[]|select(.name=="pages build and deployment")][0]|"\(.status) \(.conclusion) \(.head_sha[0:7])"'`. Testlar: `[.workflow_runs[]|select(.name=="Testlar")][0]`.
 - Commit qilishdan oldin `npm test` ni ishga tushiring (hammasi oʻtishi kerak). Yangi funksiya qoʻshsangiz, `tests/` ga test ham qoʻshing.
 
@@ -34,7 +34,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 | `styles.css` | Premium glassmorphism dizayn, kunduzgi va tungi rejim |
 | `app.js` | Butun dastur: holat `S` (localStorage `turkce-yol-v1`), router (hash), sahifalar, SRS, XP, streak, liga, yutuqlar, kurs UI, tarjimon, Firebase |
 | `content.js` | Asosiy darslar (`UNITS`) va soʻzlar (A1, 500+) |
-| `lugat.js` | **Lugʻat bazasi** `LUGAT`: 61 ta mavzuli toʻplam (A1 12, A2 16, B1 16, B2 17), har toʻplam `{lv, id, tr, uz, w}`, `w` — har qatorda `turkcha=oʻzbekcha`. Ilovada `LPACKS`, `LWORDS[id]`; yangi soʻzlar `ALL` ga qoʻshiladi (dedup `fold`), allaqachon bor soʻz toʻplamda oʻz tarjimasi bilan koʻrinadi (omonimlar: pazar, ocak, yüz…), SRS yozilish boʻyicha umumiy |
+| `lugat.js` | **Lugʻat bazasi** `LUGAT`: 61 ta mavzuli toʻplam (A1 12, A2 16, B1 16, B2 17), har toʻplam `{lv, id, tr, uz, w}`, `w` — har qatorda `turkcha=oʻzbekcha`. Ilovada `LPACKS`, `LWORDS[id]`; yangi soʻzlar `ALL` ga qoʻshiladi (dedup `fold`), allaqachon bor soʻz toʻplamda oʻz tarjimasi bilan koʻrinadi (omonimlar: pazar, ocak, yüz…), SRS yozilish boʻyicha umumiy. Turkcha tomonda qavs, `/`, `...` boʻlmasin (izoh oʻzbekcha tomonga; juft bogʻlovchilarda `…`) — test tekshiradi |
 | `course-core.js` | **Avtomatik** (`npm run build`): `course.js` dan birinchi ekran uchun qism — darajalar, boʻlim nomlari, maqsadlar, lugʻat, `keys` (tekshiriladigan javob kalitlari). `index.html` shuni yuklaydi |
 | `course.js` | `var COURSE` (const emas — core bilan bir xil global): A1–B2 boʻyicha 32 boʻlim (lugʻat, grammatika, dialog, matn, mashqlar) va 4 daraja testi. Kitobdan olingan; harbiy mavzudagi boʻlimlar qayta yozilgan |
 | `grammar.js` | Alifbo va grammatika darslari |

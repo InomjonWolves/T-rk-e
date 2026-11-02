@@ -53,6 +53,8 @@ test("vocabulary base: A1–B2 packs, one \"turkcha=oʻzbekcha\" pair per line, 
       assert.equal(parts.length, 2, `${p.id}: "${l}"`);
       assert.ok(parts[0].trim() && parts[1].trim(), `${p.id}: empty side in "${l}"`);
       assert.ok(!/[‘’']/.test(parts[1]), `${p.id}: use ʻ / ʼ in Uzbek, not quotes: "${l}"`);
+      // The Turkish side is what learners type and hear: no notes in brackets, no slashes, "…" not "..."
+      assert.ok(!/[()\/]|\.\.\./.test(parts[0]), `${p.id}: put notes on the Uzbek side: "${l}"`);
     }
     perLv[p.lv] = (perLv[p.lv] || 0) + lines.length;
   }
