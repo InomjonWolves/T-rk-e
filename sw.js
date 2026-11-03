@@ -1,6 +1,6 @@
 // Offline support. App files: network first (so a new version shows at once), cache when offline or slow.
 // Fonts and the Firebase SDK: cache first.
-const CACHE = "turkce-yol-v41";
+const CACHE = "turkce-yol-v42";
 const ASSETS = ["./", "./index.html", "./firebase-config.js", "./content.js", "./lugat.js", "./grammar.js", "./grammar-ex.js", "./course-core.js", "./course.js", "./app.js", "./cat.js", "./guide.js", "./styles.css", "./privacy.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", e => {

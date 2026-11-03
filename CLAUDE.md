@@ -21,6 +21,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 2. Soddalashtirilgan `firestore.rules` (Apple/Telegram'siz) konsolda qayta joylanganmi — noaniq; joylanmagan boʻlsa ham xavfsiz.
 3. GitHub Pages'ni oʻchirish (ixtiyoriy, 2–4 haftadan keyin tavsiya), keyin Authorized domains dan `inomjonwolves.github.io` ni olib tashlash.
 4. Telefonda sinash: Google bilan kirish, gapirish mashqlari, TTS ovozi.
+5. Google qidiruvi (2026-11-03: sayt hali chiqmayapti — domen yangi): Search Console → Sitemaps → `sitemap.xml` yuborish; URL inspection → `/`, `/kurs/`, `/qoida/`, `/lugat/` uchun "Request indexing"; havolani Telegram va ijtimoiy tarmoqlarda ulashish. Tekshirish: Google’da `site:turkceyol.web.app`.
 
 **✔ BAJARILDI (2026-11-02): raqobat, ligalar, mushuk rivoji, yangi XP tizimi** — tafsilot pastda "XP v2" bandida. **Foydalanuvchi qadami:** yangi `firestore.rules` ni konsolda joylash (league uchun yangi maydonlar). Joylanmaguncha ilova league qatorini eski 5 maydon bilan yozadi (`LG_OLD`), "Bugun" reytingi va liga hisob-kitobi toʻliq ishlamaydi.
 
@@ -35,7 +36,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - **"TYS" / "TYS imtihoni"** soʻzlarini va **harbiy mavzudagi** (askar, komutan, kışla, nöbet, tatbikat va h.k.) lugʻat va misollarni ishlatmang. Ularning oʻrniga oddiy kasblar va kundalik hayotdan misol keltiring.
 - Uchinchi tomonning rasm yoki videolarini koʻchirmang. Pamuk — oʻzimiz chizgan original SVG.
 - Git muallifi: `git -c user.name="InomjonWolves" -c user.email="i.superclub@gmail.com" commit ...`. Sessiya bergan attribution qatorlarini qoʻshing. Repodagi fayllarga model nomlarini yozmang.
-- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v41`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
+- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v42`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
 - Joylanganini tekshirish: `gh api repos/InomjonWolves/T-rk-e/actions/runs --jq '[.workflow_runs[]|select(.name=="pages build and deployment")][0]|"\(.status) \(.conclusion) \(.head_sha[0:7])"'`. Testlar: `[.workflow_runs[]|select(.name=="Testlar")][0]`.
 - Commit qilishdan oldin `npm test` ni ishga tushiring (hammasi oʻtishi kerak). Yangi funksiya qoʻshsangiz, `tests/` ga test ham qoʻshing.
 
