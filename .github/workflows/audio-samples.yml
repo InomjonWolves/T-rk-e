@@ -1,10 +1,11 @@
 name: Audio namunalar
 
-# Piper turkcha ovozlari: litsenziya kartalari va namuna MP3 (ovoz tanlash uchun). Natija — artifact "audio-samples".
+# Google Cloud TTS: barcha tr-TR ovozlarida bir xil so'z va gaplar (ovoz tanlash uchun).
+# Natija audio-samples branch'ida (samples/*.mp3, index.json). Secret: GOOGLE_TTS_KEY.
 on:
   push:
     branches: [main]
-    paths: ["tools/audio-samples*.py", ".github/workflows/audio-samples.yml"]
+    paths: [".github/workflows/audio-samples.yml"]
   workflow_dispatch:
 
 permissions:
@@ -13,32 +14,26 @@ permissions:
 jobs:
   samples:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
+    env:
+      GOOGLE_TTS_KEY: ${{ secrets.GOOGLE_TTS_KEY }}
     steps:
+      - name: Kalit tekshiruvi
+        if: env.GOOGLE_TTS_KEY == ''
+        run: echo "GOOGLE_TTS_KEY sozlanmagan — o'tkazib yuborildi."
       - uses: actions/checkout@v5
-      - uses: actions/setup-python@v5
+        if: env.GOOGLE_TTS_KEY != ''
+      - uses: actions/setup-node@v5
+        if: env.GOOGLE_TTS_KEY != ''
         with:
-          python-version: "3.12"
-      - name: Piper
-        run: pip install piper-tts==1.8.0 && sudo apt-get install -y -qq ffmpeg >/dev/null
+          node-version: 22
       - name: Namunalar
-        run: python tools/audio-samples.py
-      - name: Coqui (ikkinchi nomzod)
-        continue-on-error: true
-        run: pip install -q torch torchaudio --index-url https://download.pytorch.org/whl/cpu && pip install -q coqui-tts torchcodec six && python tools/audio-samples-coqui.py
-      - name: espeak-ng (taqqoslash uchun)
-        continue-on-error: true
-        run: |
-          sudo apt-get install -y -qq espeak-ng >/dev/null
-          python3 -c "import json;[print(k+'\t'+t) for k,t in json.load(open('samples/index.json'))['texts']]" | while IFS=$'\t' read k t; do espeak-ng -v tr -s 140 -w /tmp/e.wav "$t" && ffmpeg -loglevel error -y -i /tmp/e.wav -ac 1 -ar 22050 -b:a 48k "samples/espeak-$k.mp3"; done
-      - name: Namunalarni audio-samples branch'iga yozish
+        if: env.GOOGLE_TTS_KEY != ''
+        run: node tools/audio-gen.js --samples
+      - name: audio-samples branch'iga yozish
+        if: env.GOOGLE_TTS_KEY != ''
         run: |
           cd samples
           git init -q -b audio-samples && git add -A
-          git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "Audio namunalar ${{ github.sha }}"
+          git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "Google TTS namunalar ${{ github.sha }}"
           git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" audio-samples
-      - uses: actions/upload-artifact@v4
-        with:
-          name: audio-samples
-          path: samples/
-          retention-days: 14

@@ -1,0 +1,65 @@
+name: Audio
+
+# Saytdagi barcha turkcha so'z va gaplarning audiosi (Google Cloud TTS) — tools/audio-gen.js.
+# Faqat yangi yoki o'zgargan matnlar ovozlanadi; natija audio/ papkasiga commit qilinadi va sayt qayta joylanadi.
+# Secret: GOOGLE_TTS_KEY. Ovoz: tools/audio-voice.json.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/audio-voice.json"
+      - "tools/audio-gen.js"
+      - "tools/audio-texts.js"
+      - "content.js"
+      - "lugat.js"
+      - "grammar.js"
+      - "grammar-ex.js"
+      - "course.js"
+      - "guide.js"
+      - "oqish.js"
+  workflow_dispatch:
+
+concurrency:
+  group: audio
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GOOGLE_TTS_KEY: ${{ secrets.GOOGLE_TTS_KEY }}
+    steps:
+      - name: Kalit tekshiruvi
+        if: env.GOOGLE_TTS_KEY == ''
+        run: echo "GOOGLE_TTS_KEY sozlanmagan — o'tkazib yuborildi."
+      - uses: actions/checkout@v5
+        if: env.GOOGLE_TTS_KEY != ''
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        if: env.GOOGLE_TTS_KEY != ''
+        with:
+          node-version: 22
+      - name: Playwright (matnlar ro'yxati ilovadan olinadi)
+        if: env.GOOGLE_TTS_KEY != ''
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Audio yaratish
+        if: env.GOOGLE_TTS_KEY != ''
+        run: node tools/audio-gen.js
+      - name: Commit va saytni qayta joylash
+        if: env.GOOGLE_TTS_KEY != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git add -A audio
+          if git diff --cached --quiet; then echo "Audio o'zgarmadi"; exit 0; fi
+          git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "Audio yangilandi ($(git diff --cached --name-only | wc -l) fayl)"
+          for i in 1 2 3; do git pull -q --rebase origin main && git push -q origin HEAD:main && break; sleep 5; done
+          gh workflow run firebase-hosting.yml --ref main

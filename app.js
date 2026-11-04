@@ -790,6 +790,64 @@ function spark(vals) {
 const weekDays = () => { const s = weekStart(dayNum()); return WD.map((l, i) => ({ l, n: s + i, k: keyOf(s + i) })); };
 const last7 = () => Array.from({ length: 7 }, (_, i) => { const d = dayNum() - 6 + i; return { k: keyOf(d), l: WD[(new Date(d * DAY).getUTCDay() + 6) % 7] }; });
 
+/* ---------- Recorded audio ----------
+   Pre-made MP3s (tools/audio-gen.js, Google TTS): audio/<2 chars>/<key>.mp3, key = audioKey(text, voice).
+   audio/index.txt lists the keys that exist, so the choice "recording or device voice" is made at once (no 404 wait).
+   Played through one shared <audio> element (unlocked on the first tap — iPhone allows it to play later on). */
+const audioNorm = s => String(s).replace(/…/g, "").replace(/\s+/g, " ").trim();
+function audioKey(text, v = "a") {
+  const str = v + "|" + audioNorm(text);
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36).padStart(11, "0");
+}
+const audioPath = k => `audio/${k.slice(0, 2)}/${k}.mp3`;
+let AUDIO_SET = null, AEL = null, AUDIO_DONE = null, AUDIO_N = 0;
+function audioIndex() {
+  if (AUDIO_SET || !window.fetch) return;
+  fetch("audio/index.txt").then(r => r.ok ? r.text() : "").then(t => { const ks = t.split("\n").filter(Boolean); if (ks.length) AUDIO_SET = new Set(ks); }).catch(() => {});
+}
+const hasRec = (text, v = "a") => !!AUDIO_SET && AUDIO_SET.has(audioKey(text, v));
+function audioEl() {
+  if (!AEL && window.Audio) { AEL = new Audio(); AEL.preload = "auto"; }
+  return AEL;
+}
+// iPhone: the element must first play inside a tap; after that it can play from timers and callbacks too
+function audioUnlock() {
+  const a = audioEl(); if (!a || a._ok) return;
+  a._ok = true;
+  try { a.src = "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAAnGMHkkIAAAAAAAAAAAAAAAAAAAA//sQZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"; const p = a.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+}
+document.addEventListener("pointerdown", audioUnlock, { capture: true, once: true });
+setTimeout(audioIndex, 1200);
+function audioStop() {
+  AUDIO_N++;
+  const a = AEL; if (a) { a.onended = a.onerror = null; try { a.pause(); } catch (e) {} }
+  const d = AUDIO_DONE; AUDIO_DONE = null; if (d) d();
+}
+function ttsCancel() { audioStop(); try { speechSynthesis.cancel(); } catch (e) {} }
+// Plays the recording of text; false if there is none (then the caller uses the device voice).
+// If the file cannot load (offline, not cached), fallback() runs instead — the device voice.
+function playRec(text, v, rate, done, fallback) {
+  const a = audioEl();
+  if (!a || !hasRec(text, v)) return false;
+  audioStop();
+  try { speechSynthesis.cancel(); } catch (e) {}
+  const n = AUDIO_N, k = audioKey(text, v);
+  AUDIO_DONE = done || null;
+  const end = () => { if (n !== AUDIO_N) return; const d = AUDIO_DONE; AUDIO_DONE = null; if (d) d(); };
+  a.onended = end;
+  const fail = () => { if (n !== AUDIO_N) return; AUDIO_SET.delete(k); if (fallback) { AUDIO_DONE = null; fallback(); } else end(); };
+  a.onerror = fail;
+  a.src = audioPath(k);
+  a.playbackRate = Math.min(2, Math.max(0.5, rate)); a.defaultPlaybackRate = a.playbackRate;
+  try { a.preservesPitch = true; } catch (e) {}
+  const p = a.play(); if (p && p.catch) p.catch(fail);
+  return true;
+}
+
 /* ---------- Speech ---------- */
 let voices = [];
 function loadVoices() { try { voices = speechSynthesis.getVoices(); } catch (e) {} }
@@ -804,17 +862,26 @@ function ttsVoice(alt) {
   return alt && vs.length > 1 ? vs[(i + 1) % vs.length] : vs[i];
 }
 function speak(text, btn, rate) {
+  SEQ_N++;
   const clean = text.replace(/…/g, "").trim();
-  try {
-    if (!("speechSynthesis" in window)) { toast("Bu brauzerda ovoz yoʻq"); return; }
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(clean);
-    u.lang = "tr-TR"; u.rate = (rate || 0.85) * ttsRate();
-    const v = ttsVoice();
-    if (v) u.voice = v;
-    if (btn) { btn.classList.add("playing"); u.onend = u.onerror = () => btn.classList.remove("playing"); }
-    speechSynthesis.speak(u);
-  } catch (e) { toast("Ovozni ijro etib boʻlmadi"); }
+  const off = () => btn && btn.classList.remove("playing");
+  if (btn) btn.classList.add("playing");
+  const tts = () => {
+    try {
+      if (!("speechSynthesis" in window)) { off(); toast(AUDIO_SET ? "Bu matnning audiosi hali yoʻq" : "Bu brauzerda ovoz yoʻq"); return; }
+      try { speechSynthesis.cancel(); } catch (e) {}
+      const u = new SpeechSynthesisUtterance(clean);
+      u.lang = "tr-TR"; u.rate = (rate || 0.85) * ttsRate();
+      const v = ttsVoice();
+      if (v) u.voice = v;
+      if (btn) u.onend = u.onerror = off;
+      speechSynthesis.speak(u);
+    } catch (e) { off(); toast("Ovozni ijro etib boʻlmadi"); }
+  };
+  // Recording first: same speed setting, the slow "ls-play" button (0.55) plays slower too
+  if (playRec(clean, "a", ttsRate() * (rate || 0.85) / 0.85, off, tts)) return;
+  audioStop();
+  tts();
 }
 let toastTimer;
 function toast(msg) {
@@ -1868,24 +1935,32 @@ function renderBlocks(blocks) {
 }
 // Lines are strings or [speaker, text]: each speaker gets a voice of their own (another voice, or another pitch)
 function speakSeq(lines) {
-  try { speechSynthesis.cancel(); } catch (e) { return; }
-  const who = [];
+  ttsCancel();
+  const who = [], run = ++SEQ_N;
   let i = 0;
   const next = () => {
-    if (i >= lines.length) return;
-    const ln = lines[i++], spk = Array.isArray(ln) ? ln[0] : "", text = Array.isArray(ln) ? ln[1] : ln;
+    if (run !== SEQ_N || i >= lines.length) return;
+    const ln = lines[i++], spk = Array.isArray(ln) ? ln[0] : "", text = audioNorm(Array.isArray(ln) ? ln[1] : ln);
     if (spk && !who.includes(spk)) who.push(spk);
     const alt = spk ? who.indexOf(spk) % 2 === 1 : false;
-    const u = new SpeechSynthesisUtterance(String(text).replace(/…/g, ""));
-    u.lang = "tr-TR"; u.rate = 0.9 * ttsRate();
-    const v = ttsVoice(alt); if (v) u.voice = v;
-    // Only one Turkish voice: tell the speakers apart by pitch
-    if (alt && trVoices().length < 2) u.pitch = 1.35;
-    u.onend = () => setTimeout(next, 350);
-    speechSynthesis.speak(u);
+    const later = () => setTimeout(next, 350);
+    const tts = () => {
+      try {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "tr-TR"; u.rate = 0.9 * ttsRate();
+        const v = ttsVoice(alt); if (v) u.voice = v;
+        // Only one Turkish voice: tell the speakers apart by pitch
+        if (alt && trVoices().length < 2) u.pitch = 1.35;
+        u.onend = () => { if (run === SEQ_N) later(); };
+        speechSynthesis.speak(u);
+      } catch (e) {}
+    };
+    // Recordings: the second speaker has its own voice ("b") when it was recorded
+    if (!playRec(text, alt && hasRec(text, "b") ? "b" : "a", ttsRate() * 0.9 / 0.85, () => { if (run === SEQ_N) later(); }, tts)) tts();
   };
   next();
 }
+let SEQ_N = 0;
 
 function kUnitRow(u) {
   const p = kProgress(u.id), done = kDone(u.id);
@@ -2458,7 +2533,7 @@ function startSession(mode, u) {
   CatLife.scan();
 }
 function closeSession() {
-  try { speechSynthesis.cancel(); } catch (e) {}
+  ttsCancel();
   micStop(true);
   if (SES) { SES.shown = 0; tick(); save(); }
   sessionEl.hidden = true; SES = null;
@@ -2635,7 +2710,7 @@ function skGo(id) {
 /* ---------- Listening (Dinleme) ----------
    Three exercises built on the browser's text-to-speech: hear a word and pick its meaning, dictation,
    and course dialog lines played without text (pick the sentence you heard, or type the missing word). */
-const canSpeak = () => "speechSynthesis" in window;
+const canSpeak = () => "speechSynthesis" in window || !!AUDIO_SET;
 const hasTrVoice = () => !voices.length || voices.some(v => (v.lang || "").toLowerCase().startsWith("tr"));
 function listenNotice() {
   return hasTrVoice() ? "" : `<div class="notice"><div>Qurilmangizda turkcha ovoz topilmadi, talaffuz notoʻgʻri boʻlishi mumkin. Telefon sozlamalarida «Matnni nutqqa aylantirish» boʻlimidan turk tilini yuklab oling.</div></div>`;
@@ -3169,7 +3244,7 @@ const ktHeard = (q, r) => `<span lang="tr">«${esc(r.text)}»</span> <span class
 // Records one answer with the browser's speech recognition and passes the best-scoring transcript to done()
 function micCapture(q, btn, done) {
   if (KT_REC) { try { KT_REC.stop(); } catch (e) {} return; }
-  try { speechSynthesis.cancel(); } catch (e) {}
+  ttsCancel();
   const r = new SR();
   r.lang = "tr-TR"; r.interimResults = false; r.maxAlternatives = 5;
   let alts = null;
@@ -3592,7 +3667,7 @@ function micUi(on, hint) {
 function micToggle() {
   if (!SES || SES.answered) return;
   if (REC) { micStop(false); return; }
-  try { speechSynthesis.cancel(); } catch (e) {}
+  ttsCancel();
   const w = SES.items[SES.i];
   const r = new SR();
   r.lang = "tr-TR"; r.interimResults = true; r.maxAlternatives = 5; r.continuous = false;

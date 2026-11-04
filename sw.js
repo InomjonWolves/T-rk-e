@@ -1,6 +1,6 @@
 // Offline support. App files: network first (so a new version shows at once), cache when offline or slow.
 // Fonts and the Firebase SDK: cache first.
-const CACHE = "turkce-yol-v55";
+const CACHE = "turkce-yol-v56";
 const META = "ty-meta";
 const ASSETS = ["./", "./index.html", "./firebase-config.js", "./content.js", "./lugat.js", "./grammar.js", "./grammar-ex.js", "./course-core.js", "./course.js", "./app.js", "./cat.js", "./guide.js", "./oqish.js", "./styles.css", "./privacy.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
@@ -24,6 +24,9 @@ function networkFirst(req) {
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
   const url = new URL(e.request.url);
+  // Recorded audio: the browser asks for byte ranges (Safari plays media only from 206 answers) — leave it to the
+  // network and the HTTP cache (the files never change: the name is the text's key)
+  if (url.origin === location.origin && /\/audio\/[^/]+\/[^/]+\.mp3$/.test(url.pathname)) return;
   if (url.origin === location.origin) { e.respondWith(networkFirst(e.request)); return; }
   // Fonts and the Firebase SDK; Firebase API traffic goes straight to the network
   if (!(url.host.startsWith("fonts.") || url.pathname.startsWith("/firebasejs/"))) return;
