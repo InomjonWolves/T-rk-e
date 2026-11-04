@@ -1,11 +1,16 @@
 name: Telegram
 
-# Har kuni ertalab Telegram kanalga "Kunning so'zi" (tools/telegram.js).
+# Har kuni ertalab Telegram kanalga "Kunning so'zi" (tools/telegram.js), shanba kunlari — haftalik viktorina ham (tools/quiz.js).
 # Secret'lar: TELEGRAM_BOT_TOKEN (@BotFather, bot kanalda admin) va TELEGRAM_CHAT_ID (@kanal_nomi). Boʻlmasa jim oʻtadi.
 on:
   schedule:
     - cron: "17 4 * * *"
   workflow_dispatch:
+    inputs:
+      quiz:
+        description: "Haftalik viktorinani ham yuborish"
+        type: boolean
+        default: false
 
 jobs:
   post:
@@ -14,6 +19,7 @@ jobs:
     env:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      QUIZ: ${{ inputs.quiz && '1' || '' }}
     steps:
       - name: Kalit tekshiruvi
         if: env.TELEGRAM_BOT_TOKEN == '' || env.TELEGRAM_CHAT_ID == ''

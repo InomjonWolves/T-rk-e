@@ -2,7 +2,8 @@
 // GitHub Actions runs it every morning (.github/workflows/telegram.yml) when the secrets exist:
 //   TELEGRAM_BOT_TOKEN — from @BotFather; the bot must be an admin of the channel
 //   TELEGRAM_CHAT_ID   — the channel, e.g. @turkceyol or -100…
-// Preview without sending: DRY=1 node tools/telegram.js
+// On Saturdays it also sends the weekly quiz (tools/quiz.js): an intro, 5 quiz polls and a closing message.
+// Preview without sending: DRY=1 node tools/telegram.js  (with the quiz: DRY=1 QUIZ=1 node tools/telegram.js)
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
@@ -55,6 +56,7 @@ const postButtons = () => ({ inline_keyboard: [[{ text: "📚 Mashq qilish", url
 const COMMANDS = [
   { command: "start", description: "Ilovani ochish" },
   { command: "soz", description: "Kunning so'zi" },
+  { command: "test", description: "Bitta viktorina savoli" },
   { command: "kurs", description: "Turk tili kursi A1–B2" },
   { command: "yordam", description: "Bot nima qila oladi" }
 ];
@@ -64,12 +66,23 @@ async function api(token, method, body) {
   if (!j.ok) throw new Error(`${method}: ${j.description}`);
   return j.result;
 }
+async function sendQuiz(token, chat) {
+  const { quiz, pollBody } = require("./quiz.js");
+  const q = quiz();
+  await api(token, "sendMessage", { chat_id: chat, text: q.intro, parse_mode: "HTML" });
+  for (const p of q.polls) await api(token, "sendPoll", pollBody(chat, p));
+  await api(token, "sendMessage", { chat_id: chat, text: q.outro, disable_web_page_preview: true, reply_markup: postButtons() });
+  console.log("Viktorina yuborildi:", q.lv, q.polls.length);
+}
 async function send() {
   const token = process.env.TELEGRAM_BOT_TOKEN, chat = process.env.TELEGRAM_CHAT_ID;
   const text = post();
+  if (process.env.DRY && process.env.QUIZ) { const { quiz } = require("./quiz.js"); const q = quiz(); console.log(text + "\n\n" + q.intro + "\n" + q.polls.map(p => "• " + p.question.replace(/\n+/g, " ")).join("\n")); return; }
   if (process.env.DRY || !token || !chat) { console.log(text); if (!process.env.DRY) console.log("\n(TELEGRAM_BOT_TOKEN yoki TELEGRAM_CHAT_ID yoʻq — yuborilmadi)"); return; }
   const m = await api(token, "sendMessage", { chat_id: chat, text, parse_mode: "HTML", reply_markup: postButtons() });
   console.log("Yuborildi:", m.message_id);
+  // Saturdays (or QUIZ=1): the weekly quiz after the word of the day
+  if (process.env.QUIZ || new Date().getUTCDay() === 6) await sendQuiz(token, chat).catch(e => console.log("Viktorina:", e.message));
   await api(token, "setMyCommands", { commands: COMMANDS }).catch(e => console.log(e.message));
   await api(token, "setChatMenuButton", { menu_button: { type: "web_app", text: "Ochish", web_app: { url: SITE } } }).catch(e => console.log(e.message));
 }

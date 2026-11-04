@@ -2,6 +2,7 @@
 // reads new messages with getUpdates, answers them and confirms them (offset), so nothing is answered twice.
 //   /start  — welcome + "Ilovani ochish" (the site as a Telegram Mini App) + the channel
 //   /soz    — the word of the day (same as the channel post)
+//   /test   — one quiz question (a Telegram quiz poll, from tools/quiz.js)
 //   /kurs   — course and grammar links
 //   /yordam — what the bot can do
 //   any word (Turkish or Uzbek) — its translation from the site's dictionary
@@ -42,12 +43,16 @@ function reply(text, date = new Date()) {
     const { w, tip } = word(date);
     return { text: `🇹🇷 <b>Kunning so'zi</b> · ${w.lv}\n\n<b>${esc(w.tr)}</b> — ${esc(w.uz)}${w.note ? `\n<i>${esc(w.note)}</i>` : ""}\n\n💡 ${esc(tip)}`, reply_markup: { inline_keyboard: [[openApp]] } };
   }
+  if (c === "test" || c === "viktorina") {
+    const p = require("./quiz.js").one(date.getTime());
+    return { poll: p, text: "Yana savol: /test" };
+  }
   if (c === "kurs") return {
     text: "📚 <b>Turk tili kursi A1–B2</b> — 32 bo'lim, lug'at, grammatika, dialog va mashqlar.\n\nKurs: " + SITE + "kurs/\nGrammatika: " + SITE + "qoida/\nO'qish matnlari: " + SITE + "oqish/",
     reply_markup: { inline_keyboard: [[openApp]] }
   };
   if (c === "yordam" || c === "help") return {
-    text: "Men nima qila olaman:\n\n/start — ilovani ochish\n/soz — kunning so'zi\n/kurs — kurs va grammatika\n\nYoki shunchaki so'z yozing: <i>kitap</i>, <i>salom</i>, <i>çalışmak</i> — tarjimasini topaman.",
+    text: "Men nima qila olaman:\n\n/start — ilovani ochish\n/soz — kunning so'zi\n/test — viktorina savoli\n/kurs — kurs va grammatika\n\nYoki shunchaki so'z yozing: <i>kitap</i>, <i>salom</i>, <i>çalışmak</i> — tarjimasini topaman.",
     reply_markup: { inline_keyboard: [[openApp], [channel]] }
   };
   if (c) return reply("/yordam");
@@ -70,7 +75,9 @@ async function run() {
     // Private chats only; skip messages older than a day (the bot may have been off)
     if (!m || !m.chat || m.chat.type !== "private" || !m.text || now - m.date > 86400) continue;
     const r = reply(m.text);
-    try { await api(token, "sendMessage", Object.assign({ chat_id: m.chat.id, parse_mode: "HTML", disable_web_page_preview: true }, r)); answered++; }
+    try {
+      if (r.poll) { await api(token, "sendPoll", require("./quiz.js").pollBody(m.chat.id, r.poll)); answered++; continue; }
+      await api(token, "sendMessage", Object.assign({ chat_id: m.chat.id, parse_mode: "HTML", disable_web_page_preview: true }, r)); answered++; }
     catch (e) { console.log(e.message); }
   }
   // Confirm everything read so far
