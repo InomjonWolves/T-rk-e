@@ -13,6 +13,9 @@ window.FIREBASE_CONFIG = {
 // Shart: Google Cloud → Credentials → Web client → "Authorized redirect URIs" da https://<domen>/__/auth/handler bor boʻlishi.
 // Boʻsh boʻlsa, oyna t-rk-e.firebaseapp.com da ochiladi.
 window.AUTH_SAME_DOMAIN = [];
+// Kunlik eslatmalar (push): Firebase konsoli → Project settings → Cloud Messaging → Web Push certificates → "Key pair".
+// Boʻsh boʻlsa, server eslatmalari oʻchiq (oʻrnatilgan ilovada brauzerning oʻz eslatmasi baribir ishlaydi).
+window.FCM_VAPID = "";
 /* Namuna:
 window.FIREBASE_CONFIG = {
   apiKey: "AIza...",

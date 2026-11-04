@@ -98,6 +98,17 @@ service cloud.firestore {
         allow delete: if okUser() && (request.auth.uid == uid || g().owner == request.auth.uid);
       }
     }
+    // Kunlik eslatma: FCM token, eslatma soati (UTC), vaqt zonasi, oxirgi mashq kuni, seriya. Faqat egasi; yuboruvchi server (service account) qoidalarsiz oʻqiydi
+    match /push/{uid} {
+      allow read, delete: if okUser() && request.auth.uid == uid;
+      allow create, update: if okUser() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['t', 'h', 'z', 'd', 's', 'at'])
+        && request.resource.data.t is string && request.resource.data.t.size() <= 500
+        && request.resource.data.h is int && request.resource.data.h >= 0 && request.resource.data.h <= 23
+        && request.resource.data.z is int && request.resource.data.z >= -840 && request.resource.data.z <= 840
+        && request.resource.data.d is string && request.resource.data.d.size() <= 10
+        && request.resource.data.s is int && request.resource.data.at == request.time;
+    }
     // Profil rasmlari: kichik JPEG (100 KB gacha), faqat egasi yozadi
     match /avatars/{uid} {
       allow read: if okUser();

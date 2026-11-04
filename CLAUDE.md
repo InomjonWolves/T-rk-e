@@ -7,7 +7,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 
 ## ▶ YANGI SESSIYA UCHUN QISQA XULOSA (2026-11-02)
 
-**Hozirgacha qilingan (hammasi `main` da va turkceyol.web.app da, 59 test yashil):**
+**Hozirgacha qilingan (hammasi `main` da va turkceyol.web.app da, 63 test yashil):**
 - Kontent: A1–B2 kurs (32 boʻlim, 4 daraja testi), grammatika qoʻllanmasi 122 mavzu + 735 qoida mashqi, lugʻat bazasi (`lugat.js`, 61 toʻplam, ilovada jami 3033 soʻz), alifbo.
 - Mashqlar: SRS, kartochka/test/yozish, tinglash (TTS), gapirish va talaffuz (mikrofon), erkin yozishni avtomatik tekshirish, 4 koʻnikma hisobi (`#skills`), xatolar daftarlari, darajani aniqlash testi.
 - Hisob: email/parol (pochta tasdiqlanmaguncha kirmaydi) va Google (popup birinchi). Apple va Telegram **olib tashlangan**. Firestore qoidalari faqat `email_verified` hisoblarga ruxsat beradi (konsolda joylangan, `tools/check-rules.py` 9/9).
@@ -25,7 +25,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 
 **✔ BAJARILDI (2026-11-02): raqobat, ligalar, mushuk rivoji, yangi XP tizimi** — tafsilot pastda "XP v2" bandida. **Foydalanuvchi qadami:** yangi `firestore.rules` ni konsolda joylash (league uchun yangi maydonlar). Joylanmaguncha ilova league qatorini eski 5 maydon bilan yozadi (`LG_OLD`), "Bugun" reytingi va liga hisob-kitobi toʻliq ishlamaydi.
 
-**Keyingi gʻoyalar:** doʻstlar ligasi, guruhga topshiriqlar, push eslatmalar (streak saqlash), liga natijasi uchun hafta yakuni ekrani.
+**Reja (2026-11-03, foydalanuvchi tasdiqlagan, tartib bilan):** 1a eslatmalar ✔ (sozlash — foydalanuvchi), 1b hafta yakuni ekrani, 1c doʻstlar ligasi va taklif havolasi, 2 kontent sifati (koʻrib chiquvchi tuzatishlari, audio, matnlar), 3 SEO maqolalar va Telegram, 4 oʻqituvchi topshiriqlari va eksport, 5 qaytish koʻrsatkichlari (admin).
 
 **Ish tartibi:** `ccr-…` branch'da ishlash → `npm test` → commit → push → `main` ga fast-forward merge → `Testlar` va `Firebase Hosting` workflow'lari yashil ekanini tekshirish. `course.js`, `guide.js` yoki `lugat.js` oʻzgarsa — `npm run build`.
 
@@ -36,7 +36,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - **"TYS" / "TYS imtihoni"** soʻzlarini va **harbiy mavzudagi** (askar, komutan, kışla, nöbet, tatbikat va h.k.) lugʻat va misollarni ishlatmang. Ularning oʻrniga oddiy kasblar va kundalik hayotdan misol keltiring.
 - Uchinchi tomonning rasm yoki videolarini koʻchirmang. Pamuk — oʻzimiz chizgan original SVG.
 - Git muallifi: `git -c user.name="InomjonWolves" -c user.email="i.superclub@gmail.com" commit ...`. Sessiya bergan attribution qatorlarini qoʻshing. Repodagi fayllarga model nomlarini yozmang.
-- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v42`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
+- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v44`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
 - Joylanganini tekshirish: `gh api repos/InomjonWolves/T-rk-e/actions/runs --jq '[.workflow_runs[]|select(.name=="pages build and deployment")][0]|"\(.status) \(.conclusion) \(.head_sha[0:7])"'`. Testlar: `[.workflow_runs[]|select(.name=="Testlar")][0]`.
 - Commit qilishdan oldin `npm test` ni ishga tushiring (hammasi oʻtishi kerak). Yangi funksiya qoʻshsangiz, `tests/` ga test ham qoʻshing.
 
@@ -99,6 +99,7 @@ Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #placement #lessons #gram
 - **Pamuk munosabati**: mashq natijasi (xursand/xafa), yangi daraja — bayram, streak — "N kun ketma-ket!" (`catStreakCheer`, mashq paytida `PAMUK_LATER` bilan keyin), 3+ kun tanaffus — welcome "Seni özledim!", bosh sahifada `comebackCard` ("5 daqiqa takrorlash").
 - **Kunlik vazifalar** (`dqToday`, `dqMark`, `dqCard`, `S.dq`): lugʻat testi, qoida mashqi, tinglash yoki gapirish (kunga qarab; mikrofon boʻlmasa tinglash); sifatli (≥50%, takror <2) mashq belgilaydi; uchalasi +100. **Haftalik challenge** (`WC`, `wcWeek`, `wcMark`, `S.wc`): haftaga qarab 5 faol kun / 15 ta mashq / 4 koʻnikmadan 2 tadan; +250.
 - **Reyting va ligalar** (`viewRank`, `RANK_TABS` = day/week/all, `loadRank`, `lgDoc`, `lgSettle`, `LEAGUES`): league qatori `{name, week, wxp, xp, streak, day, dxp, lg, lgw, pw, pwxp, plg, at}`. Hafta tabi faqat oʻz ligam (`lg`), koʻtarilish zonasi; umumiy tabda daraja. Ligalar: Bronza, Kumush, Oltin, Platina, Olmos, Usta, Afsona (`lgBadge`). Server yoʻq: hafta almashganda `rollWeek` oʻtgan haftani `S.pw/pwxp/plg` ga saqlaydi, `lgSettle` (kirgandan keyin `enterApp`, mehmon — boot) oʻtgan hafta jadvalini (`week == pw` + `pw == pw`) oʻqib oʻrnimni topadi: liganing eng yaxshi 30% (kamida `LG_MIN` 300 XP) → +1, <50 XP → −1; jadvalsiz (mehmon/oflayn) 1000+ XP → +1. Natija `S.lgr`, koʻtarilganda bayram. **Qoidalar** (`firestore.rules` → league): maydonlar roʻyxati, `dxp ≤ 3500`, `wxp ≤ xp`, `xp ≥ (lg−1)·300`, liga faqat `lgw` yangi haftaga oʻzgarganda ±1, `at == request.time` va XP oʻsishi ≤ 3000 + vaqt/25 s. Emulyatorda sinalgan (`tools/rules-emulator.test.js`, 5/5). Eski qoidalar rad etsa — `LG_OLD` (5 maydon).
+- **Kunlik eslatmalar** (2026-11-03; `remSet`, `remSync`, `remUtcHour`, `fcmToken`; `tests/push.test.js`): Profil → Sozlamalar → "Kunlik eslatma" (Yoʻq / 9 / 19 / 21), `S.rem = {h}`, bildirishnoma ruxsati soʻraladi (iPhone — faqat bosh ekranga qoʻshilgan ilovada). Ikki yoʻl: (1) **server** — `firebase-config.js` → `window.FCM_VAPID` boʻlsa, FCM token `push/{uid}` = `{t, h (UTC soat), z (getTimezoneOffset), d (oxirgi mashq kuni), s (streak), at}` ga yoziladi (`save()` dan 2,5 s keyin, oʻzgarsa); `.github/workflows/push.yml` har soat (:07) `tools/push.js` ni ishga tushiradi: service account JWT → Firestore `runQuery` (`h == hozirgi UTC soat`) → bugun (foydalanuvchi vaqtida) mashq qilmaganlarga FCM v1 `webpush.data` → eskirgan token oʻchiriladi; `DRY=1` — yubormasdan. Secret: `PUSH_SERVICE_ACCOUNT` yoki `FIREBASE_SERVICE_ACCOUNT` (rollar: Cloud Datastore User + Firebase Cloud Messaging API Admin). (2) **serversiz** — `sw.js` `periodicsync` (`ty-remind`, faqat oʻrnatilgan Chrome ilovasi), maʼlumot `caches["ty-meta"]/__remind = {on, h, last, s, sent}`. `sw.js` `push` (bugun mashq qilingan boʻlsa jim), `notificationclick` (ilovani ochadi). Qoidalar: `push/{uid}` faqat egasi (emulyatorda 6/6). Hisob oʻchirilsa `push` ham oʻchadi. **Foydalanuvchi qadami:** Firebase → Project settings → Cloud Messaging → Web Push certificates → Generate key pair → public key ni berish (`FCM_VAPID`); IAM'da service account'ga 2 rol; `firestore.rules` ni qayta joylash.
 - Qoʻllanma va qoida mashqlari A1–B2 gacha toʻldirildi. `#guide` va `#gx` sahifalarida daraja tugmalari bor. Tarjimon A2–B2 qoliplarini ham taniydi (`TR_HINTS`).
 
 ## Qolgan ishlar

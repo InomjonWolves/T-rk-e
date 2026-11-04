@@ -47,7 +47,8 @@ function loadLocal(key) {
   try { const raw = localStorage.getItem(key); if (raw) v = Object.assign(blank(), JSON.parse(raw)); } catch (e) {}
   return migrate(v);
 }
-function save() { lvlCheck(); S.savedAt = Date.now(); try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {} cloudSave(); clearTimeout(achTimer); achTimer = setTimeout(checkAch, 450); }
+let remTimer;
+function save() { lvlCheck(); S.savedAt = Date.now(); try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {} cloudSave(); clearTimeout(remTimer); remTimer = setTimeout(() => remSync(), 2500); clearTimeout(achTimer); achTimer = setTimeout(checkAch, 450); }
 
 /* ---------- Spaced repetition (simplified SM-2) ----------
    Each word: i = interval in days, e = ease, d = due day, r = successful reviews in a row,
@@ -257,6 +258,71 @@ function catStreakCheer(back) {
 // Bonus XP (daily tasks, streak, weekly challenge) — outside the daily activity ceiling
 function addXPBonus(n) { S.xp += n; S.dayXp += n; S.wxp += n; dayRec().xp += n; }
 const daysAway = () => S.lastDay ? dayNum() - Math.round(Date.parse(S.lastDay) / DAY) : 0;
+
+/* ---------- Daily reminders ----------
+   The learner picks an hour; if that day has no practice yet, a notification comes.
+   Two ways: the server push (GitHub Actions → tools/push.js reads push/{uid} and sends through FCM; needs
+   window.FCM_VAPID) and, without a server, Periodic Background Sync of an installed app (sw.js reads ty-meta). */
+const remHour = () => (S.rem && S.rem.h) || 0;
+const remOk = () => typeof Notification !== "undefined" && Notification.permission === "granted";
+function remText() {
+  const h = remHour();
+  if (!h) return "Mashq qilinmagan kuni eslatamiz";
+  if (!remOk()) return "Bildirishnomalarga ruxsat yoʻq — brauzer sozlamalarida yoqing";
+  return `Har kuni ${h}:00 da, agar oʻsha kuni hali mashq qilmagan boʻlsangiz`;
+}
+async function remSet(v) {
+  const h = +v || 0;
+  if (h) {
+    if (typeof Notification === "undefined") { toast(isIOS() && !isStandalone() ? "iPhone'da eslatmalar uchun saytni bosh ekranga qoʻshing (Ulashish → Bosh ekranga)" : "Bu brauzer eslatmalarni qoʻllamaydi"); return; }
+    if (Notification.permission !== "granted") {
+      let p = "denied";
+      try { p = await Notification.requestPermission(); } catch (e) {}
+      if (p !== "granted") { toast("Eslatmaga ruxsat berilmadi. Brauzer sozlamalarida bildirishnomalarni yoqish mumkin"); return; }
+    }
+  }
+  S.rem = { h }; save();
+  const y = window.scrollY; route(); window.scrollTo(0, y);
+  remSync();
+  if (h) { toast(`Har kuni ${h}:00 da eslatamiz — agar oʻsha kuni mashq qilmagan boʻlsangiz`); pamukSoon("happy", "Kelishdik! Men sizga eslatib turaman"); }
+  else toast("Eslatma oʻchirildi");
+}
+let REM_SIG = "", FCM_T = null;
+const swReady = () => location.protocol === "https:" && "serviceWorker" in navigator ? Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(r, 4000))]) : Promise.resolve(null);
+function loadScript(src) { return new Promise((ok, fail) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = fail; document.head.appendChild(s); }); }
+async function fcmToken() {
+  if (FCM_T) return FCM_T;
+  if (!firebase.messaging) await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js");
+  if (!firebase.messaging || (firebase.messaging.isSupported && !firebase.messaging.isSupported())) return null;
+  const reg = await swReady();
+  FCM_T = await firebase.messaging().getToken(Object.assign({ vapidKey: window.FCM_VAPID }, reg ? { serviceWorkerRegistration: reg } : {}));
+  return FCM_T;
+}
+// UTC hour for a local hour (the server runs in UTC)
+const remUtcHour = (h, z = new Date().getTimezoneOffset()) => ((Math.floor(h + z / 60) % 24) + 24) % 24;
+async function remSync() {
+  const h = remHour(), on = !!h && remOk(), s = streakNow();
+  // For the service worker: what to say and whether today already has practice
+  try {
+    const c = await caches.open("ty-meta"), old = await c.match("./__remind").then(r => r ? r.json() : {}).catch(() => ({}));
+    await c.put("./__remind", new Response(JSON.stringify({ on, h, last: S.lastDay || "", s, sent: old.sent || "" })));
+    if (on) { const reg = await swReady(); if (reg && reg.periodicSync) await reg.periodicSync.register("ty-remind", { minInterval: 6 * 3600e3 }).catch(() => {}); }
+  } catch (e) {}
+  if (!USER || !db || !FB) return;
+  if (!on) {
+    if (S.rem && REM_SIG !== "off") { REM_SIG = "off"; db.collection("push").doc(USER.uid).delete().catch(() => {}); }
+    return;
+  }
+  if (!window.FCM_VAPID) return;
+  const z = new Date().getTimezoneOffset(), sig = [h, z, S.lastDay, s].join("|");
+  if (sig === REM_SIG) return;
+  REM_SIG = sig;
+  try {
+    const t = await fcmToken();
+    if (!t) return;
+    await db.collection("push").doc(USER.uid).set({ t, h: remUtcHour(h, z), z, d: S.lastDay || "", s, at: firebase.firestore.FieldValue.serverTimestamp() });
+  } catch (e) { REM_SIG = ""; }
+}
 
 /* ---------- Daily tasks (+100 for all three) and the weekly challenge (+250) ---------- */
 function dqToday() {
@@ -1340,6 +1406,8 @@ function viewProfile() {
         <span class="mini-seg">${[["auto", "Avto"], ["light", "Yorugʻ"], ["dark", "Tun"]].map(([v, l]) => `<button data-act="theme" data-v="${v}" aria-pressed="${th === v}">${l}</button>`).join("")}</span></div>
       <div class="set-row"><span><b>Kunlik maqsad</b><small>Har kuni toʻplanadigan XP</small></span>
         <span class="mini-seg">${[30, 50, 100].map(v => `<button data-act="goal" data-v="${v}" aria-pressed="${S.goal === v}">${v}</button>`).join("")}</span></div>
+      <div class="set-row rem-row"><span><b>Kunlik eslatma</b><small>${esc(remText())}</small></span>
+        <span class="mini-seg">${[[0, "Yoʻq"], [9, "9:00"], [19, "19:00"], [21, "21:00"]].map(([v, l]) => `<button data-act="remind" data-v="${v}" aria-pressed="${remHour() === v}">${l}</button>`).join("")}</span></div>
       ${USER ? `<button class="set-row" data-act="pub" role="switch" aria-checked="${S.pub}"><span><b>Reytingda koʻrinish</b><small>Ismingiz va XP boshqa oʻquvchilarga koʻrinadi</small></span><span class="switch" aria-checked="${S.pub}"></span></button>
       <button class="set-row" data-act="anon" role="switch" aria-checked="${S.anon !== false}"><span><b>Anonim statistika</b><small>Ism va pochtasiz koʻnikma koʻrsatkichlari saytni yaxshilash uchun yuboriladi</small></span><span class="switch" aria-checked="${S.anon !== false}"></span></button>
       ${ADMIN ? `<a class="set-row" href="#admin" style="color:inherit;text-decoration:none"><span><b>Umumiy analitika</b><small>Faqat admin: barcha foydalanuvchilar boʻyicha</small></span>${ICON.chev}</a>` : ""}` : ""}
@@ -3596,6 +3664,7 @@ function onAct(e) {
     if (v === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = v;
     const y = window.scrollY; route(); window.scrollTo(0, y);
   }
+  else if (act === "remind") remSet(b.dataset.v);
   else if (act === "goal") { S.goal = +b.dataset.v; save(); const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "anon") {
     S.anon = S.anon === false; save();
@@ -4193,6 +4262,7 @@ async function deleteAccount(btn) {
     await db.collection("league").doc(u.uid).delete().catch(() => {});
     await db.collection("avatars").doc(u.uid).delete().catch(() => {});
     await db.collection("stats").doc(u.uid).delete().catch(() => {});
+    await db.collection("push").doc(u.uid).delete().catch(() => {});
     await grpWipe(u.uid).catch(() => {});
     try { localStorage.removeItem("ty-photo:" + u.uid); } catch (e) {}
     await db.collection("users").doc(u.uid).delete();

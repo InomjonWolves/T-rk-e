@@ -99,3 +99,17 @@ test("league rows: today/week/league fields, limits, a league step once a week, 
   await assertSucceeds(setDoc(doc(O, "league/lg3"), { name: "B", week: "2026-11-02", wxp: 1, xp: 1, streak: 0 }));
   await assertSucceeds(setDoc(doc(O, "league/lg3"), { name: "B", week: "2026-11-02", wxp: 40, xp: 41, streak: 1, day: "2026-11-02", dxp: 40, lg: 1, lgw: "", pw: "", pwxp: 0, plg: 1, at: serverTimestamp() }));
 });
+
+test("push rows: only the owner writes, reads and deletes; shape is checked", async () => {
+  const U = as("pu1", "google"), O = as("pu2", "google");
+  const row = { t: "tok", h: 14, z: -300, d: "2026-11-03", s: 3, at: serverTimestamp() };
+  await assertSucceeds(setDoc(doc(U, "push/pu1"), row));
+  await assertSucceeds(getDoc(doc(U, "push/pu1")));
+  await assertFails(getDoc(doc(O, "push/pu1")), "someone else's token");
+  await assertFails(setDoc(doc(O, "push/pu1"), row));
+  await assertFails(setDoc(doc(U, "push/pu1"), Object.assign({}, row, { h: 24 })));
+  await assertFails(setDoc(doc(U, "push/pu1"), Object.assign({}, row, { x: 1 })));
+  await assertFails(setDoc(doc(as("pn", "emailNo"), "push/pn"), row));
+  await assertFails(getDocs(collection(U, "push")), "no listing");
+  await assertSucceeds(deleteDoc(doc(U, "push/pu1")));
+});
