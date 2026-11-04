@@ -113,3 +113,16 @@ test("push rows: only the owner writes, reads and deletes; shape is checked", as
   await assertFails(getDocs(collection(U, "push")), "no listing");
   await assertSucceeds(deleteDoc(doc(U, "push/pu1")));
 });
+
+test("invites: one writes only one's own note to someone else; the owner reads and clears", async () => {
+  const A = as("ia", "google"), B = as("ib", "google"), C = as("ic", "emailOk");
+  const note = { name: "Bek", at: serverTimestamp() };
+  await assertSucceeds(setDoc(doc(B, "invites/ia/from/ib"), note));
+  await assertFails(setDoc(doc(B, "invites/ia/from/ic"), note), "in someone else's name");
+  await assertFails(setDoc(doc(A, "invites/ia/from/ia"), note), "to oneself");
+  await assertFails(setDoc(doc(B, "invites/ia/from/ib"), { name: "Bek", at: serverTimestamp(), xp: 1 }));
+  await assertFails(getDocs(collection(C, "invites/ia/from")), "a stranger reads");
+  await assertSucceeds(getDocs(collection(A, "invites/ia/from")));
+  await assertSucceeds(deleteDoc(doc(A, "invites/ia/from/ib")));
+  await assertFails(setDoc(doc(as("in", "emailNo"), "invites/ia/from/in"), note));
+});

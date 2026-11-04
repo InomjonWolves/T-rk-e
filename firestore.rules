@@ -109,6 +109,16 @@ service cloud.firestore {
         && request.resource.data.d is string && request.resource.data.d.size() <= 10
         && request.resource.data.s is int && request.resource.data.at == request.time;
     }
+    // Doʻstlik taklifi: B taklif havolasini ochib A ni doʻst qilsa, invites/{A}/from/{B} ga oʻz ismini yozadi.
+    // A uni oʻqib, B ni ham doʻst qiladi va yozuvni oʻchiradi. Har kim faqat oʻz nomidan yozadi.
+    match /invites/{owner}/from/{uid} {
+      allow read, delete: if okUser() && request.auth.uid == owner;
+      allow create, update: if okUser() && request.auth.uid == uid && uid != owner
+        && request.resource.data.keys().hasOnly(['name', 'at'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 24
+        && request.resource.data.at == request.time;
+      allow delete: if okUser() && request.auth.uid == uid;
+    }
     // Profil rasmlari: kichik JPEG (100 KB gacha), faqat egasi yozadi
     match /avatars/{uid} {
       allow read: if okUser();

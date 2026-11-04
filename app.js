@@ -407,6 +407,83 @@ async function lgSettle() {
   if (location.hash === "#rank") route();
 }
 
+/* ---------- Friends: invite link, mutual friends, friends' leaderboard ----------
+   A shares https://turkceyol.web.app/#do-<uid>. B opens it and adds A (S.fr), and leaves a note in
+   invites/{A}/from/{B}; next time A opens the app, frInbox() adds B too. Bonus: the inviter +100 XP per new
+   friend (up to FR_BONUS_MAX friends in all), the invited +50 XP once. */
+const FR_MAX = 50, FR_BONUS_MAX = 10, FR_XP = 100, FR_JOIN_XP = 50;
+const frList = () => (S.fr = Array.isArray(S.fr) ? S.fr : []);
+const frLink = () => `https://turkceyol.web.app/#do-${USER ? USER.uid : ""}`;
+const frMyName = () => ((USERNAME || "").trim().split(/\s+/)[0] || "Oʻquvchi").slice(0, 20);
+function frPending(uid) { try { if (uid) localStorage.setItem("ty-friend", uid); else localStorage.removeItem("ty-friend"); } catch (e) {} }
+const frPendingGet = () => { try { return localStorage.getItem("ty-friend") || ""; } catch (e) { return ""; } };
+async function frAdd(uid, quiet) {
+  if (!uid) return;
+  if (!USER || !db) { frPending(uid); if (!quiet) toast("Avval hisobga kiring — keyin doʻstingiz avtomatik qoʻshiladi"); return; }
+  frPending(null);
+  if (uid === USER.uid) { if (!quiet) toast("Bu sizning havolangiz — uni doʻstlaringizga yuboring"); return; }
+  const L = frList();
+  if (L.includes(uid)) { if (!quiet) toast("Allaqachon doʻstingiz"); go("rank-fr"); return; }
+  if (L.length >= FR_MAX) { toast(`Doʻstlar soni ${FR_MAX} tagacha`); return; }
+  try { await db.collection("invites").doc(uid).collection("from").doc(USER.uid).set({ name: frMyName(), at: firebase.firestore.FieldValue.serverTimestamp() }); }
+  catch (e) { toast(e && e.code === "permission-denied" ? "Ruxsat yoʻq: Firestore qoidalari yangilanmagan boʻlishi mumkin" : "Internet aloqasini tekshiring"); return; }
+  L.push(uid);
+  let bonus = 0;
+  if (!S.frIn) { S.frIn = uid; bonus = FR_JOIN_XP; addXPBonus(bonus); }
+  save();
+  RANK_CACHE.fr = null;
+  pamukSoon("happy", bonus ? `Yangi doʻst qoʻshildi! Taklif uchun +${bonus} XP` : "Yangi doʻst qoʻshildi! Endi birga bellashasiz");
+  go("rank-fr");
+}
+// Friends who opened my link: add them back, pay the invite bonus, clear the notes
+async function frInbox() {
+  if (!USER || !db) return;
+  let snap;
+  try { snap = await db.collection("invites").doc(USER.uid).collection("from").get(); } catch (e) { return; }
+  const L = frList();
+  let added = 0;
+  for (const d of snap.docs) {
+    const id = d.id, name = (d.data() || {}).name || "Doʻstingiz";
+    if (id !== USER.uid && !L.includes(id) && L.length < FR_MAX) {
+      L.push(id); added++;
+      if ((S.frB || 0) < FR_BONUS_MAX) { S.frB = (S.frB || 0) + 1; addXPBonus(FR_XP); celebrate({ eyebrow: "Yangi doʻst", title: `${name} taklifingizni qabul qildi!`, text: `Endi doʻstlar reytingida birga bellashasiz. Taklif uchun +${FR_XP} XP`, ico: "users", c: "sky" }); }
+    }
+    d.ref.delete().catch(() => {});
+  }
+  if (added) { RANK_CACHE.fr = null; save(); if (location.hash === "#rank-fr" || (location.hash === "#rank" && RANK_TAB === "fr")) loadRank(); }
+}
+function frRemove(uid) {
+  S.fr = frList().filter(x => x !== uid); save();
+  RANK_CACHE.fr = null; loadRank();
+}
+function frInviteBox() {
+  return `<div class="glass pad fr-invite">
+    <b>${ICON.users}Doʻstlarni taklif qiling</b>
+    <p class="muted">Havolani yuboring: doʻstingiz uni ochib qoʻshilsa, ikkalangiz bir-biringizni reytingda koʻrasiz. Har bir yangi doʻst uchun +${FR_XP} XP${(S.frB || 0) >= FR_BONUS_MAX ? " (bonus chegarasi toʻldi)" : ""}.</p>
+    <code class="fr-link">${esc(frLink())}</code>
+    <div class="fr-actions"><button class="btn btn-grad" data-act="fr-share">${ICON.heart}Taklif yuborish</button><button class="btn btn-ghost" data-act="fr-copy">${ICON.copy}Nusxalash</button></div>
+  </div>`;
+}
+function viewFriendInvite(uid) {
+  if (USER && uid !== USER.uid && !frList().includes(uid)) frPending(uid); else if (!USER) frPending(uid);
+  return `${topbar()}<div class="lesson-head"><div class="tags"><span class="tag sky-t">${ICON.users}Taklif</span></div><h1>Doʻstlik taklifi</h1></div>
+  <div id="fr-join"><div class="glass empty"><div class="spin"></div>Yuklanmoqda…</div></div>`;
+}
+async function friendInviteLoad(uid) {
+  const box = $("fr-join");
+  if (!box) return;
+  if (!USER || !db) { box.innerHTML = `<div class="glass pad grp-invite">${mascot("wave")}<h2>Sizni Türkçe Yoʻl'ga taklif qilishdi!</h2><p class="muted">Turk tilini oʻzbek tilida bepul oʻrganing. Hisobga kiring yoki roʻyxatdan oʻting — doʻstingiz avtomatik qoʻshiladi va siz +${FR_JOIN_XP} XP olasiz.</p></div>`; CatLife.scan(); return; }
+  if (uid === USER.uid) { box.innerHTML = `<div class="glass empty"><b>Bu sizning taklif havolangiz</b><span class="muted">Uni doʻstlaringizga yuboring.</span></div>${frInviteBox()}`; return; }
+  if (frList().includes(uid)) { go("rank-fr"); return; }
+  let name = "";
+  try { const d = await db.collection("league").doc(uid).get(); name = d.exists ? d.data().name || "" : ""; } catch (e) {}
+  if (!$("fr-join")) return;
+  $("fr-join").innerHTML = `<div class="glass pad grp-invite">${mascot("wave")}<h2>${esc(name || "Doʻstingiz")} sizni taklif qilyapti</h2>
+    <p class="muted">Doʻst boʻlsangiz, bir-biringizning haftalik XP, darajasi va ketma-ket kunlarini koʻrasiz.${S.frIn ? "" : ` Taklif uchun +${FR_JOIN_XP} XP!`}</p>
+    <button class="btn btn-grad btn-block" data-act="fr-add" data-u="${esc(uid)}">Doʻst boʻlish</button></div>`;
+  CatLife.scan();
+}
+
 /* ---------- Week summary: shown once after a new week is settled, and again from the leaderboard ---------- */
 function weekStats(wk) {
   const n0 = Math.round(Date.parse(wk) / DAY), days = Array.from({ length: 7 }, (_, i) => dayGet(keyOf(n0 + i)));
@@ -1333,7 +1410,7 @@ function viewPractice() {
 
 /* ---------- Leaderboard ---------- */
 let RANK_TAB = "week", RANK_CACHE = {};
-const RANK_TABS = { day: ["Bugun", "Bugun eng koʻp XP toʻplaganlar"], week: ["Hafta", "Liga ichidagi haftalik reyting · har dushanba yangilanadi"], all: ["Umumiy", "Eng yuqori darajali oʻquvchilar"] };
+const RANK_TABS = { day: ["Bugun", "Bugun eng koʻp XP toʻplaganlar"], week: ["Hafta", "Liga ichidagi haftalik reyting · har dushanba yangilanadi"], fr: ["Doʻstlar", "Doʻstlaringiz bilan haftalik bellashuv"], all: ["Umumiy", "Eng yuqori darajali oʻquvchilar"] };
 function viewRank() {
   const lg = lgOf(S.lg), r = S.lgr;
   return `${topbar()}
@@ -1375,7 +1452,8 @@ async function loadRank() {
   else {
     try {
       const ref = db.collection("league");
-      const snap = tab === "week" ? await ref.where("week", "==", weekKey()).limit(300).get()
+      const snap = tab === "fr" ? { docs: (await Promise.all(frList().concat([USER.uid]).map(id => ref.doc(id).get().catch(() => null)))).filter(d => d && d.exists) }
+        : tab === "week" ? await ref.where("week", "==", weekKey()).limit(300).get()
         : tab === "day" ? await ref.where("day", "==", todayKey()).limit(300).get()
         : await ref.orderBy("xp", "desc").limit(100).get();
       rows = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
@@ -1386,10 +1464,13 @@ async function loadRank() {
     }
   }
   if (tab !== RANK_TAB || !$("rank-body")) return;
-  const key = tab === "week" ? "wxp" : tab === "day" ? "dxp" : "xp";
+  const key = tab === "week" || tab === "fr" ? "wxp" : tab === "day" ? "dxp" : "xp";
+  // Friends: this week's XP only counts for rows of this week
+  if (tab === "fr") rows = rows.map(r => r.week === weekKey() || r.id === USER.uid ? r : Object.assign({}, r, { wxp: 0 }));
   // My own row always shows the latest local numbers; the weekly table is the table of my league
   const mine = rows.find(r => r.id === USER.uid);
   if (mine) { mine.wxp = S.wxp; mine.xp = S.xp; mine.lg = S.lg; if (S.day === todayKey()) mine.dxp = S.dayXp; }
+  if (tab === "fr") return frRender(rows);
   rows = rows.filter(r => r[key] > 0 && (tab !== "week" || (r.lg || 1) === (S.lg || 1))).sort((a, b) => b[key] - a[key]);
   const upN = tab === "week" && S.lg < 7 ? Math.max(1, Math.ceil(rows.length * LG_UP)) : 0;
   const sub = r => tab === "all" ? `${lvlOf(r.xp)}-daraja · ${lgOf(r.lg).uz}` : `${r.streak || 0} kun ketma-ket`;
@@ -1408,6 +1489,21 @@ async function loadRank() {
       <span style="min-width:0"><b>${esc(r.name || "Oʻquvchi")}</b><small>${sub(r)}</small></span><span class="xp">${r[key]} XP</span></div>${i + 4 === upN && rows.length > upN ? `<div class="lg-zone">⬆ Koʻtarilish zonasi</div>` : ""}`).join("")}</div>` : ""}
     <p class="sub" style="text-align:center;margin-top:12px">${me >= 0 ? `Siz ${me + 1}-oʻrindasiz · eng yaxshi ${Math.max(1, Math.round((me + 1) / rows.length * 100))}%` : S.pub ? "Mashq qilib XP toʻplang, shunda reytingda paydo boʻlasiz." : "Siz reytingda koʻrinmaysiz. Buni Profil → Sozlamalarda yoqish mumkin."}</p>`;
   loadRankPhotos(rows.slice(0, 50).map(r => r.id));
+}
+
+function frRender(rows) {
+  rows = rows.sort((a, b) => (b.wxp || 0) - (a.wxp || 0) || (b.xp || 0) - (a.xp || 0));
+  const others = rows.filter(r => r.id !== USER.uid);
+  const hidden = frList().length - others.length;
+  $("rank-body").innerHTML = `${others.length ? `<div class="glass words">${rows.map((r, i) => `<div class="rank-row${r.id === USER.uid ? " me" : ""}">
+      <span class="n">${i + 1}</span><span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id)}</span>
+      <span style="min-width:0"><b>${esc(r.id === USER.uid ? "Siz" : r.name || "Oʻquvchi")}</b><small>${lvlOf(r.xp)}-daraja · ${lgOf(r.lg).uz} · ${r.streak || 0} kun</small></span>
+      <span class="xp">${r.wxp || 0} XP${r.id === USER.uid ? "" : `<button class="fr-x" data-act="fr-del" data-u="${esc(r.id)}" aria-label="Doʻstlikdan olib tashlash">×</button>`}</span></div>`).join("")}</div>
+    ${hidden > 0 ? `<p class="sub" style="text-align:center">${hidden} ta doʻstingiz reytingda koʻrinishni oʻchirgan</p>` : ""}`
+    : `<div class="glass empty">${mascot("wave")}<b>Hali doʻstlar yoʻq</b><span class="muted">Doʻstlaringizni taklif qiling — birga oʻrganish qiziqroq va natija yuqoriroq boʻladi.</span></div>`}
+  ${frInviteBox()}`;
+  CatLife.scan();
+  loadRankPhotos(others.map(r => r.id));
 }
 
 /* ---------- Profile & statistics ---------- */
@@ -1461,7 +1557,8 @@ function viewProfile() {
       ${ADMIN ? `<a class="set-row" href="#admin" style="color:inherit;text-decoration:none"><span><b>Umumiy analitika</b><small>Faqat admin: barcha foydalanuvchilar boʻyicha</small></span>${ICON.chev}</a>` : ""}` : ""}
       <a class="set-row" href="#groups" style="color:inherit;text-decoration:none"><span><b>Guruhlar</b><small>Oʻqituvchi va sinf bilan birga oʻrganish</small></span>${ICON.users}</a>
       <a class="set-row" href="#help" style="color:inherit;text-decoration:none"><span><b>Yordam va qoʻllanma</b><small>Ilovani oʻrnatish, saytdan foydalanish, savollar</small></span>${ICON.chev}</a>
-      <button class="set-row" data-act="share"><span><b>Doʻstlarni taklif qilish</b><small>Turk tilini birga, bepul oʻrganing</small></span>${ICON.heart}</button>
+      ${USER ? `<a class="set-row" href="#rank-fr" style="color:inherit;text-decoration:none"><span><b>Doʻstlarni taklif qilish</b><small>Doʻstlar reytingi · har bir doʻst uchun +${FR_XP} XP</small></span>${ICON.heart}</a>`
+        : `<button class="set-row" data-act="share"><span><b>Doʻstlarni taklif qilish</b><small>Turk tilini birga, bepul oʻrganing</small></span>${ICON.heart}</button>`}
       <a class="set-row" href="kurs/" style="color:inherit;text-decoration:none"><span><b>Kurs va grammatika — veb sahifalar</b><small>Mavzuni havola bilan ulashish uchun</small></span>${ICON.chev}</a>
       <a class="set-row" href="privacy.html" style="color:inherit;text-decoration:none"><span><b>Maxfiylik siyosati</b></span>${ICON.chev}</a>
     </div>
@@ -2279,6 +2376,8 @@ function routeNow() {
   else if (h === "alphabet") { html = viewAlphabet(); tab = "lessons"; }
   else if (h === "practice") html = viewPractice();
   else if (h === "rank") { html = viewRank(); after = loadRank; }
+  else if (h === "rank-fr") { RANK_TAB = "fr"; html = viewRank(); tab = "rank"; after = loadRank; }
+  else if (/^do-[A-Za-z0-9]{6,40}$/.test(h)) { const u = h.slice(3); html = viewFriendInvite(u); tab = "rank"; after = () => friendInviteLoad(u); }
   else if (h === "profile") html = viewProfile();
   else { html = viewHome(); tab = "home"; }
   app.innerHTML = `<div class="view">${html}</div>`;
@@ -3700,7 +3799,7 @@ function onAct(e) {
   else if (act === "gx-lv") { GX_LV = b.dataset.l; const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "lug-lv") { LUG_LV = b.dataset.l; const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "guide-lv") { GUIDE_LV = b.dataset.l; const y = window.scrollY; route(); window.scrollTo(0, y); }
-  else if (act === "rank-tab") { RANK_TAB = b.dataset.t; route(); }
+  else if (act === "rank-tab") { RANK_TAB = b.dataset.t; if (location.hash === "#rank-fr") location.hash = "#rank"; else route(); }
   else if (act === "letter") {
     letterSel = +b.dataset.i;
     const y = window.scrollY; route(); window.scrollTo(0, y);
@@ -3858,6 +3957,10 @@ function onAct(e) {
   else if (act === "cel-next") nextCelebrate();
   else if (act === "share") shareSite(b.dataset.text);
   else if (act === "recap") showRecap();
+  else if (act === "fr-add") { b.disabled = true; frAdd(b.dataset.u); }
+  else if (act === "fr-share") shareLink(frLink(), "Keling, turk tilini birga oʻrganamiz! Türkçe Yoʻl'da doʻst boʻlaylik:");
+  else if (act === "fr-copy") copyText(frLink(), "Havola nusxalandi");
+  else if (act === "fr-del") { if (b.dataset.sure) frRemove(b.dataset.u); else { b.dataset.sure = "1"; b.textContent = "Olib tashlansinmi?"; } }
   else if (act === "sheet-done") closeSheet(true);
   else if (act === "install") doInstall();
   else if (act === "install-hide") { try { localStorage.setItem("ty-install-hide", "1"); } catch (err) {} kRerender(); }
@@ -4313,6 +4416,7 @@ async function deleteAccount(btn) {
     await db.collection("avatars").doc(u.uid).delete().catch(() => {});
     await db.collection("stats").doc(u.uid).delete().catch(() => {});
     await db.collection("push").doc(u.uid).delete().catch(() => {});
+    await db.collection("invites").doc(u.uid).collection("from").get().then(q => Promise.all(q.docs.map(d => d.ref.delete()))).catch(() => {});
     await grpWipe(u.uid).catch(() => {});
     try { localStorage.removeItem("ty-photo:" + u.uid); } catch (e) {}
     await db.collection("users").doc(u.uid).delete();
@@ -4364,6 +4468,8 @@ async function loadCloud(u) {
 }
 
 /* ---------- Boot ---------- */
+// An invite link opened before signing in: remember it, the friend is added right after sign-in
+{ const m = /^#do-([A-Za-z0-9]{6,40})$/.exec(location.hash); if (m) frPending(m[1]); }
 S = loadLocal(KEY);
 loadMyPhoto();
 try { PROFILE = Object.assign(PROFILE, JSON.parse(localStorage.getItem("ty-profile") || "{}")); } catch (e) {}
@@ -4423,6 +4529,8 @@ async function enterApp(u, quiet) {
   USER = u;
   await loadCloud(u);
   lgSettle();
+  frInbox();
+  if (frPendingGet()) setTimeout(() => frAdd(frPendingGet(), true), 600);
   if (!quiet) hideAuth();
   if (!quiet || !SES) route();
   if (!PROFILE.gender || !PROFILE.birth) { if ($("sheet").hidden && !SES) profileSheet(true); }
