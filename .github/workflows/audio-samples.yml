@@ -25,7 +25,7 @@ jobs:
         run: python tools/audio-samples.py
       - name: Coqui (ikkinchi nomzod)
         continue-on-error: true
-        run: pip install -q coqui-tts && python tools/audio-samples-coqui.py
+        run: pip install -q torch torchaudio --index-url https://download.pytorch.org/whl/cpu && pip install -q coqui-tts && python tools/audio-samples-coqui.py
       - name: espeak-ng (taqqoslash uchun)
         continue-on-error: true
         run: |
