@@ -1639,6 +1639,7 @@ function viewProfile() {
       ${ADMIN ? `<a class="set-row" href="#admin" style="color:inherit;text-decoration:none"><span><b>Umumiy analitika</b><small>Faqat admin: barcha foydalanuvchilar boʻyicha</small></span>${ICON.chev}</a>` : ""}` : ""}
       <a class="set-row" href="#groups" style="color:inherit;text-decoration:none"><span><b>Guruhlar</b><small>Oʻqituvchi va sinf bilan birga oʻrganish</small></span>${ICON.users}</a>
       <a class="set-row" href="#help" style="color:inherit;text-decoration:none"><span><b>Yordam va qoʻllanma</b><small>Ilovani oʻrnatish, saytdan foydalanish, savollar</small></span>${ICON.chev}</a>
+      <a class="set-row" href="${TG_CHANNEL}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none"><span><b>Telegram kanalimiz</b><small>@turkceyoluz · har kuni yangi soʻz</small></span>${ICON.chat}</a>
       ${USER ? `<a class="set-row" href="#rank-fr" style="color:inherit;text-decoration:none"><span><b>Doʻstlarni taklif qilish</b><small>Doʻstlar reytingi · har bir doʻst uchun +${FR_XP} XP</small></span>${ICON.heart}</a>`
         : `<button class="set-row" data-act="share"><span><b>Doʻstlarni taklif qilish</b><small>Turk tilini birga, bepul oʻrganing</small></span>${ICON.heart}</button>`}
       <a class="set-row" href="kurs/" style="color:inherit;text-decoration:none"><span><b>Kurs va grammatika — veb sahifalar</b><small>Mavzuni havola bilan ulashish uchun</small></span>${ICON.chev}</a>
@@ -2358,6 +2359,11 @@ function viewHelp() {
   const step = (n, t, d) => `<div class="help-step"><span class="help-n">${n}</span><div><b>${t}</b><p class="muted">${d}</p></div></div>`;
   return `<div><a class="back" href="#profile">${ICON.back}Profil</a></div>
   <div class="ach-hero glass">${mascot("wave")}<div><h1 class="page-title" style="font-size:26px">Yordam va qoʻllanma</h1><p class="sub">Pamuk saytdan qanday foydalanishni tushuntiradi</p></div></div>
+
+  <section class="section"><div class="section-head"><h2>Telegram</h2></div>
+    <div class="glass pad tg-card"><p class="muted">Kanalda har kuni “Kunning soʻzi”, botda esa sayt Telegram ichida ochiladi va soʻz tarjimasini soʻrash mumkin.</p>
+      <div class="fr-actions"><a class="btn btn-grad" href="${TG_CHANNEL}" target="_blank" rel="noopener">${ICON.chat}Kanal @turkceyoluz</a><a class="btn btn-ghost" href="${TG_BOT}" target="_blank" rel="noopener">${ICON.spark}Bot @TurkceYolBot</a></div>
+      ${IN_TG ? `<p class="muted" style="margin-top:8px">Siz saytni Telegram ichida ochdingiz. Google bilan kirish uchun <button class="link" data-act="tg-browser">brauzerda oching</button>.</p>` : ""}</div></section>
 
   <section class="section"><div class="section-head"><h2>Ilovani oʻrnatish (PWA)</h2>${isStandalone() ? `<span class="tag green-t">${ICON.check}Oʻrnatilgan</span>` : ""}</div>
     ${INSTALL_EVT ? `<button class="btn btn-grad btn-block" data-act="install">${ICON.download}Hozir oʻrnatish</button>` : ""}
@@ -4092,6 +4098,7 @@ function onAct(e) {
   else if (act === "cel-next") nextCelebrate();
   else if (act === "share") shareSite(b.dataset.text);
   else if (act === "recap") showRecap();
+  else if (act === "tg-browser") tgOpenBrowser();
   else if (act === "oq-lv") { OQ_LV = b.dataset.l; route(); }
   else if (act === "oq-ans") { const a = OQ_ANS[b.dataset.id] || (OQ_ANS[b.dataset.id] = {}); if (a.done) return; a[+b.dataset.q] = +b.dataset.o; const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "oq-check") oqCheck(b.dataset.id);
@@ -4563,7 +4570,7 @@ function setAuthTab(t) {
   $("a-pass").setAttribute("autocomplete", up ? "new-password" : "current-password");
   $("auth-submit").textContent = up ? "Roʻyxatdan oʻtish" : "Kirish";
   $("auth-submit").disabled = false;
-  $("auth-err").className = "auth-err"; $("auth-err").textContent = REDIR_MSG;
+  $("auth-err").className = "auth-err"; $("auth-err").textContent = REDIR_MSG || (IN_TG ? "Telegram ichida: email va parol bilan kiring (Google bilan kirish faqat brauzerda ishlaydi)." : "");
 }
 function showAuth(loading) {
   document.body.classList.add("locked");
@@ -4626,7 +4633,12 @@ document.addEventListener("input", e => {
   const k = Math.min(1, e.target.value.length / 26);
   CatLife.look(c, -6 + 12 * k, 6);
 });
-function googleSignIn() { oauthSignIn(new firebase.auth.GoogleAuthProvider()); }
+// Google refuses sign-in inside app web views (Telegram included): say so and offer the real browser
+const TG_AUTH_MSG = "Telegram ichida Google bilan kirib boʻlmaydi (bu Google cheklovi). Email va parol bilan kiring yoki saytni brauzerda oching: turkceyol.web.app";
+function googleSignIn() {
+  if (IN_TG) { authError(""); $("auth-err").className = "auth-err"; $("auth-err").textContent = TG_AUTH_MSG; tgOpenBrowser(); return; }
+  oauthSignIn(new firebase.auth.GoogleAuthProvider());
+}
 // A popup first, also in the installed app: the page-redirect flow loses the sign-in on browsers that block
 // cross-site storage (Chrome, Safari) when the sign-in page is on the Firebase auth domain, not the site's own.
 // The redirect is only a fallback when the popup cannot open.
@@ -4704,6 +4716,23 @@ async function loadCloud(u) {
     if (ph && ph !== MYPHOTO) { MYPHOTO = ph; try { localStorage.setItem(photoKey(), ph); } catch (e) {} route(); }
     else if (!ph && MYPHOTO) setMyPhoto(MYPHOTO);
   }).catch(() => {});
+}
+
+/* ---------- Telegram: the bot's Mini App opens the site with #tgWebAppData=… ----------
+   Remember that we run inside Telegram (Google sign-in does not work there) and keep the user data out of the address. */
+const TG_CHANNEL = "https://t.me/turkceyoluz", TG_BOT = "https://t.me/TurkceYolBot";
+const IN_TG = (() => {
+  let tg = /tgWebApp/.test(location.hash) || !!window.TelegramWebviewProxy;
+  try { if (tg) sessionStorage.setItem("ty-tg", "1"); else tg = sessionStorage.getItem("ty-tg") === "1"; } catch (e) {}
+  return tg;
+})();
+if (/tgWebApp/.test(location.hash)) { try { history.replaceState(null, "", location.pathname + location.search + "#home"); } catch (e) { location.hash = "#home"; } }
+if (IN_TG) {
+  document.documentElement.classList.add("in-tg");
+  loadScript("https://telegram.org/js/telegram-web-app.js").then(() => { try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch (e) {} }, () => {});
+}
+function tgOpenBrowser(url = "https://turkceyol.web.app/") {
+  try { if (window.Telegram && Telegram.WebApp && Telegram.WebApp.openLink) { Telegram.WebApp.openLink(url, { try_instant_view: false }); return; } } catch (e) {}
 }
 
 /* ---------- Boot ---------- */

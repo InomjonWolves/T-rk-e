@@ -1,0 +1,84 @@
+// @TurkceYolBot replies without a server: GitHub Actions runs this every few minutes (.github/workflows/telegram-bot.yml),
+// reads new messages with getUpdates, answers them and confirms them (offset), so nothing is answered twice.
+//   /start  — welcome + "Ilovani ochish" (the site as a Telegram Mini App) + the channel
+//   /soz    — the word of the day (same as the channel post)
+//   /kurs   — course and grammar links
+//   /yordam — what the bot can do
+//   any word (Turkish or Uzbek) — its translation from the site's dictionary
+// Needs TELEGRAM_BOT_TOKEN. Try a reply locally: node tools/telegram-bot.js "kitap"
+const { word, content, api, esc, SITE, CHANNEL } = require("./telegram.js");
+
+const fold = s => String(s).toLocaleLowerCase("tr").replace(/[ʻʼ‘’`']/g, "'").replace(/[?!.,;:…"«»()]/g, "").replace(/\s+/g, " ").trim();
+let DICT = null;
+function dict() {
+  if (DICT) return DICT;
+  const { UNITS, LUGAT } = content(), rows = [];
+  UNITS.forEach(u => u.words.forEach(w => rows.push({ tr: w[0], uz: w[1], note: w[2] || "", lv: "A1" })));
+  LUGAT.forEach(p => p.w.trim().split("\n").forEach(l => { const i = l.indexOf("="); if (i > 0) rows.push({ tr: l.slice(0, i).trim(), uz: l.slice(i + 1).trim(), lv: p.lv, pack: p.id }); }));
+  return (DICT = rows.filter(r => r.tr && r.uz));
+}
+// Exact Turkish match first, then Uzbek, then words starting with the query; at most 5
+function lookup(q) {
+  const f = fold(q);
+  if (!f || f.length < 2) return [];
+  const all = dict(), seen = new Set(), out = [];
+  const add = r => { const k = r.tr + "=" + r.uz; if (!seen.has(k) && out.length < 5) { seen.add(k); out.push(r); } };
+  all.filter(r => fold(r.tr) === f).forEach(add);
+  all.filter(r => fold(r.uz).split(/[,;] */).includes(f)).forEach(add);
+  if (out.length < 5 && f.length >= 3) all.filter(r => fold(r.tr).startsWith(f)).forEach(add);
+  return out;
+}
+const openApp = { text: "📱 Ilovani ochish", web_app: { url: SITE } };
+const channel = { text: "📢 Kanal", url: CHANNEL };
+// The reply to one message: { text, reply_markup }
+function reply(text, date = new Date()) {
+  const t = String(text || "").trim(), cmd = (/^\/([a-z_]+)/i.exec(t) || [])[1];
+  const c = cmd && cmd.toLowerCase();
+  if (c === "start") return {
+    text: "Assalomu alaykum! Men Pamuk 🐱 — <b>Türkçe Yo'l</b> boti.\n\nTurk tilini o'zbek tilida bepul o'rganing: A1–B2 kurs, grammatika, lug'at, tinglash va gapirish mashqlari, reyting va kunlik vazifalar.\n\n👇 Pastdagi tugmani bosing — sayt Telegram ichida ochiladi.\nMenga turkcha yoki o'zbekcha so'z yozsangiz, tarjimasini aytaman.",
+    reply_markup: { inline_keyboard: [[openApp], [channel]] }
+  };
+  if (c === "soz") {
+    const { w, tip } = word(date);
+    return { text: `🇹🇷 <b>Kunning so'zi</b> · ${w.lv}\n\n<b>${esc(w.tr)}</b> — ${esc(w.uz)}${w.note ? `\n<i>${esc(w.note)}</i>` : ""}\n\n💡 ${esc(tip)}`, reply_markup: { inline_keyboard: [[openApp]] } };
+  }
+  if (c === "kurs") return {
+    text: "📚 <b>Turk tili kursi A1–B2</b> — 32 bo'lim, lug'at, grammatika, dialog va mashqlar.\n\nKurs: " + SITE + "kurs/\nGrammatika: " + SITE + "qoida/\nO'qish matnlari: " + SITE + "oqish/",
+    reply_markup: { inline_keyboard: [[openApp]] }
+  };
+  if (c === "yordam" || c === "help") return {
+    text: "Men nima qila olaman:\n\n/start — ilovani ochish\n/soz — kunning so'zi\n/kurs — kurs va grammatika\n\nYoki shunchaki so'z yozing: <i>kitap</i>, <i>salom</i>, <i>çalışmak</i> — tarjimasini topaman.",
+    reply_markup: { inline_keyboard: [[openApp], [channel]] }
+  };
+  if (c) return reply("/yordam");
+  const hits = lookup(t);
+  if (hits.length) return {
+    text: hits.map(r => `<b>${esc(r.tr)}</b> — ${esc(r.uz)}${r.note ? ` <i>(${esc(r.note)})</i>` : ""} · ${r.lv}`).join("\n") + "\n\nMashq qilish — ilovada 👇",
+    reply_markup: { inline_keyboard: [[openApp]] }
+  };
+  return { text: `"${esc(t.slice(0, 40))}" lug'atimda topilmadi 🙈\nBoshqa so'z yozib ko'ring yoki /yordam`, reply_markup: { inline_keyboard: [[openApp]] } };
+}
+async function run() {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) { console.log("TELEGRAM_BOT_TOKEN yoʻq — oʻtkazib yuborildi"); return; }
+  const ups = await api(token, "getUpdates", { timeout: 0, limit: 100, allowed_updates: ["message"] });
+  let last = 0, answered = 0;
+  const now = Date.now() / 1000;
+  for (const u of ups) {
+    last = Math.max(last, u.update_id);
+    const m = u.message;
+    // Private chats only; skip messages older than a day (the bot may have been off)
+    if (!m || !m.chat || m.chat.type !== "private" || !m.text || now - m.date > 86400) continue;
+    const r = reply(m.text);
+    try { await api(token, "sendMessage", Object.assign({ chat_id: m.chat.id, parse_mode: "HTML", disable_web_page_preview: true }, r)); answered++; }
+    catch (e) { console.log(e.message); }
+  }
+  // Confirm everything read so far
+  if (last) await api(token, "getUpdates", { offset: last + 1, limit: 1, timeout: 0 });
+  console.log(`${ups.length} ta yangilanish, ${answered} ta javob`);
+}
+module.exports = { reply, lookup };
+if (require.main === module) {
+  if (process.argv[2]) console.log(JSON.stringify(reply(process.argv.slice(2).join(" ")), null, 1));
+  else run().catch(e => { console.error(e.message); process.exit(1); });
+}

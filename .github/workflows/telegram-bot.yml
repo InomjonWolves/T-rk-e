@@ -1,0 +1,39 @@
+name: Telegram bot
+
+# @TurkceYolBot javoblari (/start, /soz, /kurs, /yordam, so'z tarjimasi) — tools/telegram-bot.js.
+# Server yo'q: har 5 daqiqada yangi xabarlarni o'qib javob beradi (GitHub jadvali ba'zan biroz kechikadi).
+# Secret: TELEGRAM_BOT_TOKEN. Bo'lmasa jim o'tadi.
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: telegram-bot
+  cancel-in-progress: false
+
+jobs:
+  reply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+    steps:
+      - name: Kalit tekshiruvi
+        if: env.TELEGRAM_BOT_TOKEN == ''
+        run: echo "TELEGRAM_BOT_TOKEN sozlanmagan — o'tkazib yuborildi."
+      - uses: actions/checkout@v4
+        if: env.TELEGRAM_BOT_TOKEN != ''
+        with:
+          sparse-checkout: |
+            tools
+            content.js
+            lugat.js
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        if: env.TELEGRAM_BOT_TOKEN != ''
+        with:
+          node-version: 22
+      - name: Javob berish
+        if: env.TELEGRAM_BOT_TOKEN != ''
+        run: node tools/telegram-bot.js

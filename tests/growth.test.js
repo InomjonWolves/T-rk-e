@@ -26,3 +26,29 @@ test("telegram: a different word every day, a link to the site only, no forbidde
   assert.match(wf, /TELEGRAM_BOT_TOKEN/);
   assert.match(wf, /node tools\/telegram\.js/);
 });
+
+const { reply, lookup } = require("../tools/telegram-bot.js");
+
+test("bot: /start opens the site as a Mini App, /soz is the word of the day, a word gets its translation", () => {
+  const s = reply("/start");
+  assert.match(s.text, /Türkçe Yo'l/);
+  assert.equal(s.reply_markup.inline_keyboard[0][0].web_app.url, "https://turkceyol.web.app/");
+  assert.equal(s.reply_markup.inline_keyboard[1][0].url, "https://t.me/turkceyoluz");
+  assert.match(reply("/soz").text, /Kunning so'zi/);
+  assert.match(reply("/kurs").text, /turkceyol\.web\.app\/kurs\//);
+  assert.match(reply("/yordam").text, /\/soz/);
+  assert.match(reply("/nimadir").text, /\/soz/, "unknown command → help");
+  assert.match(reply("kitap").text, /<b>kitap<\/b> — kitob/);
+  assert.match(reply("Kitap!").text, /kitob/, "case and punctuation do not matter");
+  assert.ok(lookup("salom").some(r => r.tr === "Merhaba"), "Uzbek → Turkish");
+  assert.match(reply("qwrtzx").text, /topilmadi/);
+  assert.ok(lookup("kita").length <= 5);
+  // Replies are valid Telegram HTML: only <b> and <i>
+  for (const q of ["/start", "/soz", "/kurs", "/yordam", "kitap", "<script>"]) {
+    const tags = reply(q).text.match(/<\/?[a-z]+>/g) || [];
+    assert.ok(tags.every(x => /^<\/?[bi]>$/.test(x)), q + ": " + tags.join());
+  }
+  const wf = fs.readFileSync(path.join(ROOT, ".github/workflows/telegram-bot.yml"), "utf8");
+  assert.match(wf, /cron: "\*\/5 \* \* \* \*"/);
+  assert.match(wf, /node tools\/telegram-bot\.js/);
+});

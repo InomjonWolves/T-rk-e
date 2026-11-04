@@ -96,3 +96,15 @@ test("Google: a popup even in the installed app; redirect only when the popup is
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+test("inside Telegram (Mini App): the Telegram data leaves the address, Google sign-in explains to use e-mail or a browser", async () => {
+  const { openFb } = require("./fakefb");
+  const { page, errors } = await openFb(browser, "#tgWebAppData=query_id%3DAA%26user%3D1&tgWebAppVersion=7.0&tgWebAppPlatform=android");
+  assert.equal(await page.evaluate(() => location.hash), "#home");
+  assert.equal(await page.evaluate(() => [IN_TG, sessionStorage["ty-tg"], document.documentElement.classList.contains("in-tg")].join()), "true,1,true");
+  assert.match(await page.textContent("#auth-err"), /Telegram ichida: email va parol bilan kiring/);
+  await page.click("[data-act=auth-google]");
+  assert.match(await page.textContent("#auth-err"), /Google bilan kirib boʻlmaydi/);
+  assert.deepEqual(await page.evaluate(() => window.__popups || []), [], "no Google popup inside Telegram");
+  assert.deepEqual(errors, []);
+});

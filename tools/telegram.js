@@ -9,6 +9,7 @@ const vm = require("vm");
 
 const ROOT = path.resolve(__dirname, "..");
 const SITE = "https://turkceyol.web.app/";
+const BOT = "https://t.me/TurkceYolBot", CHANNEL = "https://t.me/turkceyoluz";
 const esc = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 
 function content() {
@@ -25,14 +26,17 @@ const TIPS = [
   "Kechqurun bugungi so'zlarni bir marta takrorlang — ertalab yaxshiroq eslaysiz."
 ];
 // One word per day, the same for everyone; packs rotate through A1 → B2
-function post(date = new Date()) {
+function word(date = new Date()) {
   const { UNITS, LUGAT } = content();
   const words = [];
   UNITS.forEach(u => u.words.forEach(w => words.push({ tr: w[0], uz: w[1], note: w[2] || "", lv: "A1" })));
   LUGAT.forEach(p => p.w.trim().split("\n").forEach(l => { const i = l.indexOf("="); if (i > 0) words.push({ tr: l.slice(0, i).trim(), uz: l.slice(i + 1).trim(), lv: p.lv, pack: p.id }); }));
   const ok = words.filter(w => w.tr && w.uz && !/[…]/.test(w.tr) && w.tr.length <= 24);
   const day = Math.floor(date.getTime() / 864e5);
-  const w = ok[(day * 7919) % ok.length], tip = TIPS[day % TIPS.length];
+  return { w: ok[(day * 7919) % ok.length], tip: TIPS[day % TIPS.length] };
+}
+function post(date = new Date()) {
+  const { w, tip } = word(date);
   const link = w.pack ? `${SITE}lugat/${w.pack}.html` : SITE;
   return [
     `🇹🇷 <b>Kunning so'zi</b> · ${w.lv}`,
@@ -45,14 +49,29 @@ function post(date = new Date()) {
     `📚 Bepul mashq: ${link}`
   ].filter((l, i, a) => l !== "" || a[i - 1] !== "").join("\n").trim();
 }
+// Buttons under the channel post (a channel cannot open a Mini App directly: the bot does)
+const postButtons = () => ({ inline_keyboard: [[{ text: "📚 Mashq qilish", url: SITE }, { text: "🤖 Botda ochish", url: BOT }]] });
+// The bot's command menu, refreshed with the daily post
+const COMMANDS = [
+  { command: "start", description: "Ilovani ochish" },
+  { command: "soz", description: "Kunning so'zi" },
+  { command: "kurs", description: "Turk tili kursi A1–B2" },
+  { command: "yordam", description: "Bot nima qila oladi" }
+];
+async function api(token, method, body) {
+  const r = await fetch(`https://api.telegram.org/bot${token}/${method}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+  const j = await r.json();
+  if (!j.ok) throw new Error(`${method}: ${j.description}`);
+  return j.result;
+}
 async function send() {
   const token = process.env.TELEGRAM_BOT_TOKEN, chat = process.env.TELEGRAM_CHAT_ID;
   const text = post();
   if (process.env.DRY || !token || !chat) { console.log(text); if (!process.env.DRY) console.log("\n(TELEGRAM_BOT_TOKEN yoki TELEGRAM_CHAT_ID yoʻq — yuborilmadi)"); return; }
-  const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: chat, text, parse_mode: "HTML", disable_web_page_preview: false }) });
-  const j = await r.json();
-  if (!j.ok) { console.error("Telegram:", j.description); process.exit(1); }
-  console.log("Yuborildi:", j.result.message_id);
+  const m = await api(token, "sendMessage", { chat_id: chat, text, parse_mode: "HTML", reply_markup: postButtons() });
+  console.log("Yuborildi:", m.message_id);
+  await api(token, "setMyCommands", { commands: COMMANDS }).catch(e => console.log(e.message));
+  await api(token, "setChatMenuButton", { menu_button: { type: "web_app", text: "Ochish", web_app: { url: SITE } } }).catch(e => console.log(e.message));
 }
-module.exports = { post };
+module.exports = { post, word, content, api, esc, SITE, BOT, CHANNEL, COMMANDS };
 if (require.main === module) send().catch(e => { console.error(e.message); process.exit(1); });

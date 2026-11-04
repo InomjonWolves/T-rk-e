@@ -60,7 +60,7 @@ function page({ file, title, desc, crumbs, body, ld }) {
 ${body}
 </main>
 <footer><p>Türkçe Yoʻl — oʻzbek tilida turk tilini oʻrganish. 100% bepul, reklamasiz.</p>
-<p><a href="${up}kurs/">Kurs A1–B2</a> · <a href="${up}qoida/">Grammatika qoʻllanmasi</a> · <a href="${up}lugat/">Lugʻat A1–B2</a> · <a href="${up}oqish/">Oʻqish matnlari</a> · <a href="${up}maqola/">Maqolalar</a> · <a href="${up}privacy.html">Maxfiylik siyosati</a></p></footer>
+<p><a href="${up}kurs/">Kurs A1–B2</a> · <a href="${up}qoida/">Grammatika qoʻllanmasi</a> · <a href="${up}lugat/">Lugʻat A1–B2</a> · <a href="${up}oqish/">Oʻqish matnlari</a> · <a href="${up}maqola/">Maqolalar</a> · <a href="https://t.me/turkceyoluz">Telegram kanal</a> · <a href="${up}privacy.html">Maxfiylik siyosati</a></p></footer>
 </body>
 </html>
 `;
