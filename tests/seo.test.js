@@ -3,6 +3,7 @@ const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("fs");
 const path = require("path");
+const vm = require("vm");
 const { ROOT, launch, openApp } = require("./helpers");
 const { build, SITE } = require("../tools/seo");
 
@@ -11,7 +12,7 @@ const OUT = build();
 test("generated pages match the content (run `node tools/seo.js` after editing course.js or guide.js)", () => {
   const stale = Object.entries(OUT).filter(([f, html]) => !fs.existsSync(path.join(ROOT, f)) || fs.readFileSync(path.join(ROOT, f), "utf8") !== html).map(([f]) => f);
   assert.deepEqual(stale, []);
-  for (const dir of ["kurs", "qoida", "lugat"]) {
+  for (const dir of ["kurs", "qoida", "lugat", "oqish", "maqola"]) {
     const extra = fs.readdirSync(path.join(ROOT, dir)).filter(f => !OUT[`${dir}/${f}`]);
     assert.deepEqual(extra, [], `old files in ${dir}/`);
   }
@@ -19,6 +20,9 @@ test("generated pages match the content (run `node tools/seo.js` after editing c
   const C = require("./helpers").loadContent();
   assert.equal(Object.keys(OUT).filter(f => f.startsWith("qoida/")).length, C.GUIDE.reduce((a, l) => a + l.groups.reduce((b, g) => b + g.items.length, 0), 0) + 1);
   assert.equal(Object.keys(OUT).filter(f => f.startsWith("lugat/")).length, C.LUGAT.length + 1);
+  const OQ = vm.runInNewContext(fs.readFileSync(path.join(ROOT, "oqish.js"), "utf8") + ";OQ", {});
+  assert.equal(Object.keys(OUT).filter(f => f.startsWith("oqish/")).length, OQ.length + 1);
+  assert.equal(Object.keys(OUT).filter(f => f.startsWith("maqola/")).length, require("../tools/articles.js").length + 3);
 });
 
 test("every page: title, description, canonical, no broken local links, no forbidden words", () => {

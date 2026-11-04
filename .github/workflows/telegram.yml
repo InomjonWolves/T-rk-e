@@ -1,0 +1,29 @@
+name: Telegram
+
+# Har kuni ertalab Telegram kanalga "Kunning so'zi" (tools/telegram.js).
+# Secret'lar: TELEGRAM_BOT_TOKEN (@BotFather, bot kanalda admin) va TELEGRAM_CHAT_ID (@kanal_nomi). Boʻlmasa jim oʻtadi.
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - name: Kalit tekshiruvi
+        if: env.TELEGRAM_BOT_TOKEN == '' || env.TELEGRAM_CHAT_ID == ''
+        run: echo "Telegram secret'lari sozlanmagan — post oʻtkazib yuborildi."
+      - uses: actions/checkout@v4
+        if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+      - uses: actions/setup-node@v4
+        if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+        with:
+          node-version: 22
+      - name: Kunning so'zi
+        if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+        run: node tools/telegram.js

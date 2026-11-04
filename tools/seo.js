@@ -1,5 +1,5 @@
 // Builds the static, search-engine friendly pages from the course and the grammar guide:
-//   kurs/, qoida/ (grammar topics), lugat/ (vocabulary packs), sitemap.xml
+//   kurs/, qoida/ (grammar topics), lugat/ (vocabulary packs), oqish/ (reading texts), maqola/ (articles, tools/articles.js), sitemap.xml
 // The app itself lives in index.html (hash routes are not indexed by search engines).
 // Run after changing course.js or guide.js:  node tools/seo.js   (tests fail if the pages are stale)
 const fs = require("fs");
@@ -10,8 +10,8 @@ const ROOT = path.resolve(__dirname, "..");
 const SITE = "https://turkceyol.web.app/";
 
 function loadContent() {
-  const code = ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js"].map(f => fs.readFileSync(path.join(ROOT, f), "utf8")).join("\n;\n");
-  return vm.runInNewContext(code + "\n;({ UNITS, BX, COURSE, GUIDE, LUGAT })", {});
+  const code = ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js", "oqish.js"].map(f => fs.readFileSync(path.join(ROOT, f), "utf8")).join("\n;\n");
+  return vm.runInNewContext(code + "\n;({ UNITS, BX, COURSE, GUIDE, LUGAT, LETTERS, OQ })", {});
 }
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -60,14 +60,14 @@ function page({ file, title, desc, crumbs, body, ld }) {
 ${body}
 </main>
 <footer><p>Türkçe Yoʻl — oʻzbek tilida turk tilini oʻrganish. 100% bepul, reklamasiz.</p>
-<p><a href="${up}kurs/">Kurs A1–B2</a> · <a href="${up}qoida/">Grammatika qoʻllanmasi</a> · <a href="${up}lugat/">Lugʻat A1–B2</a> · <a href="${up}privacy.html">Maxfiylik siyosati</a></p></footer>
+<p><a href="${up}kurs/">Kurs A1–B2</a> · <a href="${up}qoida/">Grammatika qoʻllanmasi</a> · <a href="${up}lugat/">Lugʻat A1–B2</a> · <a href="${up}oqish/">Oʻqish matnlari</a> · <a href="${up}maqola/">Maqolalar</a> · <a href="${up}privacy.html">Maxfiylik siyosati</a></p></footer>
 </body>
 </html>
 `;
 }
 
 function build() {
-  const { COURSE, GUIDE, BX, LUGAT } = loadContent();
+  const { COURSE, GUIDE, BX, LUGAT, LETTERS, UNITS, OQ } = loadContent();
   const out = {};
   const KU = Object.fromEntries(COURSE.units.map(u => [u.id, u]));
   const words = u => u.vocab.reduce((a, v) => a + v.words.length, 0);
@@ -170,8 +170,89 @@ ${GUIDE.map(l => `<section class="card"><h2>${esc(l.name)} — ${esc(l.uz)}</h2>
 ${["A1", "A2", "B1", "B2"].map(lv => `<section class="card"><h2>${lv}</h2><ol class="toc">${LUGAT.filter(p => p.lv === lv).map(p => `<li><a href="${p.id}.html"><span class="code">${lv}</span><span><b>${esc(p.uz)}</b><small lang="tr">${esc(p.tr)} · ${pairsOf(p).length} ta soʻz</small></span></a></li>`).join("")}</ol></section>`).join("\n")}`
   });
 
+  // ---- Reading texts
+  const oqC = ["Oʻqish matnlari", "oqish/"];
+  OQ.forEach((t, k) => {
+    const prev = OQ[k - 1], next = OQ[k + 1];
+    out[`oqish/${t.id}.html`] = page({
+      file: `oqish/${t.id}.html`,
+      title: `${t.tr} — turkcha ${t.lv} oʻqish matni | Türkçe Yoʻl`,
+      desc: cut(`Turk tili ${t.lv} oʻqish matni “${t.tr}” (${t.uz}): matn, lugʻat va 4 ta savol. Javoblarni ilovada tekshiring, matnni tinglang.`, 158),
+      crumbs: [home, oqC, [`${t.lv} · ${t.tr}`, `oqish/${t.id}.html`]],
+      body: `<h1><span class="code">${esc(t.lv)}</span> <span lang="tr">${esc(t.tr)}</span></h1>
+<p class="lead">${esc(t.uz)}</p>
+<section class="card" lang="tr">${t.text.split("\n\n").map(p => `<p class="big">${esc(p).replace(/\n/g, "<br>")}</p>`).join("\n")}</section>
+<section class="card"><h2>Lugʻat</h2>${pairs(t.gloss)}</section>
+<section class="card"><h2>Savollar</h2><ol>${t.q.map(q => `<li><b lang="tr">${esc(q.q)}</b><ul>${q.o.map(o => `<li lang="tr">${esc(o)}</li>`).join("")}</ul></li>`).join("")}</ol></section>
+<a class="cta" href="../#oqish-${esc(t.id)}">Javoblarni tekshirish va matnni tinglash — ilovada</a>
+<nav class="pager">${prev ? `<a href="${prev.id}.html">← ${esc(prev.lv)} · ${esc(prev.tr)}</a>` : "<span></span>"}${next ? `<a href="${next.id}.html">${esc(next.lv)} · ${esc(next.tr)} →</a>` : "<span></span>"}</nav>`,
+      ld: { "@context": "https://schema.org", "@type": "LearningResource", name: `${t.tr} — ${t.uz}`, inLanguage: ["tr", "uz"], educationalLevel: t.lv, about: "Turk tilida oʻqish", isAccessibleForFree: true }
+    });
+  });
+  out["oqish/index.html"] = page({
+    file: "oqish/index.html",
+    title: "Turkcha oʻqish matnlari A1–B2 — savollar va lugʻat bilan | Türkçe Yoʻl",
+    desc: `Turk tilida ${OQ.length} ta oʻqish matni A1 dan B2 gacha: lugʻat, tushunish savollari va tinglash. Oʻzbek tilida soʻzlashuvchilar uchun, bepul.`,
+    crumbs: [home, oqC],
+    body: `<h1>Turkcha oʻqish matnlari</h1>
+<p class="lead">Darajangizga mos qisqa matnlar: notanish soʻzlar lugʻati va 4 ta savol bilan. Ilovada matnni tinglash va javoblarni tekshirish mumkin.</p>
+${["A1", "A2", "B1", "B2"].map(lv => `<section class="card"><h2>${lv}</h2><ol class="toc">${OQ.filter(t => t.lv === lv).map(t => `<li><a href="${t.id}.html"><span class="code">${lv}</span><span><b lang="tr">${esc(t.tr)}</b><small>${esc(t.uz)}</small></span></a></li>`).join("")}</ol></section>`).join("\n")}`
+  });
+
+  // ---- Articles: hand-written ones (tools/articles.js) and two built from the content
+  const maqC = ["Maqolalar", "maqola/"];
+  const seen = new Set(), top = [];
+  UNITS.forEach(u => u.words.forEach(w => { const k = w[0].toLocaleLowerCase("tr"); if (top.length < 100 && !seen.has(k) && !/[…?!]/.test(w[0]) && w[0].split(" ").length === 1) { seen.add(k); top.push([w[0], w[1]]); } }));
+  const arts = require("./articles.js").concat([
+    {
+      id: "turk-alifbosi",
+      title: "Turk alifbosi va talaffuz: 29 harf o'zbekcha izoh bilan",
+      desc: "Turk alifbosi 29 harf: har bir harfning o'qilishi, misol so'z va o'zbekcha tarjimasi. C, Ç, Ş, Ğ, I, Ö, Ü harflari o'zbek tilidan qanday farq qiladi.",
+      lead: "Turk alifbosi lotin yozuvida, 29 ta harfdan iborat. Turkchada so'z qanday yozilsa, shunday o'qiladi. Quyida o'zbek tilidan farq qiladigan harflar ajratib ko'rsatilgan.",
+      blocks: [
+        { h: "O'zbekchadan farq qiladigan harflar", pairs: LETTERS.filter(l => l[4]).map(l => [`${l[0]} — ${l[1]}`, `${l[2]} · ${l[3]}`]) },
+        { h: "Barcha harflar", pairs: LETTERS.map(l => [`${l[0]} — ${l[1]}`, `${l[2]}${l[4] ? ` · ${l[3]}` : ""}`]) },
+        { h: "Talaffuz bo'yicha maslahat", p: ["Har bir harfni misol so'z bilan ovoz chiqarib ayting. Ilovadagi alifbo bo'limida har bir harf va so'zning talaffuzini eshitishingiz, keyin o'zingiz aytib tekshirishingiz mumkin."], cta: ["Alifboni ilovada tinglash", "#alphabet"] }
+      ]
+    },
+    {
+      id: "100-soz",
+      title: "Turk tilida eng ko'p ishlatiladigan 100 so'z (tarjimasi bilan)",
+      desc: "Turk tilini boshlash uchun eng kerakli 100 so'z o'zbekcha tarjimasi bilan: salomlashish, oila, raqamlar, kunlar, ovqat va kundalik fe'llar.",
+      lead: "Boshlang'ich darajadagi eng kerakli so'zlar. Ularni har kuni 10 tadan takrorlasangiz, 10 kunda oddiy gaplarni tushuna boshlaysiz.",
+      blocks: [
+        { h: "100 ta asosiy so'z", pairs: top },
+        { h: "Qanday yodlash kerak?", p: ["So'zlarni oraliqli takrorlash bilan yodlang: bugun o'rgangan so'zni ertaga, 3 kundan va bir haftadan keyin qayta ko'ring. Ilova buni o'zi rejalashtiradi va har bir so'zni kartochka, test, yozish va talaffuz bilan mashq qildiradi."], cta: ["So'zlarni ilovada mashq qilish", "#lessons"] }
+      ]
+    }
+  ]);
+  const block = (b, up) => `<section class="card">${b.h ? `<h2>${esc(b.h)}</h2>` : ""}${(b.p || []).map(p => `<p>${esc(p)}</p>`).join("")}${b.list ? `<ul>${b.list.map(i => `<li>${esc(i)}</li>`).join("")}</ul>` : ""}${b.pairs ? pairs(b.pairs) : ""}${b.cta ? `<p><a href="${up}${b.cta[1]}">${esc(b.cta[0])} →</a></p>` : ""}</section>`;
+  arts.forEach(a => {
+    out[`maqola/${a.id}.html`] = page({
+      file: `maqola/${a.id}.html`,
+      title: `${a.title} | Türkçe Yoʻl`,
+      desc: a.desc,
+      crumbs: [home, maqC, [a.title, `maqola/${a.id}.html`]],
+      body: `<h1>${esc(a.title)}</h1>
+<p class="lead">${esc(a.lead)}</p>
+${a.blocks.map(b => block(b, "../")).join("\n")}
+<a class="cta" href="../">Turk tilini bepul o'rganishni boshlash</a>
+<p class="muted center">Boshqa maqolalar: ${arts.filter(x => x !== a).map(x => `<a href="${x.id}.html">${esc(x.title)}</a>`).join(" · ")}</p>`,
+      ld: { "@context": "https://schema.org", "@type": "Article", headline: a.title, description: a.desc, inLanguage: "uz", publisher: { "@type": "Organization", name: "Türkçe Yoʻl", url: SITE }, mainEntityOfPage: SITE + `maqola/${a.id}.html` }
+    });
+  });
+  out["maqola/index.html"] = page({
+    file: "maqola/index.html",
+    title: "Turk tilini o'rganish bo'yicha maqolalar | Türkçe Yoʻl",
+    desc: "Turk tilini o'zbek tilida o'rganish bo'yicha maqolalar: alifbo, eng kerakli so'zlar, salomlashish, darajalar va turk-o'zbek tillari farqlari.",
+    crumbs: [home, maqC],
+    body: `<h1>Maqolalar</h1>
+<p class="lead">Turk tilini o'rganishni boshlayotganlar uchun foydali qo'llanmalar.</p>
+<section class="card"><ol class="toc">${arts.map(a => `<li><a href="${a.id}.html"><span><b>${esc(a.title)}</b><small>${esc(cut(a.desc, 110))}</small></span></a></li>`).join("")}</ol></section>`
+  });
+
   // ---- Sitemap
-  const urls = ["", "kurs/", "qoida/", "lugat/", ...order.map(id => `kurs/${id}.html`), ...all.map(i => `qoida/${slug(i.code)}.html`), ...LUGAT.map(p => `lugat/${p.id}.html`), "privacy.html"];
+  const urls = ["", "kurs/", "qoida/", "lugat/", "oqish/", "maqola/", ...arts.map(a => `maqola/${a.id}.html`), ...order.map(id => `kurs/${id}.html`), ...all.map(i => `qoida/${slug(i.code)}.html`), ...LUGAT.map(p => `lugat/${p.id}.html`), ...OQ.map(t => `oqish/${t.id}.html`), "privacy.html"];
   out["sitemap.xml"] = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map(u => `  <url><loc>${SITE}${u}</loc></url>`).join("\n")}
@@ -184,7 +265,7 @@ module.exports = { build, SITE };
 
 if (require.main === module) {
   const out = build();
-  for (const dir of ["kurs", "qoida", "lugat"]) {
+  for (const dir of ["kurs", "qoida", "lugat", "oqish", "maqola"]) {
     fs.mkdirSync(path.join(ROOT, dir), { recursive: true });
     // Remove pages that no longer exist in the content
     for (const f of fs.readdirSync(path.join(ROOT, dir))) if (!out[`${dir}/${f}`]) fs.unlinkSync(path.join(ROOT, dir, f));
