@@ -143,6 +143,7 @@ function touchDay() {
   const t = todayKey();
   if (S.day !== t) { S.day = t; S.dayXp = 0; }
   rollWeek();
+  if (!S.first) S.first = firstDay();
   if (S.lastDay === t) return;
   const back = S.lastDay ? dayNum() - Math.round(Date.parse(S.lastDay) / DAY) : 0;
   S.streak = S.lastDay === keyOf(dayNum() - 1) ? S.streak + 1 : 1;
@@ -3461,7 +3462,16 @@ function statsDoc() {
   });
   let act = 0;
   for (let i = 0; i < 14; i++) if (dayGet(keyOf(dayNum() - i)).xp) act++;
-  return { v: 1, d: todayKey(), lv: kNext().level, units: kDoneCount(), t, w, bal: skBalance(st), lvl, kt, act };
+  // Return metrics: first active day, the last 30 days as "0"/"1" (oldest first, today last), finished exercises
+  let a = "";
+  for (let i = 29; i >= 0; i--) { const d = dayGet(keyOf(dayNum() - i)); a += d.xp || d.rev ? "1" : "0"; }
+  return { v: 1, d: todayKey(), lv: kNext().level, units: kDoneCount(), t, w, bal: skBalance(st), lvl, kt, act, f: firstDay(), a, ses: S.sessions || 0 };
+}
+// The first day with any practice (older profiles: the earliest kept day)
+function firstDay() {
+  if (S.first) return S.first;
+  const ks = Object.keys(S.days).filter(k => S.days[k].xp || S.days[k].rev).sort();
+  return ks[0] || S.lastDay || todayKey();
 }
 function statsPush(force) {
   if (!USER || !db || S.anon === false) return;
@@ -3504,7 +3514,32 @@ function adminAgg(docs) {
   const tests = {};
   LVS.forEach(lv => { tests[lv] = {}; SKILLS.forEach(s => { const v = all.map(x => ((x.kt || {})[lv] || {})[s.id]).filter(v => typeof v === "number"); tests[lv][s.id] = v.length ? { avg: Math.round(v.reduce((a, b) => a + b, 0) / v.length), n: v.length } : null; }); });
   const avg = a => a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : 0;
-  return { total: all.length, active: active.length, actDays: avg(active.map(x => x.act || 0)), bal: avg(active.map(x => x.bal || 0)), sk, balB, lvl, course, tests };
+  return { total: all.length, active: active.length, actDays: avg(active.map(x => x.act || 0)), bal: avg(active.map(x => x.bal || 0)), sk, balB, lvl, course, tests, ret: retention(all) };
+}
+/* Return metrics from the anonymous stats: x.f first day, x.a 30 days of activity ending x.d, x.ses exercises */
+function retention(docs, today = todayKey()) {
+  const n = k => Math.round(Date.parse(k) / DAY), T = n(today);
+  const on = (x, day) => { if (!x.a || !x.d) return false; const i = x.a.length - 1 - (n(x.d) - day); return i >= 0 && i < x.a.length && x.a[i] === "1"; };
+  const rows = docs.filter(x => x.f && x.a);
+  const share = (pool, test) => pool.length ? { p: Math.round(pool.filter(test).length / pool.length * 100), n: pool.length } : { p: null, n: 0 };
+  const c1 = rows.filter(x => n(x.f) <= T - 1 && n(x.f) >= T - 30), c7 = rows.filter(x => n(x.f) <= T - 7 && n(x.f) >= T - 37);
+  const d1 = share(c1, x => on(x, n(x.f) + 1));
+  const d7 = share(c7, x => on(x, n(x.f) + 7));
+  const w1 = share(c7, x => [1, 2, 3, 4, 5, 6, 7].some(k => on(x, n(x.f) + k)));
+  const dau = rows.filter(x => on(x, T)).length, wau = rows.filter(x => [0, 1, 2, 3, 4, 5, 6].some(k => on(x, T - k))).length;
+  const fresh = Array.from({ length: 14 }, (_, i) => rows.filter(x => n(x.f) === T - 13 + i).length);
+  const ses = rows.map(x => x.ses || 0);
+  return { d1, d7, w1, dau, wau, fresh, freshDays: Array.from({ length: 14 }, (_, i) => keyOf(T - 13 + i)), ses: ses.length ? Math.round(ses.reduce((a, b) => a + b, 0) / ses.length) : 0, n: rows.length };
+}
+function retentionHtml(r) {
+  if (!r.n) return `<section class="section"><div class="section-head"><h2>Qaytish</h2></div><div class="glass pad"><p class="muted">Yangi koʻrsatkichlar foydalanuvchilar ilovani yangilab, mashq qilgach paydo boʻladi.</p></div></section>`;
+  const p = x => x.p === null ? "—" : x.p + "%";
+  const tile = (v, l, c, ico) => `<div class="stat glass"><span class="ico ${c}-t">${ICON[ico]}</span><span><b>${v}</b><span>${l}</span></span></div>`;
+  return `<section class="section"><div class="section-head"><h2>Qaytish va faollik</h2><span class="tag green-t">${r.n} kishi</span></div>
+    <div class="stat-grid">${tile(p(r.d1), `1-kun qaytish (${r.d1.n} kishidan)`, "green", "flame")}${tile(p(r.d7), `7-kun qaytish (${r.d7.n} kishidan)`, "violet", "flame")}
+    ${tile(p(r.w1), "Birinchi haftada qaytgan", "sky", "check")}${tile(`${r.dau} / ${r.wau}`, "Bugun / 7 kunda faol", "orange", "users")}</div>
+    <div class="chart-card glass"><h3>Yangi foydalanuvchilar (14 kun)</h3><span class="range">oʻrtacha ${r.ses} ta mashq / kishi</span>${barChart(r.fresh, r.freshDays.map(k => k.slice(8)))}</div>
+    <p class="muted" style="font-size:13px">1-kun qaytish — birinchi kundan keyingi kuni ham mashq qilganlar ulushi; 7-kun — 7-kuni. Qiymatlar 30 kunlik anonim faollik qatoridan hisoblanadi.</p></section>`;
 }
 function viewAdmin() {
   const head = `<div><a class="back" href="#profile">${ICON.back}Profil</a></div>
@@ -3532,7 +3567,7 @@ function adminHtml(a, at) {
   const maxN = Math.max(1, ...SKILLS.map(s => a.sk[s.id].n));
   const bar = (v, mx, c) => `<span class="sk-track"><i style="width:${Math.round(v / Math.max(1, mx) * 100)}%;background:var(--${c})"></i></span>`;
   const bMax = Math.max(1, ...a.balB);
-  return `<div class="stat-grid">${tile(a.total, "Jami foydalanuvchi", "violet")}${tile(a.active, "14 kunda faol", "green")}${tile(a.actDays, "Oʻrtacha faol kun (14 dan)", "orange")}${tile(a.bal + "%", "Oʻrtacha muvozanat", "sky")}</div>
+  return `${retentionHtml(a.ret)}<div class="stat-grid">${tile(a.total, "Jami foydalanuvchi", "violet")}${tile(a.active, "14 kunda faol", "green")}${tile(a.actDays, "Oʻrtacha faol kun (14 dan)", "orange")}${tile(a.bal + "%", "Oʻrtacha muvozanat", "sky")}</div>
   ${a.active ? `<div class="tip glass">${ICON.bulb}<div><b>Xulosa</b>Faol foydalanuvchilarning ${pct(a.sk[weakest.id].weak, a.active)}% ida eng zaif koʻnikma <b>${weakest.tr} (${weakest.uz})</b> boʻlib chiqdi.${lowAcc ? ` Eng past aniqlik: ${lowAcc.tr} — ${accOf(lowAcc)}%.` : ""} Shu koʻnikma uchun mashqlarni koʻpaytirish va bosh sahifada koʻproq taklif qilish foydali.</div></div>` : ""}
   <section class="section"><div class="section-head"><h2>Koʻnikmalar · 14 kun</h2><span class="tag sky-t">${a.active} ta faol</span></div>
     <div class="glass pad"><div class="sk-bars">${SKILLS.map(s => { const x = a.sk[s.id], ac = accOf(s); return `<div class="sk-line"><span class="ico ${s.c}-t">${ICON[s.ico]}</span>

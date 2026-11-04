@@ -71,7 +71,8 @@ test("level test: four parts are generated for every level and scored per skill"
 test("anonymous statistics: the summary fits the Firestore rules and the admin numbers add up", async () => {
   const { page, errors } = await openApp(browser, "#home", { state: { ktsk: { A1: { r: 80, l: 50, w: 70, s: null } } } });
   const d = await page.evaluate(() => statsDoc());
-  assert.deepEqual(Object.keys(d).sort(), ["act", "bal", "d", "kt", "lv", "lvl", "t", "units", "v", "w"]);
+  assert.deepEqual(Object.keys(d).sort(), ["a", "act", "bal", "d", "f", "kt", "lv", "lvl", "ses", "t", "units", "v", "w"]);
+  assert.ok(/^[01]{30}$/.test(d.a) && d.f.length === 10 && Number.isInteger(d.ses));
   assert.ok(Number.isInteger(d.v) && d.d.length === 10 && d.lv.length <= 2 && Number.isInteger(d.units) && d.bal >= 0 && d.bal <= 100 && d.act <= 14);
   assert.equal(JSON.stringify(d).includes("@"), false, "no e-mail in the summary");
   const a = await page.evaluate(() => {
@@ -83,6 +84,15 @@ test("anonymous statistics: the summary fits the Firestore rules and the admin n
     return { total: r.total, active: r.active, weakL: r.sk.l.weak, sumWeak: SKILLS.reduce((x, s) => x + r.sk[s.id].weak, 0), lvlR: r.lvl.r.A1 };
   });
   assert.deepEqual(a, { total: 4, active: 3, weakL: 2, sumWeak: 3, lvlR: 4 });
+  // Return metrics: four learners who started 8 days ago
+  const r = await page.evaluate(() => {
+    const T = dayNum(), f = keyOf(T - 8), today = todayKey();
+    // a = 30 days ending today; index 29 = today, 21 = f, 22 = f+1, 28 = f+7
+    const row = on => { const a = Array(30).fill("0"); on.forEach(i => a[i] = "1"); return { f, d: today, a: a.join(""), ses: 4 }; };
+    return retention([row([21, 22, 28, 29]), row([21, 22]), row([21, 24]), row([21])]);
+  });
+  assert.deepEqual([r.d1.p, r.d7.p, r.w1.p, r.dau, r.wau, r.n, r.ses], [50, 25, 75, 1, 2, 4, 4]);
+  assert.equal(r.fresh[13 - 8], 4);
   assert.deepEqual(errors, []);
 });
 

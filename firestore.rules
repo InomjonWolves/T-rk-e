@@ -18,7 +18,10 @@ service cloud.firestore {
     match /stats/{uid} {
       allow read: if isAdmin();
       allow create, update: if okUser() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['v', 'd', 'lv', 'units', 't', 'w', 'bal', 'lvl', 'kt', 'act'])
+        && request.resource.data.keys().hasOnly(['v', 'd', 'lv', 'units', 't', 'w', 'bal', 'lvl', 'kt', 'act', 'f', 'a', 'ses'])
+        && request.resource.data.get('f', '') is string && request.resource.data.get('f', '').size() <= 10
+        && request.resource.data.get('a', '') is string && request.resource.data.get('a', '').size() <= 30
+        && request.resource.data.get('ses', 0) is int
         && request.resource.data.v is int
         && request.resource.data.d is string && request.resource.data.d.size() == 10
         && request.resource.data.lv is string && request.resource.data.lv.size() <= 2

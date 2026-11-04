@@ -140,3 +140,11 @@ test("group tasks: only the teacher writes; the teacher and members read; member
   await assertFails(deleteDoc(doc(A, "groups/TSK234/tasks/t1")));
   await assertSucceeds(deleteDoc(doc(T, "groups/TSK234/tasks/t1")));
 });
+
+test("stats with return metrics (f, a, ses) are accepted; wrong shapes are not", async () => {
+  const U = as("st1", "google");
+  const st = { v: 1, d: "2026-11-04", lv: "A1", units: 0, t: {}, w: {}, bal: 0, lvl: {}, kt: {}, act: 0, f: "2026-10-30", a: "0".repeat(29) + "1", ses: 3 };
+  await assertSucceeds(setDoc(doc(U, "stats/st1"), st));
+  await assertFails(setDoc(doc(U, "stats/st1"), Object.assign({}, st, { a: "0".repeat(40) })));
+  await assertFails(setDoc(doc(U, "stats/st1"), Object.assign({}, st, { ses: "3" })));
+});
