@@ -1,0 +1,7 @@
+{
+ "github_rls_url": "https://github.com/coqui-ai/TTS/releases/download/v0.6.1_models/tts_models--tr--common-voice--glow-tts.zip",
+ "default_vocoder": "vocoder_models/tr/common-voice/hifigan",
+ "license": "MIT",
+ "description": "Turkish GlowTTS model using an unknown speaker from the Common-Voice dataset.",
+ "author": "Fatih Akademi"
+}

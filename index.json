@@ -1,0 +1,58 @@
+{
+ "voices": [
+  {
+   "voice": "tr_TR-dfki-medium",
+   "bytes": 226109
+  }
+ ],
+ "texts": [
+  [
+   "w1",
+   "Merhaba"
+  ],
+  [
+   "w2",
+   "Teşekkür ederim"
+  ],
+  [
+   "w3",
+   "öğretmen"
+  ],
+  [
+   "w4",
+   "ağaç"
+  ],
+  [
+   "w5",
+   "ışık"
+  ],
+  [
+   "w6",
+   "çiçek"
+  ],
+  [
+   "w7",
+   "güzel"
+  ],
+  [
+   "w8",
+   "Nasılsın?"
+  ],
+  [
+   "s1",
+   "Benim adım Ali. Ben bir öğretmenim."
+  ],
+  [
+   "s2",
+   "Bugün hava çok güzel, parka gidelim mi?"
+  ],
+  [
+   "s3",
+   "Dün akşam arkadaşlarımla lokantada yemek yedik."
+  ],
+  [
+   "s4",
+   "Türkçe öğrenmek sandığınız kadar zor değil."
+  ]
+ ]
+}
