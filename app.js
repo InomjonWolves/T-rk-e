@@ -3477,7 +3477,13 @@ function statsPush(force) {
   if (!USER || !db || S.anon === false) return;
   if (!force && S.statsAt && Date.now() - S.statsAt < STATS_EVERY) return;
   S.statsAt = Date.now();
-  db.collection("stats").doc(USER.uid).set(statsDoc()).catch(() => { S.statsAt = 0; });
+  const d = statsDoc(), ref = db.collection("stats").doc(USER.uid);
+  // Older published rules do not know f, a, ses yet: send the rest
+  ref.set(d).catch(e => {
+    if (!e || e.code !== "permission-denied") throw e;
+    const o = Object.assign({}, d); delete o.f; delete o.a; delete o.ses;
+    return ref.set(o);
+  }).catch(() => { S.statsAt = 0; });
 }
 function adminCheck(uid) {
   ADMIN = false; ADMIN_ERR = "";
@@ -4270,10 +4276,15 @@ function grpSync(force) {
   if (!USER || !db || !grpMine().length) return;
   if (!force && Date.now() - GRP_SYNC_AT < GRP_EVERY) return;
   GRP_SYNC_AT = Date.now();
-  const card = grpCard();
-  grpMine().forEach(c => grpRef(c).collection("members").doc(USER.uid).update(card).catch(e => {
+  const card = grpCard(), old = Object.assign({}, card);
+  delete old.tk;
+  // Rules published before group tasks existed refuse "tk": try the older card before deciding I was removed
+  grpMine().forEach(c => { const ref = grpRef(c).collection("members").doc(USER.uid); ref.update(card).catch(e => {
+    if (e && e.code === "permission-denied") return ref.update(old);
+    throw e;
+  }).catch(e => {
     if (e && (e.code === "not-found" || e.code === "permission-denied")) grpForget(c, "Siz guruhdan chiqarilgansiz yoki guruh oʻchirilgan");
-  }));
+  }); });
 }
 function grpForget(c, msg) {
   if (!grpMine().includes(c)) return;

@@ -215,3 +215,16 @@ test("group tasks: the teacher sets a reading text with a deadline, the learner 
   await page.waitForFunction(() => !Object.keys(__db).some(k => k.startsWith("groups/TSK234/tasks/")));
   assert.deepEqual(errors, []);
 });
+
+test("rules published before group tasks: the card is sent without tk and the learner stays in the group", async () => {
+  const seed = Object.assign({}, SEED, {
+    "groups/OLD234": { name: "Eski", owner: "t1", oname: "Malika", at: "TS" },
+    "groups/OLD234/members/s1": { name: "Aziz Rahimov", week: "", wxp: 0, xp: 0, streak: 0, last: "", sk: {}, units: 0, lv: "A1", act: 0, at: "TS" },
+    "users/s1": Object.assign(prof("Aziz Rahimov"), { progress: { onb: 1, grp: ["OLD234"] } })
+  });
+  const { page, errors } = await openFb(browser, "#home", { user: A, seed });
+  await page.evaluate(() => { __deny((op, p, d) => d && "tk" in d && p.includes("/members/")); delete __db["groups/OLD234/members/s1"].tk; addXP(40); grpSync(true); });
+  await page.waitForFunction(() => __db["groups/OLD234/members/s1"].xp >= 40);
+  assert.deepEqual(await page.evaluate(() => [S.grp, "tk" in __db["groups/OLD234/members/s1"]]), [["OLD234"], false]);
+  assert.deepEqual(errors, []);
+});
