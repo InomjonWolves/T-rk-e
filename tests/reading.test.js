@@ -57,7 +57,7 @@ test("reading page: levels, a text with listening and glossary, answers → read
 });
 
 test("speech settings: speed changes the rate, dialog lines carry speakers", async () => {
-  const { page, errors } = await openApp(browser, "#profile");
+  const { page, errors } = await openApp(browser, "#settings");
   await page.evaluate(() => {
     window.__utter = [];
     window.speechSynthesis.speak = u => window.__utter.push({ t: u.text, r: u.rate, p: u.pitch });

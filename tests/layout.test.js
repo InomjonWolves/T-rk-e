@@ -80,13 +80,28 @@ test("practice: 4 skill tiles, one mistakes notebook with every kind of mistake"
   await page.close();
 });
 
-test("profile: settings separate from links", async () => {
-  const { page, errors } = await openApp(browser, "#profile");
+test("profile: ⚙ opens one settings page with every setting and link; earned achievements are colourful stickers", async () => {
+  const { page, errors } = await openApp(browser, "#profile", { state: { achv: { w10: "2026-11-02", first: "2026-11-02" }, sessions: 1, known: {} } });
+  assert.ok(await page.locator('.top a.gear-btn[href="#settings"]').count(), "gear in the corner");
+  assert.equal(await page.locator("#app .settings, #app [data-act=remind], #app [data-act=theme]").count(), 0, "no settings on the profile page");
+  const got = await page.evaluate(() => ACH.filter(achDone).length);
+  assert.ok(got >= 1);
+  assert.equal(await page.locator(".sticker-wall .ach-st").count(), got, "every earned achievement is on the wall");
+  const bg = await page.evaluate(() => getComputedStyle(document.querySelector(".sticker-wall .ach-st")).backgroundImage);
+  assert.match(bg, /linear-gradient/, "stickers are coloured");
+  await page.click(".gear-btn");
+  await page.waitForTimeout(100);
   const heads = await page.evaluate(() => [...document.querySelectorAll(".section-head h2")].map(h => h.textContent));
-  assert.ok(heads.includes("Sozlamalar") && heads.includes("Birga oʻrganish va yordam"), heads.join());
+  assert.deepEqual(heads, ["Ilova", "Birga oʻrganish va yordam"]);
+  for (const a of ["theme", "goal", "tts-rate", "remind"]) assert.ok(await page.locator(`[data-act=${a}]`).count(), a);
   const sets = await page.evaluate(() => [...document.querySelectorAll(".settings")].map(s => s.innerText));
   assert.doesNotMatch(sets[0], /Maxfiylik|Telegram|Guruhlar/);
   assert.match(sets[1], /Doʻstlarni taklif[\s\S]*Guruhlar[\s\S]*Telegram[\s\S]*Yordam[\s\S]*Maxfiylik/);
+  assert.equal(await page.getAttribute(".back", "href"), "#profile");
+  // On the achievements page earned ones are stickers too, first in each group
+  await page.evaluate(() => { location.hash = "#achievements"; });
+  await page.waitForTimeout(80);
+  assert.equal(await page.locator(".ach.on .ach-st").count(), got);
   assert.deepEqual(errors, []);
   await page.close();
 });

@@ -30,12 +30,12 @@ test("server: reminds at the chosen hour only those who have not practised today
 
 test("settings: turning the reminder on writes push/{uid} with the UTC hour; turning it off removes it", async () => {
   const me = { uid: "r1", displayName: "Aziz", email: "a@x.uz" };
-  const { page, errors } = await openFb(browser, "#profile", { user: me, seed: { "users/r1": { name: "Aziz", gender: "m", birth: "2000-01-01", progress: { onb: 1, achv: {}, lastDay: "2026-11-01", streak: 3 } } } });
+  const { page, errors } = await openFb(browser, "#settings", { user: me, seed: { "users/r1": { name: "Aziz", gender: "m", birth: "2000-01-01", progress: { onb: 1, achv: {}, lastDay: "2026-11-01", streak: 3 } } } });
   await page.evaluate(() => {
     window.FCM_VAPID = "test-key";
     window.Notification = { permission: "default", requestPermission: async () => { Notification.permission = "granted"; return "granted"; } };
     firebase.messaging = Object.assign(() => ({ getToken: async o => (window.__vapid = o.vapidKey, "fcm-token-1") }), { isSupported: () => true });
-    location.hash = "#profile";
+    location.hash = "#settings";
   });
   await page.waitForSelector("[data-act=remind][data-v='19']");
   await page.click("[data-act=remind][data-v='19']");
@@ -62,7 +62,7 @@ test("settings: turning the reminder on writes push/{uid} with the UTC hour; tur
 });
 
 test("settings: a refused permission keeps the reminder off and explains", async () => {
-  const { page, errors } = await openApp(browser, "#profile");
+  const { page, errors } = await openApp(browser, "#settings");
   await page.evaluate(() => { window.Notification = { permission: "default", requestPermission: async () => "denied" }; });
   await page.click("[data-act=remind][data-v='21']");
   await page.waitForTimeout(150);

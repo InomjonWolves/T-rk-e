@@ -129,10 +129,10 @@ test("groups: wrong codes, own group, the five-group limit and account deletion"
   await page.close();
 });
 
-test("groups need an account; the profile links to them", async () => {
+test("groups need an account; the settings page links to them", async () => {
   const { page, errors } = await openApp(browser, "#groups");
   assert.match(await page.textContent("#app"), /Guruhlar hisob bilan ishlaydi/);
-  await page.evaluate(() => { location.hash = "#profile"; });
+  await page.evaluate(() => { location.hash = "#settings"; });
   await page.waitForTimeout(80);
   assert.ok(await page.evaluate(() => !!document.querySelector('a[href="#groups"]')));
   assert.deepEqual(errors, []);
@@ -160,7 +160,7 @@ test("sync: with equal XP the copy saved last wins; signing out writes a pending
   assert.deepEqual(await page.evaluate(() => S.grp), []);
   // A change right before "Hisobdan chiqish" still reaches the server
   await page.evaluate(() => { S.goal = 100; save(); });
-  await page.evaluate(() => { location.hash = "#profile"; });
+  await page.evaluate(() => { location.hash = "#settings"; });
   await page.waitForSelector("[data-act=logout]");
   await page.click("[data-act=logout]");
   await page.waitForFunction(() => !USER);

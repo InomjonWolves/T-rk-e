@@ -665,6 +665,7 @@ let uid = 0;
 const sv = (d, extra = "") => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${d}</svg>`;
 const ICON = {
   search: sv('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'),
+  gear: sv('<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
   speak: sv('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>'),
   chev: sv('<path d="m9 6 6 6-6 6"/>', 'class="chev"'),
   back: sv('<path d="m15 6-6 6 6 6"/>'),
@@ -1476,7 +1477,7 @@ function viewProfile() {
   const isPass = USER && USER.providerData.some(p => p.providerId === "password");
   const range = `${keyOf(dayNum() - 6).slice(5).split("-").reverse().join(".")} – ${todayKey().slice(5).split("-").reverse().join(".")}`;
   const th = (() => { try { return localStorage.getItem("ty-theme") || "auto"; } catch (e) { return "auto"; } })();
-  return `<div class="top"><h1 class="page-title">Profil</h1>${logo}</div>
+  return `<div class="top"><h1 class="page-title">Profil</h1><a class="icon-btn gear-btn" href="#settings" aria-label="Sozlamalar">${ICON.gear}</a></div>
   <div class="profile-card glass">
     <button class="avatar-edit" data-act="photo" aria-label="Profil rasmini oʻzgartirish">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "lg")}<span class="cam">${ICON.camera}</span>${genderSticker()}</button>
     <input type="file" id="photo-input" accept="image/*" hidden>
@@ -1501,45 +1502,9 @@ function viewProfile() {
   <div class="chart-card glass"><h3>Haftalik faollik</h3><span class="range">${range} · XP</span>${lineChart(xpv, l7.map(d => d.l))}
     <h3 style="margin-top:14px">Oʻqish vaqti</h3><span class="range">daqiqa</span>${barChart(minv, l7.map(d => d.l))}</div>
 
-  <section class="section">
-    <div class="section-head"><h2>Yutuqlar</h2><a class="link" href="#achievements">${ACH.filter(achDone).length}/${ACH.length} · Hammasi</a></div>
-    <div class="achv">${ACH.slice().sort((x, y) => (achDone(y) - achDone(x)) || (y.v() / y.n - x.v() / x.n)).slice(0, 6).map(achCard).join("")}</div>
-  </section>
+${achProfile()}
 
-  <section class="section">
-    <div class="section-head"><h2>Sozlamalar</h2></div>
-    <div class="settings glass">
-      ${USER ? `<button class="set-row" data-act="profile-edit"><span><b>Shaxsiy maʼlumotlar</b><small>${PROFILE.gender ? (PROFILE.gender === "f" ? "Ayol" : "Erkak") : "Jins koʻrsatilmagan"} · ${PROFILE.birth ? esc(birthText(PROFILE.birth)) : "tugʻilgan sana yoʻq"}</small></span>${ICON.chev}</button>` : ""}
-      <div class="set-row"><span><b>Mavzu</b><small>Yorugʻ yoki qorongʻi koʻrinish</small></span>
-        <span class="mini-seg">${[["auto", "Avto"], ["light", "Yorugʻ"], ["dark", "Tun"]].map(([v, l]) => `<button data-act="theme" data-v="${v}" aria-pressed="${th === v}">${l}</button>`).join("")}</span></div>
-      <div class="set-row"><span><b>Kunlik maqsad</b><small>Har kuni toʻplanadigan XP</small></span>
-        <span class="mini-seg">${[30, 50, 100].map(v => `<button data-act="goal" data-v="${v}" aria-pressed="${S.goal === v}">${v}</button>`).join("")}</span></div>
-      <div class="set-row"><span><b>Ovoz tezligi</b><small>Turkcha talaffuz${trVoices().length > 1 ? ` · ${trVoices().length} ta ovoz` : ""}</small></span>
-        <span class="mini-seg">${[[0.75, "Sekin"], [1, "Odatiy"], [1.2, "Tez"]].map(([v, l]) => `<button data-act="tts-rate" data-v="${v}" aria-pressed="${ttsRate() === v}">${l}</button>`).join("")}</span></div>
-      ${trVoices().length > 1 ? `<label class="set-row"><span><b>Ovoz</b><small>Dialoglarda ikkinchi ovoz ham ishlatiladi</small></span>
-        <select class="k-select" data-act="tts-voice" style="max-width:150px">${trVoices().map(v => `<option value="${esc(v.name)}" ${ttsVoice() === v ? "selected" : ""}>${esc(v.name.replace(/^Microsoft |^Google /, "").slice(0, 28))}</option>`).join("")}</select></label>` : ""}
-      <div class="set-row rem-row set-wide"><span><b>Kunlik eslatma</b><small>${esc(remText())}</small></span>
-        <span class="mini-seg">${[[0, "Yoʻq"], [9, "9:00"], [19, "19:00"], [21, "21:00"]].map(([v, l]) => `<button data-act="remind" data-v="${v}" aria-pressed="${remHour() === v}">${l}</button>`).join("")}</span></div>
-      ${USER ? `<button class="set-row" data-act="pub" role="switch" aria-checked="${S.pub}"><span><b>Reytingda koʻrinish</b><small>Ismingiz va XP boshqa oʻquvchilarga koʻrinadi</small></span><span class="switch" aria-checked="${S.pub}"></span></button>
-      <button class="set-row" data-act="anon" role="switch" aria-checked="${S.anon !== false}"><span><b>Anonim statistika</b><small>Ism va pochtasiz koʻnikma koʻrsatkichlari saytni yaxshilash uchun yuboriladi</small></span><span class="switch" aria-checked="${S.anon !== false}"></span></button>
-      ${ADMIN ? `<a class="set-row" href="#admin" style="color:inherit;text-decoration:none"><span><b>Umumiy analitika</b><small>Faqat admin: barcha foydalanuvchilar boʻyicha</small></span>${ICON.chev}</a>` : ""}` : ""}
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="section-head"><h2>Birga oʻrganish va yordam</h2></div>
-    <div class="settings glass">
-      ${USER ? `<a class="set-row" href="#rank-fr" style="color:inherit;text-decoration:none"><span><b>Doʻstlarni taklif qilish</b><small>Doʻstlar reytingi · har bir doʻst uchun +${FR_XP} XP</small></span>${ICON.heart}</a>`
-        : `<button class="set-row" data-act="share"><span><b>Doʻstlarni taklif qilish</b><small>Turk tilini birga, bepul oʻrganing</small></span>${ICON.heart}</button>`}
-      <a class="set-row" href="#groups" style="color:inherit;text-decoration:none"><span><b>Guruhlar</b><small>Oʻqituvchi va sinf bilan birga oʻrganish</small></span>${ICON.users}</a>
-      <a class="set-row" href="${TG_CHANNEL}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none"><span><b>Telegram kanalimiz</b><small>@turkceyoluz · har kuni yangi soʻz</small></span>${ICON.chat}</a>
-      <a class="set-row" href="#help" style="color:inherit;text-decoration:none"><span><b>Yordam va qoʻllanma</b><small>Ilovani oʻrnatish, saytdan foydalanish, savollar</small></span>${ICON.chev}</a>
-      <a class="set-row" href="kurs/" style="color:inherit;text-decoration:none"><span><b>Kurs va grammatika — veb sahifalar</b><small>Mavzuni havola bilan ulashish uchun</small></span>${ICON.chev}</a>
-      <a class="set-row" href="privacy.html" style="color:inherit;text-decoration:none"><span><b>Maxfiylik siyosati</b></span>${ICON.chev}</a>
-    </div>
-  </section>
-  ${USER ? `<button class="btn btn-ghost btn-block" data-act="logout">Hisobdan chiqish</button>
-  <div id="del-box" style="display:flex;flex-direction:column;gap:10px"><button class="link" data-act="delete-ask" style="align-self:center;color:var(--pink)">Hisobni oʻchirish</button></div>` : ""}`;
+`;
 }
 
 /* ---------- Smart translator ----------
@@ -1583,6 +1548,47 @@ const TR_HINTS = [
   { re: /'(dan|den|tan|ten)(?=$|[\s.,!?;:])/i, code: "A1.07", what: "chiqish (-dan)" },
   { re: /'(ya|ye|a|e)(?=$|[\s.,!?;:])/i, code: "A1.05", what: "joʻnalish (-ga)" }
 ];
+// Profil → ⚙ Sozlamalar: every setting, the links (friends, groups, help…) and the account actions in one page
+function viewSettings() {
+  const th = (() => { try { return localStorage.getItem("ty-theme") || "auto"; } catch (e) { return "auto"; } })();
+  return `<div><a class="back" href="#profile">${ICON.back}Profil</a></div>
+  <h1 class="page-title">Sozlamalar</h1>
+  <section class="section">
+    <div class="section-head"><h2>Ilova</h2></div>
+    <div class="settings glass">
+      ${USER ? `<button class="set-row" data-act="profile-edit"><span><b>Shaxsiy maʼlumotlar</b><small>${PROFILE.gender ? (PROFILE.gender === "f" ? "Ayol" : "Erkak") : "Jins koʻrsatilmagan"} · ${PROFILE.birth ? esc(birthText(PROFILE.birth)) : "tugʻilgan sana yoʻq"}</small></span>${ICON.chev}</button>` : ""}
+      <div class="set-row"><span><b>Mavzu</b><small>Yorugʻ yoki qorongʻi koʻrinish</small></span>
+        <span class="mini-seg">${[["auto", "Avto"], ["light", "Yorugʻ"], ["dark", "Tun"]].map(([v, l]) => `<button data-act="theme" data-v="${v}" aria-pressed="${th === v}">${l}</button>`).join("")}</span></div>
+      <div class="set-row"><span><b>Kunlik maqsad</b><small>Har kuni toʻplanadigan XP</small></span>
+        <span class="mini-seg">${[30, 50, 100].map(v => `<button data-act="goal" data-v="${v}" aria-pressed="${S.goal === v}">${v}</button>`).join("")}</span></div>
+      <div class="set-row"><span><b>Ovoz tezligi</b><small>Turkcha talaffuz${trVoices().length > 1 ? ` · ${trVoices().length} ta ovoz` : ""}</small></span>
+        <span class="mini-seg">${[[0.75, "Sekin"], [1, "Odatiy"], [1.2, "Tez"]].map(([v, l]) => `<button data-act="tts-rate" data-v="${v}" aria-pressed="${ttsRate() === v}">${l}</button>`).join("")}</span></div>
+      ${trVoices().length > 1 ? `<label class="set-row"><span><b>Ovoz</b><small>Dialoglarda ikkinchi ovoz ham ishlatiladi</small></span>
+        <select class="k-select" data-act="tts-voice" style="max-width:150px">${trVoices().map(v => `<option value="${esc(v.name)}" ${ttsVoice() === v ? "selected" : ""}>${esc(v.name.replace(/^Microsoft |^Google /, "").slice(0, 28))}</option>`).join("")}</select></label>` : ""}
+      <div class="set-row rem-row set-wide"><span><b>Kunlik eslatma</b><small>${esc(remText())}</small></span>
+        <span class="mini-seg">${[[0, "Yoʻq"], [9, "9:00"], [19, "19:00"], [21, "21:00"]].map(([v, l]) => `<button data-act="remind" data-v="${v}" aria-pressed="${remHour() === v}">${l}</button>`).join("")}</span></div>
+      ${USER ? `<button class="set-row" data-act="pub" role="switch" aria-checked="${S.pub}"><span><b>Reytingda koʻrinish</b><small>Ismingiz va XP boshqa oʻquvchilarga koʻrinadi</small></span><span class="switch" aria-checked="${S.pub}"></span></button>
+      <button class="set-row" data-act="anon" role="switch" aria-checked="${S.anon !== false}"><span><b>Anonim statistika</b><small>Ism va pochtasiz koʻnikma koʻrsatkichlari saytni yaxshilash uchun yuboriladi</small></span><span class="switch" aria-checked="${S.anon !== false}"></span></button>
+      ${ADMIN ? `<a class="set-row" href="#admin" style="color:inherit;text-decoration:none"><span><b>Umumiy analitika</b><small>Faqat admin: barcha foydalanuvchilar boʻyicha</small></span>${ICON.chev}</a>` : ""}` : ""}
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>Birga oʻrganish va yordam</h2></div>
+    <div class="settings glass">
+      ${USER ? `<a class="set-row" href="#rank-fr" style="color:inherit;text-decoration:none"><span><b>Doʻstlarni taklif qilish</b><small>Doʻstlar reytingi · har bir doʻst uchun +${FR_XP} XP</small></span>${ICON.heart}</a>`
+        : `<button class="set-row" data-act="share"><span><b>Doʻstlarni taklif qilish</b><small>Turk tilini birga, bepul oʻrganing</small></span>${ICON.heart}</button>`}
+      <a class="set-row" href="#groups" style="color:inherit;text-decoration:none"><span><b>Guruhlar</b><small>Oʻqituvchi va sinf bilan birga oʻrganish</small></span>${ICON.users}</a>
+      <a class="set-row" href="${TG_CHANNEL}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none"><span><b>Telegram kanalimiz</b><small>@turkceyoluz · har kuni yangi soʻz</small></span>${ICON.chat}</a>
+      <a class="set-row" href="#help" style="color:inherit;text-decoration:none"><span><b>Yordam va qoʻllanma</b><small>Ilovani oʻrnatish, saytdan foydalanish, savollar</small></span>${ICON.chev}</a>
+      <a class="set-row" href="kurs/" style="color:inherit;text-decoration:none"><span><b>Kurs va grammatika — veb sahifalar</b><small>Mavzuni havola bilan ulashish uchun</small></span>${ICON.chev}</a>
+      <a class="set-row" href="privacy.html" style="color:inherit;text-decoration:none"><span><b>Maxfiylik siyosati</b></span>${ICON.chev}</a>
+    </div>
+  </section>
+  ${USER ? `<button class="btn btn-ghost btn-block" data-act="logout">Hisobdan chiqish</button>
+  <div id="del-box" style="display:flex;flex-direction:column;gap:10px"><button class="link" data-act="delete-ask" style="align-self:center;color:var(--pink)">Hisobni oʻchirish</button></div>` : ""}`;
+}
+
 function trHistory() { try { return JSON.parse(localStorage.getItem("ty-tr-hist") || "[]"); } catch (e) { return []; } }
 function trRemember(item) {
   const h = trHistory().filter(x => !(x.s === item.s && x.d === item.d));
@@ -2171,16 +2177,34 @@ function viewAchievements() {
   <div class="ach-hero glass">${mascot("trophy")}<div><h1 class="page-title" style="font-size:26px">Yutuqlar</h1><p class="sub">${done} / ${ACH.length} ochildi · har biri +20 XP</p>
     <div class="bar" style="margin-top:8px"><i style="width:${pct(done, ACH.length)}%"></i></div></div></div>
   ${nextUp.length ? `<section class="section"><div class="section-head"><h2>Yaqin qolgan yutuqlar</h2></div>
-    <div class="list">${nextUp.map(({ a, p }) => `<div class="unit glass"><span class="medal art ${a.c}" style="width:56px;height:56px;border-radius:50%;display:grid;place-items:center;color:#fff">${ICON[a.ico] || ICON.star}</span>
+    <div class="list">${nextUp.map(({ a, p }) => `<div class="unit glass"><span class="medal" style="width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:var(--hair);color:var(--muted)">${ICON[a.ico] || ICON.star}</span>
       <span class="unit-body"><span class="unit-title">${esc(a.t)}</span><span class="unit-sub">${esc(a.d)} · yana ${Math.max(0, a.n - a.v())} ta</span><span class="bar"><i style="width:${Math.round(p * 100)}%"></i></span></span><span></span></div>`).join("")}</div></section>` : ""}
   ${ACH_CATS.map(([k, l]) => `<section class="section"><div class="section-head"><h2>${l}</h2><span class="tag violet-t">${ACH.filter(a => a.cat === k && achDone(a)).length}/${ACH.filter(a => a.cat === k).length}</span></div>
-    <div class="achv">${ACH.filter(a => a.cat === k).map(achCard).join("")}</div></section>`).join("")}`;
+    <div class="achv">${ACH.filter(a => a.cat === k).sort((x, y) => achDone(y) - achDone(x)).map(achCard).join("")}</div></section>`).join("")}`;
 }
-function achCard(a) {
-  const on = achDone(a), v = Math.min(a.v(), a.n), when = S.achv && S.achv[a.id];
-  return `<div class="ach glass${on ? " on" : ""}">
-    <span class="medal${on ? " art " + a.c : ""}">${on ? (ICON[a.ico] || ICON.star) : ICON.lock}</span><b>${esc(a.t)}</b><small>${esc(a.d)}</small>
-    ${on ? (when ? `<small class="muted">${when.slice(8, 10)}.${when.slice(5, 7)}.${when.slice(0, 4)}</small>` : "") : `<span class="bar" aria-label="${v}/${a.n}"><i style="width:${pct(v, a.n)}%"></i></span><small class="muted">${v}/${a.n}</small>`}</div>`;
+// Achievement colours: the sticker's gradient (stars/cap are special colours used by a few achievements)
+const ACH_COL = c => ["violet", "sky", "orange", "pink", "green", "teal"].includes(c) ? c : c === "stars" ? "orange" : "violet";
+const achDate = a => { const w = S.achv && S.achv[a.id]; return w ? `${w.slice(8, 10)}.${w.slice(5, 7)}.${w.slice(0, 4)}` : ""; };
+// Earned: a colourful sticker; not yet: a grey lock with progress
+function achSticker(a, i = 0) {
+  return `<span class="ach-st st-${ACH_COL(a.c)}" style="--tilt:${[-7, 5, -3, 8, -5, 3][i % 6]}deg">${ICON[a.ico] || ICON.star}</span>`;
+}
+function achCard(a, i) {
+  const on = achDone(a), v = Math.min(a.v(), a.n);
+  return `<div class="ach glass${on ? ` on c-${ACH_COL(a.c)}` : ""}">
+    ${on ? achSticker(a, i) : `<span class="medal">${ICON.lock}</span>`}<b>${esc(a.t)}</b><small>${esc(a.d)}</small>
+    ${on ? (achDate(a) ? `<small class="ach-date">${achDate(a)}</small>` : "") : `<span class="bar" aria-label="${v}/${a.n}"><i style="width:${pct(v, a.n)}%"></i></span><small class="muted">${v}/${a.n}</small>`}</div>`;
+}
+// Profile: every earned achievement as a sticker wall (newest first), then the closest ones still to get
+function achProfile() {
+  const got = ACH.filter(achDone).sort((x, y) => ((S.achv || {})[y.id] || "").localeCompare((S.achv || {})[x.id] || ""));
+  const next = ACH.filter(a => !achDone(a)).sort((x, y) => y.v() / y.n - x.v() / x.n).slice(0, 3);
+  return `<section class="section">
+    <div class="section-head"><h2>Yutuqlar</h2><a class="link" href="#achievements">${got.length}/${ACH.length} · Hammasi</a></div>
+    ${got.length ? `<div class="glass pad sticker-wall">${got.map((a, i) => `<div class="sw-item" title="${esc(a.d)}">${achSticker(a, i)}<b>${esc(a.t)}</b>${achDate(a) ? `<small>${achDate(a)}</small>` : ""}</div>`).join("")}</div>`
+      : `<p class="muted">Birinchi mashqni tugating — birinchi stiker shu yerda paydo boʻladi.</p>`}
+    ${next.length ? `<div class="achv">${next.map(achCard).join("")}</div>` : ""}
+  </section>`;
 }
 
 /* ---------- Tips, encouragement, sharing ---------- */
@@ -2368,6 +2392,7 @@ function routeNow() {
   else if (h === "rank-fr") { RANK_TAB = "fr"; html = viewRank(); tab = "rank"; after = loadRank; }
   else if (/^do-[A-Za-z0-9]{6,40}$/.test(h)) { const u = h.slice(3); html = viewFriendInvite(u); tab = "rank"; after = () => friendInviteLoad(u); }
   else if (h === "profile") html = viewProfile();
+  else if (h === "settings") { html = viewSettings(); tab = "profile"; }
   else { html = viewHome(); tab = "home"; }
   app.innerHTML = `<div class="view">${html}</div>`;
   document.querySelectorAll(".nav a").forEach(a => { if (a.dataset.tab === tab) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
@@ -3905,7 +3930,7 @@ function onAct(e) {
   else if (act === "verify-out") { setLastUser(null); if (auth) auth.signOut(); }
   else if (act === "delete-ask") {
     $("del-box").innerHTML = `<div class="notice"><div><b>Hisob butunlay oʻchirilsinmi?</b> Barcha natijalaringiz yoʻqoladi va buni qaytarib boʻlmaydi.</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button class="btn btn-ghost" data-act="go" data-to="profile">Bekor qilish</button><button class="btn btn-danger" data-act="delete-yes">Ha, oʻchirish</button></div></div>`;
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button class="btn btn-ghost" data-act="go" data-to="settings">Bekor qilish</button><button class="btn btn-danger" data-act="delete-yes">Ha, oʻchirish</button></div></div>`;
   }
   else if (act === "delete-yes") deleteAccount(b);
   else if (act === "close-session") closeSession();

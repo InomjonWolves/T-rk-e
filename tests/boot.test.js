@@ -64,7 +64,7 @@ test("returning user: the local copy opens before Firebase answers, then syncs q
   const later = await page.evaluate(() => ({ auth: document.getElementById("auth").hidden, xp: S.xp, saved: __fbCalls.some(c => c[0] === "set" && c[1] === "u1") }));
   assert.deepEqual(later, { auth: true, xp: 350, saved: true });
   // Signing out forgets the last user and shows the sign-in screen
-  await page.evaluate(() => document.querySelector("[data-act=logout]") ? null : (location.hash = "#profile"));
+  await page.evaluate(() => document.querySelector("[data-act=logout]") ? null : (location.hash = "#settings"));
   await page.waitForTimeout(100);
   await page.click("[data-act=logout]");
   await page.waitForTimeout(100);
