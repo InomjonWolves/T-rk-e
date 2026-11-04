@@ -61,8 +61,9 @@ async function main() {
     if (i) await new Promise(r => setTimeout(r, 5000));
     try {
       const r = await fetch(hook, { method: "POST", headers: { "Content-Type": "application/json", "X-Telegram-Bot-Api-Secret-Token": secret }, body: JSON.stringify(upd) });
-      last = r.status + " " + (await r.text()).slice(0, 200);
-      const j = JSON.parse(last.slice(4));
+      const body = await r.text();
+      last = r.status + " " + body.slice(0, 200);
+      const j = JSON.parse(body);
       ok = r.status === 200 && j.method === "sendMessage" && /kitob/.test(j.text);
     } catch (e) { last = last || e.message; }
   }
