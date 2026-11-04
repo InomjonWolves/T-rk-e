@@ -1,0 +1,27 @@
+name: Audio namunalar
+
+# Piper turkcha ovozlari: litsenziya kartalari va namuna MP3 (ovoz tanlash uchun). Natija — artifact "audio-samples".
+on:
+  push:
+    branches: [main]
+    paths: ["tools/audio-samples.py", ".github/workflows/audio-samples.yml"]
+  workflow_dispatch:
+
+jobs:
+  samples:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Piper
+        run: pip install piper-tts==1.8.0 && sudo apt-get install -y -qq ffmpeg >/dev/null
+      - name: Namunalar
+        run: python tools/audio-samples.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: audio-samples
+          path: samples/
+          retention-days: 14
