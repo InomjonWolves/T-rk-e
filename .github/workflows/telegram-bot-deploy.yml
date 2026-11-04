@@ -10,6 +10,7 @@ on:
       - "bot/**"
       - "tools/telegram*.js"
       - "tools/quiz.js"
+      - "tools/bot-deploy.js"
       - "content.js"
       - "lugat.js"
       - "grammar-ex.js"
