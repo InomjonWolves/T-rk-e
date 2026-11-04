@@ -4,8 +4,11 @@ name: Audio namunalar
 on:
   push:
     branches: [main]
-    paths: ["tools/audio-samples.py", ".github/workflows/audio-samples.yml"]
+    paths: ["tools/audio-samples*.py", ".github/workflows/audio-samples.yml"]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   samples:
@@ -20,6 +23,20 @@ jobs:
         run: pip install piper-tts==1.8.0 && sudo apt-get install -y -qq ffmpeg >/dev/null
       - name: Namunalar
         run: python tools/audio-samples.py
+      - name: Coqui (ikkinchi nomzod)
+        continue-on-error: true
+        run: pip install -q coqui-tts && python tools/audio-samples-coqui.py
+      - name: espeak-ng (taqqoslash uchun)
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y -qq espeak-ng >/dev/null
+          python3 -c "import json;[print(k+'\t'+t) for k,t in json.load(open('samples/index.json'))['texts']]" | while IFS=$'\t' read k t; do espeak-ng -v tr -s 140 -w /tmp/e.wav "$t" && ffmpeg -loglevel error -y -i /tmp/e.wav -ac 1 -ar 22050 -b:a 48k "samples/espeak-$k.mp3"; done
+      - name: Namunalarni audio-samples branch'iga yozish
+        run: |
+          cd samples
+          git init -q -b audio-samples && git add -A
+          git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "Audio namunalar ${{ github.sha }}"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" audio-samples
       - uses: actions/upload-artifact@v4
         with:
           name: audio-samples
