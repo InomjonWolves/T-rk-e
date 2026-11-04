@@ -1030,3 +1030,13 @@ a.mode { color: inherit; text-decoration: none; }
 .fr-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .fr-x { margin-left: 8px; border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; padding: 2px 4px; }
 .fr-x[data-sure] { color: var(--pink); }
+
+/* ---------- Reading texts ---------- */
+.oq-text { display: flex; flex-direction: column; gap: 12px; font-size: 17px; line-height: 1.6; }
+.oq-gloss { display: grid; gap: 6px; margin-top: 10px; }
+.oq-gloss > div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--hair); font-size: 14px; }
+.oq-gloss span { color: var(--muted); text-align: right; }
+.oq-q { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+.oq-q .opts { display: grid; gap: 8px; }
+.oq-q .opt.picked { outline: 2px solid var(--accent); }
+.oq-res { display: flex; flex-direction: column; gap: 10px; text-align: center; }

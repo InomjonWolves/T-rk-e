@@ -484,6 +484,68 @@ async function friendInviteLoad(uid) {
   CatLife.scan();
 }
 
+/* ---------- Reading texts (oqish.js, loaded on demand): text, glossary, listening, 4 questions → reading XP ---------- */
+let OQ_P = null, OQ_ANS = {};
+function loadOq() {
+  if (typeof OQ !== "undefined") return Promise.resolve();
+  return OQ_P || (OQ_P = new Promise((ok, fail) => { const s = document.createElement("script"); s.src = "oqish.js"; s.onload = ok; s.onerror = () => { OQ_P = null; s.remove(); fail(); }; document.head.appendChild(s); }));
+}
+const oqReady = () => typeof OQ !== "undefined";
+const oqBest = id => (S.oq && S.oq[id]) || null;
+let OQ_LV = "A1";
+function viewOqish() {
+  if (!oqReady()) return `${topbar()}<div class="glass empty"><div class="spin"></div>Yuklanmoqda…</div>`;
+  const lvs = ["A1", "A2", "B1", "B2"], list = OQ.filter(t => t.lv === OQ_LV);
+  return `${topbar()}
+  <div><a class="back" href="#practice">${ICON.back}Mashq</a></div>
+  <div class="lesson-head"><div class="tags"><span class="tag sky-t">${ICON.book}Okuma</span><span class="tag green-t">${OQ.filter(t => oqBest(t.id) !== null).length}/${OQ.length} oʻqilgan</span></div>
+    <h1>Oʻqish matnlari</h1><p class="sub">Matnni oʻqing (yoki tinglang), notanish soʻzlarni lugʻatdan koʻring va savollarga javob bering. Har matn uchun +${XP_VAL.reading} XP.</p></div>
+  <div class="seg glass" role="tablist">${lvs.map(l => `<button role="tab" data-act="oq-lv" data-l="${l}" aria-selected="${OQ_LV === l}">${l}</button>`).join("")}</div>
+  <div class="list">${list.map(t => { const b = oqBest(t.id); return `<a class="unit glass" href="#oqish-${t.id}">
+    <span class="art ${b === 100 ? "green" : LV_COLOR[t.lv]}"><span style="font-size:14px">${t.lv}</span></span>
+    <span class="unit-body"><span class="unit-title" lang="tr">${esc(t.tr)}</span><span class="unit-sub">${esc(t.uz)}${b !== null ? ` · eng yaxshi natija ${b}%` : ""}</span></span>
+    ${b !== null ? pctRing(b / 100) : ICON.chev}</a>`; }).join("")}</div>`;
+}
+// Options keep their order per visit (shuffled once), so an answer does not jump around
+const OQ_ORDER = {};
+function oqOrder(t) { return OQ_ORDER[t.id] || (OQ_ORDER[t.id] = t.q.map(q => shuffle(q.o.map((_, i) => i)))); }
+function viewOqText(id) {
+  if (!oqReady()) return `${topbar()}<div class="glass empty"><div class="spin"></div>Yuklanmoqda…</div>`;
+  const t = OQ.find(x => x.id === id);
+  if (!t) return `${topbar()}<div class="glass empty"><b>Matn topilmadi</b><a class="link" href="#oqish">Barcha matnlar</a></div>`;
+  const ans = OQ_ANS[id] || (OQ_ANS[id] = {}), done = ans.done, ord = oqOrder(t);
+  const paras = t.text.split("\n\n");
+  return `${topbar()}
+  <div><a class="back" href="#oqish">${ICON.back}Oʻqish matnlari</a></div>
+  <div class="lesson-head"><div class="tags"><span class="tag ${LV_COLOR[t.lv]}-t">${t.lv}</span><span class="tag sky-t">${ICON.book}Okuma</span></div>
+    <h1 lang="tr">${esc(t.tr)}</h1><p class="sub">${esc(t.uz)}</p></div>
+  <button class="btn btn-soft" data-act="say-seq" data-lines="${esc(JSON.stringify(paras))}">${ICON.speak}Matnni tinglash</button>
+  <div class="glass pad oq-text" lang="tr">${paras.map(p => `<p>${esc(p).replace(/\n/g, "<br>")}</p>`).join("")}</div>
+  <details class="glass pad"><summary><b>Lugʻat (${t.gloss.length})</b></summary><div class="oq-gloss">${t.gloss.map(([a, b]) => `<div><b lang="tr">${esc(a)}</b><span>${esc(b)}</span></div>`).join("")}</div></details>
+  <section class="section"><div class="section-head"><h2>Savollar</h2>${done ? `<span class="tag green-t">${done.right}/${t.q.length}</span>` : ""}</div>
+  ${t.q.map((q, qi) => `<div class="glass pad gq oq-q">
+    <b lang="tr">${qi + 1}. ${esc(q.q)}</b>
+    <div class="opts">${ord[qi].map(oi => { const cls = done ? (oi === q.a ? " right" : ans[qi] === oi ? " wrong" : "") : ans[qi] === oi ? " picked" : "";
+      return `<button class="opt${cls}" data-act="oq-ans" data-id="${t.id}" data-q="${qi}" data-o="${oi}" ${done ? "disabled" : ""} lang="tr">${esc(q.o[oi])}</button>`; }).join("")}</div></div>`).join("")}
+  ${done ? `<div class="glass pad oq-res"><b>${done.right}/${t.q.length} toʻgʻri${done.xp ? ` · +${done.xp} XP` : ""}</b>${done.why ? `<p class="xp-why">${esc(done.why)}</p>` : ""}
+      <div class="fr-actions"><button class="btn btn-ghost" data-act="oq-again" data-id="${t.id}">Qayta yechish</button>${(() => { const n = OQ[OQ.indexOf(t) + 1]; return n ? `<a class="btn btn-grad" href="#oqish-${n.id}">Keyingi matn</a>` : `<a class="btn btn-grad" href="#oqish">Barcha matnlar</a>`; })()}</div></div>`
+    : `<button class="btn btn-grad btn-block" data-act="oq-check" data-id="${t.id}" ${Object.keys(ans).length < t.q.length ? "disabled" : ""}>${ICON.check}Tekshirish</button>`}
+  </section>`;
+}
+function oqCheck(id) {
+  const t = OQ.find(x => x.id === id), ans = OQ_ANS[id];
+  const oks = t.q.map((q, i) => ans[i] === q.a), right = oks.filter(Boolean).length;
+  oks.forEach(ok => skillLog("r", ok));
+  dayRec().rev += t.q.length;
+  const r = xpAward("reading", { acc: right / t.q.length, key: "oq|" + id, sk: ["r"] });
+  S.oq = S.oq || {};
+  S.oq[id] = Math.max(S.oq[id] || 0, Math.round(right / t.q.length * 100));
+  save();
+  ans.done = { right, xp: r.xp, why: xpWhy(r) };
+  const y = window.scrollY; route(); window.scrollTo(0, y);
+  pamukSay(right >= 3 ? "happy" : "sad", right === t.q.length ? `Mukammal! Hammasi toʻgʻri${r.xp ? ` · +${r.xp} XP` : ""}` : right >= 3 ? `Yaxshi! ${right}/${t.q.length}${r.xp ? ` · +${r.xp} XP` : ""}` : "Matnni yana bir bor oʻqib chiqing — lugʻat yordam beradi.");
+}
+
 /* ---------- Week summary: shown once after a new week is settled, and again from the leaderboard ---------- */
 function weekStats(wk) {
   const n0 = Math.round(Date.parse(wk) / DAY), days = Array.from({ length: 7 }, (_, i) => dayGet(keyOf(n0 + i)));
@@ -730,14 +792,23 @@ const last7 = () => Array.from({ length: 7 }, (_, i) => { const d = dayNum() - 6
 let voices = [];
 function loadVoices() { try { voices = speechSynthesis.getVoices(); } catch (e) {} }
 try { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; } catch (e) {}
+/* Turkish voice settings: speed (S.tts.r: 0.75 / 1 / 1.2 × the normal rate) and the chosen voice (S.tts.v) */
+const trVoices = () => voices.filter(v => (v.lang || "").toLowerCase().replace("_", "-").startsWith("tr"));
+const ttsRate = () => (S.tts && S.tts.r) || 1;
+function ttsVoice(alt) {
+  const vs = trVoices();
+  if (!vs.length) return null;
+  const i = Math.max(0, vs.findIndex(v => S.tts && v.name === S.tts.v));
+  return alt && vs.length > 1 ? vs[(i + 1) % vs.length] : vs[i];
+}
 function speak(text, btn, rate) {
   const clean = text.replace(/…/g, "").trim();
   try {
     if (!("speechSynthesis" in window)) { toast("Bu brauzerda ovoz yoʻq"); return; }
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(clean);
-    u.lang = "tr-TR"; u.rate = rate || 0.85;
-    const v = voices.find(v => (v.lang || "").toLowerCase().startsWith("tr"));
+    u.lang = "tr-TR"; u.rate = (rate || 0.85) * ttsRate();
+    const v = ttsVoice();
     if (v) u.voice = v;
     if (btn) { btn.classList.add("playing"); u.onend = u.onerror = () => btn.classList.remove("playing"); }
     speechSynthesis.speak(u);
@@ -1223,7 +1294,7 @@ function viewGrammar(gi) {
     <div class="words glass">${g.examples.map(e => `<div class="word"><button class="say" data-act="say" data-t="${esc(e[0])}" aria-label="${esc(e[0])} — tinglash">${ICON.speak}</button><div><div class="word-tr" lang="tr">${esc(e[0])}</div><div class="word-uz">${esc(e[1])}</div></div><span></span></div>`).join("")}</div>
   </section>
   <section class="section">
-    <div class="section-head"><h2>Oʻzingizni tekshiring</h2><span class="tag violet-t">+5 XP</span></div>
+    <div class="section-head"><h2>Oʻzingizni tekshiring</h2><span class="tag violet-t">+${XP_VAL.grammar} XP</span></div>
     ${g.quiz.map((q, qi) => gqHtml(g, qi)).join("")}
   </section>
   ${next ? `<button class="btn btn-grad btn-block" data-act="go" data-to="grammar-${gi + 2}">Keyingi: ${nb(next.uz)}</button>`
@@ -1284,7 +1355,7 @@ function viewGuideTopic(i) {
       <button class="say" data-act="say" data-t="${esc(plainSfx(i.ex[0]))}" aria-label="Tinglash">${ICON.speak}</button></div>
     ${i.neg || i.q ? `<div class="glass words">${line("Boʻlishsiz", i.neg, "pink-t")}${line("Soʻroq", i.q, "sky-t")}</div>` : ""}
   </section>
-  ${BX[i.code] ? `<section class="section"><div class="section-head"><h2>Mashq</h2><span class="tag sky-t">+10 XP</span></div><div class="list">${gxRow(i.code)}</div></section>` : ""}
+  ${BX[i.code] ? `<section class="section"><div class="section-head"><h2>Mashq</h2><span class="tag sky-t">+${XP_VAL.grammar} XP</span></div><div class="list">${gxRow(i.code)}</div></section>` : ""}
   <div class="pager" style="grid-template-columns:1fr 1fr">
     ${prev ? `<a class="btn btn-ghost" href="#${gHash(prev.code)}">${ICON.back}${esc(prev.code)}</a>` : "<span></span>"}
     ${next ? `<a class="btn btn-grad" href="#${gHash(next.code)}">${esc(next.code)}${ICON.chev.replace('class="chev"', 'style="width:20px;height:20px"')}</a>` : "<span></span>"}
@@ -1344,7 +1415,7 @@ function viewPractice() {
   const ms = mistakeWords();
   const acc = S.acc[1] ? pct(S.acc[0], S.acc[1]) : null;
   return `${topbar()}
-  <div><h1 class="page-title">Mashq</h1><p class="sub">Toʻgʻri javob uchun 10 XP</p></div>
+  <div><h1 class="page-title">Mashq</h1><p class="sub">Mashq yakunida XP: lugʻat ${XP_VAL.vocab}, grammatika va tinglash ${XP_VAL.grammar}, gapirish ${XP_VAL.speaking}</p></div>
 
   <button class="pcard ai" data-act="start" data-mode="review" ${items.length ? "" : "disabled"}>
     <div class="pcard-head"><b>${ICON.spark}Aqlli takrorlash</b><span>~${mins(items.length)} daq</span></div>
@@ -1356,6 +1427,11 @@ function viewPractice() {
       <span>${ICON.quiz}${acc === null ? "Hali javoblar yoʻq" : `Toʻgʻri javoblar: ${acc}%`}</span>
     </div>
   </button>
+
+  <a class="pcard glass" href="#oqish" style="color:inherit;text-decoration:none">
+    <div class="pcard-head"><b>${ICON.book}Oʻqish matnlari</b><span class="tag sky-t">+${XP_VAL.reading} XP</span></div>
+    <p class="muted">A1–B2 darajadagi qisqa matnlar: lugʻat, tinglash va tushunish savollari.</p>
+  </a>
 
   <div class="pcard glass">
     <div class="pcard-head"><b>${ICON.target}Xatolar daftari</b>${ms.length ? `<span class="badge">${ms.length}</span>` : ""}</div>
@@ -1550,6 +1626,10 @@ function viewProfile() {
         <span class="mini-seg">${[["auto", "Avto"], ["light", "Yorugʻ"], ["dark", "Tun"]].map(([v, l]) => `<button data-act="theme" data-v="${v}" aria-pressed="${th === v}">${l}</button>`).join("")}</span></div>
       <div class="set-row"><span><b>Kunlik maqsad</b><small>Har kuni toʻplanadigan XP</small></span>
         <span class="mini-seg">${[30, 50, 100].map(v => `<button data-act="goal" data-v="${v}" aria-pressed="${S.goal === v}">${v}</button>`).join("")}</span></div>
+      <div class="set-row"><span><b>Ovoz tezligi</b><small>Turkcha talaffuz${trVoices().length > 1 ? ` · ${trVoices().length} ta ovoz` : ""}</small></span>
+        <span class="mini-seg">${[[0.75, "Sekin"], [1, "Odatiy"], [1.2, "Tez"]].map(([v, l]) => `<button data-act="tts-rate" data-v="${v}" aria-pressed="${ttsRate() === v}">${l}</button>`).join("")}</span></div>
+      ${trVoices().length > 1 ? `<label class="set-row"><span><b>Ovoz</b><small>Dialoglarda ikkinchi ovoz ham ishlatiladi</small></span>
+        <select class="k-select" data-act="tts-voice" style="max-width:150px">${trVoices().map(v => `<option value="${esc(v.name)}" ${ttsVoice() === v ? "selected" : ""}>${esc(v.name.replace(/^Microsoft |^Google /, "").slice(0, 28))}</option>`).join("")}</select></label>` : ""}
       <div class="set-row rem-row"><span><b>Kunlik eslatma</b><small>${esc(remText())}</small></span>
         <span class="mini-seg">${[[0, "Yoʻq"], [9, "9:00"], [19, "19:00"], [21, "21:00"]].map(([v, l]) => `<button data-act="remind" data-v="${v}" aria-pressed="${remHour() === v}">${l}</button>`).join("")}</span></div>
       ${USER ? `<button class="set-row" data-act="pub" role="switch" aria-checked="${S.pub}"><span><b>Reytingda koʻrinish</b><small>Ismingiz va XP boshqa oʻquvchilarga koʻrinadi</small></span><span class="switch" aria-checked="${S.pub}"></span></button>
@@ -1878,21 +1958,28 @@ function renderBlocks(blocks) {
       let n = 0;
       b.dlg.forEach(([who]) => { if (!(who in sides)) sides[who] = n++ % 2 ? "r" : "l"; });
       return `<div class="dlg">
-        <button class="btn btn-soft" data-act="say-seq" data-lines="${esc(JSON.stringify(b.dlg.map(x => x[1])))}">${ICON.speak}Dialogni tinglash</button>
+        <button class="btn btn-soft" data-act="say-seq" data-lines="${esc(JSON.stringify(b.dlg.map(x => [x[0], x[1]])))}">${ICON.speak}Dialogni tinglash</button>
         ${b.dlg.map(([who, t]) => `<div class="bubble ${sides[who]}"><small>${esc(who)}</small><span lang="tr">${esc(t)}</span><button class="say mini" data-act="say" data-t="${esc(t)}" aria-label="Tinglash">${ICON.speak}</button></div>`).join("")}
       </div>`;
     }
     return "";
   }).join("");
 }
+// Lines are strings or [speaker, text]: each speaker gets a voice of their own (another voice, or another pitch)
 function speakSeq(lines) {
   try { speechSynthesis.cancel(); } catch (e) { return; }
+  const who = [];
   let i = 0;
   const next = () => {
     if (i >= lines.length) return;
-    const u = new SpeechSynthesisUtterance(lines[i++].replace(/…/g, ""));
-    u.lang = "tr-TR"; u.rate = 0.9;
-    const v = voices.find(v => (v.lang || "").toLowerCase().startsWith("tr")); if (v) u.voice = v;
+    const ln = lines[i++], spk = Array.isArray(ln) ? ln[0] : "", text = Array.isArray(ln) ? ln[1] : ln;
+    if (spk && !who.includes(spk)) who.push(spk);
+    const alt = spk ? who.indexOf(spk) % 2 === 1 : false;
+    const u = new SpeechSynthesisUtterance(String(text).replace(/…/g, ""));
+    u.lang = "tr-TR"; u.rate = 0.9 * ttsRate();
+    const v = ttsVoice(alt); if (v) u.voice = v;
+    // Only one Turkish voice: tell the speakers apart by pitch
+    if (alt && trVoices().length < 2) u.pitch = 1.35;
     u.onend = () => setTimeout(next, 350);
     speechSynthesis.speak(u);
   };
@@ -2376,6 +2463,8 @@ function routeNow() {
   else if (h === "alphabet") { html = viewAlphabet(); tab = "lessons"; }
   else if (h === "practice") html = viewPractice();
   else if (h === "rank") { html = viewRank(); after = loadRank; }
+  else if (h === "oqish") { html = viewOqish(); tab = "practice"; if (!oqReady()) after = () => loadOq().then(route, () => toast("Matnlar yuklanmadi. Internetni tekshiring")); }
+  else if (/^oqish-[a-z0-9]+$/.test(h)) { html = viewOqText(h.slice(6)); tab = "practice"; if (!oqReady()) after = () => loadOq().then(route, () => toast("Matnlar yuklanmadi. Internetni tekshiring")); }
   else if (h === "rank-fr") { RANK_TAB = "fr"; html = viewRank(); tab = "rank"; after = loadRank; }
   else if (/^do-[A-Za-z0-9]{6,40}$/.test(h)) { const u = h.slice(3); html = viewFriendInvite(u); tab = "rank"; after = () => friendInviteLoad(u); }
   else if (h === "profile") html = viewProfile();
@@ -3812,6 +3901,7 @@ function onAct(e) {
     const y = window.scrollY; route(); window.scrollTo(0, y);
   }
   else if (act === "remind") remSet(b.dataset.v);
+  else if (act === "tts-rate") { S.tts = Object.assign({}, S.tts, { r: +b.dataset.v }); save(); const y = window.scrollY; route(); window.scrollTo(0, y); speak("Merhaba! Türkçe öğreniyorum."); }
   else if (act === "goal") { S.goal = +b.dataset.v; save(); const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "anon") {
     S.anon = S.anon === false; save();
@@ -3957,6 +4047,10 @@ function onAct(e) {
   else if (act === "cel-next") nextCelebrate();
   else if (act === "share") shareSite(b.dataset.text);
   else if (act === "recap") showRecap();
+  else if (act === "oq-lv") { OQ_LV = b.dataset.l; route(); }
+  else if (act === "oq-ans") { const a = OQ_ANS[b.dataset.id] || (OQ_ANS[b.dataset.id] = {}); if (a.done) return; a[+b.dataset.q] = +b.dataset.o; const y = window.scrollY; route(); window.scrollTo(0, y); }
+  else if (act === "oq-check") oqCheck(b.dataset.id);
+  else if (act === "oq-again") { OQ_ANS[b.dataset.id] = {}; delete OQ_ORDER[b.dataset.id]; const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "fr-add") { b.disabled = true; frAdd(b.dataset.u); }
   else if (act === "fr-share") shareLink(frLink(), "Keling, turk tilini birga oʻrganamiz! Türkçe Yoʻl'da doʻst boʻlaylik:");
   else if (act === "fr-copy") copyText(frLink(), "Havola nusxalandi");
@@ -4001,6 +4095,7 @@ document.addEventListener("click", e => {
 });
 document.addEventListener("change", e => {
   if (e.target.dataset && e.target.dataset.act === "k-match") { kSubmit(e.target.dataset.id, e.target.dataset.key, e.target.value); kRerender(); }
+  if (e.target.dataset && e.target.dataset.act === "tts-voice") { S.tts = Object.assign({}, S.tts, { v: e.target.value }); save(); speak("Merhaba! Türkçe öğreniyorum."); }
 });
 let kWriteT;
 document.addEventListener("input", e => {

@@ -99,7 +99,7 @@ test("course: 32 units, tests answerable, reading answers match questions", () =
 
 test("project rule: no exam brand names or military vocabulary in the content", () => {
   const bad = /\bTYS\b|\b(asker|askeri|komutan|kışla|nöbet|tatbikat)\b/i;
-  for (const f of ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js", "app.js", "index.html"]) {
+  for (const f of ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js", "oqish.js", "app.js", "index.html"]) {
     const m = read(f).match(bad);
     assert.equal(m, null, `${f} contains "${m && m[0]}"`);
   }
