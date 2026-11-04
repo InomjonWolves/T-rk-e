@@ -1,7 +1,7 @@
 name: Eslatmalar
 
 # Har soat: shu soatga eslatma qoʻygan va bugun hali mashq qilmagan foydalanuvchilarga bildirishnoma (tools/push.js).
-# Kalit: PUSH_SERVICE_ACCOUNT (yoki FIREBASE_SERVICE_ACCOUNT) — rollari "Cloud Datastore User" va "Firebase Cloud Messaging API Admin".
+# Kalit: PUSH_SERVICE_ACCOUNT (alohida secret; boʻlmasa hech narsa qilinmaydi) — service account rollari "Cloud Datastore User" va "Firebase Cloud Messaging API Admin".
 on:
   schedule:
     - cron: "7 * * * *"
@@ -12,13 +12,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      SA: ${{ secrets.PUSH_SERVICE_ACCOUNT || secrets.FIREBASE_SERVICE_ACCOUNT }}
+      SA: ${{ secrets.PUSH_SERVICE_ACCOUNT }}
     steps:
+      - name: Kalit tekshiruvi
+        if: env.SA == ''
+        run: echo "PUSH_SERVICE_ACCOUNT sozlanmagan — eslatmalar oʻtkazib yuborildi."
       - uses: actions/checkout@v4
+        if: env.SA != ''
         with:
           sparse-checkout: tools
       - uses: actions/setup-node@v4
+        if: env.SA != ''
         with:
           node-version: 22
       - name: Eslatmalarni yuborish
+        if: env.SA != ''
         run: node tools/push.js
