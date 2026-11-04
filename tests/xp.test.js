@@ -162,7 +162,7 @@ test("guest leagues: a strong week moves up even without the table", async () =>
 test("signed-in leagues: last week's table decides promotion; three leaderboards", async () => {
   const me = { uid: "u1", displayName: "Aziz Rahimov", email: "a@x.uz" };
   const seed = {
-    "users/u1": { name: "Aziz Rahimov", gender: "m", birth: "2000-01-01", progress: { onb: 1, xp: 2000, week: LAST_WEEK, wxp: 900, lg: 1, lvl: 6, achv: {} } },
+    "users/u1": { name: "Aziz Rahimov", gender: "m", birth: "2000-01-01", progress: { onb: 1, xp: 2000, week: LAST_WEEK, wxp: 900, lg: 1, lvl: 6 } },
     // Last week in Bronze: p2 (already in the new week) 1200, me 900, p1 500, p3 100 → top 30% of 4 = 2 places
     "league/p1": { name: "Bek", week: LAST_WEEK, wxp: 500, xp: 3000, lg: 1 },
     "league/p2": { name: "Dilnoza", week: THIS_WEEK, wxp: 80, xp: 9000, lg: 2, pw: LAST_WEEK, pwxp: 1200, plg: 1, day: TODAY, dxp: 80 },
@@ -173,11 +173,19 @@ test("signed-in leagues: last week's table decides promotion; three leaderboards
   const { page, errors } = await openFb(browser, "#home", { user: me, seed });
   await page.waitForFunction(() => S.lgw === weekKey());
   assert.deepEqual(await page.evaluate(() => [S.lg, S.lgr.rank, S.lgr.n, S.lgr.from, S.lgr.to]), [2, 2, 4, 1, 2]);
-  assert.ok(await page.evaluate(() => ACH_QUEUE.some(c => c.league === 2)));
+  // The week summary opens by itself once (after the achievement pop-ups are closed): league step, place, XP
+  await page.waitForFunction(() => {
+    if (!$("celebrate").hidden) { ACH_QUEUE.length = 0; $("celebrate").hidden = true; }
+    return !$("sheet").hidden && document.querySelector(".recap");
+  }, null, { timeout: 15000, polling: 300 });
+  const recap = await page.textContent(".recap");
+  assert.match(recap, /Kumush ligasiga koʻtarildingiz[\s\S]*900[\s\S]*2\/4/);
+  assert.equal(await page.evaluate(() => S.lgr.seen), 1);
+  await page.click("[data-act=sheet-done]");
   await closeCelebrate(page);
   // The public row carries today, the week inside the league and last week for the others to settle
   await page.evaluate(() => { addXP(40); cloudSave(true); });
-  await page.waitForFunction(() => __db["league/u1"] && __db["league/u1"].lg === 2);
+  await page.waitForFunction(() => __db["league/u1"] && __db["league/u1"].lg === 2 && __db["league/u1"].wxp >= 40);
   const row = await page.evaluate(() => __db["league/u1"]);
   assert.deepEqual(Object.keys(row).sort(), ["at", "day", "dxp", "lg", "lgw", "name", "plg", "pw", "pwxp", "streak", "week", "wxp", "xp"]);
   // (an achievement unlocked meanwhile may add +20 on top of the 40)
@@ -189,13 +197,20 @@ test("signed-in leagues: last week's table decides promotion; three leaderboards
   const week = await page.textContent("#rank-body");
   assert.match(week, /Dilnoza/); assert.doesNotMatch(week, /Olim/);
   assert.match(await page.textContent(".lg-card"), /Kumush ligasi[\s\S]*2-oʻrin \(4 kishi\)/);
+  // …and again from the leaderboard
+  await closeCelebrate(page);
+  await page.evaluate(() => document.querySelector("[data-act=recap]").click());
+  await page.waitForSelector("#sheet:not([hidden]) .recap");
+  await page.evaluate(() => document.querySelector("[data-act=sheet-done]").click());
   // Today: everyone with XP today
-  await page.click("[data-act=rank-tab][data-t=day]");
+  await closeCelebrate(page);
+  await page.evaluate(() => document.querySelector("[data-act=rank-tab][data-t=day]").click());
   await page.waitForSelector(".podium");
   const day = await page.textContent("#rank-body");
   assert.match(day, /Olim[\s\S]*120 XP/); assert.match(day, /Dilnoza/);
   // All time: by XP with levels
-  await page.click("[data-act=rank-tab][data-t=all]");
+  await closeCelebrate(page);
+  await page.evaluate(() => document.querySelector("[data-act=rank-tab][data-t=all]").click());
   await page.waitForSelector(".podium");
   assert.match(await page.textContent("#rank-body"), /Laylo[\s\S]*40000 XP/);
   assert.deepEqual(errors, []);

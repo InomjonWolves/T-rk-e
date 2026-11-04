@@ -1006,3 +1006,17 @@ a.mode { color: inherit; text-decoration: none; }
 .xp-why { font-size: 14px; color: var(--orange); font-weight: 700; }
 .cel-num { font-size: 26px; font-weight: 900; }
 .cel-medal:has(.lg-badge) { background: var(--card-strong); }
+
+/* ---------- Week summary ---------- */
+.recap { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.recap-cat .cat { width: 120px; height: 124px; }
+.recap-lg { display: flex; align-items: center; gap: 10px; }
+.recap-arrow { font-size: 22px; font-weight: 900; color: var(--muted); }
+.recap-arrow.up { color: var(--green); }
+.recap-arrow.down { color: var(--orange); }
+.recap-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
+.recap-grid > div { background: var(--hair); border-radius: 14px; padding: 10px 4px; display: flex; flex-direction: column; gap: 2px; }
+.recap-grid b { font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.recap-grid span { font-size: 11px; font-weight: 700; color: var(--muted); }
+.recap .chart-card { width: 100%; }
+.recap .cel-actions { width: 100%; }

@@ -401,9 +401,56 @@ async function lgSettle() {
   S.lg = to; S.lgw = wk;
   S.lgr = { w: S.pw, from: me, to, rank, n, xp: mine };
   save();
-  if (to > me) celebrate({ eyebrow: "Liga", title: `${lgOf(to).uz} ligasiga koʻtarildingiz!`, text: rank ? `Oʻtgan hafta ${lgOf(me).uz} ligasida ${rank}-oʻrin (${mine} XP). Pamuk faxrlanadi!` : `Oʻtgan hafta ${mine} XP toʻpladingiz. Pamuk faxrlanadi!`, ico: "crown", c: "orange", share: true, league: to });
+  // An active week gets its own summary screen; an idle one just a gentle word
+  if (mine > 0) recapSoon();
   else if (to < me) setTimeout(() => pamukSay("sad", `Oʻtgan hafta dam oldik — liga ${lgOf(to).uz} boʻldi. Bu hafta qaytarib olamiz!`), 1200);
   if (location.hash === "#rank") route();
+}
+
+/* ---------- Week summary: shown once after a new week is settled, and again from the leaderboard ---------- */
+function weekStats(wk) {
+  const n0 = Math.round(Date.parse(wk) / DAY), days = Array.from({ length: 7 }, (_, i) => dayGet(keyOf(n0 + i)));
+  return { xp: days.map(d => d.xp || 0), active: days.filter(d => d.xp || d.rev).length, min: Math.round(days.reduce((a, d) => a + (d.sec || 0), 0) / 60), rev: days.reduce((a, d) => a + (d.rev || 0), 0), from: n0 };
+}
+const dm = n => keyOf(n).slice(5).split("-").reverse().join(".");
+function recapHTML() {
+  const r = S.lgr, st = weekStats(r.w), up = r.to > r.from, down = r.to < r.from, L = lgOf(r.to);
+  const head = up ? `${L.uz} ligasiga koʻtarildingiz!` : down ? `Bu hafta ${L.uz} ligasidamiz` : `${L.uz} ligasida qoldingiz`;
+  const note = up ? "Pamuk sizdan juda faxrlanadi! Yangi ligada raqiblar kuchliroq — kuniga 10 daqiqa yetarli."
+    : down ? "Hech gap emas — bitta faol hafta bilan qaytarib olamiz. Pamuk yoningizda!"
+    : r.to < 7 ? `Keyingi ligaga chiqish uchun haftaning eng yaxshi ${Math.round(LG_UP * 100)}% ichiga kiring (kamida ${LG_MIN} XP).` : "Siz eng yuqori ligadasiz. Chempionlikni saqlab qoling!";
+  const best = Math.max(...st.xp), bestDay = st.xp.indexOf(best);
+  return `<div class="recap">
+    <small class="eyebrow">Hafta yakuni · ${dm(st.from)} – ${dm(st.from + 6)}</small>
+    <div class="recap-cat">${mascot(up ? "trophy" : "sit")}</div>
+    <div class="recap-lg">${lgBadge(r.from, "lg-big")}${r.to !== r.from ? `<span class="recap-arrow ${up ? "up" : "down"}">→</span>${lgBadge(r.to, "lg-big")}` : ""}</div>
+    <h3>${esc(head)}</h3>
+    <p class="muted">${esc(note)}</p>
+    <div class="recap-grid">
+      <div><b>${r.xp}</b><span>XP</span></div>
+      <div><b>${r.rank ? `${r.rank}/${r.n}` : "—"}</b><span>Oʻrin</span></div>
+      <div><b>${st.active}/7</b><span>Faol kun</span></div>
+      <div><b>${st.min}</b><span>Daqiqa</span></div>
+    </div>
+    <div class="chart-card glass">${barChart(st.xp, WD)}</div>
+    ${best ? `<p class="muted">Eng yaxshi kun: ${WD[bestDay]} — ${best} XP${st.rev ? ` · jami ${st.rev} ta javob` : ""}</p>` : ""}
+    <div class="cel-actions"><button class="btn btn-ghost" data-act="share" data-text="${esc(`Türkçe Yoʻl'da bu hafta ${r.xp} XP toʻpladim${up ? ` va ${L.uz} ligasiga chiqdim` : ""}! Turk tilini bepul oʻrganing:`)}">${ICON.heart}Ulashish</button><button class="btn btn-grad" data-act="sheet-done">Yangi hafta!</button></div>
+  </div>`;
+}
+function showRecap() {
+  if (!S.lgr || !S.lgr.w) return;
+  openSheet(recapHTML());
+  if (S.lgr.to > S.lgr.from) setTimeout(() => CatLife.mood($("sheet").querySelector(".cat"), "happy", 2400), 300);
+  if (!S.lgr.seen) { S.lgr.seen = 1; save(); }
+}
+// Wait until nothing else is on screen (welcome, an exercise, another sheet)
+function recapSoon(tries = 0) {
+  setTimeout(() => {
+    if (!S.lgr || S.lgr.seen) return;
+    const busy = SES || !$("sheet").hidden || !$("celebrate").hidden || !$("welcome").hidden || !$("auth").hidden;
+    if (busy) { if (tries < 40) recapSoon(tries + 1); return; }
+    showRecap();
+  }, tries ? 3000 : 2600);
 }
 function record(w, ok) {
   dayRec().rev++;
@@ -1297,7 +1344,8 @@ function viewRank() {
   ${RANK_TAB === "week" ? `<div class="glass pad lg-card">
     ${lgBadge(lg.n, "lg-big")}
     <div><b>${lg.uz} ligasi</b><small class="muted">${lg.n < 7 ? `Haftaning eng yaxshi ${Math.round(LG_UP * 100)}% oʻquvchisi (kamida ${LG_MIN} XP) ${lgOf(lg.n + 1).uz} ligasiga chiqadi` : "Eng yuqori liga — chempionlar shu yerda"}</small>
-    ${r && r.w ? `<small class="muted">Oʻtgan hafta: ${r.xp} XP${r.rank ? ` · ${r.rank}-oʻrin (${r.n} kishi)` : ""} · ${r.to > r.from ? "koʻtarildingiz ⬆" : r.to < r.from ? "tushdingiz ⬇" : "oʻz ligangizda qoldingiz"}</small>` : ""}</div>
+    ${r && r.w ? `<small class="muted">Oʻtgan hafta: ${r.xp} XP${r.rank ? ` · ${r.rank}-oʻrin (${r.n} kishi)` : ""} · ${r.to > r.from ? "koʻtarildingiz ⬆" : r.to < r.from ? "tushdingiz ⬇" : "oʻz ligangizda qoldingiz"}</small>
+    ${r.xp > 0 ? `<button class="link" data-act="recap" style="align-self:flex-start">Hafta yakunini koʻrish</button>` : ""}` : ""}</div>
     <div class="lg-path">${LEAGUES.map(l => `<span class="${l.n === lg.n ? "on" : ""}" title="${l.uz}">${lgBadge(l.n)}</span>`).join("")}</div>
   </div>` : ""}
   <div id="rank-body"><div class="glass empty"><div class="spin"></div>Yuklanmoqda…</div></div>`;
@@ -3809,6 +3857,8 @@ function onAct(e) {
   else if (act === "say-seq") speakSeq(JSON.parse(b.dataset.lines));
   else if (act === "cel-next") nextCelebrate();
   else if (act === "share") shareSite(b.dataset.text);
+  else if (act === "recap") showRecap();
+  else if (act === "sheet-done") closeSheet(true);
   else if (act === "install") doInstall();
   else if (act === "install-hide") { try { localStorage.setItem("ty-install-hide", "1"); } catch (err) {} kRerender(); }
   else if (act === "onb-next") { if (ONB_I < ONB.length - 1) { ONB_I++; showOnboard(); } else endOnboard(); }
