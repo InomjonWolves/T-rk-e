@@ -1046,3 +1046,50 @@ a.mode { color: inherit; text-decoration: none; }
 .gt-form .k-select { width: 100%; min-width: 0; }
 .gt-form .grp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .gt-row { grid-template-columns: 34px 1fr auto; }
+
+/* ---------- Unified sections (2026-11): home status card, folded lists, practice skill grid ---------- */
+.stack { display: flex; flex-direction: column; gap: 14px; }
+.stack[hidden] { display: none; }
+.status-card { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.status-card .lvl-card { display: flex; color: inherit; text-decoration: none; }
+.status-card .week { padding: 0; }
+.stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.st-item { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px; border-radius: 16px; background: var(--hair); min-width: 0; }
+.st-item .ico { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 4px; }
+.st-item .ico svg { width: 17px; height: 17px; }
+.st-item b { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.st-item b i { font-style: normal; font-size: 13px; color: var(--muted); font-weight: 700; }
+.st-item small { font-size: 12px; color: var(--muted); font-weight: 600; line-height: 1.2; }
+.wc-mini { border-top: 1px solid var(--hair); padding-top: 12px; gap: 8px; }
+.wc-mini .pcard-head b { font-size: 15px; }
+.wc-mini .pcard-head b svg { width: 18px; height: 18px; }
+.word-day { display: flex; flex-direction: column; gap: 10px; }
+.wd-tr { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.tip-line { display: grid; grid-template-columns: 52px 1fr; gap: 10px; align-items: center; border-top: 1px solid var(--hair); padding-top: 12px; }
+.tip-line .cat { width: 52px; height: 46px; }
+.tip-line b { display: block; font-size: 15px; font-weight: 800; margin: 2px 0; }
+.tip-line p { font-size: 14px; }
+details.fold { padding: 0; overflow: hidden; }
+details.fold > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 56px 1fr auto; gap: 14px; align-items: center; padding: 12px; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary .art { width: 56px; height: 56px; border-radius: 17px; display: grid; place-items: center; color: #fff; font-weight: 800; }
+details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
+details.fold > .list { padding: 10px; }
+details.fold > .list .unit { box-shadow: none; }
+.sk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sk-tile { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 14px; text-align: left; color: inherit; text-decoration: none; font: inherit; min-width: 0; cursor: pointer; }
+.sk-tile:disabled { opacity: 0.55; cursor: default; }
+.sk-tile .ico { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; margin-bottom: 6px; }
+.sk-tile .ico svg { width: 22px; height: 22px; }
+.sk-tile b { font-size: 16px; font-weight: 800; }
+.sk-tile small { font-size: 12px; color: var(--muted); font-weight: 700; }
+.sk-tile .sk-sub { font-size: 12.5px; color: var(--ink-2); line-height: 1.3; margin-top: 4px; }
+.sk-tile .sk-stat { font-size: 12px; color: var(--muted); font-weight: 700; margin-top: 6px; }
+.sk-done { position: absolute; top: 12px; right: 12px; width: 22px; height: 22px; border-radius: 50%; background: var(--green); color: #fff; display: grid; place-items: center; }
+.sk-done svg { width: 13px; height: 13px; }
+.mis-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.mis-btn { flex: 1 1 40%; gap: 6px; }
+.mis-btn .badge { margin-left: 4px; }
+.set-row.set-wide { flex-wrap: wrap; }
+.set-row.set-wide > span:first-child { flex: 1 1 100%; }
+.set-row.set-wide .mini-seg { width: 100%; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }

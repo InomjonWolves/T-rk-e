@@ -869,7 +869,7 @@ function topbar() {
     <div class="brand">${logo}<span>Türkçe Yoʻl</span></div>
     <div class="top-actions">
       <a class="icon-btn" href="#translate" aria-label="Aqlli tarjimon">${ICON.translate}</a>
-      <button class="icon-btn" data-act="go" data-to="lessons" data-focus="search" aria-label="Soʻz qidirish">${ICON.search}</button>
+      <button class="icon-btn" data-act="go" data-to="lugat" data-focus="search" aria-label="Soʻz qidirish">${ICON.search}</button>
       <a href="#profile" aria-label="Profil" style="border-radius:50%">${avatarHTML(MYPHOTO, USER ? USER.uid : "me")}</a>
     </div>
   </header>`;
@@ -915,14 +915,6 @@ function unitRow(u, ui) {
     ${pctRing(p)}
   </button>`;
 }
-function courseCard(ui) {
-  const u = UNITS[ui], c = catOf(ui), ws = unitWords(ui), k = ws.filter(w => known(w) >= 2).length;
-  return `<button class="course glass" data-act="go" data-to="lesson-${ui + 1}">
-    <span class="art ${c.color}"><span>${pad(ui + 1)}</span></span>
-    <span><b>${esc(u.uz)}</b><span class="unit-sub" lang="tr">${esc(u.tr)}</span>
-      <span class="row"><span class="pill-mini">${k}/${ws.length} soʻz</span><span class="play">${ICON.play}</span></span></span>
-  </button>`;
-}
 function wordRow(w, showUnit) {
   const c = catOf(w.unit);
   return `<div class="word">
@@ -947,35 +939,37 @@ function modeSheet(u, title) {
 }
 
 /* ---------- Home ---------- */
-function wordOfDay() { return ALL[(dayNum() * 7) % ALL.length]; }
+function wordOfDay() {
+  const pool = kNext().level === "A1" ? ALL.filter(w => w.unit < 36) : ALL;
+  return pool[(dayNum() * 7) % pool.length];
+}
+// Home: one status card (level, streak, today's XP, words, the week), today's plan, where to continue, tasks, the word of the day
+function statusCard() {
+  const L = lvlInfo(), wk = weekDays(), tn = dayNum(), learned = learnedCount();
+  return `<section class="glass status-card">
+    <a class="lvl-card" href="#profile" aria-label="Profil: daraja va Pamuk rivoji">
+      <div class="lvl-cat">${catSVG({ pose: "head", look: L.st.id })}</div>
+      <div class="lvl-body"><div class="pcard-head"><b>${L.lv}-daraja · ${esc(L.st.uz)}</b>${lgBadge(S.lg)}</div>
+        <div class="bar"><i style="width:${Math.round(L.p * 100)}%"></i></div>
+        <small class="muted">${S.xp - L.from}/${L.to - L.from} XP · ${L.next ? `${L.next.lv}-darajada: ${esc(L.next.uz)}` : "Pamuk afsonaga aylandi!"}</small></div></a>
+    <div class="stat-row">
+      <div class="st-item"><span class="ico orange-t">${ICON.flame}</span><b>${streakNow()}</b><small>kun ketma-ket</small></div>
+      <div class="st-item"><span class="ico violet-t">${ICON.bolt}</span><b>${S.dayXp}<i>/${S.goal}</i></b><small>bugungi XP</small></div>
+      <div class="st-item"><span class="ico green-t">${ICON.book}</span><b>${learned}</b><small>soʻz oʻrganildi</small></div>
+    </div>
+    <div class="week" aria-label="Shu hafta">
+      ${wk.map(d => { const on = dayGet(d.k).xp || dayGet(d.k).rev; return `<div class="day${d.n === tn ? " today" : ""}${on ? " on" : ""}"><small>${d.l}</small><b>${new Date(d.n * DAY).getUTCDate()}</b><svg class="mark" viewBox="0 0 24 24" fill="currentColor" aria-label="${on ? "Mashq qilingan" : "Mashq yoʻq"}">${pawPath}</svg></div>`; }).join("")}
+    </div>
+  </section>`;
+}
 function viewHome() {
-  const learned = learnedCount(), today = dayGet(todayKey());
-  const minToday = Math.round(today.sec / 60);
   const due = dueWords().length, fresh = Math.min(newLeft(), newWords(NEW_PER_DAY).length), todo = due + fresh;
-  const wk = weekDays(), tn = dayNum();
-  const l7 = last7(), minArr = l7.map(d => Math.round(dayGet(d.k).sec / 60)), weekMin = minArr.reduce((a, b) => a + b, 0);
-  let next = UNITS.findIndex((u, i) => unitProgress(i) < 1); if (next < 0) next = 0;
-  const courses = Array.from({ length: 5 }, (_, i) => (next + i) % UNITS.length);
-  const w = wordOfDay(), wc = catOf(w.unit);
-  const gi = GRAMMAR.findIndex(g => !gramDone(g)), g = GRAMMAR[gi < 0 ? 0 : gi];
-  const pXP = Math.min(1, S.dayXp / S.goal), pRev = Math.min(1, today.rev / WORD_GOAL);
-  const R1 = 34, R2 = 23, C1 = 2 * Math.PI * R1, C2 = 2 * Math.PI * R2;
+  const w = wordOfDay(), t = tipOfDay();
   return `${topbar()}
   ${greeting()}
-  <div class="tiles">
-    <div class="tile glass">
-      <span class="tile-label"><span class="dot-ico violet-t">${ICON.book}</span>Oʻrganilgan</span>
-      <div class="tile-row"><span class="big-num">${learned}<small>soʻz</small></span>${ring(learned / ALL.length, 34, 4.5, "var(--green)", "mini-ring")}</div>
-    </div>
-    <div class="tile glass">
-      <span class="tile-label"><span class="dot-ico sky-t">${ICON.clock}</span>Bugun</span>
-      <div class="tile-row"><span class="big-num">${minToday}<small>daq</small></span>${ring(minToday / 10, 34, 4.5, "var(--sky)", "mini-ring")}</div>
-    </div>
-  </div>
-
-  <div class="week glass" aria-label="Shu hafta">
-    ${wk.map(d => { const on = dayGet(d.k).xp || dayGet(d.k).rev; return `<div class="day${d.n === tn ? " today" : ""}${on ? " on" : ""}"><small>${d.l}</small><b>${new Date(d.n * DAY).getUTCDate()}</b><svg class="mark" viewBox="0 0 24 24" fill="currentColor" aria-label="${on ? "Mashq qilingan" : "Mashq yoʻq"}">${pawPath}</svg></div>`; }).join("")}
-  </div>
+  ${statusCard()}
+  ${comebackCard()}
+  ${gtHomeCard()}
 
   ${todo ? `<section class="hero">
     <span class="chip-float">${ICON.spark.replace("<svg", '<svg style="width:14px;height:14px;vertical-align:-2px;color:var(--accent)"')} Bugungi reja</span>
@@ -991,91 +985,32 @@ function viewHome() {
     <button class="btn btn-white" data-act="go" data-to="practice">Erkin mashq</button>
   </section>`}
 
-  ${comebackCard()}
-  ${gtHomeCard()}
-  ${lvlHomeCard()}
-  ${dqCard()}
-  ${wcCard()}
   ${plHomeCard()}
-  ${skillsHomeCard()}
-
-  ${(() => { const u = kNext(), p = kProgress(u.id); return `<a class="pcard glass" href="#${kHash(u.id)}" style="color:inherit;text-decoration:none">
-    <div class="pcard-head"><b>${ICON.cap}Kurs: ${u.level}.${u.n}</b><span class="tag green-t">bepul</span></div>
+  ${(() => { const u = kNext(), p = kProgress(u.id); return `<section class="section">
+    <div class="section-head"><h2>Kursni davom ettiring</h2><a class="link" href="#course">Barcha boʻlimlar</a></div>
+    <a class="pcard glass" href="#${kHash(u.id)}" style="color:inherit;text-decoration:none">
+    <div class="pcard-head"><b>${ICON.cap}${u.level}.${u.n}-boʻlim</b><span class="tag violet-t">${Math.round(p * 100)}%</span></div>
     <div style="font-size:20px;font-weight:800" lang="tr">${esc(u.title)}</div><p class="muted">${esc(u.sub)}</p>
     <div class="bar"><i style="width:${Math.round(p * 100)}%"></i></div>
-    <small class="muted">Kurs: ${kDoneCount()}/${COURSE.units.length} boʻlim · A1 → B2</small></a>`; })()}
+    <small class="muted">Kurs: ${kDoneCount()}/${COURSE.units.length} boʻlim · A1 → B2</small></a></section>`; })()}
 
-  <div class="goals">
-    <div class="goal-card glass">
-      <h3>Kunlik maqsad</h3>
-      <div class="goal-body">
-        <svg class="dual-ring" viewBox="0 0 80 80" aria-hidden="true">
-          <circle class="ring-bg" cx="40" cy="40" r="${R1}"/><circle class="ring-fg" cx="40" cy="40" r="${R1}" stroke="var(--accent)" stroke-dasharray="${C1}" stroke-dashoffset="${C1 * (1 - pXP)}"/>
-          <circle class="ring-bg" cx="40" cy="40" r="${R2}"/><circle class="ring-fg" cx="40" cy="40" r="${R2}" stroke="var(--green)" stroke-dasharray="${C2}" stroke-dashoffset="${C2 * (1 - pRev)}"/>
-        </svg>
-        <div class="goal-legend">
-          <span><i class="violet-t">${ICON.bolt}</i>${S.dayXp}/${S.goal} XP</span>
-          <span><i class="green-t">${ICON.cards}</i>${today.rev}/${WORD_GOAL} javob</span>
-        </div>
-      </div>
-    </div>
-    <div class="streak-card glass">
-      <span class="flame" style="color:var(--orange)">${ICON.flame}</span>
-      <div><b>${streakNow()} kun</b><span>Ketma-ket</span></div>
-    </div>
-  </div>
-
-  <div class="time-card glass">
-    <span class="lbl">${ICON.clock}Bu hafta oʻqish vaqti</span>
-    <span class="big-num">${weekMin}<small>daq</small></span>
-    ${spark(minArr)}
-  </div>
-
-  <section class="section">
-    <div class="section-head"><h2>Davom ettiring</h2><a class="link" href="#lessons">Hammasi</a></div>
-    <div class="carousel">${courses.map(courseCard).join("")}</div>
-  </section>
+  ${dqCard()}
 
   <section class="section">
     <div class="section-head"><h2>Bugungi soʻz</h2></div>
-    <div class="glass pad" style="display:flex;flex-direction:column;gap:8px">
-      <div class="tile-row"><span class="tag ${wc.color}-t">${ICON[wc.ico]}${esc(wc.uz)}</span><button class="say" data-act="say" data-t="${esc(w.tr)}" aria-label="Tinglash">${ICON.speak}</button></div>
-      <div style="font-size:28px;font-weight:800;letter-spacing:-.02em" lang="tr">${esc(w.tr)}</div>
-      <div class="word-uz" style="font-size:16px">${esc(w.uz)}</div>
+    <div class="glass pad word-day">
+      <div class="tile-row"><div style="min-width:0"><div class="wd-tr" lang="tr">${esc(w.tr)}</div><div class="word-uz" style="font-size:16px">${esc(w.uz)}</div></div><button class="say" data-act="say" data-t="${esc(w.tr)}" aria-label="Tinglash">${ICON.speak}</button></div>
       ${w.note ? `<div class="word-note">${esc(w.note)}</div>` : ""}
+      <div class="tip-line"><div class="tip-cat">${catSVG({ pose: "head", look: catLook() })}</div><div><small class="eyebrow">Pamuk maslahati</small><b>${esc(t[0])}</b><p class="muted">${esc(t[1])}</p></div></div>
     </div>
   </section>
-
-  ${(() => { const t = tipOfDay(); return `<div class="tip-card glass"><div class="tip-cat">${catSVG({ pose: "head", look: catLook() })}</div><div><small class="eyebrow">Pamuk maslahati</small><b>${esc(t[0])}</b><p class="muted">${esc(t[1])}</p></div></div>`; })()}
-  ${installCard()}
-
-  <a class="pcard ai" href="#translate" style="text-decoration:none">
-    <div class="pcard-head"><b>${ICON.translate}Aqlli tarjimon</b><span>bepul</span></div>
-    <p>Turkcha ⇄ oʻzbekcha tarjima. Pamuk gapdagi grammatikani ham topib beradi.</p>
-  </a>
-
-  <section class="section">
-    <div class="section-head"><h2>Grammatika</h2><a class="link" href="#grammar">${gramCount()}/${GRAMMAR.length}</a></div>
-    <button class="unit glass" data-act="go" data-to="grammar-${GRAMMAR.indexOf(g) + 1}">
-      <span class="art violet"><span>G${GRAMMAR.indexOf(g) + 1}</span></span>
-      <span class="unit-body"><span class="unit-title">${nb(g.uz)}</span><span class="unit-sub" lang="tr">${esc(g.tr)}</span></span>
-      ${ICON.chev}
-    </button>
-  </section>`;
+  ${installCard()}`;
 }
 
 /* ---------- Level, Pamuk's growth, daily tasks, weekly challenge (home and profile cards) ---------- */
 function lvlInfo() {
   const lv = lvlOf(S.xp), a = lvlXP(lv), b = lvlXP(lv + 1);
   return { lv, from: a, to: b, p: (S.xp - a) / (b - a), st: catStage(lv), next: CAT_STAGES.find(s => s.lv > lv) };
-}
-function lvlHomeCard() {
-  const L = lvlInfo();
-  return `<a class="pcard glass lvl-card" href="#profile" style="color:inherit;text-decoration:none">
-    <div class="lvl-cat">${catSVG({ pose: "head", look: L.st.id })}</div>
-    <div class="lvl-body"><div class="pcard-head"><b>${L.lv}-daraja · ${esc(L.st.uz)}</b>${lgBadge(S.lg)}</div>
-      <div class="bar"><i style="width:${Math.round(L.p * 100)}%"></i></div>
-      <small class="muted">${S.xp - L.from}/${L.to - L.from} XP · ${L.next ? `${L.next.lv}-darajada: ${esc(L.next.uz)}` : "Pamuk afsonaga aylandi!"}</small></div></a>`;
 }
 const DQ_GO = {
   vocab: ["Lugʻat testi", "Kamida 50% toʻgʻri javob bilan", "quiz", "start", "review"],
@@ -1090,23 +1025,24 @@ function dqBtn(k) {
 function dqCard() {
   const q = dqToday(), done = q.k.filter(k => q.ok[k]).length;
   return `<section class="glass pad dq-card">
-    <div class="pcard-head"><b>${ICON.target}Kunlik vazifalar</b><span class="tag ${q.paid ? "green-t" : "violet-t"}">${q.paid ? `${ICON.check}+${XP_VAL.daily} XP olindi` : `${done}/3 · +${XP_VAL.daily} XP`}</span></div>
+    <div class="pcard-head"><b>${ICON.target}Bugungi vazifalar</b><span class="tag ${q.paid ? "green-t" : "violet-t"}">${q.paid ? `${ICON.check}+${XP_VAL.daily} XP olindi` : `${done}/3 · +${XP_VAL.daily} XP`}</span></div>
     ${q.k.map(k => { const g = DQ_GO[k], ok = q.ok[k]; return `<button class="dq-row${ok ? " ok" : ""}" ${ok ? "disabled" : dqBtn(k)}>
       <span class="dq-ico">${ok ? ICON.check : ICON[g[2]]}</span><span><b>${g[0]}</b><small>${g[1]} · +${XP_VAL[k]} XP</small></span>${ok ? "" : ICON.chev}</button>`; }).join("")}
+    ${wcMini()}
   </section>`;
 }
 function dqMini() {
   const q = dqToday(), done = q.k.filter(k => q.ok[k]).length;
   return `<p class="muted">Kunlik vazifalar: ${done}/3${q.paid ? " ✔" : ` · hammasi uchun +${XP_VAL.daily} XP`}</p>`;
 }
-function wcCard() {
+// The weekly challenge as the last row of the daily tasks card
+function wcMini() {
   const w = wcWeek(), ch = WC[w.c], v = Math.min(ch.n, ch.v(w)), left = 7 - (dayNum() - weekStart(dayNum()));
-  return `<section class="glass pad wc-card">
-    <div class="pcard-head"><b>${ICON.crown}Haftalik challenge</b><span class="tag ${w.paid ? "green-t" : "pink-t"}">${w.paid ? `${ICON.check}bajarildi` : `+${XP_VAL.weekly} XP`}</span></div>
-    <div><b>${esc(ch.t)}</b><p class="muted">${esc(ch.d)}</p></div>
+  return `<div class="wc-card wc-mini">
+    <div class="pcard-head"><b>${ICON.crown}Hafta: ${esc(ch.t)}</b><span class="tag ${w.paid ? "green-t" : "pink-t"}">${w.paid ? `${ICON.check}bajarildi` : `+${XP_VAL.weekly} XP`}</span></div>
     <div class="bar"><i style="width:${Math.round(v / ch.n * 100)}%"></i></div>
-    <small class="muted">${v}/${ch.n}${w.paid ? "" : ` · ${left} kun qoldi`}</small>
-  </section>`;
+    <small class="muted">${esc(ch.d)} · ${v}/${ch.n}${w.paid ? "" : ` · ${left} kun qoldi`}</small>
+  </div>`;
 }
 function comebackCard() {
   const away = daysAway();
@@ -1135,11 +1071,9 @@ function pamukGrowCard() {
 /* ---------- Lessons ---------- */
 let CAT = "all", Q = "";
 function lessonTabs(active) {
+  const t = (href, id, name) => `<a href="#${href}" ${active === id ? 'aria-current="page"' : ""}>${name}</a>`;
   return `<nav class="seg glass" aria-label="Darslar boʻlimlari">
-    <a href="#course" ${active === "course" ? 'aria-current="page"' : ""}>Kurs</a>
-    <a href="#lessons" ${active === "lessons" ? 'aria-current="page"' : ""}>Soʻzlar</a>
-    <a href="#grammar" ${active === "grammar" ? 'aria-current="page"' : ""}>Grammatika</a>
-    <a href="#alphabet" ${active === "alphabet" ? 'aria-current="page"' : ""}>Alifbo</a>
+    ${t("course", "course", "Kurs")}${t("grammar", "grammar", "Grammatika")}${t("lugat", "lugat", "Lugʻat")}${t("alphabet", "alphabet", "Alifbo")}
   </nav>`;
 }
 function searchResults() {
@@ -1151,33 +1085,21 @@ function searchResults() {
     : `<div class="glass empty"><b>“${esc(Q)}” topilmadi</b><span class="muted">Boshqacha yozib koʻring: turkcha yoki oʻzbekcha.</span></div>`;
 }
 function unitsList() {
-  const inCat = ui => CAT === "all" || catOf(ui).id === CAT;
-  return LEVELS.map(L => {
-    const rows = UNITS.slice(L.from, L.to).map((u, i) => L.from + i).filter(inCat);
-    if (!rows.length) return "";
-    return `<div class="level-head"><b>${L.name}</b><span>${esc(L.uz)}</span></div>
-      <div class="list">${rows.map(ui => unitRow(UNITS[ui], ui)).join("")}</div>`;
+  return LEVELS.map((L, li) => {
+    const rows = UNITS.slice(L.from, L.to).map((u, i) => L.from + i);
+    const p = rows.reduce((a, ui) => a + unitProgress(ui), 0) / rows.length;
+    const open = li === 0 ? p < 1 : LEVELS.slice(0, li).every(P => UNITS.slice(P.from, P.to).every((u, i) => unitProgress(P.from + i) >= 1)) && p < 1;
+    return `<details class="glass fold"${open ? " open" : ""}><summary><span class="art ${["violet", "sky", "pink"][li % 3]}"><span style="font-size:13px">${L.name}</span></span>
+      <span class="unit-body"><span class="unit-title">${esc(L.uz)}</span><span class="unit-sub">${rows.length} ta dars · ${rows.reduce((a, ui) => a + UNITS[ui].words.length, 0)} ta soʻz</span></span>${pctRing(p)}</summary>
+      <div class="list">${rows.map(ui => unitRow(UNITS[ui], ui)).join("")}</div></details>`;
   }).join("");
 }
-function viewLessons() {
-  return `${topbar()}
-  <h1 class="page-title">Darslar</h1>
-  ${lessonTabs("lessons")}
-  <label class="search glass" for="q">${ICON.search}<span class="sr">Soʻz qidirish</span><input id="q" type="search" placeholder="${ALL.length} ta soʻz ichidan qidiring" value="${esc(Q)}" autocomplete="off" lang="tr"></label>
-  <div id="search-results">${searchResults()}</div>
-  <div id="units-block" ${Q ? "hidden" : ""}>
-    <div style="margin-bottom:14px">${lugCard()}</div>
-    <div class="chips" id="cats" style="margin-bottom:14px">
-      <button class="chip" data-act="cat" data-c="all" aria-pressed="${CAT === "all"}">Hammasi</button>
-      ${CATS.map(c => `<button class="chip ${CAT === c.id ? "" : c.color + "-t"}" data-act="cat" data-c="${c.id}" aria-pressed="${CAT === c.id}">${ICON[c.ico]}${esc(c.uz)}</button>`).join("")}
-    </div>
-    <div style="display:flex;flex-direction:column;gap:12px">${unitsList()}</div>
-  </div>`;
-}
+// Darslar → Lugʻat: search over every word, levels A1–B2; A1 starts with the step-by-step lessons, then topic packs and the course vocabulary
+function viewLessons() { return viewLugat(); }
 function viewUnit(ui) {
   const u = UNITS[ui], c = catOf(ui), ws = unitWords(ui), k = ws.filter(w => known(w) >= 2).length;
   const acc = accOf([u.id]);
-  return `<div><button class="back" data-act="go" data-to="lessons">${ICON.back}Darslar</button></div>
+  return `<div><a class="back" href="#lugat">${ICON.back}Lugʻat</a></div>
   <div class="lesson-head">
     <div class="tags"><span class="tag ${c.color}-t">${ICON[c.ico]}${esc(c.uz)}</span><span class="tag violet-t">${pad(ui + 1)}-dars</span>${acc !== null ? `<span class="tag green-t">${acc}% toʻgʻri</span>` : ""}</div>
     <h1>${esc(u.uz)}</h1>
@@ -1193,14 +1115,6 @@ function viewUnit(ui) {
 
 /* ---------- Vocabulary base ---------- */
 let LUG_LV = "A1";
-function lugCard() {
-  const n = lugAllWords().length;
-  return `<a class="book-card glass" href="#lugat">
-    <span class="art sky" style="width:74px;height:74px;border-radius:20px;display:grid;place-items:center"><span style="font-size:15px;line-height:1.1;text-align:center">A1<br>B2</span></span>
-    <span><span class="tag sky-t">${ICON.book}Lugʻat bazasi · ${n} soʻz</span>
-      <b style="margin-top:6px">Eng faol soʻzlar A1–B2</b>
-      <span class="unit-sub">${LPACKS.length} ta mavzu: oila, ish, sogʻliq, texnologiya, jamiyat…</span></span></a>`;
-}
 function lugRow(p) {
   const n = LWORDS[p.id].length, k = lugKnown(p.id);
   return `<a class="unit glass" href="#lugat-${p.id}">
@@ -1210,19 +1124,30 @@ function lugRow(p) {
 }
 function viewLugat() {
   const lvs = ["A1", "A2", "B1", "B2"], packs = lugLevel(LUG_LV);
-  const all = lugAllWords(), total = all.length, learned = all.filter(w => known(w) >= 2).length;
-  return `<div><a class="back" href="#lessons">${ICON.back}Soʻzlar</a></div>
-  <div class="lesson-head">
-    <div class="tags"><span class="tag sky-t">${ICON.book}Lugʻat bazasi</span><span class="tag green-t">${learned}/${total} oʻrganilgan</span></div>
-    <h1>Eng faol soʻzlar</h1>
-    <p class="sub">A1 dan B2 gacha mavzular boʻyicha. Har bir mavzuni kartochka, test, yozish, tinglash va talaffuz bilan mashq qiling.</p>
-  </div>
-  <div class="chips">${lvs.map(l => `<button class="chip" data-act="lug-lv" data-l="${l}" aria-pressed="${l === LUG_LV}">${l}<small style="font-weight:600;opacity:.7;margin-left:4px">${new Set(lugLevel(l).flatMap(p => LWORDS[p.id].map(w => w.tr))).size}</small></button>`).join("")}</div>
-  <div class="list">${packs.map(lugRow).join("")}</div>`;
+  const total = ALL.length, learned = learnedCount(), kc = CATS.find(c => c.id === "k" + LUG_LV);
+  const kw = kc ? ALL.filter(w => kc.ids.includes(UNITS[w.unit].id)) : [];
+  return `${topbar()}
+  <h1 class="page-title">Darslar</h1>
+  ${lessonTabs("lugat")}
+  <label class="search glass" for="q">${ICON.search}<span class="sr">Soʻz qidirish</span><input id="q" type="search" placeholder="${total} ta soʻz ichidan qidiring" value="${esc(Q)}" autocomplete="off" lang="tr"></label>
+  <div id="search-results">${searchResults()}</div>
+  <div id="units-block" class="stack" ${Q ? "hidden" : ""}>
+    <p class="sub">Soʻzlar darajalar boʻyicha: avval A1 darslari, keyin mavzuli toʻplamlar. Jami oʻrganilgan: <b>${learned}/${total}</b></p>
+    <div class="chips">${lvs.map(l => `<button class="chip" data-act="lug-lv" data-l="${l}" aria-pressed="${l === LUG_LV}">${l}<small style="font-weight:600;opacity:.7;margin-left:4px">${new Set(lugLevel(l).flatMap(p => LWORDS[p.id].map(w => w.tr))).size}</small></button>`).join("")}</div>
+    ${LUG_LV === "A1" ? `<div class="section-head"><h2>1. Boshlangʻich darslar</h2><span class="tag violet-t">36 dars</span></div>
+    <div style="display:flex;flex-direction:column;gap:10px">${unitsList()}</div>` : ""}
+    <div class="section-head"><h2>${LUG_LV === "A1" ? "2. " : ""}Mavzuli toʻplamlar · ${LUG_LV}</h2><span class="tag sky-t">${packs.length} mavzu</span></div>
+    <div class="list">${packs.map(lugRow).join("")}</div>
+    ${kc ? `<button class="unit glass" data-act="modes" data-u="cat:${kc.id}" data-title="${esc(kc.uz)}">
+      <span class="art teal"><span style="font-size:13px">${LUG_LV}</span></span>
+      <span class="unit-body"><span class="unit-title">Kurs lugʻati · ${LUG_LV}</span><span class="unit-sub">${kw.length} ta soʻz · ${LUG_LV} kurs boʻlimlaridagi barcha soʻzlar</span></span>
+      ${pctRing(kw.length ? kw.filter(w => known(w) >= 2).length / kw.length : 0)}</button>` : ""}
+    <button class="btn btn-ghost btn-block" data-act="modes" data-u="all" data-title="Barcha soʻzlar">${ICON.globe}Barcha soʻzlardan erkin mashq</button>
+  </div>`;
 }
 function viewLugPack(p) {
   const ws = LWORDS[p.id], k = lugKnown(p.id), i = LPACKS.indexOf(p), next = LPACKS[i + 1];
-  return `<div><a class="back" href="#lugat">${ICON.back}Lugʻat bazasi</a></div>
+  return `<div><a class="back" href="#lugat">${ICON.back}Lugʻat</a></div>
   <div class="lesson-head">
     <div class="tags"><span class="tag ${LV_COLOR[p.lv]}-t">${p.lv}</span><span class="tag green-t">${k}/${ws.length} oʻrganilgan</span></div>
     <h1>${esc(p.uz)}</h1>
@@ -1245,29 +1170,8 @@ function gramRow(g, gi) {
     ${pctRing(n / g.quiz.length)}
   </button>`;
 }
-function guideCard() {
-  const last = S.guideLast && gxTopic(S.guideLast);
-  return `<a class="book-card glass" href="#guide">
-    <span class="art pink" style="width:74px;height:74px;border-radius:20px;display:grid;place-items:center;position:relative;overflow:hidden"><span style="font-size:15px;line-height:1.1;text-align:center">A1<br>B2</span></span>
-    <span><span class="tag pink-t">${ICON.book}Qoʻllanma · ${GUIDE_ALL.length} mavzu</span>
-      <b style="margin-top:6px">Turk tili grammatikasi</b>
-      <span class="unit-sub">${last ? `Oxirgi: ${esc(last.code)} ${esc(last.uz)}` : "Formulalar, jadvallar va misollar bilan"}</span></span>
-  </a>`;
-}
-function viewGrammarList() {
-  return `${topbar()}
-  <h1 class="page-title">Darslar</h1>
-  ${lessonTabs("grammar")}
-  <div class="tip glass">${ICON.bulb}<div><b>Qaysidan boshlash kerak?</b>Tartib bilan boring: 1-mavzu (unli uygʻunligi) qolgan barcha qoidalarning asosi. Har mavzu oʻzbek tili bilan solishtirilgan.</div></div>
-  ${guideCard()}
-  <a class="pcard glass" href="#gx" style="color:inherit;text-decoration:none">
-    <div class="pcard-head"><b>${ICON.quiz}Qoidalar mashqi · A1–B2</b><span>${gxDoneCount()}/${GX_CODES.length}</span></div>
-    <div class="bar"><i style="width:${pct(gxDoneCount(), GX_CODES.length)}%"></i></div>
-    <p class="muted">${GX_CODES.length} mavzu, ${GX_CODES.reduce((a, c) => a + BX[c].length, 0)} ta mashq. Keyingisi: ${esc(gxNext())} ${esc((gxTopic(gxNext()) || {}).uz || "")}</p>
-  </a>
-  <div class="section-head" style="margin-top:4px"><h2>Asosiy mavzular</h2></div>
-  <div class="list">${GRAMMAR.map(gramRow).join("")}</div>`;
-}
+// Darslar → Grammatika: the handbook by level (topics with their exercises), search, the exercise progress, and for A1 the 10 short lessons
+function viewGrammarList() { return viewGuide(); }
 function gqHtml(g, qi) {
   const q = g.quiz[qi];
   return `<div class="gq glass" id="gq-${qi}">
@@ -1320,17 +1224,23 @@ function guideHits() {
   return hits.length ? `<div class="glass words">${hits.map(guideRow).join("")}</div>` : `<div class="glass empty"><b>“${esc(GUIDE_Q)}” topilmadi</b></div>`;
 }
 function viewGuide() {
-  const lv = GUIDE.find(l => l.id === GUIDE_LV) || GUIDE[1];
-  return `<div><button class="back" data-act="go" data-to="grammar">${ICON.back}Grammatika</button></div>
-  <div class="lesson-head">
-    <div class="tags"><span class="tag pink-t">${ICON.book}Qoʻllanma</span><span class="tag green-t">${GX_CODES.filter(gxDone).length}/${GX_CODES.length} mashq bajarilgan</span></div>
-    <h1>Turk tili grammatikasi</h1>
-    <p class="sub">Har mavzu: formula, shakllar, qoida, misol va mashqlar. Qoʻshimchalar rangli ajratilgan.</p>
-  </div>
-  <label class="search glass" for="gq">${ICON.search}<span class="sr">Qoʻllanmadan qidirish</span><input id="gq" type="search" placeholder="Qidirish: iyor, kelishik, -lar…" value="${esc(GUIDE_Q)}" autocomplete="off" lang="tr"></label>
+  const lv = GUIDE.find(l => l.id === GUIDE_LV) || GUIDE[1], nx = gxNext(), ms = gxMistakes().length;
+  return `${topbar()}
+  <h1 class="page-title">Darslar</h1>
+  ${lessonTabs("grammar")}
+  <label class="search glass" for="gq">${ICON.search}<span class="sr">Grammatikadan qidirish</span><input id="gq" type="search" placeholder="Qidirish: iyor, kelishik, -lar…" value="${esc(GUIDE_Q)}" autocomplete="off" lang="tr"></label>
   <div id="guide-hits">${guideHits()}</div>
+  <a class="pcard glass" href="#gx" style="color:inherit;text-decoration:none">
+    <div class="pcard-head"><b>${ICON.quiz}Qoidalar mashqi</b><span>${gxDoneCount()}/${GX_CODES.length}</span></div>
+    <div class="bar"><i style="width:${pct(gxDoneCount(), GX_CODES.length)}%"></i></div>
+    <small class="muted">Keyingisi: ${esc(nx)} ${esc((gxTopic(nx) || {}).uz || "")}${ms ? ` · ${ms} ta xato qayta ishlashni kutyapti` : ""}</small>
+  </a>
+  <p class="sub">Har mavzu: formula, shakllar, qoida, misol va mashq. Tartib bilan boring — oʻzbek tili bilan solishtirib tushuntirilgan.</p>
   <div class="chips">${GUIDE.map(l => `<button class="chip" data-act="guide-lv" data-l="${l.id}" aria-pressed="${l.id === lv.id}">${esc(l.name)}</button>`).join("")}</div>
   <div class="level-head"><b>${esc(lv.name)}</b><span>${esc(lv.uz)}${gxCount(lv.id) ? ` · ${gxDoneCount(lv.id)}/${gxCount(lv.id)} mashq` : ""}</span></div>
+  ${lv.id === "A1" ? `<details class="glass fold"><summary><span class="art violet"><span style="font-size:13px">10</span></span>
+    <span class="unit-body"><span class="unit-title">Tez boshlash: 10 ta qisqa dars</span><span class="unit-sub">Eng muhim qoidalar jadval va test bilan · ${gramCount()}/${GRAMMAR.length}</span></span>${pctRing(gramCount() / GRAMMAR.length)}</summary>
+    <div class="list">${GRAMMAR.map(gramRow).join("")}</div></details>` : ""}
   ${lv.groups.map(g => `<div class="glass words"><div class="toc-group">${esc(g.name)}</div>${g.items.map(guideRow).join("")}</div>`).join("")}`;
 }
 function guideTable(t) {
@@ -1343,7 +1253,7 @@ function viewGuideTopic(i) {
   S.guideLast = i.code; save();
   const idx = GUIDE_ALL.indexOf(i), prev = GUIDE_ALL[idx - 1], next = GUIDE_ALL[idx + 1];
   const line = (label, pair, cls) => pair ? `<div class="g-line"><span class="tag ${cls}">${label}</span><div><div class="g-tr" lang="tr">${sfx(pair[0])}</div><div class="word-uz">${esc(pair[1])}</div></div></div>` : "";
-  return `<div><button class="back" data-act="go" data-to="guide">${ICON.back}Qoʻllanma</button></div>
+  return `<div><a class="back" href="#grammar">${ICON.back}Grammatika</a></div>
   <div class="lesson-head">
     <div class="tags"><span class="tag sky-t">${esc(i.code)}</span><span class="tag violet-t">${esc(i.group)}</span>${BX[i.code] && gxDone(i.code) ? `<span class="tag green-t">${ICON.check}Mashq bajarilgan</span>` : ""}</div>
     <h1>${nb(i.uz)}</h1>
@@ -1411,79 +1321,55 @@ function viewAlphabet() {
 
 /* ---------- Practice ---------- */
 const mins = n => Math.max(1, Math.round(n * 0.25));
+// One card for every mistake notebook: words, listening, speaking, grammar rules
+function mistakesCard() {
+  const w = mistakeWords().length, l = lsmList("l").length, sp = lsmList("s").length, g = gxMistakes().length, n = w + l + sp + g;
+  const btn = (k, mode, ico, label, dis) => k ? `<button class="btn btn-soft mis-btn" data-act="start" data-mode="${mode}" data-u="${mode}" ${dis ? "disabled" : ""}>${ICON[ico]}${label}<span class="badge">${k}</span></button>` : "";
+  return `<div class="pcard glass">
+    <div class="pcard-head"><b>${ICON.target}Xatolar daftari</b>${n ? `<span class="badge">${n}</span>` : ""}</div>
+    ${n ? `<p class="muted">Xato qilganlaringiz shu yerda. Ikki marta toʻgʻri javob bersangiz, daftardan chiqadi.</p>
+    <div class="mis-row">${btn(w, "mistakes", "cards", "Soʻzlar")}${btn(g, "gxm", "cap", "Qoidalar")}${btn(l, "lmis", "ear", "Tinglash")}${btn(sp, "smis", "mic", "Gapirish", !canListen())}</div>`
+    : `<p class="muted">Hozircha boʻsh. Mashqlarda xato qilgan soʻz, qoida, tinglash va gapirish savollari shu yerga tushadi.</p>`}
+  </div>`;
+}
 function viewPractice() {
   const due = dueWords(), fresh = newWords(Math.min(newLeft(), NEW_PER_DAY)), items = due.slice(0, 20).concat(fresh);
-  const cats = [...new Set(items.map(w => catOf(w.unit).id))].map(id => CATS.find(c => c.id === id));
-  const ms = mistakeWords();
-  const acc = S.acc[1] ? pct(S.acc[0], S.acc[1]) : null;
+  const acc = S.acc[1] ? pct(S.acc[0], S.acc[1]) : null, done = skToday();
+  const stat = id => { const v = id === "s" ? S.pron : S.sk[id]; return v[1] ? `${pct(v[0], v[1])}% toʻgʻri` : "Hali boshlanmagan"; };
+  const SK_GO = { r: ['href="#oqish"', "Matnlar va savollar"], l: ['data-act="listen-modes"', "Tinglab toping · diktant · gaplar"], w: ['data-act="write-modes"', "Soʻz · diktant · erkin yozish"], s: ['data-act="speak-modes"', "Talaffuz · takrorlash · dialog"] };
   return `${topbar()}
-  <div><h1 class="page-title">Mashq</h1><p class="sub">Mashq yakunida XP: lugʻat ${XP_VAL.vocab}, grammatika va tinglash ${XP_VAL.grammar}, gapirish ${XP_VAL.speaking}</p></div>
+  <div><h1 class="page-title">Mashq</h1><p class="sub">Har mashq yakunida XP beriladi. Bugun ${done.length}/4 koʻnikma mashq qilindi.</p></div>
 
   <button class="pcard ai" data-act="start" data-mode="review" ${items.length ? "" : "disabled"}>
     <div class="pcard-head"><b>${ICON.spark}Aqlli takrorlash</b><span>~${mins(items.length)} daq</span></div>
     <p>${items.length ? "Unutilish arafasidagi soʻzlar va bugungi yangi soʻzlar. Nimani qachon takrorlashni tizim oʻzi tanlaydi." : "Bugungi reja bajarildi. Ertaga yangi soʻzlar va takrorlashlar keladi."}</p>
-    ${cats.length ? `<div class="tags">${cats.slice(0, 2).map(c => `<span class="tag">${ICON[c.ico]}${esc(c.uz)}</span>`).join("")}${cats.length > 2 ? `<span class="tag">+${cats.length - 2}</span>` : ""}</div>` : ""}
     <div class="facts">
       <span>${ICON.list}${due.length} ta takrorlash · ${fresh.length} ta yangi soʻz</span>
-      <span>${ICON.clock}Taxminan ${mins(items.length)} daqiqa</span>
       <span>${ICON.quiz}${acc === null ? "Hali javoblar yoʻq" : `Toʻgʻri javoblar: ${acc}%`}</span>
     </div>
   </button>
 
-  <a class="pcard glass" href="#oqish" style="color:inherit;text-decoration:none">
-    <div class="pcard-head"><b>${ICON.book}Oʻqish matnlari</b><span class="tag sky-t">+${XP_VAL.reading} XP</span></div>
-    <p class="muted">A1–B2 darajadagi qisqa matnlar: lugʻat, tinglash va tushunish savollari.</p>
-  </a>
-
-  <div class="pcard glass">
-    <div class="pcard-head"><b>${ICON.target}Xatolar daftari</b>${ms.length ? `<span class="badge">${ms.length}</span>` : ""}</div>
-    ${ms.length ? `<div class="tags">${ms.slice(0, 3).map(w => `<span class="tag pink-t" lang="tr">${esc(w.tr)}</span>`).join("")}${ms.length > 3 ? `<span class="tag pink-t">+${ms.length - 3}</span>` : ""}</div>
-      <div class="facts"><span>${ICON.list}${ms.length} ta soʻz</span><span>${ICON.clock}Taxminan ${mins(Math.min(15, ms.length))} daqiqa</span><span>${ICON.quiz}Ketma-ket 2 marta toʻgʻri topsangiz, daftardan chiqadi</span></div>
-      <button class="plus" data-act="start" data-mode="mistakes" aria-label="Xatolar ustida ishlash">${ICON.play}</button>`
-    : `<p class="muted">Xato qilgan soʻzlaringiz shu yerga tushadi va alohida mashq qilinadi.</p>`}
-  </div>
-
-  ${lsmCard()}
+  <section class="section">
+    <div class="section-head"><h2>4 koʻnikma</h2><a class="link" href="#skills">Natijalar</a></div>
+    <div class="sk-grid">${SKILLS.map(sk => { const g = SK_GO[sk.id], off = sk.id === "s" && !canListen(), on = done.includes(sk);
+      const inner = `<span class="ico ${sk.c}-t">${ICON[sk.ico]}</span><b>${sk.uz}</b><small lang="tr">${sk.tr}</small><span class="sk-sub">${g[1]}</span><span class="sk-stat">${off ? "Bu brauzerda ishlamaydi" : stat(sk.id)}</span>${on ? `<span class="sk-done" aria-label="Bugun bajarildi">${ICON.check}</span>` : ""}`;
+      return g[0].startsWith("href") ? `<a class="sk-tile glass" ${g[0]}>${inner}</a>` : `<button class="sk-tile glass" ${g[0]} ${off ? "disabled" : ""} aria-label="${sk.uz} mashqlari">${inner}</button>`; }).join("")}</div>
+    ${canListen() ? "" : `<p class="muted" style="margin-top:8px">Gapirish uchun saytni Chrome (Android, kompyuter) yoki Safari (iPhone) da oching.</p>`}
+  </section>
 
   <div class="pcard glass">
     <div class="pcard-head"><b>${ICON.cap}Qoidalar mashqi</b><span>${gxDoneCount()}/${GX_CODES.length}</span></div>
-    <div class="tags"><span class="tag sky-t">${esc(gxNext())}</span><span class="tag violet-t">${esc((gxTopic(gxNext()) || {}).uz || "")}</span>${gxMistakes().length ? `<span class="tag pink-t">${gxMistakes().length} ta xato</span>` : ""}</div>
-    <div class="facts"><span>${ICON.list}Variant tanlash, yozish va gap tuzish</span><span>${ICON.book}Qoʻllanmadagi qoida asosida</span></div>
+    <div class="tags"><span class="tag sky-t">${esc(gxNext())}</span><span class="tag violet-t">${esc((gxTopic(gxNext()) || {}).uz || "")}</span></div>
+    <div class="facts"><span>${ICON.list}Variant tanlash, yozish va gap tuzish</span><a class="link" href="#gx">Barcha mavzular</a></div>
     <button class="plus" data-act="gx-start" data-c="${gxNext()}" aria-label="Keyingi qoida mashqi">${ICON.play}</button>
   </div>
 
-  <div class="pcard glass">
-    <div class="pcard-head"><b>${ICON.type}Yozish mashqi</b>${S.sk.w[1] ? `<span>${pct(S.sk.w[0], S.sk.w[1])}%</span>` : ""}</div>
-    <div class="facts"><span>${ICON.list}Soʻz yozish · Diktant · Erkin yozish</span><span>${ICON.target}Erkin yozish avtomatik tekshiriladi: hajm, grammatika, imlo</span></div>
-    <button class="plus" data-act="write-modes" aria-label="Yozish mashqlari">${ICON.play}</button>
-  </div>
+  ${mistakesCard()}
 
-  <div class="pcard glass">
-    <div class="pcard-head"><b>${ICON.ear}Tinglash mashqi</b>${S.sk.l[1] ? `<span>${pct(S.sk.l[0], S.sk.l[1])}%</span>` : ""}</div>
-    <div class="facts"><span>${ICON.list}Tinglab toping · Diktant · Gaplarni tinglash</span><span>${ICON.target}Matn koʻrinmaydi, faqat ovoz</span><span>${ICON.quiz}${S.sk.l[1] ? `${S.sk.l[0]} ta toʻgʻri javob` : "Quloqni turkchaga oʻrgating"}</span></div>
-    <button class="plus" data-act="listen-modes" aria-label="Tinglash mashqlari">${ICON.play}</button>
-  </div>
-
-  <div class="pcard glass">
-    <div class="pcard-head"><b>${ICON.mic}Gapirish mashqi</b>${S.pron[1] ? `<span>${pct(S.pron[0], S.pron[1])}%</span>` : ""}</div>
-    <div class="facts"><span>${ICON.list}Talaffuz · Gaplarni takrorlash · Ogʻzaki javob · Rolli dialog</span><span>${ICON.target}Notoʻgʻri aytilgan harflar qizil boʻladi</span><span>${ICON.quiz}${S.pron[1] ? `${S.pron[0]} ta soʻz toʻgʻri aytildi` : "Mikrofon kerak · ovoz saqlanmaydi"}</span></div>
-    ${canListen() ? "" : `<p class="muted" style="margin-top:6px">Brauzeringiz nutqni tanishni qoʻllamaydi. Saytni Chrome (Android, kompyuter) yoki Safari (iPhone) da oching.</p>`}
-    <button class="plus" data-act="speak-modes" aria-label="Gapirish mashqlari" ${canListen() ? "" : "disabled"}>${ICON.play}</button>
-  </div>
-
-  <section class="section">
-    <div class="section-head"><h2>Mavzular boʻyicha</h2></div>
-    ${CATS.map(c => {
-      const ws = ALL.filter(w => c.ids.includes(UNITS[w.unit].id)), k = ws.filter(w => known(w) >= 2).length, a = accOf(c.ids);
-      return `<div class="pcard glass">
-        <div class="pcard-head"><b><span class="tag ${c.color}-t" style="padding:6px">${ICON[c.ico]}</span>${esc(c.uz)}</b><span>~3 daq</span></div>
-        <div class="tags"><span class="tag ${c.color}-t">${c.ids.length} dars</span><span class="tag violet-t">${k}/${ws.length} oʻrganilgan</span></div>
-        <div class="facts"><span>${ICON.list}${ws.length} ta soʻz</span><span>${ICON.quiz}${a === null ? "Hali mashq qilinmagan" : `Toʻgʻri javoblar: ${a}%`}</span></div>
-        <button class="plus" data-act="modes" data-u="cat:${c.id}" data-title="${esc(c.uz)}" aria-label="${esc(c.uz)} — mashq">${ICON.plus}</button>
-      </div>`;
-    }).join("")}
-    <button class="btn btn-ghost btn-block" data-act="modes" data-u="all" data-title="Barcha soʻzlar">${ICON.globe}Barcha soʻzlardan erkin mashq</button>
-  </section>`;
+  <a class="pcard glass" href="#lugat" style="color:inherit;text-decoration:none">
+    <div class="pcard-head"><b>${ICON.cards}Mavzu boʻyicha soʻz mashqi</b>${ICON.chev}</div>
+    <p class="muted">Lugʻat boʻlimida darsni yoki mavzuni tanlang: kartochka, test, yozish, tinglash va talaffuz.</p>
+  </a>`;
 }
 
 /* ---------- Leaderboard ---------- */
@@ -1612,8 +1498,8 @@ function viewProfile() {
 
   ${pamukGrowCard()}
   ${skillsProfileCard()}
-  <div class="chart-card glass"><h3>Haftalik faollik (XP)</h3><span class="range">${range}</span>${lineChart(xpv, l7.map(d => d.l))}</div>
-  <div class="chart-card glass"><h3>Oʻqish vaqti (daqiqa)</h3><span class="range">${range}</span>${barChart(minv, l7.map(d => d.l))}</div>
+  <div class="chart-card glass"><h3>Haftalik faollik</h3><span class="range">${range} · XP</span>${lineChart(xpv, l7.map(d => d.l))}
+    <h3 style="margin-top:14px">Oʻqish vaqti</h3><span class="range">daqiqa</span>${barChart(minv, l7.map(d => d.l))}</div>
 
   <section class="section">
     <div class="section-head"><h2>Yutuqlar</h2><a class="link" href="#achievements">${ACH.filter(achDone).length}/${ACH.length} · Hammasi</a></div>
@@ -1632,16 +1518,22 @@ function viewProfile() {
         <span class="mini-seg">${[[0.75, "Sekin"], [1, "Odatiy"], [1.2, "Tez"]].map(([v, l]) => `<button data-act="tts-rate" data-v="${v}" aria-pressed="${ttsRate() === v}">${l}</button>`).join("")}</span></div>
       ${trVoices().length > 1 ? `<label class="set-row"><span><b>Ovoz</b><small>Dialoglarda ikkinchi ovoz ham ishlatiladi</small></span>
         <select class="k-select" data-act="tts-voice" style="max-width:150px">${trVoices().map(v => `<option value="${esc(v.name)}" ${ttsVoice() === v ? "selected" : ""}>${esc(v.name.replace(/^Microsoft |^Google /, "").slice(0, 28))}</option>`).join("")}</select></label>` : ""}
-      <div class="set-row rem-row"><span><b>Kunlik eslatma</b><small>${esc(remText())}</small></span>
+      <div class="set-row rem-row set-wide"><span><b>Kunlik eslatma</b><small>${esc(remText())}</small></span>
         <span class="mini-seg">${[[0, "Yoʻq"], [9, "9:00"], [19, "19:00"], [21, "21:00"]].map(([v, l]) => `<button data-act="remind" data-v="${v}" aria-pressed="${remHour() === v}">${l}</button>`).join("")}</span></div>
       ${USER ? `<button class="set-row" data-act="pub" role="switch" aria-checked="${S.pub}"><span><b>Reytingda koʻrinish</b><small>Ismingiz va XP boshqa oʻquvchilarga koʻrinadi</small></span><span class="switch" aria-checked="${S.pub}"></span></button>
       <button class="set-row" data-act="anon" role="switch" aria-checked="${S.anon !== false}"><span><b>Anonim statistika</b><small>Ism va pochtasiz koʻnikma koʻrsatkichlari saytni yaxshilash uchun yuboriladi</small></span><span class="switch" aria-checked="${S.anon !== false}"></span></button>
       ${ADMIN ? `<a class="set-row" href="#admin" style="color:inherit;text-decoration:none"><span><b>Umumiy analitika</b><small>Faqat admin: barcha foydalanuvchilar boʻyicha</small></span>${ICON.chev}</a>` : ""}` : ""}
-      <a class="set-row" href="#groups" style="color:inherit;text-decoration:none"><span><b>Guruhlar</b><small>Oʻqituvchi va sinf bilan birga oʻrganish</small></span>${ICON.users}</a>
-      <a class="set-row" href="#help" style="color:inherit;text-decoration:none"><span><b>Yordam va qoʻllanma</b><small>Ilovani oʻrnatish, saytdan foydalanish, savollar</small></span>${ICON.chev}</a>
-      <a class="set-row" href="${TG_CHANNEL}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none"><span><b>Telegram kanalimiz</b><small>@turkceyoluz · har kuni yangi soʻz</small></span>${ICON.chat}</a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>Birga oʻrganish va yordam</h2></div>
+    <div class="settings glass">
       ${USER ? `<a class="set-row" href="#rank-fr" style="color:inherit;text-decoration:none"><span><b>Doʻstlarni taklif qilish</b><small>Doʻstlar reytingi · har bir doʻst uchun +${FR_XP} XP</small></span>${ICON.heart}</a>`
         : `<button class="set-row" data-act="share"><span><b>Doʻstlarni taklif qilish</b><small>Turk tilini birga, bepul oʻrganing</small></span>${ICON.heart}</button>`}
+      <a class="set-row" href="#groups" style="color:inherit;text-decoration:none"><span><b>Guruhlar</b><small>Oʻqituvchi va sinf bilan birga oʻrganish</small></span>${ICON.users}</a>
+      <a class="set-row" href="${TG_CHANNEL}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none"><span><b>Telegram kanalimiz</b><small>@turkceyoluz · har kuni yangi soʻz</small></span>${ICON.chat}</a>
+      <a class="set-row" href="#help" style="color:inherit;text-decoration:none"><span><b>Yordam va qoʻllanma</b><small>Ilovani oʻrnatish, saytdan foydalanish, savollar</small></span>${ICON.chev}</a>
       <a class="set-row" href="kurs/" style="color:inherit;text-decoration:none"><span><b>Kurs va grammatika — veb sahifalar</b><small>Mavzuni havola bilan ulashish uchun</small></span>${ICON.chev}</a>
       <a class="set-row" href="privacy.html" style="color:inherit;text-decoration:none"><span><b>Maxfiylik siyosati</b></span>${ICON.chev}</a>
     </div>
@@ -2387,9 +2279,9 @@ function viewHelp() {
     <div class="glass pad help-box">
       ${step(1, "Har kuni «Bugungi reja» ni bajaring", "Bosh sahifadagi kartada: takrorlash + 10 ta yangi soʻz, taxminan 10 daqiqa.")}
       ${step(2, "Kursni tartib bilan oʻqing", "Darslar → Kurs: A1 dan boshlang. Har boʻlimda Lugʻat → Grammatika → Dialog → Matn → Mashqlar.")}
-      ${step(3, "Grammatikani mustahkamlang", "Darslar → Grammatika: qoʻllanma mavzulari va qoidalar mashqi.")}
-      ${step(4, "Xatolar daftarini tozalang", "Mashq sahifasida: xato qilgan soʻzlaringiz alohida mashq qilinadi.")}
-      ${step(5, "Aqlli tarjimondan foydalaning", "Bosh sahifadagi tarjimon: tarjima + lugʻat + gapdagi grammatika.")}
+      ${step(3, "Grammatika va lugʻatni mustahkamlang", "Darslar → Grammatika: A1–B2 mavzular va har biriga mashq. Darslar → Lugʻat: A1 darslari va mavzuli soʻz toʻplamlari.")}
+      ${step(4, "4 koʻnikmani mashq qiling", "Mashq sahifasida: oʻqish, tinglash, yozish va gapirish. Xatolar daftari — barcha xatolaringiz bir joyda.")}
+      ${step(5, "Aqlli tarjimondan foydalaning", "Yuqoridagi tarjimon belgisi: tarjima + lugʻat + gapdagi grammatika.")}
       ${step(6, "Daraja testini topshiring", "Har daraja oxirida test bor: 60% dan yuqori — keyingi darajaga oʻting.")}
     </div></section>
 
@@ -2662,15 +2554,6 @@ function skBars(st) {
     <span class="sk-track"><i style="width:${Math.round(x.o / mx * 100)}%;background:var(--${s.c})"></i></span>
     <span class="sk-val">${x.o}<small>${a === null ? "—" : a + "%"}</small></span></div>`; }).join("")}</div>`;
 }
-function skillsHomeCard() {
-  const st = skStats(14), done = skToday(), weak = skWeakest(st);
-  return `<div class="pcard glass">
-    <div class="pcard-head"><b>${ICON.target}4 koʻnikma</b><a class="link" href="#skills">Batafsil</a></div>
-    <div class="sk-row">${SKILLS.map(s => { const on = done.includes(s); return `<div class="sk-mini${on ? " on" : ""}"><span class="ico ${s.c}-t">${ICON[s.ico]}</span><small>${s.tr}</small><span class="sk-dot" aria-label="${on ? "Bugun bajarildi" : "Bugun hali yoʻq"}">${on ? ICON.check : ""}</span></div>`; }).join("")}</div>
-    <p class="muted">${done.length === 4 ? "Barakalla! Bugun toʻrttala koʻnikmani mashq qildingiz." : `Bugun ${done.length}/4 koʻnikma. Eng koʻp eʼtibor kerak: <b>${weak.uz}</b>.`}</p>
-    ${done.length === 4 ? "" : `<button class="btn btn-soft btn-block" data-act="sk-go" data-s="${weak.id}">${ICON[weak.ico]}${weak.tr} · ${weak.uz} mashqi</button>`}
-  </div>`;
-}
 function skillsProfileCard() {
   const st = skStats(14);
   return `<a class="pcard glass" href="#skills" style="color:inherit;text-decoration:none">
@@ -2789,18 +2672,6 @@ function lsmItem(k) {
     return { oral: true, tr: cleanLine(r.ans[String(i + 1)]), q: b, unit: a, rtitle: r.title, rtext: r.text, _m: "oral" };
   }
   return null;
-}
-function lsmCard() {
-  const l = lsmList("l").length, s = lsmList("s").length;
-  if (!l && !s) return "";
-  return `<div class="pcard glass">
-    <div class="pcard-head"><b>${ICON.target}Tinglash va gapirish xatolari</b><span class="badge">${l + s}</span></div>
-    <div class="facts"><span>${ICON.ear}Tinglash: ${l} ta</span><span>${ICON.mic}Gapirish: ${s} ta</span><span>${ICON.quiz}Ikki marta toʻgʻri boʻlsa, daftardan chiqadi</span></div>
-    <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
-      ${l ? `<button class="btn btn-soft" style="flex:1" data-act="start" data-mode="lmis" data-u="lmis">${ICON.ear}Tinglash</button>` : ""}
-      ${s && canListen() ? `<button class="btn btn-soft" style="flex:1" data-act="start" data-mode="smis" data-u="smis">${ICON.mic}Gapirish</button>` : ""}
-    </div>
-  </div>`;
 }
 const lsmSheetRow = kind => {
   const n = lsmList(kind).length;
