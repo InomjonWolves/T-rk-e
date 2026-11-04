@@ -22,7 +22,7 @@ jobs:
       - name: Kalit tekshiruvi
         if: env.TELEGRAM_BOT_TOKEN == ''
         run: echo "TELEGRAM_BOT_TOKEN sozlanmagan — o'tkazib yuborildi."
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: env.TELEGRAM_BOT_TOKEN != ''
         with:
           sparse-checkout: |
@@ -30,7 +30,7 @@ jobs:
             content.js
             lugat.js
           sparse-checkout-cone-mode: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         if: env.TELEGRAM_BOT_TOKEN != ''
         with:
           node-version: 22

@@ -17,11 +17,11 @@ jobs:
       - name: Kalit tekshiruvi
         if: env.SA == ''
         run: echo "PUSH_SERVICE_ACCOUNT sozlanmagan — eslatmalar oʻtkazib yuborildi."
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: env.SA != ''
         with:
           sparse-checkout: tools
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         if: env.SA != ''
         with:
           node-version: 22

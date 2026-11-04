@@ -18,9 +18,9 @@ jobs:
       - name: Kalit tekshiruvi
         if: env.TELEGRAM_BOT_TOKEN == '' || env.TELEGRAM_CHAT_ID == ''
         run: echo "Telegram secret'lari sozlanmagan — post oʻtkazib yuborildi."
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
         with:
           node-version: 22
