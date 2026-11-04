@@ -5,31 +5,33 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - Repo: InomjonWolves/T-rk-e, `main` branch (build yoʻq, oddiy statik fayllar). GitHub Pages hali yoqilgan boʻlsa, faqat yoʻnaltirish uchun; foydalanuvchi uni Settings → Pages da oʻchirishi mumkin (shunda eski havolalar 404 beradi).
 - Foydalanuvchi bilan **faqat oʻzbek tilida** gaplashing.
 
-## ▶ YANGI SESSIYA UCHUN QISQA XULOSA (2026-11-02)
+## ▶ YANGI SESSIYA UCHUN QISQA XULOSA (2026-11-04)
 
-**Hozirgacha qilingan (hammasi `main` da va turkceyol.web.app da, 74 test yashil):**
-- Kontent: A1–B2 kurs (32 boʻlim, 4 daraja testi), grammatika qoʻllanmasi 122 mavzu + 735 qoida mashqi, lugʻat bazasi (`lugat.js`, 61 toʻplam, ilovada jami 3033 soʻz), alifbo.
-- Mashqlar: SRS, kartochka/test/yozish, tinglash (TTS), gapirish va talaffuz (mikrofon), erkin yozishni avtomatik tekshirish, 4 koʻnikma hisobi (`#skills`), xatolar daftarlari, darajani aniqlash testi.
-- Hisob: email/parol (pochta tasdiqlanmaguncha kirmaydi) va Google (popup birinchi). Apple va Telegram **olib tashlangan**. Firestore qoidalari faqat `email_verified` hisoblarga ruxsat beradi (konsolda joylangan, `tools/check-rules.py` 9/9).
-- Ijtimoiy: 3 reyting (bugun / hafta liga ichida / umumiy), 7 liga, oʻqituvchi/guruh rejimi (`#groups`), anonim analitika (`#admin`).
-- Motivatsiya: XP v2 (mashq yakunida qatʼiy mukofot, suisteʼmolga qarshi), darajalar, Pamuk rivoji (7 bosqich), kunlik vazifalar, haftalik challenge.
-- Texnik: yagona manzil turkceyol.web.app (GitHub Pages faqat yoʻnaltiradi), tez ochilish, kurs keyin yuklanadi, SEO statik sahifalar (`kurs/`, `qoida/`, `lugat/`, sitemap), Search Console tasdiqlangan.
-- Turkcha matnlarni koʻrib chiqish sahifasi: https://claude.ai/artifact/WfryjrUEYphR9p1gQZUeDA (natijalar `ArtifactData` → `reviews`).
+**Holat:** hammasi `main` da va https://turkceyol.web.app da, `npm test` — 74 test yashil, `Testlar` va `Firebase Hosting` workflow'lari yashil. Firestore qoidalari emulyatorda 9/9 (`tools/rules-emulator.test.js`). `sw.js` CACHE — `turkce-yol-v53`.
 
-**Foydalanuvchi qadamlari kutilmoqda:**
-1. Google Cloud → Credentials → client `614558378510-gofo8d1mof15cfegauf35uhtor7u7fo7` → JS origin `https://turkceyol.web.app` va redirect URI `https://turkceyol.web.app/__/auth/handler` (2026-11-02 16:37 holatida Google hali `redirect_uri_mismatch` berardi). Qoʻshilgach: `createAuthUri` bilan tekshirib, `firebase-config.js` → `window.AUTH_SAME_DOMAIN = ["turkceyol.web.app"]`.
-2. Soddalashtirilgan `firestore.rules` (Apple/Telegram'siz) konsolda qayta joylanganmi — noaniq; joylanmagan boʻlsa ham xavfsiz.
-3. GitHub Pages'ni oʻchirish (ixtiyoriy, 2–4 haftadan keyin tavsiya), keyin Authorized domains dan `inomjonwolves.github.io` ni olib tashlash.
-4. Telefonda sinash: Google bilan kirish, gapirish mashqlari, TTS ovozi.
-5. Google qidiruvi (2026-11-03: sayt hali chiqmayapti — domen yangi): Search Console → Sitemaps → `sitemap.xml` yuborish; URL inspection → `/`, `/kurs/`, `/qoida/`, `/lugat/` uchun "Request indexing"; havolani Telegram va ijtimoiy tarmoqlarda ulashish. Tekshirish: Google’da `site:turkceyol.web.app`.
+**Saytda nima bor (qisqa):**
+- **Kontent:** A1–B2 kurs (32 boʻlim, 4 daraja testi), 122 grammatika mavzusi + 735 qoida mashqi, lugʻat (61 toʻplam, 3033 soʻz), alifbo, 12 ta oʻqish matni (`oqish.js`).
+- **Mashqlar:** SRS, kartochka/test/yozish, tinglash (TTS, tezlik va ovoz sozlamasi), gapirish va talaffuz, erkin yozish tekshiruvi, 4 koʻnikma hisobi, xatolar daftarlari, darajani aniqlash testi.
+- **Motivatsiya:** XP v2 (mashq yakunida qatʼiy XP, suisteʼmolga qarshi), darajalar va Pamuk rivoji (7 bosqich), kunlik vazifalar, haftalik challenge, 7 kunlik streak bonusi, hafta yakuni ekrani, kunlik eslatmalar.
+- **Ijtimoiy:** 4 reyting (bugun / hafta liga ichida / doʻstlar / umumiy), 7 liga, doʻstlar va taklif havolasi, oʻqituvchi guruhlari + muddatli topshiriqlar + CSV eksport, admin analitika (qaytish koʻrsatkichlari bilan).
+- **Hisob:** email/parol (pochta tasdiqlanadi) va Google (popup). Firestore faqat `email_verified` hisoblarga ruxsat beradi.
+- **Oʻsish:** statik sahifalar (`kurs/`, `qoida/`, `lugat/`, `oqish/`, `maqola/` — 6 maqola), sitemap 242 manzil, Search Console tasdiqlangan.
+- **Telegram:** kanal **@turkceyoluz** (har kuni 09:17 "Kunning soʻzi" — ishlayapti, 2026-11-04 birinchi post yuborildi), bot **@TurkceYolBot** (Mini App "Ochish", `/start`, `/soz`, `/kurs`, `/yordam`, soʻz tarjimasi — GitHub Actions har 5 daqiqa; ishlayapti). Secret'lar `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` qoʻyilgan.
 
-**✔ BAJARILDI (2026-11-02): raqobat, ligalar, mushuk rivoji, yangi XP tizimi** — tafsilot pastda "XP v2" bandida. **Foydalanuvchi qadami:** yangi `firestore.rules` ni konsolda joylash (league uchun yangi maydonlar). Joylanmaguncha ilova league qatorini eski 5 maydon bilan yozadi (`LG_OLD`), "Bugun" reytingi va liga hisob-kitobi toʻliq ishlamaydi.
+**Foydalanuvchi qadamlari (hali kutilmoqda):**
+1. **`firestore.rules` ni konsolda qayta joylash** — push, invites, tasks, stats (`f/a/ses`), members.`tk`, league yangi maydonlari uchun. Joylanmaguncha ilova eski formatga qaytadi (`LG_OLD`, `tk` siz karta, `f/a/ses` siz statistika) — buzilmaydi, lekin doʻstlar, topshiriqlar, "Bugun" reytingi toʻliq ishlamaydi. Tekshirish: foydalanuvchi `league/<uid>` hujjatida `day`, `dxp`, `lg` maydonlari bormi.
+2. **Telefonga eslatmalar (server):** Firebase → Cloud Messaging → Web Push certificates → kalit → `firebase-config.js` → `window.FCM_VAPID`; service account'ga "Cloud Datastore User" + "Firebase Cloud Messaging API Admin" rollari; GitHub secret `PUSH_SERVICE_ACCOUNT`.
+3. **Google kirishi bir domenda:** Google Cloud → Credentials → client `614558378510-gofo8d1mof15cfegauf35uhtor7u7fo7` → redirect URI `https://turkceyol.web.app/__/auth/handler`. 2026-11-04 holatida hali `redirect_uri_mismatch` (tekshirish usuli pastda "Google/Apple bilan kirish" bandida). Qoʻshilgach → `window.AUTH_SAME_DOMAIN = ["turkceyol.web.app"]`.
+4. **Search Console:** `sitemap.xml` yuborish, asosiy sahifalar uchun "Request indexing"; tekshirish `site:turkceyol.web.app`.
+5. **Koʻrib chiquvchi** (turkcha matnlar): https://claude.ai/artifact/WfryjrUEYphR9p1gQZUeDA — natijalar `ArtifactData` → `reviews` (2026-11-04 da boʻsh).
+6. **Raqobatchi tahlili** (sinavmultilevel.uz) — skrinshotlar kerak, sandbox saytni ochmaydi.
+7. Telefonda sinash: gapirish mashqlari, TTS ovozi, Telegram ichida ochilish. GitHub Pages'ni oʻchirish (ixtiyoriy).
 
-**Reja (2026-11-03, foydalanuvchi tasdiqlagan, tartib bilan):** 1a eslatmalar ✔ (sozlash — foydalanuvchi), 1b hafta yakuni ekrani ✔, 1c doʻstlar ligasi va taklif havolasi ✔, 2 kontent sifati ✔ (audio va 12 oʻqish matni; koʻrib chiquvchi natijasi hali yoʻq), 3 SEO maqolalar va Telegram ✔ (Telegram kalitlari — foydalanuvchi; raqobatchi — skrinshot kerak), 4 oʻqituvchi topshiriqlari va eksport ✔, 5 qaytish koʻrsatkichlari (admin) ✔. **Reja toʻliq bajarildi.** Foydalanuvchi qadamlari: `firestore.rules` ni qayta joylash (push, invites, tasks, stats, members.tk), `FCM_VAPID` + `PUSH_SERVICE_ACCOUNT`, Telegram secret'lari, koʻrib chiquvchi, raqobatchi skrinshotlari.
+**Keyingi gʻoyalar (hali boshlanmagan):** koʻrib chiquvchi tuzatishlarini kiritish; koʻproq oʻqish matnlari va maqolalar; kurs dialoglari uchun yaxshiroq audio; Telegram'da haftalik viktorina/test posti; botda kunlik eslatma (Telegram orqali); guruh uchun haftalik hisobot; tezlik (Lighthouse) tekshiruvi; Cloud Functions bilan server tomonda XP tekshiruvi (Blaze tarifi — foydalanuvchi qarori).
 
-**Ish tartibi:** `ccr-…` branch'da ishlash → `npm test` → commit → push → `main` ga fast-forward merge → `Testlar` va `Firebase Hosting` workflow'lari yashil ekanini tekshirish. `course.js`, `guide.js` yoki `lugat.js` oʻzgarsa — `npm run build`.
+**Ish tartibi:** `claude/…` (yoki `ccr-…`) branch'da ishlash → `npm test` → commit → push → `main` ga fast-forward (`git push origin HEAD:main`) → `Testlar` va `Firebase Hosting` yashil ekanini tekshirish. `course.js`, `guide.js`, `lugat.js` yoki `oqish.js`/`tools/articles.js` oʻzgarsa — `npm run build` / `node tools/seo.js`. Firestore qoidasi oʻzgarsa — emulyator testi va foydalanuvchiga konsolda joylashni aytish.
 
-**Muhit cheklovlari:** sandbox `*.web.app`, sinavmultilevel.uz, MyMemory va boshqa koʻp saytlarni ochmaydi; `firestore.googleapis.com` va `identitytoolkit.googleapis.com` ochiq. Firebase / Google Cloud konsollariga kirish yoʻq — konsol ishlarini foydalanuvchi qiladi. Firebase Hosting service account rollari: Firebase Hosting Admin, API Keys Viewer, Cloud Run Viewer, Service Usage Consumer. Qoidalarni emulyatorda sinash: `tools/rules-emulator.test.js` (izoh faylda).
+**Muhit cheklovlari:** sandbox `*.web.app`, sinavmultilevel.uz, MyMemory va boshqa koʻp saytlarni ochmaydi; `firestore.googleapis.com`, `identitytoolkit.googleapis.com`, GitHub API ochiq. Firebase / Google Cloud / Telegram konsollariga kirish yoʻq — konsol ishlarini foydalanuvchi qiladi. Qoidalarni emulyatorda sinash: `tools/rules-emulator.test.js` (oʻrnatish izohi faylda; Java bor). Testlar vaqtga sezgir boʻlishi mumkin (erta tongda "Erta qush" yutugʻi tabrik oynasini chiqaradi) — testlarda tugmalarni `evaluate(() => el.click())` yoki `closeCelebrate` bilan bosing.
 
 ## Majburiy qoidalar
 - PDF kitob sahifalarini saytda **toʻgʻridan-toʻgʻri koʻrsatmang**, ulardan faqat maʼlumot manbai sifatida foydalaning.
@@ -55,7 +57,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 | `guide.js` | Grammatika qoʻllanmasi `GUIDE`: Kirish, A1 (34), A2 (31), B1 (29), B2 (28 mavzu). A2–B2 `GUIDE.push(...)` bilan; 2026-11 qoʻshimchalari (A1.34, A2.30–31, B1.28–29, B2.24–28) fayl oxirida mos guruhlarga qoʻshiladi |
 | `grammar-ex.js` | Qoʻllanma mavzulari boʻyicha qoida mashqlari `BX` (A1–B2, 122 mavzu, 735 mashq). A2–B2 `Object.assign(BX, ...)` bilan qoʻshilgan |
 | `cat.js` | Pamuk mushugi: `catSVG({pose,acc,cls,look})` (`look` — rivoj bosqichi, `CAT_LOOKS`) va `CatLife` (koʻz qisish, qarash, `mood(svg,"happy"/"sad")`) |
-| `firebase-config.js`, `firestore.rules` | Firebase (loyiha `t-rk-e`): Auth (faqat email va Google), Firestore `users`, `league`, `avatars`, `stats`, `admins`, `groups/{KOD}/members/{uid}`. **Qoidalar repo’dan avtomatik joylanmaydi** — Firebase konsolida (Firestore → Rules) qoʻlda yangilanadi |
+| `firebase-config.js`, `firestore.rules` | Firebase (loyiha `t-rk-e`): Auth (faqat email va Google), Firestore `users`, `league`, `avatars`, `stats`, `admins`, `push`, `invites/{uid}/from/{uid}`, `groups/{KOD}/members/{uid}`, `groups/{KOD}/tasks/{id}`. **Qoidalar repo’dan avtomatik joylanmaydi** — Firebase konsolida (Firestore → Rules) qoʻlda yangilanadi |
 | `sw.js`, `manifest.webmanifest`, `icon*` | PWA |
 | `firebase.json`, `.firebaserc` | Firebase Hosting (faqat sayt fayllari; `tests/`, `*.md`, `package.json`, `firestore.rules` joylanmaydi) |
 | `privacy.html` | Maxfiylik siyosati |
@@ -114,17 +116,12 @@ Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #placement #lessons #gram
 - Qoʻllanma va qoida mashqlari A1–B2 gacha toʻldirildi. `#guide` va `#gx` sahifalarida daraja tugmalari bor. Tarjimon A2–B2 qoliplarini ham taniydi (`TR_HINTS`).
 
 ## Qolgan ishlar
-1. **turkceyol.web.app** — yagona manzil; foydalanuvchi telefonda Google orqali kirishni tekshiradi (popup tuzatishidan keyin) va Google Cloud'da `https://turkceyol.web.app/__/auth/handler` qaytish manzilini qoʻshadi → keyin `AUTH_SAME_DOMAIN`.
-2. **Real telefonda sinash (foydalanuvchi):** gapirish mashqlari va daraja testining gapirish qismi (Android Chrome, iPhone Safari), turkcha TTS ovozi, tarjimon (MyMemory CORS). Testlarda mikrofon soxta.
-3. **Turk tilini ona tili darajasida biladigan odam koʻrigi** — koʻrib chiqish sahifasi tayyor: https://claude.ai/artifact/WfryjrUEYphR9p1gQZUeDA (turkcha interfeys, 597 element: A2–B2 qoʻllanma 79, qoida mashqlari 475, dialoglar 20, oʻqish matnlari 23). Foydalanuvchi uni koʻrib chiquvchiga ulashadi (Share menyusi; koʻrib chiquvchiga yozish huquqi kerak). Natijalar artifact bazasida: `ArtifactData` → `list`, `collection: "reviews"`; hujjat ID: `g-<kod>` (qoʻllanma, masalan `g-b1-05`), `x-<kod>-<n>` (BX[kod][n-1]), `d-<unit>-<sectionIndex>`, `r-<unit>`; maydonlar `s` (`ok`/`fix`), `note`, `at`. Koʻrib chiquvchi "Hataları kopyala" orqali matn ham yuborishi mumkin. Tuzatishlarni kiritgach `npm run build`. Qamrov: A2–B2 qoʻllanma (79 mavzu) va 470+ qoida mashqi, kurs matnlari (A2.7–8, B1, B2 bir marta tekshirilib, xatolar tuzatilgan).
-4. **Raqobatchi tahlili: sinavmultilevel.uz** — sandbox toʻsadi; foydalanuvchi ruxsat berishi yoki skrinshot yuborishi kerak.
-5. **Gʻoyalar:** guruhga topshiriqlar, tezlikni oshirish, doʻstlar ligalari, kurs boʻlimlari uchun audio, push eslatmalar.
-6. Analitika ishlayapti: `admins` toʻplami nomi aynan `admins` boʻlishi kerak (foydalanuvchi avval `admin` deb yaratgan edi, tuzatildi). `#admin` sahifasi muammo boʻlsa sababini va UID'ni koʻrsatadi.
+Yuqoridagi "Foydalanuvchi qadamlari" va "Keyingi gʻoyalar" roʻyxatiga qarang. Koʻrib chiquvchi natijalarini kiritish tartibi: `ArtifactData` → `list`, `collection: "reviews"`; hujjat ID: `g-<kod>` (qoʻllanma), `x-<kod>-<n>` (BX[kod][n-1]), `d-<unit>-<sectionIndex>`, `r-<unit>`; maydonlar `s` (`ok`/`fix`), `note`, `at`; tuzatgach `npm run build`. Analitika: `admins` toʻplami nomi aynan `admins`.
 
 ## Test qilish
 - `npm test` — `tests/*.test.js` (Node `node:test` + Playwright, ~20 soniya). Bu muhitda Playwright oldindan oʻrnatilgan: `npm install` yoki `playwright install` QILMANG, shunchaki `npm test`.
 - GitHub Actions (`.github/workflows/test.yml`, nomi "Testlar") har push'da shu testlarni ishga tushiradi.
 - `tests/helpers.js`: `openApp(browser, hash, { sr, noSR, state })` — saytni diskdan, mehmon rejimida (Firebase oʻchiq), tashqi tarmoqsiz, 390×844 da ochadi. `sr: true` — soxta `SpeechRecognition` (`window.__say()` yoki joriy mashq matnini "eshitadi"). `answerAllRight(page)` — joriy mashqni toʻgʻri javoblar bilan oxirigacha oʻtkazadi.
-- Fayllar: `data.test.js` (brauzersiz: qoʻllanma, mashqlar, kurs, taqiqlangan soʻzlar, lookbehind yoʻqligi, sw.js, firestore.rules), `pages.test.js` (barcha sahifalar), `practice.test.js` (4 koʻnikma mashqlari, gapirish), `checks.test.js` (yozish tekshiruvi, 4 qismli test, anonim statistika), `placement.test.js` (darajani aniqlash), `boot.test.js` (tez ochilish, soxta Firebase), `seo.test.js` (statik sahifalar yangiligi, havolalar, sitemap), `groups.test.js` (guruhlar, sinxronlash), `auth.test.js` (pochtani tasdiqlash, Google popup), `lugat.test.js` (lugʻat bazasi, yangi grammatika mavzulari), `xp.test.js` (XP v2, darajalar, Pamuk rivoji, kunlik vazifalar, challenge, ligalar va 3 reyting).
+- Fayllar: `data.test.js` (brauzersiz: qoʻllanma, mashqlar, kurs, taqiqlangan soʻzlar, lookbehind yoʻqligi, sw.js, firestore.rules), `pages.test.js` (barcha sahifalar), `practice.test.js` (4 koʻnikma mashqlari, gapirish), `checks.test.js` (yozish tekshiruvi, 4 qismli test, anonim statistika), `placement.test.js` (darajani aniqlash), `boot.test.js` (tez ochilish, soxta Firebase), `seo.test.js` (statik sahifalar yangiligi, havolalar, sitemap), `groups.test.js` (guruhlar, sinxronlash), `auth.test.js` (pochtani tasdiqlash, Google popup), `lugat.test.js` (lugʻat bazasi, yangi grammatika mavzulari), `xp.test.js` (XP v2, darajalar, Pamuk rivoji, kunlik vazifalar, challenge, ligalar va reytinglar), `push.test.js` (eslatmalar), `friends.test.js` (doʻstlar), `reading.test.js` (oʻqish matnlari, ovoz), `growth.test.js` (Telegram post va bot javoblari).
 - Skrinshotlarni repo ildiziga saqlamang (`.gitignore` `/*.png` ni chetlaydi).
 - Testlarda qatʼiy `waitForTimeout` bilan mikrofon natijasini kutmang — `waitForFunction(() => !REC ...)` / `!KT_REC` ishlating (GitHub serveri sekinroq). Yutuq tabrigi mashq davomida chiqmaydi (`celebrateLater`), natija ekranida yoki mashq yopilganda chiqadi.
