@@ -2,7 +2,7 @@
   "hosting": {
     "site": "turkceyol",
     "public": ".",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "tests/**", "package.json", "package-lock.json", "*.md", "firestore.rules", "tools/**"],
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "tests/**", "package.json", "package-lock.json", "*.md", "firestore.rules", "tools/**", "bot/**"],
     "headers": [
       { "source": "**/*.@(html|js|css|webmanifest)", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
       { "source": "**/*.@(png|svg)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }] }

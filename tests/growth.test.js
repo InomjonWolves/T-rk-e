@@ -49,8 +49,8 @@ test("bot: /start opens the site as a Mini App, /soz is the word of the day, a w
     assert.ok(tags.every(x => /^<\/?[bi]>$/.test(x)), q + ": " + tags.join());
   }
   const wf = fs.readFileSync(path.join(ROOT, ".github/workflows/telegram-bot.yml"), "utf8");
-  assert.match(wf, /cron: "\*\/5 \* \* \* \*"/);
   assert.match(wf, /node tools\/telegram-bot\.js/);
+  assert.match(wf, /grammar-ex\.js/, "the fallback needs the grammar exercises for /test");
 });
 
 const { quiz, one, pollBody, weekNo, LEVELS } = require("../tools/quiz.js");
@@ -95,4 +95,56 @@ test("weekly quiz: 5 valid Telegram quiz polls, level rotates every week, no for
   const tg = fs.readFileSync(path.join(ROOT, "tools/telegram.js"), "utf8");
   assert.match(tg, /getUTCDay\(\) === 6/);
   assert.match(tg, /sendPoll/);
+});
+
+const { handle, hookSecret } = require("../tools/telegram-bot.js");
+
+test("bot webhook: the Vercel function answers in the webhook response, checks the secret, ignores what is not a private message", async () => {
+  const now = Date.UTC(2026, 10, 4, 10);
+  const msg = (text, extra = {}) => ({ update_id: 5, message: Object.assign({ message_id: 1, date: now / 1000 - 5, chat: { id: 42, type: "private" }, text }, extra) });
+  const a = handle(msg("kitap"), now);
+  assert.equal(a.method, "sendMessage"); assert.equal(a.chat_id, 42); assert.equal(a.parse_mode, "HTML");
+  assert.match(a.text, /kitob/);
+  const s = handle(msg("/start"), now);
+  assert.equal(s.reply_markup.inline_keyboard[0][0].web_app.url, "https://turkceyol.web.app/");
+  const p = handle(msg("/test"), now);
+  assert.equal(p.method, "sendPoll"); assert.equal(p.type, "quiz"); assert.equal(p.chat_id, 42);
+  assert.ok(p.options.length >= 2 && p.correct_option_id >= 0);
+  assert.equal(handle(msg("salom", { chat: { id: -1, type: "group" } }), now), null, "groups are ignored");
+  assert.equal(handle(msg("kitap", { date: now / 1000 - 2 * 86400 }), now), null, "old messages are ignored");
+  assert.equal(handle({ update_id: 6 }, now), null);
+  assert.equal(handle(null, now), null);
+  assert.match(hookSecret("123:abc"), /^[0-9a-f]{48}$/);
+  assert.notEqual(hookSecret("123:abc"), hookSecret("123:abd"));
+  assert.ok(!hookSecret("123:abc").includes("abc"));
+
+  // The function itself, from the folder that is deployed to Vercel, with a fake req/res
+  const tmp = fs.mkdtempSync(path.join(require("os").tmpdir(), "bot-"));
+  const dir = require("../tools/bot-deploy.js").assemble(tmp);
+  for (const f of ["api/telegram.js", "vercel.json", "package.json", "tools/telegram-bot.js", "tools/quiz.js", "content.js", "lugat.js", "grammar-ex.js"]) assert.ok(fs.existsSync(path.join(dir, f)), f);
+  const fn = require(path.join(dir, "api/telegram.js"));
+  const call = async (req) => { const res = { code: 0, body: null, status(c) { this.code = c; return this; }, json(b) { this.body = b; return this; }, send(b) { this.body = b; return this; } }; await fn(req, res); return res; };
+  process.env.TG_SECRET = "s3cret";
+  const ok = await call({ method: "POST", headers: { "x-telegram-bot-api-secret-token": "s3cret" }, body: msg("kitap", { date: Math.floor(Date.now() / 1000) }) });
+  assert.equal(ok.code, 200); assert.equal(ok.body.method, "sendMessage"); assert.match(ok.body.text, /kitob/);
+  const str = await call({ method: "POST", headers: { "x-telegram-bot-api-secret-token": "s3cret" }, body: JSON.stringify(msg("/soz", { date: Math.floor(Date.now() / 1000) })) });
+  assert.match(str.body.text, /Kunning so'zi/, "a string body is parsed too");
+  assert.equal((await call({ method: "POST", headers: {}, body: msg("kitap") })).code, 401);
+  assert.equal((await call({ method: "POST", headers: { "x-telegram-bot-api-secret-token": "wrong" }, body: msg("kitap") })).code, 401);
+  assert.deepEqual((await call({ method: "POST", headers: { "x-telegram-bot-api-secret-token": "s3cret" }, body: { update_id: 1 } })).body, {});
+  assert.equal((await call({ method: "GET", headers: {} })).code, 200);
+  delete process.env.TG_SECRET;
+  assert.equal((await call({ method: "POST", headers: { "x-telegram-bot-api-secret-token": "" }, body: msg("kitap") })).code, 401, "no secret configured → refuse");
+  fs.rmSync(tmp, { recursive: true, force: true });
+
+  // Deploy: the function gets every file it reads, the site does not publish bot/
+  const vj = JSON.parse(fs.readFileSync(path.join(ROOT, "bot/vercel.json"), "utf8"));
+  const inc = vj.functions["api/telegram.js"].includeFiles;
+  for (const f of ["content.js", "lugat.js", "grammar-ex.js", "tools/**"]) assert.ok(inc.includes(f), f);
+  const dep = fs.readFileSync(path.join(ROOT, "tools/bot-deploy.js"), "utf8");
+  for (const f of ["telegram.js", "telegram-bot.js", "quiz.js", "content.js", "lugat.js", "grammar-ex.js"]) assert.ok(dep.includes(`"${f}"`), f);
+  assert.match(dep, /setWebhook/); assert.match(dep, /secret_token/);
+  const wf = fs.readFileSync(path.join(ROOT, ".github/workflows/telegram-bot-deploy.yml"), "utf8");
+  assert.match(wf, /VERCEL_TOKEN/); assert.match(wf, /node tools\/bot-deploy\.js/);
+  assert.ok(JSON.parse(fs.readFileSync(path.join(ROOT, "firebase.json"), "utf8")).hosting.ignore.includes("bot/**"));
 });

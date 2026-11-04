@@ -1,5 +1,6 @@
-// @TurkceYolBot replies without a server: GitHub Actions runs this every few minutes (.github/workflows/telegram-bot.yml),
-// reads new messages with getUpdates, answers them and confirms them (offset), so nothing is answered twice.
+// @TurkceYolBot replies. Main path: a Telegram webhook → Vercel function bot/api/telegram.js → handle() — the answer goes
+// back in the webhook response, instantly (deployed by .github/workflows/telegram-bot-deploy.yml).
+// Fallback without a webhook: `node tools/telegram-bot.js` reads new messages with getUpdates and answers them.
 //   /start  — welcome + "Ilovani ochish" (the site as a Telegram Mini App) + the channel
 //   /soz    — the word of the day (same as the channel post)
 //   /test   — one quiz question (a Telegram quiz poll, from tools/quiz.js)
@@ -63,28 +64,37 @@ function reply(text, date = new Date()) {
   };
   return { text: `"${esc(t.slice(0, 40))}" lug'atimda topilmadi 🙈\nBoshqa so'z yozib ko'ring yoki /yordam`, reply_markup: { inline_keyboard: [[openApp]] } };
 }
+// A webhook update → the Bot API call to make in the webhook response ({ method, ... }), or null to ignore it.
+// Private chats only; messages older than a day are skipped (the bot may have been off).
+function handle(u, now = Date.now()) {
+  const m = u && u.message;
+  if (!m || !m.chat || m.chat.type !== "private" || !m.text || now / 1000 - m.date > 86400) return null;
+  const r = reply(m.text, new Date(now));
+  if (r.poll) return Object.assign({ method: "sendPoll" }, require("./quiz.js").pollBody(m.chat.id, r.poll));
+  return Object.assign({ method: "sendMessage", chat_id: m.chat.id, parse_mode: "HTML", disable_web_page_preview: true }, r);
+}
+// Secret for X-Telegram-Bot-Api-Secret-Token, derived from the bot token (no extra secret to keep)
+const hookSecret = token => require("crypto").createHash("sha256").update("turkceyol-hook:" + token).digest("hex").slice(0, 48);
+// Polling fallback (when no webhook is set): read new messages, answer, confirm with offset
 async function run() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) { console.log("TELEGRAM_BOT_TOKEN yoʻq — oʻtkazib yuborildi"); return; }
   const ups = await api(token, "getUpdates", { timeout: 0, limit: 100, allowed_updates: ["message"] });
   let last = 0, answered = 0;
-  const now = Date.now() / 1000;
   for (const u of ups) {
     last = Math.max(last, u.update_id);
-    const m = u.message;
-    // Private chats only; skip messages older than a day (the bot may have been off)
-    if (!m || !m.chat || m.chat.type !== "private" || !m.text || now - m.date > 86400) continue;
-    const r = reply(m.text);
     try {
-      if (r.poll) { await api(token, "sendPoll", require("./quiz.js").pollBody(m.chat.id, r.poll)); answered++; continue; }
-      await api(token, "sendMessage", Object.assign({ chat_id: m.chat.id, parse_mode: "HTML", disable_web_page_preview: true }, r)); answered++; }
-    catch (e) { console.log(e.message); }
+      const call = handle(u);
+      if (!call) continue;
+      const { method, ...body } = call;
+      await api(token, method, body); answered++;
+    } catch (e) { console.log(e.message); }
   }
   // Confirm everything read so far
   if (last) await api(token, "getUpdates", { offset: last + 1, limit: 1, timeout: 0 });
   console.log(`${ups.length} ta yangilanish, ${answered} ta javob`);
 }
-module.exports = { reply, lookup };
+module.exports = { reply, lookup, handle, hookSecret };
 if (require.main === module) {
   if (process.argv[2]) console.log(JSON.stringify(reply(process.argv.slice(2).join(" ")), null, 1));
   else run().catch(e => { console.error(e.message); process.exit(1); });

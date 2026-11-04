@@ -1,0 +1,42 @@
+name: Telegram bot (Vercel)
+
+# @TurkceYolBot darhol javob beradi: Telegram webhook → Vercel funksiyasi (bot/api/telegram.js).
+# Bu workflow funksiyani Vercel'ga joylaydi va Telegram'ga webhook manzilini beradi.
+# Secret'lar: VERCEL_TOKEN (vercel.com → Account Settings → Tokens), TELEGRAM_BOT_TOKEN.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "bot/**"
+      - "tools/telegram*.js"
+      - "tools/quiz.js"
+      - "content.js"
+      - "lugat.js"
+      - "grammar-ex.js"
+      - ".github/workflows/telegram-bot-deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: telegram-bot-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+    steps:
+      - name: Kalit tekshiruvi
+        if: env.VERCEL_TOKEN == '' || env.TELEGRAM_BOT_TOKEN == ''
+        run: echo "VERCEL_TOKEN yoki TELEGRAM_BOT_TOKEN sozlanmagan — o'tkazib yuborildi."
+      - uses: actions/checkout@v5
+        if: env.VERCEL_TOKEN != '' && env.TELEGRAM_BOT_TOKEN != ''
+      - uses: actions/setup-node@v5
+        if: env.VERCEL_TOKEN != '' && env.TELEGRAM_BOT_TOKEN != ''
+        with:
+          node-version: 22
+      - name: Joylash va webhook
+        if: env.VERCEL_TOKEN != '' && env.TELEGRAM_BOT_TOKEN != ''
+        run: node tools/bot-deploy.js

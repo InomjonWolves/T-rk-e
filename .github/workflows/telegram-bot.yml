@@ -1,11 +1,9 @@
 name: Telegram bot
 
-# @TurkceYolBot javoblari (/start, /soz, /kurs, /yordam, so'z tarjimasi) — tools/telegram-bot.js.
-# Server yo'q: har 5 daqiqada yangi xabarlarni o'qib javob beradi (GitHub jadvali ba'zan biroz kechikadi).
-# Secret: TELEGRAM_BOT_TOKEN. Bo'lmasa jim o'tadi.
+# Zaxira yo'l (faqat qo'lda): xabarlarni getUpdates bilan o'qib javob beradi — tools/telegram-bot.js.
+# Asosiy yo'l — webhook va Vercel ("Telegram bot (Vercel)" workflow'i), bot darhol javob beradi.
+# Webhook yoqilgan bo'lsa Telegram getUpdates'ni rad etadi — bu workflow faqat webhook o'chirilganda kerak.
 on:
-  schedule:
-    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 concurrency:
@@ -29,6 +27,7 @@ jobs:
             tools
             content.js
             lugat.js
+            grammar-ex.js
           sparse-checkout-cone-mode: false
       - uses: actions/setup-node@v5
         if: env.TELEGRAM_BOT_TOKEN != ''

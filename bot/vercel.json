@@ -1,0 +1,5 @@
+{
+  "functions": {
+    "api/telegram.js": { "includeFiles": "{content.js,lugat.js,grammar-ex.js,tools/**}", "maxDuration": 10 }
+  }
+}
