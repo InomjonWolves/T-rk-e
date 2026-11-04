@@ -126,3 +126,17 @@ test("invites: one writes only one's own note to someone else; the owner reads a
   await assertSucceeds(deleteDoc(doc(A, "invites/ia/from/ib")));
   await assertFails(setDoc(doc(as("in", "emailNo"), "invites/ia/from/in"), note));
 });
+
+test("group tasks: only the teacher writes; the teacher and members read; member cards carry tk", async () => {
+  const T = as("gt-t", "google"), A = as("gt-a", "google"), X = as("gt-x", "emailOk");
+  await assertSucceeds(setDoc(doc(T, "groups/TSK234"), { name: "Guruh", owner: "gt-t", oname: "T" }));
+  await assertSucceeds(setDoc(doc(A, "groups/TSK234/members/gt-a"), Object.assign(card(), { tk: { t1: 1 } })));
+  const task = { title: "A1 · Benim Ailem", kind: "oq", ref: "aile", due: "2030-01-15", at: serverTimestamp() };
+  await assertSucceeds(setDoc(doc(T, "groups/TSK234/tasks/t1"), task));
+  await assertFails(setDoc(doc(A, "groups/TSK234/tasks/t2"), task), "a learner cannot set tasks");
+  await assertFails(setDoc(doc(T, "groups/TSK234/tasks/t3"), Object.assign({}, task, { kind: "video" })));
+  await assertSucceeds(getDocs(collection(A, "groups/TSK234/tasks")));
+  await assertFails(getDocs(collection(X, "groups/TSK234/tasks")), "an outsider");
+  await assertFails(deleteDoc(doc(A, "groups/TSK234/tasks/t1")));
+  await assertSucceeds(deleteDoc(doc(T, "groups/TSK234/tasks/t1")));
+});

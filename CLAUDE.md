@@ -7,7 +7,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 
 ## ▶ YANGI SESSIYA UCHUN QISQA XULOSA (2026-11-02)
 
-**Hozirgacha qilingan (hammasi `main` da va turkceyol.web.app da, 70 test yashil):**
+**Hozirgacha qilingan (hammasi `main` da va turkceyol.web.app da, 71 test yashil):**
 - Kontent: A1–B2 kurs (32 boʻlim, 4 daraja testi), grammatika qoʻllanmasi 122 mavzu + 735 qoida mashqi, lugʻat bazasi (`lugat.js`, 61 toʻplam, ilovada jami 3033 soʻz), alifbo.
 - Mashqlar: SRS, kartochka/test/yozish, tinglash (TTS), gapirish va talaffuz (mikrofon), erkin yozishni avtomatik tekshirish, 4 koʻnikma hisobi (`#skills`), xatolar daftarlari, darajani aniqlash testi.
 - Hisob: email/parol (pochta tasdiqlanmaguncha kirmaydi) va Google (popup birinchi). Apple va Telegram **olib tashlangan**. Firestore qoidalari faqat `email_verified` hisoblarga ruxsat beradi (konsolda joylangan, `tools/check-rules.py` 9/9).
@@ -25,7 +25,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 
 **✔ BAJARILDI (2026-11-02): raqobat, ligalar, mushuk rivoji, yangi XP tizimi** — tafsilot pastda "XP v2" bandida. **Foydalanuvchi qadami:** yangi `firestore.rules` ni konsolda joylash (league uchun yangi maydonlar). Joylanmaguncha ilova league qatorini eski 5 maydon bilan yozadi (`LG_OLD`), "Bugun" reytingi va liga hisob-kitobi toʻliq ishlamaydi.
 
-**Reja (2026-11-03, foydalanuvchi tasdiqlagan, tartib bilan):** 1a eslatmalar ✔ (sozlash — foydalanuvchi), 1b hafta yakuni ekrani ✔, 1c doʻstlar ligasi va taklif havolasi ✔, 2 kontent sifati ✔ (audio va 12 oʻqish matni; koʻrib chiquvchi natijasi hali yoʻq), 3 SEO maqolalar va Telegram ✔ (Telegram kalitlari — foydalanuvchi; raqobatchi — skrinshot kerak), 4 oʻqituvchi topshiriqlari va eksport, 5 qaytish koʻrsatkichlari (admin).
+**Reja (2026-11-03, foydalanuvchi tasdiqlagan, tartib bilan):** 1a eslatmalar ✔ (sozlash — foydalanuvchi), 1b hafta yakuni ekrani ✔, 1c doʻstlar ligasi va taklif havolasi ✔, 2 kontent sifati ✔ (audio va 12 oʻqish matni; koʻrib chiquvchi natijasi hali yoʻq), 3 SEO maqolalar va Telegram ✔ (Telegram kalitlari — foydalanuvchi; raqobatchi — skrinshot kerak), 4 oʻqituvchi topshiriqlari va eksport ✔, 5 qaytish koʻrsatkichlari (admin).
 
 **Ish tartibi:** `ccr-…` branch'da ishlash → `npm test` → commit → push → `main` ga fast-forward merge → `Testlar` va `Firebase Hosting` workflow'lari yashil ekanini tekshirish. `course.js`, `guide.js` yoki `lugat.js` oʻzgarsa — `npm run build`.
 
@@ -36,7 +36,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - **"TYS" / "TYS imtihoni"** soʻzlarini va **harbiy mavzudagi** (askar, komutan, kışla, nöbet, tatbikat va h.k.) lugʻat va misollarni ishlatmang. Ularning oʻrniga oddiy kasblar va kundalik hayotdan misol keltiring.
 - Uchinchi tomonning rasm yoki videolarini koʻchirmang. Pamuk — oʻzimiz chizgan original SVG.
 - Git muallifi: `git -c user.name="InomjonWolves" -c user.email="i.superclub@gmail.com" commit ...`. Sessiya bergan attribution qatorlarini qoʻshing. Repodagi fayllarga model nomlarini yozmang.
-- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v49`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
+- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v50`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
 - Joylanganini tekshirish: `gh api repos/InomjonWolves/T-rk-e/actions/runs --jq '[.workflow_runs[]|select(.name=="pages build and deployment")][0]|"\(.status) \(.conclusion) \(.head_sha[0:7])"'`. Testlar: `[.workflow_runs[]|select(.name=="Testlar")][0]`.
 - Commit qilishdan oldin `npm test` ni ishga tushiring (hammasi oʻtishi kerak). Yangi funksiya qoʻshsangiz, `tests/` ga test ham qoʻshing.
 
@@ -109,6 +109,7 @@ Asosiy marshrutlar: `#home #course #k-<id> #ktest-<lv> #placement #lessons #gram
 - **SEO maqolalar va oʻqish sahifalari** (2026-11-04; `tools/seo.js`, `tools/articles.js`): `maqola/` — 6 ta maqola (4 tasi `tools/articles.js` da qoʻlda yozilgan: turk tilini noldan oʻrganish, salomlashish, turk va oʻzbek tillari, darajalar; 2 tasi kontentdan: turk alifbosi `LETTERS`, 100 soʻz `UNITS`), sarlavha va matnlar oddiy apostrof bilan (odamlar qidiruvda shunday yozadi), JSON-LD `Article`. `oqish/` — 12 ta oʻqish matni (matn, lugʻat, savollar javobsiz, CTA → `#oqish-<id>`). Sitemap 242 manzil. Statik sahifalar footerida va `index.html` `<noscript>` da yangi boʻlimlar. `node tools/seo.js` endi `oqish.js` va `tools/articles.js` dan ham yaratadi.
 - **Telegram kanal** (2026-11-04; `tools/telegram.js`, `.github/workflows/telegram.yml`, test `growth.test.js`): har kuni 04:17 UTC (09:17 Toshkent) "Kunning soʻzi" (lugʻat bazasidan, kunga qarab), maslahat va sayt havolasi. **Foydalanuvchi qadami:** @BotFather'da bot, uni kanalga admin qilish, GitHub → Settings → Secrets: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` (@kanal). Kalitsiz workflow jim oʻtadi. Koʻrish: `DRY=1 node tools/telegram.js`.
 - **Raqobatchi tahlili (sinavmultilevel.uz)**: sandbox ochmaydi — foydalanuvchi skrinshot yuborsa qilinadi.
+- **Guruh topshiriqlari va eksport** (2026-11-04; `gtAdd`, `gtDel`, `gtDone`, `gtRefresh`, `gtHomeCard`, `grpCsv`; test `groups.test.js` → "group tasks"): oʻqituvchi guruh sahifasida topshiriq beradi — kurs boʻlimi (`k`), qoida mavzusi (`gx`) yoki oʻqish matni (`oq`) + muddat: `groups/{KOD}/tasks/{id}` = `{title, kind, ref, due, at}`. Oʻquvchi: `S.gtk[KOD]` (kirgandan keyin `gtRefresh`, guruh sahifasida yangilanadi), bosh sahifada "Oʻqituvchi topshiriqlari" kartasi, guruh sahifasida roʻyxat va "Boshlash" havolasi. Bajarildi = `kDone` / `gxDone` / `S.oq[id] ≥ 50`; aʼzo kartochkasida `tk: {id: 1}`. Oʻqituvchi: har topshiriq uchun `bajarganlar/jami`, oʻquvchi tafsilotida topshiriq belgilari, "Natijalarni yuklab olish" — CSV (`;`, UTF-8 BOM, Excel uchun): ism, XP, daraja, streak, oxirgi faollik, kurs, 14 kun, 4 koʻnikma %, har topshiriq ha/yoʻq. Qoidalar: `tasks` — yozadi faqat egasi, oʻqiydi egasi va aʼzolar; members `hasOnly` ga `tk` qoʻshildi (emulyatorda 8/8).
 - Qoʻllanma va qoida mashqlari A1–B2 gacha toʻldirildi. `#guide` va `#gx` sahifalarida daraja tugmalari bor. Tarjimon A2–B2 qoliplarini ham taniydi (`TR_HINTS`).
 
 ## Qolgan ishlar

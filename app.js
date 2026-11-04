@@ -991,6 +991,7 @@ function viewHome() {
   </section>`}
 
   ${comebackCard()}
+  ${gtHomeCard()}
   ${lvlHomeCard()}
   ${dqCard()}
   ${wcCard()}
@@ -3875,6 +3876,9 @@ function onAct(e) {
   if (act === "grp-share") { shareLink(grpLink(b.dataset.c), "Turk tili guruhimizga qoʻshiling:"); return; }
   if (act === "grp-copy") { copyText(grpLink(b.dataset.c), "Havola nusxalandi"); return; }
   if (act === "grp-reload") { loadGroup(b.dataset.c, true); return; }
+  if (act === "gt-add") { b.disabled = true; gtAdd(b.dataset.c); return; }
+  if (act === "gt-del") { if (b.dataset.sure) gtDel(b.dataset.c, b.dataset.t); else { b.dataset.sure = "1"; b.textContent = "Oʻchirilsinmi?"; } return; }
+  if (act === "grp-csv") { grpCsv(b.dataset.c); return; }
   if (act === "grp-leave") { grpLeave(b.dataset.c); return; }
   if (act === "grp-kick") { if (b.dataset.sure) grpKick(b.dataset.c, b.dataset.u); else { b.dataset.sure = "1"; b.textContent = `${b.dataset.n || "Oʻquvchi"} chiqarilsinmi? Yana bosing`; } return; }
   if (act === "grp-del-ask") { $("grp-del").innerHTML = `<div class="notice"><div><b>Guruh oʻchirilsinmi?</b> Oʻquvchilar roʻyxati va natijalari guruhdan oʻchadi (ularning oʻz natijalari saqlanib qoladi).</div>
@@ -4095,6 +4099,7 @@ document.addEventListener("click", e => {
 });
 document.addEventListener("change", e => {
   if (e.target.dataset && e.target.dataset.act === "k-match") { kSubmit(e.target.dataset.id, e.target.dataset.key, e.target.value); kRerender(); }
+  if (e.target.dataset && e.target.dataset.act === "gt-kind") { const r = $("gt-ref"); if (r) r.innerHTML = gtOptions(e.target.value).map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join(""); }
   if (e.target.dataset && e.target.dataset.act === "tts-voice") { S.tts = Object.assign({}, S.tts, { v: e.target.value }); save(); speak("Merhaba! Türkçe öğreniyorum."); }
 });
 let kWriteT;
@@ -4150,7 +4155,80 @@ function grpCard() {
   let act = 0;
   for (let i = 0; i < 14; i++) if (dayGet(keyOf(dayNum() - i)).xp) act++;
   return { name: grpName(), week: weekKey(), wxp: S.week === weekKey() ? S.wxp : 0, xp: S.xp, streak: streakNow(), last: S.lastDay || "",
-    sk, units: kDoneCount(), lv: kNext().level, act, at: firebase.firestore.FieldValue.serverTimestamp() };
+    sk, units: kDoneCount(), lv: kNext().level, act, tk: gtDoneMap(), at: firebase.firestore.FieldValue.serverTimestamp() };
+}
+/* ---------- Group tasks: the teacher sets a course unit, a grammar topic or a reading text with a deadline ----------
+   groups/{KOD}/tasks/{id} = { title, kind: "k" | "gx" | "oq", ref, due, at }. A learner's copy lives in S.gtk[KOD];
+   whether a task is done is worked out from the learner's own progress and sent on the member card as tk: { id: 1 }. */
+const GT_KINDS = { k: "Kurs boʻlimi", gx: "Qoida mavzusi", oq: "Oʻqish matni" };
+function gtDone(t) {
+  if (t.kind === "k") return kDone(t.ref);
+  if (t.kind === "gx") return BX[t.ref] ? gxDone(t.ref) : false;
+  if (t.kind === "oq") return ((S.oq || {})[t.ref] || 0) >= 50;
+  return false;
+}
+const gtAll = () => Object.values(S.gtk || {}).flat();
+function gtDoneMap() { const m = {}; gtAll().forEach(t => { if (gtDone(t)) m[t.id] = 1; }); return m; }
+const gtHref = t => t.kind === "k" ? "#" + kHash(t.ref) : t.kind === "gx" ? "#" + gHash(t.ref) : "#oqish-" + t.ref;
+function gtLabel(kind, ref) {
+  if (kind === "k") { const u = KU[ref]; return u ? `${u.level}.${u.n} ${u.title}` : ref; }
+  if (kind === "gx") { const g = gxTopic(ref); return g ? `${ref} ${g.uz}` : ref; }
+  if (kind === "oq") { const t = oqReady() && OQ.find(x => x.id === ref); return t ? `${t.lv} · ${t.tr}` : ref; }
+  return ref;
+}
+function gtOptions(kind) {
+  if (kind === "k") return COURSE.units.map(u => [u.id, `${u.level}.${u.n} ${u.title}`]);
+  if (kind === "gx") return GX_CODES.map(c => [c, gtLabel("gx", c)]);
+  return oqReady() ? OQ.map(t => [t.id, `${t.lv} · ${t.tr}`]) : [];
+}
+const gtDaysLeft = due => due ? Math.round(Date.parse(due) / DAY) - dayNum() : null;
+const gtDueText = due => { const d = gtDaysLeft(due); return d === null ? "" : d < 0 ? "muddati oʻtgan" : d === 0 ? "bugun" : d === 1 ? "ertaga" : `${d} kun qoldi`; };
+// Fetch the tasks of every joined group (after sign-in and on the group page)
+async function gtRefresh() {
+  if (!USER || !db || !grpMine().length) return;
+  const next = {};
+  for (const c of grpMine()) {
+    try { const q = await grpRef(c).collection("tasks").limit(50).get(); next[c] = q.docs.map(d => Object.assign({ id: d.id }, d.data(), { at: null })); } catch (e) { next[c] = (S.gtk || {})[c] || []; }
+  }
+  S.gtk = next; save(); grpSync(true);
+}
+// Home: the nearest unfinished tasks
+function gtHomeCard() {
+  const open = gtAll().filter(t => !gtDone(t)).sort((a, b) => (a.due || "9").localeCompare(b.due || "9")).slice(0, 3);
+  if (!open.length) return "";
+  return `<section class="glass pad dq-card"><div class="pcard-head"><b>${ICON.users}Oʻqituvchi topshiriqlari</b><span class="tag pink-t">${open.length}</span></div>
+    ${open.map(t => `<a class="dq-row" href="${gtHref(t)}" style="color:inherit;text-decoration:none"><span class="dq-ico">${ICON.flag}</span><span><b>${esc(t.title)}</b><small>${esc(GT_KINDS[t.kind] || "")}${t.due ? ` · ${esc(gtDueText(t.due))}` : ""}</small></span>${ICON.chev}</a>`).join("")}</section>`;
+}
+async function gtAdd(code) {
+  const kind = $("gt-kind").value, ref = $("gt-ref").value, due = $("gt-due").value;
+  if (!ref) { toast("Topshiriqni tanlang"); return; }
+  const id = "t" + Date.now().toString(36);
+  try { await grpRef(code).collection("tasks").doc(id).set({ title: gtLabel(kind, ref).slice(0, 80), kind, ref, due: due || "", at: firebase.firestore.FieldValue.serverTimestamp() }); }
+  catch (e) { toast(grpErr(e)); return; }
+  toast("Topshiriq berildi"); loadGroup(code, true);
+}
+async function gtDel(code, id) {
+  try { await grpRef(code).collection("tasks").doc(id).delete(); } catch (e) { toast(grpErr(e)); return; }
+  loadGroup(code, true);
+}
+// Teacher: the class as a spreadsheet (UTF-8 with BOM so Excel shows the letters right)
+function grpCsv(code) {
+  const c = GRP[code];
+  if (!c) return;
+  const wk = weekKey(), tasks = c.tk || [];
+  const head = ["Ism", "Bu hafta XP", "Jami XP", "Daraja", "Ketma-ket kun", "Oxirgi faollik", "Kurs darajasi", "Tugatilgan boʻlimlar", "14 kun: daqiqa", "14 kun: faol kun", ...SKILLS.map(s => `${s.tr} %`), ...tasks.map(t => `Topshiriq: ${t.title}`)];
+  const rows = c.m.map(m => {
+    const st = grpSt(m), mins = Math.round(SKILLS.reduce((a, s) => a + st[s.id].t, 0) / 60);
+    return [m.name || "", m.week === wk ? m.wxp || 0 : 0, m.xp || 0, lvlOf(m.xp || 0), m.streak || 0, m.last || "", m.lv || "", m.units || 0, mins, m.act || 0,
+      ...SKILLS.map(s => st[s.id].n ? Math.round(st[s.id].o / st[s.id].n * 100) : ""), ...tasks.map(t => (m.tk || {})[t.id] ? "ha" : "yoʻq")];
+  });
+  const cell = v => { const x = String(v); return /[",;\n]/.test(x) ? `"${x.replace(/"/g, '""')}"` : x; };
+  const csv = "\ufeff" + [head, ...rows].map(r => r.map(cell).join(";")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = `${(c.g.name || code).replace(/[^\w\u0400-\u04FF -]+/g, "").trim() || code}-${todayKey()}.csv`;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  window.__lastCsv = csv;
 }
 // Refresh my card in every joined group; a missing card means the teacher removed me or deleted the group
 function grpSync(force) {
@@ -4245,8 +4323,11 @@ async function loadGroup(code, fresh) {
       if (!g.exists) { grpForget(code); if ($("grp-body")) $("grp-body").innerHTML = `<div class="glass empty"><b>Guruh topilmadi</b><span class="muted">U oʻchirilgan boʻlishi mumkin.</span></div>`; return; }
       const own = g.data().owner === USER.uid;
       if (!own && grpMine().includes(code)) await grpRef(code).collection("members").doc(USER.uid).update(grpCard()).catch(() => {});
-      const snap = await grpRef(code).collection("members").limit(200).get();
-      c = GRP[code] = { g: g.data(), m: snap.docs.map(d => Object.assign({ id: d.id }, d.data())), t: Date.now() };
+      if (own) await loadOq().catch(() => {});
+      const [snap, tq] = await Promise.all([grpRef(code).collection("members").limit(200).get(), grpRef(code).collection("tasks").limit(50).get().catch(() => ({ docs: [] }))]);
+      const tk = tq.docs.map(d => Object.assign({ id: d.id }, d.data(), { at: null })).sort((a, b) => (a.due || "9").localeCompare(b.due || "9"));
+      if (!own) { S.gtk = Object.assign({}, S.gtk, { [code]: tk }); save(); }
+      c = GRP[code] = { g: g.data(), m: snap.docs.map(d => Object.assign({ id: d.id }, d.data())), tk, t: Date.now() };
     }
     const box = $("grp-body");
     if (box && box.dataset.code === code) box.innerHTML = groupHTML(code, c);
@@ -4258,6 +4339,7 @@ async function loadGroup(code, fresh) {
 function groupHTML(code, c) {
   const own = c.g.owner === USER.uid, wk = weekKey();
   const ms = c.m.map(m => Object.assign({}, m, { w: m.week === wk ? m.wxp || 0 : 0 })).sort((a, b) => b.w - a.w || (b.xp || 0) - (a.xp || 0));
+  const tk = c.tk || [], others = ms.filter(m => m.id !== c.g.owner);
   const total = {}; SKILLS.forEach(s => total[s.id] = { o: 0, n: 0, t: 0 });
   ms.forEach(m => { const st = grpSt(m); SKILLS.forEach(s => { total[s.id].o += st[s.id].o; total[s.id].n += st[s.id].n; total[s.id].t += st[s.id].t; }); });
   const activeWeek = ms.filter(m => m.w > 0).length, any = SKILLS.some(s => total[s.id].n), weak = skWeakest(total);
@@ -4274,13 +4356,29 @@ function groupHTML(code, c) {
     return `<details class="grp-m"><summary class="rank-row">${line}</summary><div class="grp-detail">
       <div class="facts"><span>${ICON.book}Kurs: ${esc(m.lv || "A1")} · ${m.units || 0}/${COURSE.units.length} boʻlim</span><span>${ICON.clock}14 kunda: ${Math.round(mins)} daqiqa, ${m.act || 0} faol kun</span><span>${ICON.star}Jami: ${m.xp || 0} XP</span></div>
       ${skBars(st)}
+      ${tk.length ? `<div class="tags">${tk.map(t => `<span class="tag ${(m.tk || {})[t.id] ? "green-t" : "pink-t"}">${(m.tk || {})[t.id] ? ICON.check : ""}${esc(t.title.slice(0, 28))}</span>`).join("")}</div>` : ""}
       <button class="link" data-act="grp-kick" data-c="${esc(code)}" data-u="${esc(m.id)}" data-n="${esc(m.name || "")}" style="color:var(--pink);align-self:flex-start">Guruhdan chiqarish</button></div></details>`;
   }).join("") : "";
   const list = `<section class="section"><div class="section-head"><h2>${own ? "Oʻquvchilar" : "Guruh reytingi"}</h2><span class="tag violet-t">bu hafta XP</span></div>
     ${ms.length ? `<div class="glass words grp-list">${rows}</div>` : `<div class="glass empty">${mascot("trophy")}<b>Hali hech kim qoʻshilmagan</b><span class="muted">Havolani oʻquvchilaringizga yuboring.</span></div>`}</section>`;
+  const tasks = own ? `<section class="section"><div class="section-head"><h2>Topshiriqlar</h2><span class="tag violet-t">${tk.length}</span></div>
+    <div class="glass pad gt-form">
+      <div class="grp-row"><select id="gt-kind" class="k-select" data-act="gt-kind">${Object.keys(GT_KINDS).map(k => `<option value="${k}">${GT_KINDS[k]}</option>`).join("")}</select>
+      <input id="gt-due" type="date" class="k-select" min="${todayKey()}" aria-label="Muddat"></div>
+      <select id="gt-ref" class="k-select" aria-label="Topshiriq">${gtOptions("k").map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join("")}</select>
+      <button class="btn btn-grad" data-act="gt-add" data-c="${esc(code)}">${ICON.plus}Topshiriq berish</button>
+    </div>
+    ${tk.length ? `<div class="glass words">${tk.map(t => { const n = others.filter(m => (m.tk || {})[t.id]).length; return `<div class="rank-row gt-row">
+      <span class="dq-ico">${ICON.flag}</span><span style="min-width:0"><b>${esc(t.title)}</b><small>${esc(GT_KINDS[t.kind] || "")}${t.due ? ` · ${esc(t.due.split("-").reverse().join("."))} (${esc(gtDueText(t.due))})` : ""}</small></span>
+      <span class="xp">${n}/${others.length}<button class="fr-x" data-act="gt-del" data-c="${esc(code)}" data-t="${esc(t.id)}" aria-label="Topshiriqni oʻchirish">×</button></span></div>`; }).join("")}</div>` : `<p class="sub">Hali topshiriq yoʻq. Kurs boʻlimi, qoida mavzusi yoki oʻqish matnini muddat bilan bering — kim bajarganini shu yerda koʻrasiz.</p>`}
+    ${ms.length ? `<button class="btn btn-ghost btn-block" data-act="grp-csv" data-c="${esc(code)}">${ICON.download}Natijalarni yuklab olish (Excel, CSV)</button>` : ""}
+  </section>`
+    : tk.length ? `<section class="section"><div class="section-head"><h2>Topshiriqlar</h2><span class="tag violet-t">${tk.filter(gtDone).length}/${tk.length}</span></div>
+    <div class="glass words">${tk.map(t => { const ok = gtDone(t); return `<a class="rank-row gt-row${ok ? " me" : ""}" href="${gtHref(t)}" style="color:inherit;text-decoration:none">
+      <span class="dq-ico">${ok ? ICON.check : ICON.flag}</span><span style="min-width:0"><b>${esc(t.title)}</b><small>${esc(GT_KINDS[t.kind] || "")}${t.due ? ` · ${esc(gtDueText(t.due))}` : ""}</small></span><span class="xp">${ok ? "bajarildi" : "Boshlash"}</span></a>`; }).join("")}</div></section>` : "";
   const foot = own ? `<div id="grp-del" style="display:flex;flex-direction:column;gap:10px"><button class="btn btn-ghost btn-block" data-act="grp-reload" data-c="${esc(code)}">Yangilash</button><button class="link" data-act="grp-del-ask" data-c="${esc(code)}" style="align-self:center;color:var(--pink)">Guruhni oʻchirish</button></div>`
     : `<button class="btn btn-ghost btn-block" data-act="grp-leave" data-c="${esc(code)}">Guruhdan chiqish</button>`;
-  return head + share + sum + list + foot;
+  return head + share + tasks + sum + list + foot;
 }
 async function viewJoinLoad(code) {
   const box = $("grp-join");
@@ -4625,6 +4723,7 @@ async function enterApp(u, quiet) {
   await loadCloud(u);
   lgSettle();
   frInbox();
+  gtRefresh();
   if (frPendingGet()) setTimeout(() => frAdd(frPendingGet(), true), 600);
   if (!quiet) hideAuth();
   if (!quiet || !SES) route();

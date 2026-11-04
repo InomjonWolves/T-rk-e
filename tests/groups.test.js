@@ -47,7 +47,7 @@ test("teacher creates a group, learners join by link, the teacher sees their ski
   assert.equal(card.name, "Aziz Rahimov");
   assert.ok(card.wxp >= 30);
   assert.deepEqual(card.sk.l.slice(0, 2), [1, 2]);
-  assert.deepEqual(Object.keys(card).sort(), ["act", "at", "last", "lv", "name", "sk", "streak", "units", "week", "wxp", "xp"]);
+  assert.deepEqual(Object.keys(card).sort(), ["act", "at", "last", "lv", "name", "sk", "streak", "tk", "units", "week", "wxp", "xp"]);
   // A learner sees the group ranking, not the skill details
   assert.equal(await page.evaluate(() => !!document.querySelector(".grp-m, [data-act=grp-kick]")), false);
   assert.match(await page.textContent(".grp-list"), /Aziz Rahimov \(siz\)/);
@@ -86,7 +86,7 @@ test("teacher creates a group, learners join by link, the teacher sees their ski
   await as(page, A);
   await hash(page, "#group-" + code);
   await page.waitForSelector("[data-act=grp-leave]");
-  await page.click("[data-act=grp-leave]");
+  await page.evaluate(() => document.querySelector("[data-act=grp-leave]").click());
   await page.waitForFunction(c => !__db[`groups/${c}/members/s1`] && location.hash === "#groups" && !S.grp.length, code);
 
   // The teacher deletes the group: its member cards go too
@@ -146,7 +146,7 @@ test("firestore rules: groups are created by their owner, member cards are writt
   assert.match(g, /allow update: if okUser\(\) && resource\.data\.owner == request\.auth\.uid\s*&& request\.resource\.data\.owner == resource\.data\.owner/);
   const m = g.slice(g.indexOf("match /members/{uid}"));
   assert.match(m, /allow create, update: if okUser\(\) && request\.auth\.uid == uid/);
-  assert.match(m, /hasOnly\(\['name', 'week', 'wxp', 'xp', 'streak', 'last', 'sk', 'units', 'lv', 'act', 'at'\]\)/);
+  assert.match(m, /hasOnly\(\['name', 'week', 'wxp', 'xp', 'streak', 'last', 'sk', 'units', 'lv', 'act', 'tk', 'at'\]\)/);
   assert.match(m, /allow delete: if okUser\(\) && \(request\.auth\.uid == uid \|\| g\(\)\.owner == request\.auth\.uid\)/);
   // Brace balance
   assert.equal((r.match(/\{/g) || []).length, (r.match(/\}/g) || []).length);
@@ -167,4 +167,51 @@ test("sync: with equal XP the copy saved last wins; signing out writes a pending
   assert.equal(await page.evaluate(() => __db["users/s1"].progress.goal), 100);
   assert.deepEqual(errors, []);
   await page.close();
+});
+
+test("group tasks: the teacher sets a reading text with a deadline, the learner sees it and finishes it, the teacher exports a spreadsheet", async () => {
+  const seed = Object.assign({}, SEED, {
+    "groups/TSK234": { name: "Kechki guruh", owner: "t1", oname: "Malika Karimova", at: "TS" },
+    "groups/TSK234/members/s1": { name: "Aziz Rahimov", week: "", wxp: 0, xp: 10, streak: 0, last: "", sk: {}, units: 0, lv: "A1", act: 0, at: "TS" },
+    "users/s1": Object.assign(prof("Aziz Rahimov"), { progress: { onb: 1, grp: ["TSK234"] } })
+  });
+  const { page, errors } = await openFb(browser, "#home", { user: T, seed });
+  await hash(page, "#group-TSK234");
+  await page.waitForSelector(".gt-form");
+  await page.evaluate(() => { const k = document.getElementById("gt-kind"); k.value = "oq"; k.dispatchEvent(new Event("change", { bubbles: true })); });
+  await page.waitForFunction(() => document.querySelector("#gt-ref option[value=aile]"));
+  await page.evaluate(() => { document.getElementById("gt-ref").value = "aile"; document.getElementById("gt-due").value = "2030-01-15"; document.querySelector("[data-act=gt-add]").click(); });
+  await page.waitForFunction(() => Object.keys(__db).some(k => k.startsWith("groups/TSK234/tasks/")));
+  const [path0, task] = await page.evaluate(() => Object.entries(__db).find(([k]) => k.startsWith("groups/TSK234/tasks/")));
+  assert.deepEqual(task, { title: "A1 · Benim Ailem", kind: "oq", ref: "aile", due: "2030-01-15", at: "TS" });
+  await page.waitForSelector(".gt-row");
+  assert.match(await page.textContent(".gt-row"), /Benim Ailem[\s\S]*15\.01\.2030[\s\S]*0\/1/);
+
+  // The learner: the task on the home page and in the group, done after reading the text
+  await as(page, A);
+  await page.waitForFunction(() => (S.gtk || {}).TSK234 && S.gtk.TSK234.length === 1);
+  await hash(page, "#home");
+  assert.match(await page.textContent("#app"), /Oʻqituvchi topshiriqlari[\s\S]*Benim Ailem/);
+  await page.evaluate(() => { S.oq = { aile: 100 }; save(); grpSync(true); });
+  const tid = path0.split("/").pop();
+  await page.waitForFunction(id => (__db["groups/TSK234/members/s1"].tk || {})[id] === 1, tid);
+  await hash(page, "#group-TSK234");
+  await page.waitForSelector(".gt-row");
+  assert.match(await page.textContent(".gt-row"), /bajarildi/);
+
+  // The teacher: 1/1 and the spreadsheet
+  await as(page, T);
+  await hash(page, "#group-TSK234");
+  await page.evaluate(() => document.querySelector("[data-act=grp-reload]").click());
+  await page.waitForFunction(() => /1\/1/.test((document.querySelector(".gt-row") || {}).textContent || ""));
+  await page.evaluate(() => document.querySelector("[data-act=grp-csv]").click());
+  const csv = await page.evaluate(() => window.__lastCsv);
+  const lines = csv.replace(/^﻿/, "").split("\r\n");
+  assert.match(lines[0], /^Ism;Bu hafta XP;Jami XP;Daraja;.*Topshiriq: A1 · Benim Ailem$/);
+  assert.match(lines[1], /^Aziz Rahimov;.*;ha$/);
+  // Delete (two taps)
+  await page.evaluate(() => document.querySelector("[data-act=gt-del]").click());
+  await page.evaluate(() => document.querySelector("[data-act=gt-del]").click());
+  await page.waitForFunction(() => !Object.keys(__db).some(k => k.startsWith("groups/TSK234/tasks/")));
+  assert.deepEqual(errors, []);
 });
