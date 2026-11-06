@@ -1201,7 +1201,7 @@ function viewLugat() {
   <div id="search-results">${searchResults()}</div>
   <div id="units-block" class="stack" ${Q ? "hidden" : ""}>
     <p class="sub">Soʻzlar darajalar boʻyicha: avval A1 darslari, keyin mavzuli toʻplamlar. Jami oʻrganilgan: <b>${learned}/${total}</b></p>
-    <div class="chips">${lvs.map(l => `<button class="chip" data-act="lug-lv" data-l="${l}" aria-pressed="${l === LUG_LV}">${l}<small style="font-weight:600;opacity:.7;margin-left:4px">${new Set(lugLevel(l).flatMap(p => LWORDS[p.id].map(w => w.tr))).size}</small></button>`).join("")}</div>
+    <div class="chips">${lvs.map(l => `<button class="chip" data-act="lug-lv" data-l="${l}" aria-pressed="${l === LUG_LV}">${l}<small style="font-weight:600;margin-left:4px">${new Set(lugLevel(l).flatMap(p => LWORDS[p.id].map(w => w.tr))).size}</small></button>`).join("")}</div>
     ${LUG_LV === "A1" ? `<div class="section-head"><h2>1. Boshlangʻich darslar</h2><span class="tag violet-t">36 dars</span></div>
     <div style="display:flex;flex-direction:column;gap:10px">${unitsList()}</div>` : ""}
     <div class="section-head"><h2>${LUG_LV === "A1" ? "2. " : ""}Mavzuli toʻplamlar · ${LUG_LV}</h2><span class="tag sky-t">${packs.length} mavzu</span></div>
@@ -1258,7 +1258,7 @@ function viewGrammar(gi) {
   </div>
   <p class="lead">${esc(g.lead)}</p>
   <ul class="rules">${g.points.map(p => `<li><span>${esc(p)}</span></li>`).join("")}</ul>
-  <div class="table-wrap glass"><table class="gtable">
+  <div class="table-wrap glass" tabindex="0" role="region" aria-label="Jadval"><table class="gtable">
     <thead><tr>${t.head.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead>
     <tbody>${t.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody>
   </table></div>
@@ -1312,7 +1312,7 @@ function viewGuide() {
   ${lv.groups.map(g => `<div class="glass words"><div class="toc-group">${esc(g.name)}</div>${g.items.map(guideRow).join("")}</div>`).join("")}`;
 }
 function guideTable(t) {
-  return `<div class="table-wrap glass"><table class="gtable g-forms">
+  return `<div class="table-wrap glass" tabindex="0" role="region" aria-label="Jadval"><table class="gtable g-forms">
     <thead><tr>${t.h.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead>
     <tbody>${t.r.map(r => `<tr>${r.map(c => `<td lang="tr">${sfx(c)}</td>`).join("")}</tr>`).join("")}</tbody>
   </table></div>`;
@@ -1361,7 +1361,7 @@ function viewGx() {
     <p class="sub">Har mavzu qoʻllanmadagi qoida asosida: variant tanlash, toʻldirib yozish va gap tuzish.</p>
   </div>
   ${ms.length ? `<button class="pcard glass" data-act="start" data-mode="gxm"><div class="pcard-head"><b>${ICON.target}Qoida xatolari</b><span class="badge">${ms.length}</span></div><p class="muted">Xato qilgan mashqlaringizni qayta ishlang.</p></button>` : ""}
-  <div class="chips">${lvs.map(l => `<button class="chip" data-act="gx-lv" data-l="${l.id}" aria-pressed="${l.id === lv}" style="gap:5px;padding:9px 12px">${esc(l.name)}<small style="font-weight:600;opacity:.7">${gxDoneCount(l.id)}/${gxCount(l.id)}</small></button>`).join("")}</div>
+  <div class="chips">${lvs.map(l => `<button class="chip" data-act="gx-lv" data-l="${l.id}" aria-pressed="${l.id === lv}" style="gap:5px;padding:9px 12px">${esc(l.name)}<small style="font-weight:600">${gxDoneCount(l.id)}/${gxCount(l.id)}</small></button>`).join("")}</div>
   ${LEVEL_GROUPS(lv).map(g => `<div class="toc-group" style="padding-left:2px">${esc(g.name)}</div><div class="list">${g.codes.map(gxRow).join("")}</div>`).join("")}`;
 }
 function LEVEL_GROUPS(lv) {
@@ -1919,7 +1919,7 @@ function renderBlocks(blocks) {
     if (b.sub) return `<h3 class="k-sub">${nb(b.sub)}</h3>`;
     if (b.p) return `<p class="k-p">${esc(b.p)}</p>`;
     if (b.note) return `<div class="tip glass">${ICON.bulb}<div>${esc(b.note)}</div></div>`;
-    if (b.table) return `<div class="table-wrap glass"><table class="gtable k-table"><thead><tr>${b.table.h.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead><tbody>${b.table.r.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    if (b.table) return `<div class="table-wrap glass" tabindex="0" role="region" aria-label="Jadval"><table class="gtable k-table"><thead><tr>${b.table.h.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead><tbody>${b.table.r.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
     if (b.gloss) return `<div class="k-gloss">${b.gloss.map(([a, c]) => `<span><b lang="tr">${esc(a)}</b> — ${esc(c)}</span>`).join("")}</div>`;
     if (b.dlg) {
       const sides = {};
@@ -1981,7 +1981,7 @@ function viewCourse() {
     <div class="k-hero-txt"><span class="tag green-t">${ICON.check}100% bepul</span>
       <h2>Turk tili A1 → B2</h2>
       <p>32 boʻlim, 4 ta daraja testi va ${Object.values(KWORDS).reduce((a, w) => a + w.length, 0)} ta soʻz. Oʻzbek tilida tushuntirilgan, reklamasiz.</p>
-      <div class="bar" aria-label="${done}/${total}"><i style="width:${pct(done, total)}%"></i></div>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}" aria-label="Kurs: ${done}/${total} boʻlim"><i style="width:${pct(done, total)}%"></i></div>
       <small class="muted">${done}/${total} boʻlim tugallangan</small></div>
     <div class="k-hero-cat">${mascot("cap")}</div>
   </div>
@@ -2268,7 +2268,7 @@ function achCard(a, i) {
   const on = achDone(a), v = Math.min(a.v(), a.n);
   return `<div class="ach glass${on ? ` on c-${ACH_COL(a.c)}` : ""}">
     ${on ? achSticker(a, i) : `<span class="medal">${ICON.lock}</span>`}<b>${esc(a.t)}</b><small>${esc(a.d)}</small>
-    ${on ? (achDate(a) ? `<small class="ach-date">${achDate(a)}</small>` : "") : `<span class="bar" aria-label="${v}/${a.n}"><i style="width:${pct(v, a.n)}%"></i></span><small class="muted">${v}/${a.n}</small>`}</div>`;
+    ${on ? (achDate(a) ? `<small class="ach-date">${achDate(a)}</small>` : "") : `<span class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${a.n}" aria-valuenow="${v}" aria-label="${esc(a.t)}: ${v}/${a.n}"><i style="width:${pct(v, a.n)}%"></i></span><small class="muted">${v}/${a.n}</small>`}</div>`;
 }
 // Profile: every earned achievement as a sticker wall (newest first), then the closest ones still to get
 function achProfile() {
@@ -2353,7 +2353,7 @@ function viewHelp() {
 
   <section class="section"><div class="section-head"><h2>Telegram</h2></div>
     <div class="glass pad tg-card"><p class="muted">Kanalda har kuni “Kunning soʻzi”, botda esa sayt Telegram ichida ochiladi va soʻz tarjimasini soʻrash mumkin.</p>
-      <div class="fr-actions"><a class="btn btn-grad" href="${TG_CHANNEL}" target="_blank" rel="noopener">${ICON.chat}Kanal @turkceyoluz</a><a class="btn btn-ghost" href="${TG_BOT}" target="_blank" rel="noopener">${ICON.spark}Bot @TurkceYolBot</a></div>
+      <div class="fr-actions tg-actions"><a class="btn btn-grad" href="${TG_CHANNEL}" target="_blank" rel="noopener">${ICON.chat}Kanal @turkceyoluz</a><a class="btn btn-ghost" href="${TG_BOT}" target="_blank" rel="noopener">${ICON.spark}Bot @TurkceYolBot</a></div>
       ${IN_TG ? `<p class="muted" style="margin-top:8px">Siz saytni Telegram ichida ochdingiz. Google bilan kirish uchun <button class="link" data-act="tg-browser">brauzerda oching</button>.</p>` : ""}</div></section>
 
   <section class="section"><div class="section-head"><h2>Ilovani oʻrnatish (PWA)</h2>${isStandalone() ? `<span class="tag green-t">${ICON.check}Oʻrnatilgan</span>` : ""}</div>
@@ -3562,10 +3562,10 @@ function adminHtml(a, at) {
   <section class="section"><div class="section-head"><h2>Muvozanat taqsimoti</h2></div>
     <div class="glass pad"><div class="sk-bars">${["0–19%", "20–39%", "40–59%", "60–79%", "80–100%"].map((l, i) => `<div class="sk-line"><span></span><span class="sk-name"><b>${l}</b></span>${bar(a.balB[i], bMax, i >= 4 ? "green" : i >= 2 ? "sky" : "pink")}<span class="sk-val">${a.balB[i]}<small>kishi</small></span></div>`).join("")}</div></div></section>
   <section class="section"><div class="section-head"><h2>Koʻnikma boʻyicha daraja</h2><span class="tag teal-t">jami ${a.total}</span></div>
-    <div class="table-wrap glass"><table class="gtable"><thead><tr><th scope="col">Koʻnikma</th><th>—</th>${LVS.map(l => `<th scope="col">${l}</th>`).join("")}</tr></thead>
+    <div class="table-wrap glass" tabindex="0" role="region" aria-label="Jadval"><table class="gtable"><thead><tr><th scope="col">Koʻnikma</th><th>—</th>${LVS.map(l => `<th scope="col">${l}</th>`).join("")}</tr></thead>
     <tbody>${SKILLS.map(s => `<tr><td><b>${s.tr}</b></td><td>${a.lvl[s.id][""]}</td>${LVS.map(l => `<td>${a.lvl[s.id][l]}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>
   <section class="section"><div class="section-head"><h2>Daraja testlari · oʻrtacha foiz</h2></div>
-    <div class="table-wrap glass"><table class="gtable"><thead><tr><th scope="col">Test</th>${SKILLS.map(s => `<th scope="col">${s.tr}</th>`).join("")}</tr></thead>
+    <div class="table-wrap glass" tabindex="0" role="region" aria-label="Jadval"><table class="gtable"><thead><tr><th scope="col">Test</th>${SKILLS.map(s => `<th scope="col">${s.tr}</th>`).join("")}</tr></thead>
     <tbody>${LVS.map(l => `<tr><td><b>${l}</b></td>${SKILLS.map(s => { const x = a.tests[l][s.id]; return `<td>${x ? `${x.avg}%<br><small class="muted">${x.n} kishi</small>` : "—"}</td>`; }).join("")}</tr>`).join("")}</tbody></table></div></section>
   <section class="section"><div class="section-head"><h2>Kursdagi joriy daraja</h2></div>
     <div class="glass pad"><div class="sk-bars">${LVS.map(l => `<div class="sk-line"><span></span><span class="sk-name"><b>${l}</b></span>${bar(a.course[l], a.total, "violet")}<span class="sk-val">${a.course[l]}<small>kishi</small></span></div>`).join("")}</div></div></section>
@@ -4241,7 +4241,8 @@ function grpCsv(code) {
     return [m.name || "", m.week === wk ? m.wxp || 0 : 0, m.xp || 0, lvlOf(m.xp || 0), m.streak || 0, m.last || "", m.lv || "", m.units || 0, mins, m.act || 0,
       ...SKILLS.map(s => st[s.id].n ? Math.round(st[s.id].o / st[s.id].n * 100) : ""), ...tasks.map(t => (m.tk || {})[t.id] ? "ha" : "yoʻq")];
   });
-  const cell = v => { const x = String(v); return /[",;\n]/.test(x) ? `"${x.replace(/"/g, '""')}"` : x; };
+  // A name like "=HYPERLINK(…)" must stay text in Excel: cells starting with = + - @ get a leading apostrophe
+  const cell = v => { let x = String(v); if (/^[=+\-@\t\r]/.test(x)) x = "'" + x; return /[",;\n]/.test(x) ? `"${x.replace(/"/g, '""')}"` : x; };
   const csv = "\ufeff" + [head, ...rows].map(r => r.map(cell).join(";")).join("\r\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));

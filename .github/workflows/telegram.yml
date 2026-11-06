@@ -1,7 +1,11 @@
 name: Telegram
+run-name: ${{ (github.event_name == 'schedule' || inputs.auto) && 'Telegram (avto)' || 'Telegram (qoʻlda)' }}
 
 # Har kuni ertalab Telegram kanalga "Kunning so'zi" (tools/telegram.js), shanba kunlari — haftalik viktorina ham (tools/quiz.js).
 # Secret'lar: TELEGRAM_BOT_TOKEN (@BotFather, bot kanalda admin) va TELEGRAM_CHAT_ID (@kanal_nomi). Boʻlmasa jim oʻtadi.
+# Vaqt: GitHub jadvali (schedule) soatlab kechikadi, shuning uchun asosiy ishga tushiruvchi — tashqi rejalashtiruvchi
+# (cron-job.org) 09:17 Toshkent vaqtida workflow_dispatch'ni inputs.auto = true bilan chaqiradi. Bugun avtomatik post
+# allaqachon chiqqan boʻlsa (masalan, kechikkan schedule), ikkinchisi yuborilmaydi. Qoʻlda ishga tushirish tekshirilmaydi.
 on:
   schedule:
     - cron: "17 4 * * *"
@@ -11,6 +15,14 @@ on:
         description: "Haftalik viktorinani ham yuborish"
         type: boolean
         default: false
+      auto:
+        description: "Avtomatik (rejalashtiruvchi): bugun post chiqqan boʻlsa, qayta yubormaydi"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
 
 jobs:
   post:
@@ -20,16 +32,28 @@ jobs:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       QUIZ: ${{ inputs.quiz && '1' || '' }}
+      AUTO: ${{ (github.event_name == 'schedule' || inputs.auto) && '1' || '' }}
     steps:
       - name: Kalit tekshiruvi
         if: env.TELEGRAM_BOT_TOKEN == '' || env.TELEGRAM_CHAT_ID == ''
         run: echo "Telegram secret'lari sozlanmagan — post oʻtkazib yuborildi."
+      - name: Bugun avtomatik post chiqqanmi
+        id: dup
+        if: env.AUTO == '1' && env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          today=$(TZ=Asia/Tashkent date +%F)
+          n=$(gh api "repos/${{ github.repository }}/actions/workflows/telegram.yml/runs?status=success&per_page=30" \
+            --jq "[.workflow_runs[] | select(.id != ${{ github.run_id }}) | select(.display_title == \"Telegram (avto)\") | select((.created_at | fromdateiso8601 + 18000 | strftime(\"%Y-%m-%d\")) == \"$today\")] | length")
+          echo "Bugun ($today, Toshkent) avtomatik postlar: $n"
+          if [ "$n" != "0" ]; then echo "skip=1" >> "$GITHUB_OUTPUT"; echo "Bugungi post allaqachon chiqqan — ikkinchisi yuborilmaydi."; fi
       - uses: actions/checkout@v5
-        if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+        if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' && steps.dup.outputs.skip != '1'
       - uses: actions/setup-node@v5
-        if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+        if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' && steps.dup.outputs.skip != '1'
         with:
           node-version: 22
       - name: Kunning so'zi
-        if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+        if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' && steps.dup.outputs.skip != '1'
         run: node tools/telegram.js

@@ -1,13 +1,24 @@
-// Daily reminders: GitHub Actions runs this every hour (.github/workflows/push.yml).
-// Reads Firestore push/{uid} = { t: FCM token, h: reminder hour in UTC, z: time zone offset (min), d: last practice day, s: streak }
-// and sends a notification to everyone whose hour is now and who has not practised today in their own time zone.
+// Daily reminders: GitHub Actions runs this every hour (.github/workflows/push.yml) — or an outside scheduler
+// (cron-job.org) starts that workflow, because GitHub may delay or skip scheduled runs by hours.
+// Reads Firestore push/{uid} = { t: FCM token, h: reminder hour in UTC, z: time zone offset (min), d: last practice day,
+// s: streak, sent: local day of the last reminder } and reminds everyone whose hour has come today (in their own time),
+// who has not practised today and has not been reminded today. A late run still reaches everyone; nobody gets two.
 // Needs env SA = service account JSON with roles "Cloud Datastore User" and "Firebase Cloud Messaging API Admin".
 // Dry run (no sending): DRY=1 node tools/push.js
 const crypto = require("crypto");
 
 const PROJECT = "t-rk-e";
+const QUIET = 23; // no reminders from 23:00 local time (a run that late waits for tomorrow)
 const localDay = (now, z) => new Date(now.getTime() - z * 6e4).toISOString().slice(0, 10);
-const due = (doc, now) => doc.h === now.getUTCHours() && !!doc.t && doc.d !== localDay(now, doc.z || 0);
+const localHour = (now, z) => new Date(now.getTime() - z * 6e4).getUTCHours();
+// The chosen hour in the user's own time. The app stores h = floor(local + z/60) in UTC (remUtcHour), so the way back
+// rounds up: 14 UTC at UTC+5 (z = −300) → 19; 3 UTC at UTC+5:30 (z = −330) → 9, not 8
+const remLocal = doc => Math.ceil(((doc.h * 60 - (doc.z || 0)) / 60 % 24 + 24) % 24) % 24;
+const due = (doc, now) => {
+  if (!doc.t) return false;
+  const z = doc.z || 0, today = localDay(now, z), lh = localHour(now, z);
+  return doc.d !== today && doc.sent !== today && lh >= remLocal(doc) && lh < QUIET;
+};
 const text = s => s > 0
   ? { title: "Seriyangiz yoʻqolmasin!", body: `${s} kun ketma-ket — bugun ham 5 daqiqa mashq qiling. Pamuk kutyapti!` }
   : { title: "Pamuk sizni kutyapti", body: "Bugun 5 daqiqa turk tili? Bir nechta soʻz — katta qadam." };
@@ -35,7 +46,8 @@ async function run(now = new Date()) {
   if (!sa) { console.log("SA yoʻq — eslatmalar oʻtkazib yuborildi"); return; }
   const tok = await accessToken(sa), auth = { Authorization: "Bearer " + tok, "Content-Type": "application/json" };
   const base = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents`;
-  const q = await fetch(`${base}:runQuery`, { method: "POST", headers: auth, body: JSON.stringify({ structuredQuery: { from: [{ collectionId: "push" }], where: { fieldFilter: { field: { fieldPath: "h" }, op: "EQUAL", value: { integerValue: String(now.getUTCHours()) } } } } }) });
+  // Every row: a run may come hours late, so "is it time?" is decided per user below
+  const q = await fetch(`${base}:runQuery`, { method: "POST", headers: auth, body: JSON.stringify({ structuredQuery: { from: [{ collectionId: "push" }] } }) });
   const rows = (await q.json()).filter(x => x.document).map(x => Object.assign({ name: x.document.name }, fromFs(x.document.fields)));
   let sent = 0, gone = 0, skipped = 0;
   for (const doc of rows) {
@@ -43,13 +55,18 @@ async function run(now = new Date()) {
     const s = streakLeft(doc, now), m = text(s);
     if (process.env.DRY) { console.log("DRY", doc.name.split("/").pop(), m.title); sent++; continue; }
     const r = await fetch(`https://fcm.googleapis.com/v1/projects/${PROJECT}/messages:send`, { method: "POST", headers: auth, body: JSON.stringify({ message: { token: doc.t, webpush: { headers: { TTL: "43200", Urgency: "normal" }, data: { title: m.title, body: m.body, s: String(s), url: "./#home" } } } }) });
-    if (r.ok) { sent++; continue; }
+    if (r.ok) {
+      sent++;
+      // Remember today's reminder so a second run the same day stays quiet
+      await fetch(`https://firestore.googleapis.com/v1/${doc.name}?updateMask.fieldPaths=sent`, { method: "PATCH", headers: auth, body: JSON.stringify({ fields: { sent: { stringValue: localDay(now, doc.z || 0) } } }) }).catch(() => {});
+      continue;
+    }
     const e = await r.text();
     // The app was removed or the permission withdrawn: forget the token
     if (r.status === 404 || /UNREGISTERED|registration-token-not-registered/.test(e)) { await fetch(`https://firestore.googleapis.com/v1/${doc.name}`, { method: "DELETE", headers: auth }); gone++; }
     else console.log("FCM", r.status, e.slice(0, 300));
   }
-  console.log(`soat ${now.getUTCHours()} UTC: ${rows.length} ta yozuv, ${sent} yuborildi, ${skipped} bugun mashq qilgan, ${gone} eskirgan token oʻchirildi`);
+  console.log(`${now.toISOString().slice(0, 16)} UTC: ${rows.length} ta yozuv, ${sent} yuborildi, ${skipped} vaqti kelmagan / mashq qilgan / bugun eslatilgan, ${gone} eskirgan token oʻchirildi`);
 }
-module.exports = { due, text, localDay, streakLeft };
+module.exports = { due, text, localDay, localHour, remLocal, streakLeft };
 if (require.main === module) run().catch(e => { console.error(e.message); process.exit(1); });

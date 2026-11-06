@@ -7,6 +7,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Eng kam ruxsat: kodni oʻqish; deploy action PR izohi va tekshiruv natijasi uchun
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

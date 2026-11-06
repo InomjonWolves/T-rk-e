@@ -12,13 +12,22 @@ let browser;
 before(async () => { browser = await launch(); });
 after(async () => { await browser.close(); });
 
-test("server: reminds at the chosen hour only those who have not practised today in their own time zone", () => {
+test("server: reminds from the chosen hour (even if the run is late) only those who have not practised or been reminded today", () => {
   const now = new Date("2026-11-03T14:07:00Z"); // 19:07 in Tashkent (UTC+5, offset −300)
   const doc = { t: "tok", h: 14, z: -300, d: "2026-11-02", s: 6 };
   assert.equal(push.localDay(now, -300), "2026-11-03");
   assert.equal(push.due(doc, now), true);
   assert.equal(push.due(Object.assign({}, doc, { d: "2026-11-03" }), now), false, "already practised today");
-  assert.equal(push.due(Object.assign({}, doc, { h: 15 }), now), false, "another hour");
+  assert.equal(push.due(Object.assign({}, doc, { h: 15 }), now), false, "the hour (20:00) has not come yet");
+  // GitHub may start the hourly run hours late: a late run still reminds, a second run the same day stays quiet
+  assert.equal(push.due(doc, new Date("2026-11-03T13:59:00Z")), false, "18:59 — before the chosen 19:00");
+  assert.equal(push.due(doc, new Date("2026-11-03T17:40:00Z")), true, "22:40 — late run, still today");
+  assert.equal(push.due(doc, new Date("2026-11-03T18:05:00Z")), false, "23:05 — too late in the evening");
+  assert.equal(push.due(Object.assign({}, doc, { sent: "2026-11-03" }), now), false, "already reminded today");
+  assert.equal(push.due(Object.assign({}, doc, { sent: "2026-11-02" }), now), true, "reminded yesterday");
+  // The UTC hour the app stores comes back as the chosen local hour, also in half-hour zones
+  assert.equal(push.remLocal({ h: 14, z: -300 }), 19);
+  assert.equal(push.remLocal({ h: 3, z: -330 }), 9);
   assert.equal(push.due(Object.assign({}, doc, { t: "" }), now), false, "no token");
   // Late evening UTC is already tomorrow in Tashkent
   assert.equal(push.localDay(new Date("2026-11-03T20:30:00Z"), -300), "2026-11-04");

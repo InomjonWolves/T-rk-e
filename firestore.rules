@@ -77,7 +77,10 @@ service cloud.firestore {
           && d.name is string && d.name.size() > 0 && d.name.size() <= 40
           && d.oname is string && d.oname.size() <= 40;
       }
-      allow read: if okUser();
+      // get: anyone with the code (the code is the invitation). list: only one's own groups — otherwise one query
+      // would hand out every group code and with it every class's member cards.
+      allow get: if okUser();
+      allow list: if okUser() && resource.data.owner == request.auth.uid;
       allow create: if okUser() && gid.matches('^[A-Z0-9]{6}$')
         && request.resource.data.owner == request.auth.uid && okGroup(request.resource.data);
       allow update: if okUser() && resource.data.owner == request.auth.uid
@@ -138,7 +141,8 @@ service cloud.firestore {
     }
     // Profil rasmlari: kichik JPEG (100 KB gacha), faqat egasi yozadi
     match /avatars/{uid} {
-      allow read: if okUser();
+      // One photo at a time (by user id, next to a name in a ranking); no listing of everyone's photos
+      allow get: if okUser();
       allow create, update: if okUser() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['photo'])
         && request.resource.data.photo is string

@@ -209,6 +209,13 @@ test("group tasks: the teacher sets a reading text with a deadline, the learner 
   const lines = csv.replace(/^﻿/, "").split("\r\n");
   assert.match(lines[0], /^Ism;Bu hafta XP;Jami XP;Daraja;.*Topshiriq: A1 · Benim Ailem$/);
   assert.match(lines[1], /^Aziz Rahimov;.*;ha$/);
+  // A name that looks like a formula stays text in Excel (no formula injection through the spreadsheet)
+  const evil = await page.evaluate(() => {
+    GRP.XLS234 = { g: { name: "X" }, m: [{ name: "=HYPERLINK(1)", xp: 0, sk: {} }, { name: "@SUM(A1)", xp: 0, sk: {} }, { name: "+1", xp: 0, sk: {} }, { name: "Ali", xp: 0, sk: {} }], tk: [] };
+    grpCsv("XLS234"); delete GRP.XLS234;
+    return window.__lastCsv.replace(/^\ufeff/, "").split("\r\n").slice(1).map(l => l.split(";")[0]);
+  });
+  assert.deepEqual(evil, ["'=HYPERLINK(1)", "'@SUM(A1)", "'+1", "Ali"]);
   // Delete (two taps)
   await page.evaluate(() => document.querySelector("[data-act=gt-del]").click());
   await page.evaluate(() => document.querySelector("[data-act=gt-del]").click());

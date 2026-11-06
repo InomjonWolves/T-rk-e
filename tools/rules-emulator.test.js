@@ -7,7 +7,7 @@ const { test, before, after } = require("node:test");
 const fs = require("fs");
 const path = require("path");
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require("@firebase/rules-unit-testing");
-const { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, serverTimestamp } = require("firebase/firestore");
+const { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, query, where, serverTimestamp } = require("firebase/firestore");
 
 let env;
 before(async () => {
@@ -43,6 +43,8 @@ test("league, avatars, stats need a confirmed account", async () => {
   await assertFails(getDocs(collection(as("n1", "emailNo"), "league")));
   await assertSucceeds(setDoc(doc(as("p1", "emailOk"), "avatars/p1"), { photo: "data:image/jpeg;base64,AAAA" }));
   await assertFails(setDoc(doc(as("n1", "emailNo"), "avatars/n1"), { photo: "data:image/jpeg;base64,AAAA" }));
+  await assertSucceeds(getDoc(doc(as("q1", "google"), "avatars/p1")), "one photo by id");
+  await assertFails(getDocs(collection(as("q1", "google"), "avatars")), "every photo at once");
   const st = { v: 1, d: "2026-11-02", lv: "A1", units: 0, t: {}, w: {}, bal: 0, lvl: {}, kt: {}, act: 0 };
   await assertSucceeds(setDoc(doc(as("g1", "google"), "stats/g1"), st));
   await assertFails(setDoc(doc(as("n1", "emailNo"), "stats/n1"), st));
@@ -73,6 +75,10 @@ test("groups: Google teacher, Google and e-mail learners; unconfirmed accounts s
   await assertFails(updateDoc(doc(A, "groups/ABC234"), { name: "Buzildi" }));
   await assertSucceeds(deleteDoc(doc(T, "groups/ABC234/members/ee")));
   await assertSucceeds(deleteDoc(doc(A, "groups/ABC234/members/aa")));
+  // Nobody can list every group (that would hand out all codes); a teacher lists only their own
+  await assertFails(getDocs(collection(A, "groups")), "list of all groups");
+  await assertFails(getDocs(query(collection(A, "groups"), where("owner", "==", "tt"))), "someone else's groups");
+  await assertSucceeds(getDocs(query(collection(T, "groups"), where("owner", "==", "tt"))));
   await assertSucceeds(deleteDoc(doc(T, "groups/ABC234")));
 });
 

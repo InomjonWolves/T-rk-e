@@ -105,3 +105,31 @@ test("profile: ⚙ opens one settings page with every setting and link; earned a
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+// Audit fixes (2026-11): a 324 px microphone icon on every course Dialog tab, the Help page wider than the phone,
+// bottom-menu icons without a name for screen readers
+test("phone layout: no page wider than the screen, no oversized icons, every menu item has a name", async () => {
+  const { page, errors } = await openApp(browser, "#home");
+  const check = async name => {
+    const r = await page.evaluate(() => ({
+      sw: document.documentElement.scrollWidth, W: innerWidth,
+      big: [...document.querySelectorAll("#app svg")].filter(s => s.getBoundingClientRect().width > 100 && !/\b(cat|mascot|chart|sk-chart)\b/.test(s.getAttribute("class") || "")).map(s => s.parentElement.outerHTML.slice(0, 90))
+    }));
+    assert.ok(r.sw <= r.W, `${name}: page is ${r.sw}px wide on a ${r.W}px screen`);
+    assert.deepEqual(r.big, [], `${name}: oversized icon`);
+  };
+  for (const h of ["#home", "#course", "#grammar", "#g-b2-09", "#lugat", "#practice", "#oqish", "#rank", "#profile", "#settings", "#achievements", "#help", "#translate", "#skills", "#placement", "#ktest-a1"]) {
+    await page.evaluate(h => { location.hash = h; }, h);
+    await page.waitForTimeout(150);
+    await check(h);
+  }
+  for (const u of ["a1-1", "a1-3", "a2-3", "b2-8"]) for (const t of ["vocab", "grammar", "dialog", "read", "ex"]) {
+    await page.evaluate(([u, t]) => { location.hash = "#k-" + u; KTAB = t; route(); }, [u, t]);
+    await page.waitForTimeout(120);
+    await check(`#k-${u}/${t}`);
+  }
+  const nav = await page.evaluate(() => [...document.querySelectorAll("nav.nav a")].map(a => a.getAttribute("aria-label")));
+  assert.deepEqual(nav, ["Asosiy", "Darslar", "Mashq", "Reyting", "Profil"]);
+  assert.deepEqual(errors, []);
+  await page.close();
+});

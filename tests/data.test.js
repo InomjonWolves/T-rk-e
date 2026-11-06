@@ -133,3 +133,38 @@ test("firebase hosting: publishes the site files only, never tests or project no
   for (const x of ["tests/**", "*.md", "package.json", "firestore.rules", "**/.*"]) assert.ok(cfg.ignore.includes(x), `should ignore ${x}`);
   assert.equal(JSON.parse(read(".firebaserc")).projects.default, "t-rk-e");
 });
+
+// Audit fixes (2026-11): dialogs keep one speaker per line, explanations are not dialogs, no duplicate words in a pack,
+// Uzbek words use ʻ / ʼ (not a plain apostrophe) — Turkish proper nouns (İstanbul'da) are left alone
+test("course dialogs: one speaker per line, dialog blocks only in dialog sections", () => {
+  for (const u of C.COURSE.units) u.sections.forEach((s, si) => s.blocks.forEach(b => {
+    if (!b.dlg) return;
+    assert.equal(s.kind, "dialog", `${u.id} section ${si} (${s.kind}): an explanation written as a dialog — use p / note`);
+    const names = new Set(b.dlg.map(d => d[0]));
+    b.dlg.forEach(([who, t], i) => {
+      const m = t.match(/[.!?…]\s+([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?: [a-zçğıöşü]+)?):\s/);
+      assert.ok(!m, `${u.id} line ${i} (${who}): another speaker «${m && m[1]}:» is glued into the line`);
+      assert.ok(t.length <= 400, `${u.id} line ${i}: too long for one dialog line`);
+    });
+    assert.ok(names.size >= 2, `${u.id} section ${si}: a dialog needs two speakers`);
+  }));
+});
+
+test("vocabulary packs: no word twice in one pack", () => {
+  for (const p of C.LUGAT) {
+    const seen = new Set();
+    for (const l of p.w.trim().split("\n")) {
+      const t = l.split("=")[0].trim().toLocaleLowerCase("tr");
+      assert.ok(!seen.has(t), `${p.id}: «${t}» twice`);
+      seen.add(t);
+    }
+  }
+});
+
+test("Uzbek spelling: oʻ/gʻ and the tutuq belgisi ʼ, never a plain apostrophe", () => {
+  const re = /(^|[^A-Za-zÇĞİÖŞÜçğıöşüʻʼ])(fe|ma|ta|ba|a|e|va|hay|qat|mas|o|bo|ko|og|so|to|yo|qo|go|sa|ra)'[a-zʻ]/gi;
+  for (const f of ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js", "oqish.js"]) {
+    const s = read(f), bad = [...s.matchAll(re)].map(m => s.slice(m.index, m.index + 18).trim());
+    assert.deepEqual(bad, [], `${f}: plain apostrophe in Uzbek words`);
+  }
+});

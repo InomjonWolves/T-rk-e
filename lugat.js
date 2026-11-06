@@ -339,7 +339,6 @@ etmek=qilmoq
 yapmak=qilmoq, yasamoq
 gelmek=kelmoq
 gitmek=ketmoq, bormoq
-gelmek=kelmoq
 almak=olmoq
 vermek=bermoq
 görmek=koʻrmoq

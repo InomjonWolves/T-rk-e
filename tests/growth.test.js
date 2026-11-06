@@ -148,3 +148,14 @@ test("bot webhook: the Vercel function answers in the webhook response, checks t
   assert.match(wf, /VERCEL_TOKEN/); assert.match(wf, /node tools\/bot-deploy\.js/);
   assert.ok(JSON.parse(fs.readFileSync(path.join(ROOT, "firebase.json"), "utf8")).hosting.ignore.includes("bot/**"));
 });
+
+test("schedules: an outside scheduler may start the daily post; a second automatic post the same day is skipped", () => {
+  const wf = fs.readFileSync(path.join(ROOT, ".github/workflows/telegram.yml"), "utf8");
+  assert.match(wf, /auto:\n\s+description:/, "workflow_dispatch input «auto» for cron-job.org");
+  assert.match(wf, /run-name: .*Telegram \(avto\)/);
+  assert.match(wf, /TZ=Asia\/Tashkent date \+%F/);
+  assert.match(wf, /steps\.dup\.outputs\.skip != '1'/);
+  assert.match(wf, /actions: read/);
+  // Every workflow says which permissions its token gets
+  for (const f of fs.readdirSync(path.join(ROOT, ".github/workflows"))) assert.match(fs.readFileSync(path.join(ROOT, ".github/workflows", f), "utf8"), /^permissions:/m, f);
+});
