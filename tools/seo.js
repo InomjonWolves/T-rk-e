@@ -38,8 +38,8 @@ function page({ file, title, desc, crumbs, body, ld }) {
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${url}">
-<meta name="theme-color" content="#edf1fc" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0a0c1e" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f4ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1124" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="${up}icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="${up}icon-192.png">
 <meta property="og:type" content="article">
