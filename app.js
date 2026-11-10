@@ -1040,10 +1040,14 @@ function viewHome() {
   const w = wordOfDay(), t = tipOfDay();
   return `${topbar()}
   ${greeting()}
+  <div class="home-side">
   ${statusCard()}
   ${comebackCard()}
   ${gtHomeCard()}
-
+  ${dqCard()}
+  ${installCard()}
+  </div>
+  <div class="home-main">
   ${todo ? `<section class="hero">
     <span class="chip-float">${ICON.spark}Bugungi reja</span>
     <div class="hero-cat">${mascot("cap")}</div>
@@ -1068,9 +1072,7 @@ function viewHome() {
     <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${COURSE.units.length}" aria-valuenow="${kDoneCount()}" aria-label="Kurs: ${kDoneCount()}/${COURSE.units.length} boʻlim"><i style="width:${pct(kDoneCount(), COURSE.units.length)}%"></i></div>
     <small class="muted">Kurs: ${kDoneCount()}/${COURSE.units.length} boʻlim · A1 → B2</small></a></section>`; })()}
 
-  ${dqCard()}
-
-  <section class="section">
+  <section class="section wd-sec">
     <div class="section-head"><h2>Bugungi soʻz</h2></div>
     <div class="glass pad word-day">
       <div class="tile-row"><div style="min-width:0"><div class="wd-tr" lang="tr">${esc(w.tr)}</div><div class="word-uz" style="font-size:16px">${esc(w.uz)}</div></div><button class="say" data-act="say" data-t="${esc(w.tr)}" aria-label="Tinglash">${ICON.speak}</button></div>
@@ -1078,7 +1080,7 @@ function viewHome() {
       <div class="tip-line"><div class="tip-cat">${catSVG({ pose: "head", look: catLook() })}</div><div><small class="eyebrow">Pamuk maslahati</small><b>${esc(t[0])}</b><p class="muted">${esc(t[1])}</p></div></div>
     </div>
   </section>
-  ${installCard()}`;
+  </div>`;
 }
 
 /* ---------- Level, Pamuk's growth, daily tasks, weekly challenge (home and profile cards) ---------- */
@@ -1098,7 +1100,7 @@ function dqBtn(k) {
 }
 function dqCard() {
   const q = dqToday(), done = q.k.filter(k => q.ok[k]).length;
-  return `<section class="glass pad dq-card">
+  return `<section class="glass pad dq-card dq-today">
     <div class="pcard-head"><b>${ICON.target}Bugungi vazifalar</b><span class="tag ${q.paid ? "green-t" : "violet-t"}">${q.paid ? `${ICON.check}+${XP_VAL.daily} XP olindi` : `${done}/3 · +${XP_VAL.daily} XP`}</span></div>
     ${q.k.map(k => { const g = DQ_GO[k], ok = q.ok[k]; return `<button class="dq-row${ok ? " ok" : ""}" ${ok ? "disabled" : dqBtn(k)}>
       <span class="dq-ico">${ok ? ICON.check : ICON[g[2]]}</span><span><b>${g[0]}</b><small>${g[1]}</small></span><span class="dq-xp">+${XP_VAL[k]} XP</span>${ok ? "" : ICON.chev}</button>`; }).join("")}
@@ -1659,7 +1661,7 @@ function viewSettings() {
     </div>
   </section>
   ${USER ? `<button class="btn btn-ghost btn-block" data-act="logout">Hisobdan chiqish</button>
-  <div id="del-box" style="display:flex;flex-direction:column;gap:10px"><button class="link" data-act="delete-ask" style="align-self:center;color:var(--pink)">Hisobni oʻchirish</button></div>` : ""}`;
+  <div id="del-box" style="display:flex;flex-direction:column;gap:10px"><button class="link" data-act="delete-ask" style="align-self:center;color:var(--pink-ink)">Hisobni oʻchirish</button></div>` : ""}`;
 }
 
 function trHistory() { try { return JSON.parse(localStorage.getItem("ty-tr-hist") || "[]"); } catch (e) { return []; } }
@@ -2258,7 +2260,7 @@ function viewAchievements() {
   <div class="ach-hero glass">${mascot("trophy")}<div><h1 class="page-title" style="font-size:26px">Yutuqlar</h1><p class="sub">${done} / ${ACH.length} ochildi · har biri +20 XP</p>
     <div class="bar" style="margin-top:8px"><i style="width:${pct(done, ACH.length)}%"></i></div></div></div>
   ${nextUp.length ? `<section class="section"><div class="section-head"><h2>Yaqin qolgan yutuqlar</h2></div>
-    <div class="list">${nextUp.map(({ a, p }) => `<div class="unit glass"><span class="medal" style="width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:var(--hair);color:var(--muted)">${ICON[a.ico] || ICON.star}</span>
+    <div class="list">${nextUp.map(({ a, p }) => `<div class="unit glass"><span class="medal">${ICON[a.ico] || ICON.star}</span>
       <span class="unit-body"><span class="unit-title">${esc(a.t)}</span><span class="unit-sub">${esc(a.d)} · yana ${Math.max(0, a.n - a.v())} ta</span><span class="bar"><i style="width:${Math.round(p * 100)}%"></i></span></span><span></span></div>`).join("")}</div></section>` : ""}
   ${ACH_CATS.map(([k, l]) => `<section class="section"><div class="section-head"><h2>${l}</h2><span class="tag violet-t">${ACH.filter(a => a.cat === k && achDone(a)).length}/${ACH.filter(a => a.cat === k).length}</span></div>
     <div class="achv">${ACH.filter(a => a.cat === k).sort((x, y) => achDone(y) - achDone(x)).map(achCard).join("")}</div></section>`).join("")}`;
@@ -2417,7 +2419,7 @@ function showOnboard() {
     <div class="onb-cat">${mascot(s.m)}</div>
     <h2>${esc(s.t)}</h2><p>${esc(s.d)}</p>
     <div class="onb-dots">${ONB.map((_, i) => `<i class="${i === ONB_I ? "on" : ""}"></i>`).join("")}</div>
-    <div class="cel-actions"><button class="btn btn-ghost" data-act="onb-skip">Oʻtkazib yuborish</button><button class="btn btn-grad" data-act="onb-next">${ONB_I < ONB.length - 1 ? "Keyingi" : "Boshladik!"}</button></div>
+    <div class="cel-actions onb-actions"><button class="btn btn-grad btn-block" data-act="onb-next">${ONB_I < ONB.length - 1 ? "Keyingi" : "Boshladik!"}</button>${ONB_I < ONB.length - 1 ? `<button class="link" data-act="onb-skip">Oʻtkazib yuborish</button>` : ""}</div>
   </div>`;
   el.hidden = false;
   CatLife.scan();
@@ -2477,6 +2479,8 @@ function routeNow() {
   else { html = viewHome(); tab = "home"; }
   app.innerHTML = `<div class="view" data-v="${esc(h.replace(/[^a-z].*$/, "") || "home")}">${html}</div>`;
   document.querySelectorAll(".nav a").forEach(a => { if (a.dataset.tab === tab) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  // A row of chips that scrolls sideways shows its chosen chip
+  app.querySelectorAll(".chips").forEach(c => { const on = c.querySelector('[aria-pressed="true"]'); if (on && c.scrollWidth > c.clientWidth) c.scrollLeft = on.offsetLeft - (c.clientWidth - on.offsetWidth) / 2; });
   if (after) after();
   CatLife.scan();
   if ($("auth").hidden && $("welcome").hidden) setTimeout(maybeOnboard, 600);
@@ -4394,7 +4398,7 @@ function groupHTML(code, c) {
       <div class="facts"><span>${ICON.book}Kurs: ${esc(m.lv || "A1")} · ${m.units || 0}/${COURSE.units.length} boʻlim</span><span>${ICON.clock}14 kunda: ${Math.round(mins)} daqiqa, ${m.act || 0} faol kun</span><span>${ICON.star}Jami: ${m.xp || 0} XP</span></div>
       ${skBars(st)}
       ${tk.length ? `<div class="tags">${tk.map(t => `<span class="tag ${(m.tk || {})[t.id] ? "green-t" : "pink-t"}">${(m.tk || {})[t.id] ? ICON.check : ""}${esc(t.title.slice(0, 28))}</span>`).join("")}</div>` : ""}
-      <button class="link" data-act="grp-kick" data-c="${esc(code)}" data-u="${esc(m.id)}" data-n="${esc(m.name || "")}" style="color:var(--pink);align-self:flex-start">Guruhdan chiqarish</button></div></details>`;
+      <button class="link" data-act="grp-kick" data-c="${esc(code)}" data-u="${esc(m.id)}" data-n="${esc(m.name || "")}" style="color:var(--pink-ink);align-self:flex-start">Guruhdan chiqarish</button></div></details>`;
   }).join("") : "";
   const list = `<section class="section"><div class="section-head"><h2>${own ? "Oʻquvchilar" : "Guruh reytingi"}</h2><span class="tag violet-t">bu hafta XP</span></div>
     ${ms.length ? `<div class="glass words grp-list">${rows}</div>` : `<div class="glass empty">${mascot("trophy")}<b>Hali hech kim qoʻshilmagan</b><span class="muted">Havolani oʻquvchilaringizga yuboring.</span></div>`}</section>`;
@@ -4413,7 +4417,7 @@ function groupHTML(code, c) {
     : tk.length ? `<section class="section"><div class="section-head"><h2>Topshiriqlar</h2><span class="tag violet-t">${tk.filter(gtDone).length}/${tk.length}</span></div>
     <div class="glass words">${tk.map(t => { const ok = gtDone(t); return `<a class="rank-row gt-row${ok ? " me" : ""}" href="${gtHref(t)}" style="color:inherit;text-decoration:none">
       <span class="dq-ico">${ok ? ICON.check : ICON.flag}</span><span style="min-width:0"><b>${esc(t.title)}</b><small>${esc(GT_KINDS[t.kind] || "")}${t.due ? ` · ${esc(gtDueText(t.due))}` : ""}</small></span><span class="xp">${ok ? "bajarildi" : "Boshlash"}</span></a>`; }).join("")}</div></section>` : "";
-  const foot = own ? `<div id="grp-del" style="display:flex;flex-direction:column;gap:10px"><button class="btn btn-ghost btn-block" data-act="grp-reload" data-c="${esc(code)}">Yangilash</button><button class="link" data-act="grp-del-ask" data-c="${esc(code)}" style="align-self:center;color:var(--pink)">Guruhni oʻchirish</button></div>`
+  const foot = own ? `<div id="grp-del" style="display:flex;flex-direction:column;gap:10px"><button class="btn btn-ghost btn-block" data-act="grp-reload" data-c="${esc(code)}">Yangilash</button><button class="link" data-act="grp-del-ask" data-c="${esc(code)}" style="align-self:center;color:var(--pink-ink)">Guruhni oʻchirish</button></div>`
     : `<button class="btn btn-ghost btn-block" data-act="grp-leave" data-c="${esc(code)}">Guruhdan chiqish</button>`;
   return head + share + tasks + sum + list + foot;
 }
