@@ -8,8 +8,8 @@
 <meta name="description" content="Turk tilini oʻzbek tilida bepul oʻrganing (turk tili o'rganish): A1–B2 kurs, 3000+ soʻz, 122 grammatika mavzusi, 735 mashq, tinglash, gapirish va yozish. Reklamasiz.">
 <link rel="canonical" href="https://turkceyol.web.app/">
 <meta name="google-site-verification" content="EAdQiwhsC9pB10uySY6Zf-6hzYvZTDHYdezIMpCJVPI">
-<meta name="theme-color" content="#edf1fc" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0a0c1e" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f4ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1124" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -27,13 +27,11 @@
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Türkçe Yoʻl","url":"https://turkceyol.web.app/","inLanguage":"uz","applicationCategory":"EducationalApplication","operatingSystem":"Android, iOS, Web","isAccessibleForFree":true,"offers":{"@type":"Offer","price":0,"priceCurrency":"UZS"},"description":"Oʻzbek tilida soʻzlashuvchilar uchun turk tili: A1–B2 kurs, grammatika qoʻllanmasi, 4 koʻnikma boʻyicha mashqlar."}</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preload" href="fonts/onest-v1.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
 <script>
-  // Apply the saved theme before first paint
-  try { const t = localStorage.getItem("ty-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+  // Apply the saved theme before first paint, and the colour of the browser bar with it
+  try { const t = localStorage.getItem("ty-theme"); if (t === "light" || t === "dark") { document.documentElement.dataset.theme = t; document.querySelectorAll('meta[name="theme-color"]').forEach(m => { m.media = ""; m.content = t === "dark" ? "#0d1124" : "#f7f4ee"; }); } } catch (e) {}
 </script>
 <!-- Firebase SDK is loaded by app.js after the first paint; preload only starts the download early -->
 <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
@@ -45,7 +43,7 @@
 <section class="auth" id="auth" hidden aria-label="Kirish">
   <div class="auth-hero">
     <span class="speech" id="auth-speech">Salom! Men Pamuk.</span>
-    <div id="auth-mascot"></div>
+    <div id="auth-mascot" class="sun"></div>
     <h1>Türkçe Yoʻl</h1>
     <p>Turk tilini oʻzbek tilida, kuniga 10 daqiqada oʻrganing.</p>
     <div class="auth-chips"><span>100% bepul</span><span>Reklamasiz</span><span>A1 → B2</span><span>Oʻzbek tilida</span></div>
@@ -95,12 +93,13 @@
 
 <div class="welcome" id="welcome" hidden data-act="welcome-close"><div class="welcome-card" id="welcome-card"></div></div>
 
-<nav class="nav blur" aria-label="Asosiy menyu">
-  <a href="#home" data-tab="home" aria-label="Asosiy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>Asosiy</span></a>
-  <a href="#course" data-tab="lessons" aria-label="Darslar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5C4 4 7 4 12 6c5-2 8-2 10-.5V19c-2-1.5-5-1.5-10 .5-5-2-8-2-10-.5z"/><path d="M12 6v13.5"/></svg><span>Darslar</span></a>
-  <a href="#practice" data-tab="practice" aria-label="Mashq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="15" rx="3"/><path d="M8 3h10a3 3 0 0 1 3 3v11"/></svg><span>Mashq</span></a>
-  <a href="#rank" data-tab="rank" aria-label="Reyting"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg><span>Reyting</span></a>
-  <a href="#profile" data-tab="profile" aria-label="Profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Profil</span></a>
+<nav class="nav" aria-label="Asosiy menyu">
+  <div class="nav-brand" id="nav-brand" aria-hidden="true"></div>
+  <a href="#home" data-tab="home" aria-label="Asosiy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>Asosiy</span></a>
+  <a href="#course" data-tab="lessons" aria-label="Darslar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5.5C4 4 7 4 12 6c5-2 8-2 10-.5V19c-2-1.5-5-1.5-10 .5-5-2-8-2-10-.5z"/><path d="M12 6v13.5"/></svg><span>Darslar</span></a>
+  <a href="#practice" data-tab="practice" aria-label="Mashq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="13" height="15" rx="3"/><path d="M8 3h10a3 3 0 0 1 3 3v11"/></svg><span>Mashq</span></a>
+  <a href="#rank" data-tab="rank" aria-label="Reyting"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 21h8l-1-3H9z"/></svg><span>Reyting</span></a>
+  <a href="#profile" data-tab="profile" aria-label="Profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Profil</span></a>
 </nav>
 
 <div class="session" id="session" hidden role="dialog" aria-modal="true" aria-label="Mashq">

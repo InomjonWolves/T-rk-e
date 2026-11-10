@@ -1,8 +1,8 @@
 // Offline support. App files: network first (so a new version shows at once), cache when offline or slow.
-// Fonts and the Firebase SDK: cache first.
-const CACHE = "turkce-yol-v57";
+// The site's own font files and the Firebase SDK: cache first.
+const CACHE = "turkce-yol-v58";
 const META = "ty-meta";
-const ASSETS = ["./", "./index.html", "./firebase-config.js", "./content.js", "./lugat.js", "./grammar.js", "./grammar-ex.js", "./course-core.js", "./course.js", "./app.js", "./cat.js", "./guide.js", "./oqish.js", "./styles.css", "./privacy.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
+const ASSETS = ["./", "./index.html", "./firebase-config.js", "./content.js", "./lugat.js", "./grammar.js", "./grammar-ex.js", "./course-core.js", "./course.js", "./app.js", "./cat.js", "./guide.js", "./oqish.js", "./styles.css", "./fonts/onest-v1.woff2", "./privacy.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", e => {
   // cache: "reload" skips the browser's HTTP cache, so the new cache really gets the new files
@@ -27,9 +27,11 @@ self.addEventListener("fetch", e => {
   // Recorded audio: the browser asks for byte ranges (Safari plays media only from 206 answers) — leave it to the
   // network and the HTTP cache (the files never change: the name is the text's key)
   if (url.origin === location.origin && /\/audio\/[^/]+\/[^/]+\.mp3$/.test(url.pathname)) return;
-  if (url.origin === location.origin) { e.respondWith(networkFirst(e.request)); return; }
-  // Fonts and the Firebase SDK; Firebase API traffic goes straight to the network
-  if (!(url.host.startsWith("fonts.") || url.pathname.startsWith("/firebasejs/"))) return;
+  // Font files carry a version in their name and never change: cache first, like the Firebase SDK
+  const font = url.origin === location.origin && /\/fonts\/[^/]+\.woff2$/.test(url.pathname);
+  if (url.origin === location.origin && !font) { e.respondWith(networkFirst(e.request)); return; }
+  // Firebase API traffic goes straight to the network
+  if (!(font || url.pathname.startsWith("/firebasejs/"))) return;
   e.respondWith(caches.match(e.request).then(hit => {
     const net = fetch(e.request).then(res => {
       if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }

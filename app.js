@@ -669,6 +669,8 @@ const ICON = {
   speak: sv('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>'),
   chev: sv('<path d="m9 6 6 6-6 6"/>', 'class="chev"'),
   back: sv('<path d="m15 6-6 6 6 6"/>'),
+  arrow: sv('<path d="M5 12h14M13 6l6 6-6 6"/>', 'stroke-width="2.4"'),
+  trophy: sv('<path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 21h8l-1-3H9z"/>'),
   play: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>',
   plus: sv('<path d="M12 5v14M5 12h14"/>'),
   check: sv('<path d="m5 12 5 5 9-10"/>', 'stroke-width="3"'),
@@ -711,6 +713,8 @@ const ICON = {
 };
 const pawPath = '<ellipse cx="12" cy="16" rx="5.2" ry="4.4"/><ellipse cx="5.8" cy="10.4" rx="2.3" ry="2.7"/><ellipse cx="9.6" cy="6.6" rx="2.3" ry="2.8"/><ellipse cx="14.4" cy="6.6" rx="2.3" ry="2.8"/><ellipse cx="18.2" cy="10.4" rx="2.3" ry="2.7"/>';
 const logo = `<span class="logo" aria-hidden="true">${catSVG({ pose: "head", lite: true })}</span>`;
+// The side rail of wide screens starts with the brand
+{ const nb = $("nav-brand"); if (nb) nb.innerHTML = `${logo}<span>Türkçe Yoʻl</span>`; }
 
 /* Brand cat poses used across the app (drawn in cat.js) */
 function mascot(kind, cls = "") {
@@ -723,6 +727,7 @@ function ring(p, size, stroke, color, cls) {
   return `<svg class="${cls}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle class="ring-bg" cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${stroke}"/><circle class="ring-fg" cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${stroke}" stroke="${color}" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - Math.min(1, p))}"/></svg>`;
 }
 function pctRing(p) {
+  if (p >= 1) return `<span class="pct-ring full" title="100%">${ICON.check}<span class="sr">100%</span></span>`;
   return `<span class="pct-ring">${ring(p, 44, 4, "var(--accent)", "")}${Math.round(p * 100)}%</span>`;
 }
 function wordState(w) {
@@ -754,12 +759,12 @@ function lineChart(vals, labels) {
   const line = smoothPath(pts);
   const grid = [0, 0.5, 1].map(f => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(max * f)}" y2="${y(max * f)}"/><text x="${L - 6}" y="${y(max * f) + 4}" text-anchor="end">${Math.round(max * f)}</text>`).join("");
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Haftalik XP: ${vals.join(", ")}">
-    <defs><linearGradient id="lg${n}" x1="0" x2="1"><stop offset="0" style="stop-color:#ff6b8b"/><stop offset=".35" style="stop-color:#ffa94d"/><stop offset=".65" style="stop-color:#4fd18b"/><stop offset="1" style="stop-color:#6f8dff"/></linearGradient>
+    <defs><linearGradient id="lg${n}" x1="0" x2="1"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--teal)"/></linearGradient>
     <linearGradient id="la${n}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--accent);stop-opacity:.18"/><stop offset="1" style="stop-color:var(--accent);stop-opacity:0"/></linearGradient></defs>
     ${grid}
     <path d="${line} L${pts[pts.length - 1][0]},${y(0)} L${pts[0][0]},${y(0)} Z" fill="url(#la${n})"/>
     <path d="${line}" fill="none" stroke="url(#lg${n})" stroke-width="4" stroke-linecap="round"/>
-    ${pts.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="${vals[i] ? 5 : 3.5}" fill="var(--card-strong)" stroke="url(#lg${n})" stroke-width="3"/>${vals[i] ? `<text class="val" x="${p[0]}" y="${p[1] - 10}" text-anchor="middle">${vals[i]}</text>` : ""}`).join("")}
+    ${pts.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="${vals[i] ? 5 : 3.5}" class="dot" stroke="url(#lg${n})" stroke-width="3"/>${vals[i] ? `<text class="val" x="${p[0]}" y="${p[1] - 10}" text-anchor="middle">${vals[i]}</text>` : ""}`).join("")}
     ${labels.map((l, i) => `<text x="${x(i)}" y="${H - 6}" text-anchor="middle">${l}</text>`).join("")}
   </svg>`;
 }
@@ -769,11 +774,11 @@ function barChart(vals, labels) {
   const y = v => T + (H - T - B) * (1 - v / max);
   const grid = [0, 0.5, 1].map(f => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(max * f)}" y2="${y(max * f)}"/><text x="${L - 6}" y="${y(max * f) + 4}" text-anchor="end">${Math.round(max * f)}</text>`).join("");
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Kunlik oʻqish vaqti, daqiqa: ${vals.join(", ")}">
-    <defs><linearGradient id="bg${n}" x1="0" y1="1" x2="0" y2="0"><stop offset="0" style="stop-color:#4fd18b"/><stop offset=".55" style="stop-color:#ffb547"/><stop offset="1" style="stop-color:#ff6b8b"/></linearGradient></defs>
+    <defs><linearGradient id="bg${n}" x1="0" y1="1" x2="0" y2="0"><stop offset="0" style="stop-color:#ffc94a"/><stop offset="1" style="stop-color:#ff9a1f"/></linearGradient></defs>
     ${grid}
     ${vals.map((v, i) => {
       const cx = L + slot * i + slot / 2, top = y(v);
-      return `<rect x="${cx - bw / 2}" y="${T}" width="${bw}" height="${H - T - B}" rx="${bw / 2}" fill="var(--hair)"/>
+      return `<rect x="${cx - bw / 2}" y="${T}" width="${bw}" height="${H - T - B}" rx="${bw / 2}" class="track"/>
         ${v ? `<rect x="${cx - bw / 2}" y="${top}" width="${bw}" height="${Math.max(bw, y(0) - top)}" rx="${bw / 2}" fill="url(#bg${n})"/><text class="val" x="${cx}" y="${top - 6}" text-anchor="middle">${v}</text>` : ""}
         <text x="${cx}" y="${H - 6}" text-anchor="middle">${labels[i]}</text>`;
     }).join("")}
@@ -1022,7 +1027,7 @@ function statusCard() {
         <small class="muted">${S.xp - L.from}/${L.to - L.from} XP · ${L.next ? `${L.next.lv}-darajada: ${esc(L.next.uz)}` : "Pamuk afsonaga aylandi!"}</small></div></a>
     <div class="stat-row">
       <div class="st-item"><span class="ico orange-t">${ICON.flame}</span><b>${streakNow()}</b><small>kun ketma-ket</small></div>
-      <div class="st-item"><span class="ico violet-t">${ICON.bolt}</span><b>${S.dayXp}<i>/${S.goal}</i></b><small>bugungi XP</small></div>
+      <div class="st-item"><span class="ico ${S.dayXp >= S.goal ? "green-t" : "sky-t"}">${S.dayXp >= S.goal ? ICON.check : ICON.bolt}</span><b>${S.dayXp}<i>/${S.goal}</i></b><small>bugungi XP</small></div>
       <div class="st-item"><span class="ico green-t">${ICON.book}</span><b>${learned}</b><small>soʻz oʻrganildi</small></div>
     </div>
     <div class="week" aria-label="Shu hafta">
@@ -1040,26 +1045,27 @@ function viewHome() {
   ${gtHomeCard()}
 
   ${todo ? `<section class="hero">
-    <span class="chip-float">${ICON.spark.replace("<svg", '<svg style="width:14px;height:14px;vertical-align:-2px;color:var(--accent)"')} Bugungi reja</span>
-    <div>${mascot("cap")}</div>
+    <span class="chip-float">${ICON.spark}Bugungi reja</span>
+    <div class="hero-cat">${mascot("cap")}</div>
     <h2>Kuniga 10 daqiqa yetarli</h2>
-    <div class="hero-stats"><span>${due} takrorlash</span><span>${fresh} yangi soʻz</span><span>~${Math.max(1, Math.round(todo * 0.25))} daqiqa</span></div>
-    <button class="btn btn-white" data-act="start" data-mode="review">Boshlash</button>
+    <div class="hero-stats"><span><b>${due}</b> takrorlash</span><span><b>${fresh}</b> yangi soʻz</span><span>~<b>${Math.max(1, Math.round(todo * 0.25))}</b> daqiqa</span></div>
+    <button class="btn btn-white" data-act="start" data-mode="review">Boshlash${ICON.arrow}</button>
   </section>` : `<section class="hero warm">
-    <span class="chip-float">Bajarildi</span>
-    <div>${mascot("trophy")}</div>
+    <span class="chip-float">${ICON.check}Bajarildi</span>
+    <div class="hero-cat">${mascot("trophy")}</div>
     <h2>Bugungi reja bajarildi!</h2>
     <p>Soʻzlar unutilish arafasida qaytadi. Ertaga yana keling.</p>
-    <button class="btn btn-white" data-act="go" data-to="practice">Erkin mashq</button>
+    <button class="btn btn-white" data-act="go" data-to="practice">Erkin mashq${ICON.arrow}</button>
   </section>`}
 
   ${plHomeCard()}
   ${(() => { const u = kNext(), p = kProgress(u.id); return `<section class="section">
     <div class="section-head"><h2>Kursni davom ettiring</h2><a class="link" href="#course">Barcha boʻlimlar</a></div>
-    <a class="pcard glass" href="#${kHash(u.id)}" style="color:inherit;text-decoration:none">
-    <div class="pcard-head"><b>${ICON.cap}${u.level}.${u.n}-boʻlim</b><span class="tag violet-t">${Math.round(p * 100)}%</span></div>
-    <div style="font-size:20px;font-weight:800" lang="tr">${esc(u.title)}</div><p class="muted">${esc(u.sub)}</p>
-    <div class="bar"><i style="width:${Math.round(p * 100)}%"></i></div>
+    <a class="pcard glass k-next" href="#${kHash(u.id)}">
+    <div class="k-next-row"><span class="art ${LV_COLOR[u.level]}"><span>${u.level}.${u.n}</span></span>
+      <div class="unit-body"><small class="eyebrow">${u.level} · ${u.n}-boʻlim</small><b class="k-next-title" lang="tr">${esc(u.title)}</b></div>${pctRing(p)}</div>
+    <p class="muted">${esc(u.sub)}</p>
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${COURSE.units.length}" aria-valuenow="${kDoneCount()}" aria-label="Kurs: ${kDoneCount()}/${COURSE.units.length} boʻlim"><i style="width:${pct(kDoneCount(), COURSE.units.length)}%"></i></div>
     <small class="muted">Kurs: ${kDoneCount()}/${COURSE.units.length} boʻlim · A1 → B2</small></a></section>`; })()}
 
   ${dqCard()}
@@ -1095,7 +1101,7 @@ function dqCard() {
   return `<section class="glass pad dq-card">
     <div class="pcard-head"><b>${ICON.target}Bugungi vazifalar</b><span class="tag ${q.paid ? "green-t" : "violet-t"}">${q.paid ? `${ICON.check}+${XP_VAL.daily} XP olindi` : `${done}/3 · +${XP_VAL.daily} XP`}</span></div>
     ${q.k.map(k => { const g = DQ_GO[k], ok = q.ok[k]; return `<button class="dq-row${ok ? " ok" : ""}" ${ok ? "disabled" : dqBtn(k)}>
-      <span class="dq-ico">${ok ? ICON.check : ICON[g[2]]}</span><span><b>${g[0]}</b><small>${g[1]} · +${XP_VAL[k]} XP</small></span>${ok ? "" : ICON.chev}</button>`; }).join("")}
+      <span class="dq-ico">${ok ? ICON.check : ICON[g[2]]}</span><span><b>${g[0]}</b><small>${g[1]}</small></span><span class="dq-xp">+${XP_VAL[k]} XP</span>${ok ? "" : ICON.chev}</button>`; }).join("")}
     ${wcMini()}
   </section>`;
 }
@@ -1514,7 +1520,7 @@ async function loadRank() {
   const pod = i => { const r = rows[i]; if (!r) return "<div></div>"; return `<div class="pod${i === 0 ? " first" : ""}">
       ${i === 0 ? `<svg class="crown" viewBox="0 0 24 18" fill="#ffc83d" aria-hidden="true"><path d="M2 5l5 4 5-8 5 8 5-4-2 12H4z"/></svg>` : `<span class="place">${i + 1}</span>`}
       <span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id)}</span>
-      <b>${esc(r.name || "Oʻquvchi")}</b><span>${r[key]} XP${tab === "all" ? ` · ${lvlOf(r.xp)}-dar.` : ""}</span></div>`; };
+      <b>${esc(r.name || "Oʻquvchi")}</b><span>${r[key]} XP${tab === "all" ? ` · ${lvlOf(r.xp)}-dar.` : ""}</span><i class="ped" aria-hidden="true">${i + 1}</i></div>`; };
   $("rank-body").innerHTML = `<div class="glass podium">${pod(1)}${pod(0)}${pod(2)}</div>
     ${rows.length > 3 ? `<div class="glass words" style="margin-top:12px">${rows.slice(3, 50).map((r, i) => `<div class="rank-row${r.id === USER.uid ? " me" : ""}">
       <span class="n">${i + 4}</span><span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id)}</span>
@@ -1963,10 +1969,10 @@ function speakSeq(lines) {
 let SEQ_N = 0;
 
 function kUnitRow(u) {
-  const p = kProgress(u.id), done = kDone(u.id);
-  return `<a class="unit glass" href="#${kHash(u.id)}">
+  const p = kProgress(u.id), done = kDone(u.id), now = !done && u === kNext();
+  return `<a class="unit glass${now ? " now" : ""}" href="#${kHash(u.id)}">
     <span class="art ${done ? "green" : { A1: "sky", A2: "violet", B1: "orange", B2: "pink" }[u.level]}"><span style="font-size:15px">${u.level}.${u.n}</span></span>
-    <span class="unit-body"><span class="unit-title" lang="tr">${esc(u.title)}</span><span class="unit-sub">${esc(u.sub)}</span></span>
+    <span class="unit-body">${now ? `<small class="tag sky-t now-tag">Shu yerdan davom eting</small>` : ""}<span class="unit-title" lang="tr">${esc(u.title)}</span><span class="unit-sub">${esc(u.sub)}</span></span>
     ${done ? `<span class="state done" title="Tugallangan">${ICON.check}</span>` : pctRing(p)}
   </a>`;
 }
@@ -2227,7 +2233,7 @@ function showCelebrate() {
   const c = ACH_QUEUE[0];
   if (!c) return;
   const el = $("celebrate");
-  const colors = ["#ffcf4a", "#ff7aa8", "#6f8dff", "#45d29b", "#a98bff", "#ffa552"];
+  const colors = ["#ffb422", "#e5484d", "#3b5bdb", "#17a36a", "#7a54e0", "#0fa3a0"];
   el.innerHTML = `<div class="confetti" aria-hidden="true">${Array.from({ length: 36 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 0.6).toFixed(2)}s;animation-duration:${(2 + Math.random() * 1.5).toFixed(2)}s;transform:rotate(${Math.random() * 360}deg)"></i>`).join("")}</div>
     <div class="cel-card" role="dialog" aria-modal="true" aria-label="${esc(c.eyebrow || "Yangi yutuq")}">
       <div class="cel-cat">${c.look ? catSVG({ pose: "sit", acc: "stars", look: c.look, cls: "mascot" }) : mascot("trophy")}</div>
@@ -2469,7 +2475,7 @@ function routeNow() {
   else if (h === "profile") html = viewProfile();
   else if (h === "settings") { html = viewSettings(); tab = "profile"; }
   else { html = viewHome(); tab = "home"; }
-  app.innerHTML = `<div class="view">${html}</div>`;
+  app.innerHTML = `<div class="view" data-v="${esc(h.replace(/[^a-z].*$/, "") || "home")}">${html}</div>`;
   document.querySelectorAll(".nav a").forEach(a => { if (a.dataset.tab === tab) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
   if (after) after();
   CatLife.scan();
@@ -2548,6 +2554,7 @@ function progressBar() {
   $("s-count").textContent = Math.min(SES.i + 1, n) + "/" + n;
 }
 function renderStep() {
+  delete sessionEl.dataset.r;
   if (SES.i >= SES.items.length) return renderResult();
   SES.answered = false;
   SES.shown = Date.now();
@@ -2601,9 +2608,9 @@ function renderQuiz(w) {
   const wrong = shuffle(pool.length >= 3 ? pool : ALL.filter(x => x.tr !== w.tr)).slice(0, 3);
   const opts = shuffle([w, ...wrong]);
   SES.correct = w;
-  stage.innerHTML = `<div class="q-label">${toUz ? "Bu soʻz nimani anglatadi?" : "Turkchasini toping"}</div>
+  stage.innerHTML = `<div class="q-card"><div class="q-label">${toUz ? "Bu soʻz nimani anglatadi?" : "Turkchasini toping"}</div>
     <div class="q-row"><div class="q-word" ${toUz ? 'lang="tr"' : ""}>${esc(toUz ? w.tr : w.uz)}</div>
-    ${toUz ? `<button class="say" data-act="say" data-t="${esc(w.tr)}" aria-label="Tinglash">${ICON.speak}</button>` : ""}</div>
+    ${toUz ? `<button class="say" data-act="say" data-t="${esc(w.tr)}" aria-label="Tinglash">${ICON.speak}</button>` : ""}</div></div>
     <div class="options">${opts.map((o, i) => `<button class="opt" data-act="answer" data-ok="${o === w ? 1 : 0}" ${toUz ? "" : 'lang="tr"'}><span class="k">${"ABCD"[i]}</span>${esc(toUz ? o.uz : o.tr)}</button>`).join("")}</div>
     <div class="feedback" id="fb" aria-live="polite"></div>`;
   foot.innerHTML = `<button class="btn btn-grad btn-block" data-act="next" disabled>Keyingi</button>`;
@@ -2611,8 +2618,8 @@ function renderQuiz(w) {
 }
 function renderType(w) {
   SES.sk = ["w"];
-  stage.innerHTML = `<div class="q-label">Turkchasini yozing</div>
-    <div class="q-word">${esc(w.uz)}</div>
+  stage.innerHTML = `<div class="q-card"><div class="q-label">Turkchasini yozing</div>
+    <div class="q-word">${esc(w.uz)}</div></div>
     <form class="type-box" id="type-form" autocomplete="off">
       <label for="type-input" class="sr">Javob</label>
       <input class="type-input" id="type-input" lang="tr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Javobingiz…">
@@ -2795,9 +2802,9 @@ function renderListen(w) {
   SES.sk = ["l"]; SES.correct = w;
   const pool = (SES.u === "all" || SES.u === "pron" ? ALL : ALL.filter(x => x.unit === w.unit)).filter(x => x.tr !== w.tr && x.uz !== w.uz);
   const opts = shuffle([w, ...shuffle(pool.length >= 3 ? pool : ALL.filter(x => x.tr !== w.tr)).slice(0, 3)]);
-  stage.innerHTML = `${listenNotice()}<div class="q-label">Tinglang va maʼnosini toping</div>
+  stage.innerHTML = `${listenNotice()}<div class="q-card"><div class="q-label">Tinglang va maʼnosini toping</div>
     ${playBtns(w.tr)}
-    <div class="ls-reveal" id="ls-reveal" hidden><b lang="tr">${esc(w.tr)}</b> — ${esc(w.uz)}</div>
+    <div class="ls-reveal" id="ls-reveal" hidden><b lang="tr">${esc(w.tr)}</b> — ${esc(w.uz)}</div></div>
     <div class="options">${opts.map((o, i) => `<button class="opt" data-act="answer" data-ok="${o === w ? 1 : 0}"><span class="k">${"ABCD"[i]}</span>${esc(o.uz)}</button>`).join("")}</div>
     <div class="feedback" id="fb" aria-live="polite"></div>`;
   foot.innerHTML = `<button class="btn btn-grad btn-block" data-act="next" disabled>Keyingi</button>`;
@@ -2810,10 +2817,10 @@ const typeBox = () => `<form class="type-box" id="type-form" autocomplete="off">
   </form>`;
 function renderDict(w) {
   SES.sk = ["l", "w"];
-  stage.innerHTML = `${listenNotice()}<div class="q-label">Diktant: eshitganingizni turkcha yozing</div>
+  stage.innerHTML = `${listenNotice()}<div class="q-card"><div class="q-label">Diktant: eshitganingizni turkcha yozing</div>
     ${playBtns(w.tr)}
+    <div class="ls-reveal" id="ls-reveal" hidden><b lang="tr">${esc(w.tr)}</b> — ${esc(w.uz)}</div></div>
     ${typeBox()}
-    <div class="ls-reveal" id="ls-reveal" hidden><b lang="tr">${esc(w.tr)}</b> — ${esc(w.uz)}</div>
     <div class="feedback" id="fb" aria-live="polite"></div>`;
   foot.innerHTML = `<button class="btn btn-ghost" data-act="type-skip">Bilmayman</button><button class="btn btn-grad" data-act="type-check">Tekshirish</button>`;
   $("type-form").addEventListener("submit", e => { e.preventDefault(); if (SES.answered) nextStep(); else checkType(); });
@@ -2852,16 +2859,16 @@ function lsItems(u) {
 function renderLs(it) {
   if (it.ls === "pick") {
     SES.sk = ["l"];
-    stage.innerHTML = `${listenNotice()}<div class="q-label">Qaysi gapni eshitdingiz?</div>
-      ${playBtns(it.t)}
+    stage.innerHTML = `${listenNotice()}<div class="q-card"><div class="q-label">Qaysi gapni eshitdingiz?</div>
+      ${playBtns(it.t)}</div>
       <div class="options">${it.opts.map((o, i) => `<button class="opt" lang="tr" data-act="ls-ans" data-o="${i}"><span class="k">${"ABC"[i]}</span>${esc(o)}</button>`).join("")}</div>
       <div class="feedback" id="fb" aria-live="polite"></div>`;
     foot.innerHTML = `<button class="btn btn-grad btn-block" data-act="next" disabled>Keyingi</button>`;
   } else {
     SES.sk = ["l", "w"];
-    stage.innerHTML = `${listenNotice()}<div class="q-label">Tinglang va tushib qolgan soʻzni yozing</div>
+    stage.innerHTML = `${listenNotice()}<div class="q-card"><div class="q-label">Tinglang va tushib qolgan soʻzni yozing</div>
       ${playBtns(it.t)}
-      <div class="q-sent" lang="tr">${blankHtml(it.shown)}</div>
+      <div class="q-sent" lang="tr">${blankHtml(it.shown)}</div></div>
       ${typeBox()}
       <div class="feedback" id="fb" aria-live="polite"></div>`;
     foot.innerHTML = `<button class="btn btn-ghost" data-act="ls-skip">Bilmayman</button><button class="btn btn-grad" data-act="ls-check">Tekshirish</button>`;
@@ -2874,9 +2881,9 @@ function lsFinish(ok, html) {
   tick();
   const it = SES.items[SES.i], fb = $("fb");
   if (ok) lsmHit(it); else lsmMiss(it);
-  if (ok) { SES.right++; skillLog(SES.sk, true); save(); CatLife.mood(sCat(), "happy", 1000); }
+  if (ok) { SES.right++; skillLog(SES.sk, true); save(); sMood("happy"); }
   else {
-    skillLog(SES.sk, false); save(); CatLife.mood(sCat(), "sad", 1600);
+    skillLog(SES.sk, false); save(); sMood("sad");
     if (!SES.re.has(it.t) && SES.items.length < 40) { SES.re.add(it.t); SES.items.push(it); }
   }
   fb.className = "feedback " + (ok ? "ok" : "no"); fb.innerHTML = html;
@@ -2977,9 +2984,9 @@ function oralMarked(sample, r) {
 function renderOral(it) {
   SES.sk = ["s", "r"]; SES.tries = 0;
   const un = KU[it.unit];
-  stage.innerHTML = `<div class="tags"><span class="tag sky-t">${esc(un.level)}.${un.n}</span><span class="tag violet-t" lang="tr">${esc(it.rtitle || "")}</span></div>
+  stage.innerHTML = `<div class="q-card"><div class="tags"><span class="tag sky-t">${esc(un.level)}.${un.n}</span><span class="tag violet-t" lang="tr">${esc(it.rtitle || "")}</span></div>
     <div class="q-label">Savolga ovoz chiqarib, toʻliq gap bilan javob bering</div>
-    <div class="q-row"><div class="q-sent" lang="tr">${esc(it.q)}</div><button class="say" data-act="say" data-t="${esc(it.q.replace(/\([^)]*\)/g, ""))}" aria-label="Savolni tinglash">${ICON.speak}</button></div>
+    <div class="q-row"><div class="q-sent" lang="tr">${esc(it.q)}</div><button class="say" data-act="say" data-t="${esc(it.q.replace(/\([^)]*\)/g, ""))}" aria-label="Savolni tinglash">${ICON.speak}</button></div></div>
     ${it.rtext ? `<details class="glass pad"><summary><b>Matnni koʻrish</b></summary><p class="k-p" lang="tr" style="margin-top:8px">${esc(it.rtext)}</p></details>` : ""}
     <div class="mic-wrap">
       <button class="mic-btn" id="mic-btn" data-act="mic" aria-label="Mikrofon: gapirishni boshlash">${ICON.mic}</button>
@@ -3641,10 +3648,10 @@ function sayMarked(target, ok) {
 }
 function renderSay(w) {
   SES.sk = ["s"]; SES.tries = 0; SES.best = null;
-  stage.innerHTML = `<div class="q-label">${w.line ? "Tinglang va gapni ovoz chiqarib takrorlang" : "Ovoz chiqarib ayting"}</div>
-    <div class="q-row"><div class="q-word say-target" id="say-target" lang="tr">${esc(w.tr)}</div>
+  stage.innerHTML = `<div class="q-card"><div class="q-label">${w.line ? "Tinglang va gapni ovoz chiqarib takrorlang" : "Ovoz chiqarib ayting"}</div>
+    <div class="q-row"><div class="q-word say-target${w.line ? " q-line" : ""}" id="say-target" lang="tr">${esc(w.tr)}</div>
       <button class="say" data-act="say" data-t="${esc(w.tr)}" aria-label="Tinglash">${ICON.speak}</button></div>
-    <div class="sub">${esc(w.uz || "")}</div>
+    ${w.uz ? `<div class="sub">${esc(w.uz)}</div>` : ""}</div>
     <div class="mic-wrap">
       <button class="mic-btn" id="mic-btn" data-act="mic" aria-label="Mikrofon: gapirishni boshlash">${ICON.mic}</button>
       <div class="mic-hint" id="mic-hint">Avval tinglang, keyin mikrofonni bosib ayting</div>
@@ -3727,8 +3734,8 @@ function sayFinish(ok, skipped) {
     S.pron[1]++; dayRec().rev++;
     skillLog(SES.sk || "s", ok);
     if (ok) lsmHit(SES.items[SES.i], SES.m); else lsmMiss(SES.items[SES.i], SES.m);
-    if (ok) { S.pron[0]++; SES.right++; save(); CatLife.mood(sCat(), "happy", 1000); }
-    else { save(); CatLife.mood(sCat(), "sad", 1600); }
+    if (ok) { S.pron[0]++; SES.right++; save(); sMood("happy"); }
+    else { save(); sMood("sad"); }
   }
   const w = SES.items[SES.i];
   foot.innerHTML = `<button class="btn btn-ghost" data-act="say" data-t="${esc(w.tr)}">${ICON.speak}${w.oral ? "Namunani tinglash" : "Tinglash"}</button><button class="btn btn-grad" data-act="next">Keyingi</button>`;
@@ -3741,15 +3748,15 @@ function renderGx(it) {
   const ex = it.ex, tp = gxTopic(it.code);
   const head = `<div class="tags"><span class="tag sky-t">${esc(it.code)}</span><span class="tag violet-t">${esc(tp ? tp.uz : "")}</span></div>`;
   if (ex.t === "c") {
-    stage.innerHTML = `${head}<div class="q-label">Toʻgʻri variantni tanlang</div>
-      <div class="q-sent">${blankHtml(ex.q)}</div>
+    stage.innerHTML = `<div class="q-card">${head}<div class="q-label">Toʻgʻri variantni tanlang</div>
+      <div class="q-sent">${blankHtml(ex.q)}</div></div>
       <div class="options">${shuffle(ex.o.map((o, i) => [o, i])).map(([o, i], k) => `<button class="opt" lang="tr" data-act="gx-ans" data-o="${i}"><span class="k">${"ABCD"[k]}</span>${esc(o)}</button>`).join("")}</div>
       <div class="feedback" id="fb" aria-live="polite"></div>`;
     foot.innerHTML = `<button class="btn btn-grad btn-block" data-act="next" disabled>Keyingi</button>`;
   } else if (ex.t === "t") {
-    stage.innerHTML = `${head}<div class="q-label">Boʻsh joyni toʻldiring</div>
+    stage.innerHTML = `<div class="q-card">${head}<div class="q-label">Boʻsh joyni toʻldiring</div>
       <div class="q-sent" lang="tr">${blankHtml(ex.q)}</div>
-      ${ex.uz ? `<div class="sub">${esc(ex.uz)}</div>` : ""}
+      ${ex.uz ? `<div class="sub">${esc(ex.uz)}</div>` : ""}</div>
       <form class="type-box" id="type-form" autocomplete="off">
         <label for="type-input" class="sr">Javob</label>
         <input class="type-input" id="type-input" lang="tr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Javobingiz…">
@@ -3764,9 +3771,9 @@ function renderGx(it) {
     let order = shuffle(toks.map((t, i) => i));
     if (order.every((v, i) => v === i)) order = order.reverse();
     SES.ord = [];
-    stage.innerHTML = `${head}<div class="q-label">Soʻzlardan gap tuzing</div>
-      <div class="sub" style="font-size:16px;color:var(--ink-2)">${esc(ex.uz || "")}</div>
-      <div class="ord-ans glass" id="ord-ans" aria-label="Sizning gapingiz"></div>
+    stage.innerHTML = `<div class="q-card">${head}<div class="q-label">Soʻzlardan gap tuzing</div>
+      <div class="q-sent q-uz">${esc(ex.uz || "")}</div></div>
+      <div class="ord-ans" id="ord-ans" aria-label="Sizning gapingiz"></div>
       <div class="ord-pool" id="ord-pool">${order.map(i => `<button class="tok" lang="tr" data-act="ord-tok" data-i="${i}">${esc(toks[i])}</button>`).join("")}</div>
       <div class="feedback" id="fb" aria-live="polite"></div>`;
     foot.innerHTML = `<button class="btn btn-ghost" data-act="gx-skip">Bilmayman</button><button class="btn btn-grad" data-act="gx-order" disabled>Tekshirish</button>`;
@@ -3815,7 +3822,7 @@ function gxGood(it) {
   skillLog(SES.sk, true);
   save();
   if (!was && gxDone(it.code)) SES.topicDone = it.code;
-  CatLife.mood(sCat(), "happy", 1000);
+  sMood("happy");
 }
 function gxBad(it) {
   tick();
@@ -3823,19 +3830,21 @@ function gxBad(it) {
   dayRec().rev++; S.acc[1]++;
   skillLog(SES.sk, false);
   save();
-  CatLife.mood(sCat(), "sad", 1600);
+  sMood("sad");
   const key = it.code + "#" + it.i;
   if (!SES.re.has(key) && SES.items.length < 40) { SES.re.add(key); SES.items.push(it); }
 }
 const sCat = () => $("s-cat").querySelector(".cat");
-function good() { tick(); const w = SES.items[SES.i]; SES.right++; skillLog(SES.sk, true); grade(w, true); lsmHit(w, SES.m); CatLife.mood(sCat(), "happy", 1000); }
+// The verdict of the current step: Pamuk reacts and the "next" button takes the colour of the answer
+function sMood(m) { sessionEl.dataset.r = m === "happy" ? "ok" : "no"; CatLife.mood(sCat(), m, m === "happy" ? 1000 : 1600); }
+function good() { tick(); const w = SES.items[SES.i]; SES.right++; skillLog(SES.sk, true); grade(w, true); lsmHit(w, SES.m); sMood("happy"); }
 function bad() {
   tick();
   const w = SES.items[SES.i];
   grade(w, false);
   skillLog(SES.sk, false);
   lsmMiss(w, SES.m);
-  CatLife.mood(sCat(), "sad", 1600);
+  sMood("sad");
   // Show a missed word once more at the end of the session
   if (!SES.re.has(w.tr) && SES.items.length < 40) { SES.re.add(w.tr); SES.items.push(w); }
 }
@@ -3868,11 +3877,14 @@ function renderResult() {
     <div class="score">${SES.right}/${n}</div>
     <h2>${esc(title)}</h2>
     <p>${r >= 0.7 ? "Pamuk sizdan faxrlanadi!" : "Pamuk aytadi: xatolar ham oʻrganishning bir qismi."}</p>
-    <p class="muted">Siz bugun yana bir qadam qoʻydingiz — bepul va mustaqil. Ertaga ham kutamiz!</p>
-    <p><b>+${SES.xp} XP</b> · ${esc(XP_KIND[SES.award.kind])} · bugun ${S.dayXp}/${S.goal} XP · ${streakNow()} kun ketma-ket</p>
+    <div class="res-grid">
+      <div class="res-xp"><b>+${SES.xp} XP</b><span>${esc(XP_KIND[SES.award.kind])}</span></div>
+      <div><b>${S.dayXp}<i>/${S.goal}</i></b><span>bugungi XP</span></div>
+      <div><b>${streakNow()}</b><span>kun ketma-ket</span></div>
+    </div>
     ${xpWhy(SES.award) ? `<p class="xp-why">${esc(xpWhy(SES.award))}</p>` : ""}
     ${dqMini()}
-    <p>Takrorlash navbatida: ${dueWords().length} ta · Xatolar daftarida: ${mistakeWords().length} ta</p>
+    <p class="muted">Takrorlash navbatida: ${dueWords().length} ta · Xatolar daftarida: ${mistakeWords().length} ta</p>
     ${SES.topicDone ? `<div class="tags" style="justify-content:center"><span class="tag green-t">${ICON.check}${esc(SES.topicDone)} mavzusi tugallandi</span></div>` : ""}
     ${fresh.length ? `<div class="tags" style="justify-content:center">${fresh.map(a => `<span class="tag violet-t">${ICON.star}Yangi yutuq: ${esc(a.t)}</span>`).join("")}</div>` : ""}
   </div>`;
