@@ -16,7 +16,7 @@ module.exports = [
       { h: "6. Har kuni tinglang", p: ["Qisqa dialoglar, qo'shiqlar va seriallar quloqni turkcha nutqqa o'rgatadi. Avval matn bilan, keyin matnsiz tinglang. Sekin tezlikdan boshlab, asta-sekin odatiy tezlikka o'ting."] },
       { h: "7. Ovoz chiqarib gapiring", p: ["Faqat o'qish bilan gapirishni o'rganib bo'lmaydi. Har bir yangi gapni ovoz chiqarib takrorlang, o'zingizni yozib eshiting. Talaffuz mashqlari xatolaringizni darhol ko'rsatadi."] },
       { h: "8. Kichik matnlar yozing", p: ["Har kuni 3–5 gap yozing: kuningiz, oilangiz, rejalaringiz haqida. Yozish grammatikani mustahkamlaydi va yangi so'zlarni faol lug'atga o'tkazadi."] },
-      { h: "9. Darajangizni biling", p: ["A1 (boshlang'ich) dan B2 (o'rta-yuqori) gacha bo'lgan darajalar o'qish, tinglash, yozish va gapirish bo'yicha aniq maqsad beradi. Darajangizni aniqlab, aynan o'sha joydan boshlang."], cta: ["Turk tili darajalari A1–B2", "maqola/darajalar.html"] },
+      { h: "9. Darajangizni biling", p: ["A1 (boshlang'ich) dan C1 (ilg'or) gacha bo'lgan darajalar o'qish, tinglash, yozish va gapirish bo'yicha aniq maqsad beradi. Darajangizni aniqlab, aynan o'sha joydan boshlang."], cta: ["Turk tili darajalari A1–B2", "maqola/darajalar.html"] },
       { h: "10. Birga o'rganing", p: ["Do'stlar yoki guruh bilan o'rganish motivatsiyani oshiradi. Haftalik reyting, kunlik vazifalar va kichik musobaqalar odatni saqlashga yordam beradi."] }
     ]
   },
@@ -50,8 +50,8 @@ module.exports = [
   },
   {
     id: "darajalar",
-    title: "Turk tili darajalari A1, A2, B1, B2: qaysi darajadasiz?",
-    desc: "Turk tili darajalari A1, A2, B1 va B2 nimani anglatadi? Har darajada nimani bila olishingiz kerak va darajangizni 5 daqiqada qanday aniqlash mumkin.",
+    title: "Turk tili darajalari A1, A2, B1, B2, C1: qaysi darajadasiz?",
+    desc: "Turk tili darajalari A1, A2, B1, B2 va C1 nimani anglatadi? Har darajada nimani bila olishingiz kerak va darajangizni 5 daqiqada qanday aniqlash mumkin.",
     lead: "Til darajalari Yevropa umumiy tizimi (CEFR) asosida belgilanadi. Ular o'qish, tinglash, yozish va gapirish ko'nikmalarini o'lchaydi.",
     blocks: [
       { h: "A1 — boshlang'ich", list: ["O'zingizni tanishtirasiz, oddiy savollar berasiz va javob berasiz", "Raqamlar, vaqt, oila, ovqat, xarid haqida oddiy gaplar", "Taxminan 500–700 so'z", "Hozirgi zamon (-yor), egalik, asosiy kelishiklar"] },

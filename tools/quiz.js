@@ -1,4 +1,4 @@
-// Weekly Telegram quiz: 5 quiz polls (3 words + 2 grammar rules) for one level; the level rotates every week A1 → B2.
+// Weekly Telegram quiz: 5 quiz polls (3 words + 2 grammar rules) for one level; the level rotates every week A1 → C1.
 // tools/telegram.js sends it to the channel on Saturdays (or any day with QUIZ=1); the bot's /test sends one question.
 // Preview: node tools/quiz.js
 const fs = require("fs");

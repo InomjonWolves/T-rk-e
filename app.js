@@ -1170,7 +1170,7 @@ function unitsList() {
       <div class="list">${rows.map(ui => unitRow(UNITS[ui], ui)).join("")}</div></details>`;
   }).join("");
 }
-// Darslar → Lugʻat: search over every word, levels A1–B2; A1 starts with the step-by-step lessons, then topic packs and the course vocabulary
+// Darslar → Lugʻat: search over every word, levels A1–C1; A1 starts with the step-by-step lessons, then topic packs and the course vocabulary
 function viewLessons() { return viewLugat(); }
 function viewUnit(ui) {
   const u = UNITS[ui], c = catOf(ui), ws = unitWords(ui), k = ws.filter(w => known(w) >= 2).length;
@@ -1813,7 +1813,7 @@ ALL.forEach(w => { const k = fold(w.tr); if (!(k in ALL_BY_TR)) ALL_BY_TR[k] = w
   })));
   CATS.push({ id: "k" + lv, uz: `Kurs ${lv} lugʻati`, color, ico: "book", ids: [unit.id] });
 });
-/* Vocabulary base (lugat.js): thematic packs A1–B2. New words join the shared list (one SRS state per word);
+/* Vocabulary base (lugat.js): thematic packs A1–C1. New words join the shared list (one SRS state per word);
    each pack keeps its full list, including words already taught elsewhere. */
 const LPACKS = typeof LUGAT !== "undefined" ? LUGAT : [], LWORDS = {}, LBY = {};
 const LV_COLOR = { A1: "sky", A2: "violet", B1: "orange", B2: "pink", C1: "teal" };
@@ -1838,7 +1838,7 @@ const lugLevel = lv => LPACKS.filter(p => p.lv === lv);
 const lugKnown = id => LWORDS[id].filter(w => known(w) >= 2).length;
 const lugAllWords = () => { const m = new Map(); LPACKS.forEach(p => LWORDS[p.id].forEach(w => m.set(w.tr, w))); return [...m.values()]; };
 
-/* ---------- A1–B2 course (course.js): levels, units, level tests ---------- */
+/* ---------- A1–C1 course (course.js): levels, units, level tests ---------- */
 const KU = {};
 COURSE.units.forEach((u, i) => { KU[u.id] = u; u.idx = i; });
 // index.html loads course-core.js (titles, goals, vocabulary); the full course.js (dialogs, texts, exercises)
@@ -2181,7 +2181,7 @@ const ACH = [
   { id: "kB2", cat: "course", t: "B2 bitiruvchisi", d: "B2 ning 8 boʻlimi", v: () => kDoneCount("B2"), n: 8, c: "pink", ico: "cap" },
   { id: "kC1", cat: "course", t: "C1 bitiruvchisi", d: "C1 ning 8 boʻlimi", v: () => kDoneCount("C1"), n: 8, c: "teal", ico: "cap" },
   { id: "kt1", cat: "course", t: "Test gʻolibi", d: "1 ta daraja testidan oʻtish", v: () => COURSE.levels.filter(l => kTestBest(l.id) >= l.test.pass).length, n: 1, c: "teal", ico: "star" },
-  { id: "kt4", cat: "course", t: "A1 → B2", d: "4 ta testdan oʻtish", v: () => COURSE.levels.filter(l => kTestBest(l.id) >= l.test.pass).length, n: 4, c: "green", ico: "crown" },
+  { id: "kt4", cat: "course", t: "A1 → C1", d: "5 ta testdan oʻtish", v: () => COURSE.levels.filter(l => kTestBest(l.id) >= l.test.pass).length, n: 5, c: "green", ico: "crown" },
   { id: "gram", cat: "gram", t: "Grammatika", d: "10 asosiy mavzu", v: gramCount, n: GRAMMAR.length, c: "violet", ico: "cap" },
   { id: "gx10", cat: "gram", t: "Qoida ustasi", d: "10 ta qoida mashqi", v: () => gxDoneCount(), n: 10, c: "sky", ico: "quiz" },
   { id: "gxa1", cat: "gram", t: "A1 qoidalari", d: `A1 ning ${gxCount("A1")} ta qoida mashqi`, v: () => gxDoneCount("A1"), n: gxCount("A1"), c: "green", ico: "crown" },
@@ -3185,7 +3185,7 @@ function viewWrite() {
    Okuma = the book's own questions (grammar/vocabulary + reading). Dinleme, Yazma and Konuşma are built
    from the same level's vocabulary, dialogs, exercises and reading questions, fresh for every attempt. */
 const LVS = ["A1", "A2", "B1", "B2", "C1"];
-const PL_LVS = LVS.slice(0, 4); // darajani aniqlash testi A1–B2 ni qamraydi; C1 ga daraja testi orqali oʻtiladi
+const PL_LVS = LVS; // darajani aniqlash testi A1–C1 ni qamraydi
 let KT_GEN = {}, KT_ANS = { lv: null, l: {}, w: {}, s: {} }, KT_REC = null;
 function ktGen(lv) {
   if (KT_GEN[lv]) return KT_GEN[lv];
@@ -3331,7 +3331,7 @@ function viewPlacement() {
     return `<button class="opt${cls}" data-act="pl-${kind}" data-i="${i}" data-o="${oi}" ${trLang ? 'lang="tr"' : ""} ${res ? "disabled" : ""}>${esc(o)}</button>`;
   }).join("")}</div>`;
   return `<div><a class="back" href="#course">${ICON.back}Kurs</a></div>
-  <div class="lesson-head"><div class="tags"><span class="tag teal-t">${ICON.target}A1 → B2</span><span class="tag violet-t">~${it.r.length + it.l.length + it.w.length + it.s.length} savol</span></div>
+  <div class="lesson-head"><div class="tags"><span class="tag teal-t">${ICON.target}A1 → C1</span><span class="tag violet-t">~${it.r.length + it.l.length + it.w.length + it.s.length} savol</span></div>
     <h1>Darajani aniqlash</h1>
     <p class="sub">Savollar osondan qiyinga qarab boradi. Bilmasangiz, taxmin qilmang — oxirgi variantni tanlab davom eting. Natija taxminiy: u kursni qayerdan boshlashni tavsiya qiladi.</p></div>
   ${res ? plResultHtml(res) : ""}
@@ -3367,7 +3367,7 @@ function plFinish() {
   // Highest level answered well, counting up from A1 without gaps
   let passed = null;
   for (const lv of PL_LVS) { if (byLv[lv] >= 60) passed = lv; else break; }
-  const start = !passed ? "A1" : passed === "B2" ? "B2" : PL_LVS[PL_LVS.indexOf(passed) + 1];
+  const start = !passed ? "A1" : passed === PL_LVS[PL_LVS.length - 1] ? passed : PL_LVS[PL_LVS.indexOf(passed) + 1];
   const sk = {};
   SKILLS.forEach(s => {
     const r = rows.filter(x => x.sk === s.id);

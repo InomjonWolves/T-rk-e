@@ -37,7 +37,7 @@ function reply(text, date = new Date()) {
   const t = String(text || "").trim(), cmd = (/^\/([a-z_]+)/i.exec(t) || [])[1];
   const c = cmd && cmd.toLowerCase();
   if (c === "start") return {
-    text: "Assalomu alaykum! Men Pamuk 🐱 — <b>Türkçe Yo'l</b> boti.\n\nTurk tilini o'zbek tilida bepul o'rganing: A1–B2 kurs, grammatika, lug'at, tinglash va gapirish mashqlari, reyting va kunlik vazifalar.\n\n👇 Pastdagi tugmani bosing — sayt Telegram ichida ochiladi.\nMenga turkcha yoki o'zbekcha so'z yozsangiz, tarjimasini aytaman.",
+    text: "Assalomu alaykum! Men Pamuk 🐱 — <b>Türkçe Yo'l</b> boti.\n\nTurk tilini o'zbek tilida bepul o'rganing: A1–C1 kurs, grammatika, lug'at, tinglash va gapirish mashqlari, reyting va kunlik vazifalar.\n\n👇 Pastdagi tugmani bosing — sayt Telegram ichida ochiladi.\nMenga turkcha yoki o'zbekcha so'z yozsangiz, tarjimasini aytaman.",
     reply_markup: { inline_keyboard: [[openApp], [channel]] }
   };
   if (c === "soz") {
@@ -49,7 +49,7 @@ function reply(text, date = new Date()) {
     return { poll: p, text: "Yana savol: /test" };
   }
   if (c === "kurs") return {
-    text: "📚 <b>Turk tili kursi A1–B2</b> — 32 bo'lim, lug'at, grammatika, dialog va mashqlar.\n\nKurs: " + SITE + "kurs/\nGrammatika: " + SITE + "qoida/\nO'qish matnlari: " + SITE + "oqish/",
+    text: "📚 <b>Turk tili kursi A1–C1</b> — 40 bo'lim, lug'at, grammatika, dialog va mashqlar.\n\nKurs: " + SITE + "kurs/\nGrammatika: " + SITE + "qoida/\nO'qish matnlari: " + SITE + "oqish/",
     reply_markup: { inline_keyboard: [[openApp]] }
   };
   if (c === "yordam" || c === "help") return {

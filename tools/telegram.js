@@ -26,7 +26,7 @@ const TIPS = [
   "Xato qilishdan qo'rqmang: har bir xato — yangi bilim.",
   "Kechqurun bugungi so'zlarni bir marta takrorlang — ertalab yaxshiroq eslaysiz."
 ];
-// One word per day, the same for everyone; packs rotate through A1 → B2
+// One word per day, the same for everyone; packs rotate through A1 → C1
 function word(date = new Date()) {
   const { UNITS, LUGAT } = content();
   const words = [];
@@ -57,7 +57,7 @@ const COMMANDS = [
   { command: "start", description: "Ilovani ochish" },
   { command: "soz", description: "Kunning so'zi" },
   { command: "test", description: "Bitta viktorina savoli" },
-  { command: "kurs", description: "Turk tili kursi A1–B2" },
+  { command: "kurs", description: "Turk tili kursi A1–C1" },
   { command: "yordam", description: "Bot nima qila oladi" }
 ];
 async function api(token, method, body) {

@@ -58,7 +58,7 @@ test("vocabulary base: A1–B2 packs, one \"turkcha=oʻzbekcha\" pair per line, 
     }
     perLv[p.lv] = (perLv[p.lv] || 0) + lines.length;
   }
-  for (const lv of ["A1", "A2", "B1", "B2"]) assert.ok(perLv[lv] >= 500, `${lv}: ${perLv[lv]} words`);
+  for (const lv of ["A1", "A2", "B1", "B2", "C1"]) assert.ok(perLv[lv] >= 500, `${lv}: ${perLv[lv]} words`);
 });
 
 test("one address: the old GitHub Pages copy sends every page to the same page on turkceyol.web.app", () => {

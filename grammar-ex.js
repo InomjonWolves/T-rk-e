@@ -1082,7 +1082,7 @@ Object.assign(BX, {
   "C1.12": [
     { t: "c", q: "Qaysi gap devrik?", o: ["O akşam vapur gelmedi.", "Vapur o akşam gelmedi.", "Gelmedi o akşam vapur."], a: 2 },
     { t: "c", q: "«kara» ning kuchaytirma shakli", o: ["kapkara", "karkara", "kaskara"], a: 0 },
-    { t: "t", q: "Deniz ___ mavi → ___ (bir soʻz bilan: koʻm-koʻk)", ans: ["masmavi"], uz: "koʻm-koʻk" },
+    { t: "t", q: "Bugün deniz ___ . (koʻm-koʻk)", ans: ["masmavi"], uz: "Bugun dengiz koʻm-koʻk." },
     { t: "t", q: "Kar yağmış, her yer ___ . (oppoq)", ans: ["bembeyaz"], uz: "Qor yogʻibdi, hamma yoq oppoq." },
     { t: "o", s: "Annemin sesini hiç unutamadım", uz: "Onamning ovozini hech unuta olmadim." }
   ]

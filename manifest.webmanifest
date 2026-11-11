@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Türkçe Yoʻl — turk tilini oʻrganing",
   "short_name": "Türkçe Yoʻl",
-  "description": "Oʻzbeklar uchun turk tili: A1–B2 kurs, grammatika, lugʻat va 4 koʻnikma boʻyicha mashqlar. Bepul va reklamasiz.",
+  "description": "Oʻzbeklar uchun turk tili: A1–C1 kurs, grammatika, lugʻat va 4 koʻnikma boʻyicha mashqlar. Bepul va reklamasiz.",
   "lang": "uz",
   "start_url": "./",
   "scope": "./",
@@ -44,7 +44,7 @@
       ]
     },
     {
-      "name": "Kurs: A1–B2",
+      "name": "Kurs: A1–C1",
       "short_name": "Kurs",
       "url": "./#course",
       "icons": [

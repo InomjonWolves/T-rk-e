@@ -17,11 +17,11 @@ async function answer(page, right) {
   }, right);
 }
 
-test("placement: every level right → B2; the speaking part is optional", async () => {
+test("placement: every level right → C1; the speaking part is optional", async () => {
   const { page, errors } = await openApp(browser, "#placement", { sr: true });
   const sizes = await page.evaluate(() => { const it = plGet().it; return [it.r.length, it.l.length, it.w.length, it.s.length]; });
-  assert.deepEqual(sizes, [8, 4, 4, 2]);
-  await answer(page, ["A1", "A2", "B1", "B2"]);
+  assert.deepEqual(sizes, [10, 5, 5, 2]);
+  await answer(page, ["A1", "A2", "B1", "B2", "C1"]);
   const n = await page.evaluate(() => plGet().it.s.length);
   for (let i = 0; i < n; i++) {
     await page.evaluate(i => { window.__say = () => plGet().it.s[i].tr; }, i);
@@ -30,9 +30,9 @@ test("placement: every level right → B2; the speaking part is optional", async
   }
   await page.click("[data-act=pl-done]"); await page.waitForTimeout(150); await closeCelebrate(page);
   const r = await page.evaluate(() => plGet().res);
-  assert.equal(r.passed, "B2");
-  assert.equal(r.start, "B2");
-  assert.deepEqual(r.sk, { r: "B2", l: "B2", w: "B2", s: "B1" });
+  assert.equal(r.passed, "C1");
+  assert.equal(r.start, "C1");
+  assert.deepEqual(r.sk, { r: "C1", l: "C1", w: "C1", s: "B1" });
   assert.deepEqual(errors, []);
 });
 

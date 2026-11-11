@@ -23,7 +23,7 @@ const ROOT = path.resolve(__dirname, "..");
     .chips span:first-child{background:#ffb422;color:#2e1c00}
   </style></head><body><div><h1>Türkçe Yoʻl</h1>
   <p>Turk tilini oʻzbek tilida, kuniga 10 daqiqada oʻrganing</p>
-  <div class="chips"><span>100% bepul</span><span>A1 → B2</span><span>Reklamasiz</span></div></div>
+  <div class="chips"><span>100% bepul</span><span>A1 → C1</span><span>Reklamasiz</span></div></div>
   <div class="sun"><div class="cat" id="c"></div></div>
   <script>${cat}; document.getElementById("c").innerHTML = catSVG({ pose: "wave" });</script></body></html>`);
   await p.evaluate(() => document.fonts.ready);

@@ -60,7 +60,7 @@ function page({ file, title, desc, crumbs, body, ld }) {
 ${body}
 </main>
 <footer><p>Türkçe Yoʻl — oʻzbek tilida turk tilini oʻrganish. 100% bepul, reklamasiz.</p>
-<p><a href="${up}kurs/">Kurs A1–C1</a> · <a href="${up}qoida/">Grammatika qoʻllanmasi</a> · <a href="${up}lugat/">Lugʻat A1–B2</a> · <a href="${up}oqish/">Oʻqish matnlari</a> · <a href="${up}maqola/">Maqolalar</a> · <a href="https://t.me/turkceyoluz">Telegram kanal</a> · <a href="${up}privacy.html">Maxfiylik siyosati</a></p></footer>
+<p><a href="${up}kurs/">Kurs A1–C1</a> · <a href="${up}qoida/">Grammatika qoʻllanmasi</a> · <a href="${up}lugat/">Lugʻat A1–C1</a> · <a href="${up}oqish/">Oʻqish matnlari</a> · <a href="${up}maqola/">Maqolalar</a> · <a href="https://t.me/turkceyoluz">Telegram kanal</a> · <a href="${up}privacy.html">Maxfiylik siyosati</a></p></footer>
 </body>
 </html>
 `;
@@ -133,7 +133,7 @@ ${i.forms ? `<section class="card"><h2>Shakllar</h2>${typeof i.forms === "string
   });
   out["qoida/index.html"] = page({
     file: "qoida/index.html",
-    title: "Turk tili grammatikasi oʻzbek tilida — A1–B2 qoʻllanma | Türkçe Yoʻl",
+    title: "Turk tili grammatikasi oʻzbek tilida — A1–C1 qoʻllanma | Türkçe Yoʻl",
     desc: `Turk tili grammatikasi: ${all.length} ta mavzu, formula, qoʻshimchalar jadvali, qoida va misollar. Har mavzu boʻyicha mashqlar. Bepul.`,
     crumbs: [home, qoidaC],
     body: `<h1>Turk tili grammatikasi</h1>
@@ -142,7 +142,7 @@ ${GUIDE.map(l => `<section class="card"><h2>${esc(l.name)} — ${esc(l.uz)}</h2>
   });
 
   // ---- Vocabulary packs
-  const lugC = ["Lugʻat A1–B2", "lugat/"];
+  const lugC = ["Lugʻat A1–C1", "lugat/"];
   const pairsOf = p => { const seen = new Set(); return p.w.trim().split("\n").map(l => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }).filter(([a]) => a && !seen.has(a) && seen.add(a)); };
   LUGAT.forEach((p, k) => {
     const prev = LUGAT[k - 1], next = LUGAT[k + 1], ws = pairsOf(p);
@@ -162,10 +162,10 @@ ${GUIDE.map(l => `<section class="card"><h2>${esc(l.name)} — ${esc(l.uz)}</h2>
   const lugTotal = new Set(LUGAT.flatMap(p => pairsOf(p).map(w => w[0]))).size;
   out["lugat/index.html"] = page({
     file: "lugat/index.html",
-    title: "Turk tili soʻzlari A1–B2 — oʻzbekcha tarjimasi bilan | Türkçe Yoʻl",
-    desc: `Turk tilidagi eng faol ${lugTotal} ta soʻz: A1 dan B2 gacha, ${LUGAT.length} ta mavzu boʻyicha, oʻzbekcha tarjimasi bilan. Kartochka va testlar bilan bepul mashq.`,
+    title: "Turk tili soʻzlari A1–C1 — oʻzbekcha tarjimasi bilan | Türkçe Yoʻl",
+    desc: `Turk tilidagi eng faol ${lugTotal} ta soʻz: A1 dan C1 gacha, ${LUGAT.length} ta mavzu boʻyicha, oʻzbekcha tarjimasi bilan. Kartochka va testlar bilan bepul mashq.`,
     crumbs: [home, lugC],
-    body: `<h1>Turk tili soʻzlari A1–B2</h1>
+    body: `<h1>Turk tili soʻzlari A1–C1</h1>
 <p class="lead">Eng koʻp ishlatiladigan ${lugTotal} ta soʻz, darajalar va mavzular boʻyicha. Har mavzuni ilovada kartochka, test, yozish, tinglash va talaffuz bilan mashq qilish mumkin.</p>
 ${["A1", "A2", "B1", "B2", "C1"].map(lv => `<section class="card"><h2>${lv}</h2><ol class="toc">${LUGAT.filter(p => p.lv === lv).map(p => `<li><a href="${p.id}.html"><span class="code">${lv}</span><span><b>${esc(p.uz)}</b><small lang="tr">${esc(p.tr)} · ${pairsOf(p).length} ta soʻz</small></span></a></li>`).join("")}</ol></section>`).join("\n")}`
   });
@@ -191,8 +191,8 @@ ${["A1", "A2", "B1", "B2", "C1"].map(lv => `<section class="card"><h2>${lv}</h2>
   });
   out["oqish/index.html"] = page({
     file: "oqish/index.html",
-    title: "Turkcha oʻqish matnlari A1–B2 — savollar va lugʻat bilan | Türkçe Yoʻl",
-    desc: `Turk tilida ${OQ.length} ta oʻqish matni A1 dan B2 gacha: lugʻat, tushunish savollari va tinglash. Oʻzbek tilida soʻzlashuvchilar uchun, bepul.`,
+    title: "Turkcha oʻqish matnlari A1–C1 — savollar va lugʻat bilan | Türkçe Yoʻl",
+    desc: `Turk tilida ${OQ.length} ta oʻqish matni A1 dan C1 gacha: lugʻat, tushunish savollari va tinglash. Oʻzbek tilida soʻzlashuvchilar uchun, bepul.`,
     crumbs: [home, oqC],
     body: `<h1>Turkcha oʻqish matnlari</h1>
 <p class="lead">Darajangizga mos qisqa matnlar: notanish soʻzlar lugʻati va 4 ta savol bilan. Ilovada matnni tinglash va javoblarni tekshirish mumkin.</p>
