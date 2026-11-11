@@ -60,7 +60,7 @@ function page({ file, title, desc, crumbs, body, ld }) {
 ${body}
 </main>
 <footer><p>Türkçe Yoʻl — oʻzbek tilida turk tilini oʻrganish. 100% bepul, reklamasiz.</p>
-<p><a href="${up}kurs/">Kurs A1–B2</a> · <a href="${up}qoida/">Grammatika qoʻllanmasi</a> · <a href="${up}lugat/">Lugʻat A1–B2</a> · <a href="${up}oqish/">Oʻqish matnlari</a> · <a href="${up}maqola/">Maqolalar</a> · <a href="https://t.me/turkceyoluz">Telegram kanal</a> · <a href="${up}privacy.html">Maxfiylik siyosati</a></p></footer>
+<p><a href="${up}kurs/">Kurs A1–C1</a> · <a href="${up}qoida/">Grammatika qoʻllanmasi</a> · <a href="${up}lugat/">Lugʻat A1–B2</a> · <a href="${up}oqish/">Oʻqish matnlari</a> · <a href="${up}maqola/">Maqolalar</a> · <a href="https://t.me/turkceyoluz">Telegram kanal</a> · <a href="${up}privacy.html">Maxfiylik siyosati</a></p></footer>
 </body>
 </html>
 `;
@@ -71,7 +71,7 @@ function build() {
   const out = {};
   const KU = Object.fromEntries(COURSE.units.map(u => [u.id, u]));
   const words = u => u.vocab.reduce((a, v) => a + v.words.length, 0);
-  const home = ["Türkçe Yoʻl", ""], kursC = ["Kurs A1–B2", "kurs/"], qoidaC = ["Grammatika", "qoida/"];
+  const home = ["Türkçe Yoʻl", ""], kursC = ["Kurs A1–C1", "kurs/"], qoidaC = ["Grammatika", "qoida/"];
 
   // ---- Course units
   const order = COURSE.levels.flatMap(l => l.units);
@@ -98,15 +98,15 @@ ${grammar.map(s => `<section class="card"><h2>${esc(s.title)}</h2>${(s.blocks ||
   });
   out["kurs/index.html"] = page({
     file: "kurs/index.html",
-    title: "Turk tili kursi A1–B2 — oʻzbek tilida, bepul | Türkçe Yoʻl",
-    desc: `Turk tilini noldan B2 gacha: ${order.length} ta boʻlim, lugʻat, grammatika, dialog, matn va daraja testlari. Oʻzbek tilida tushuntirilgan, 100% bepul.`,
+    title: "Turk tili kursi A1–C1 — oʻzbek tilida, bepul | Türkçe Yoʻl",
+    desc: `Turk tilini noldan C1 gacha: ${order.length} ta boʻlim, lugʻat, grammatika, dialog, matn va daraja testlari. Oʻzbek tilida tushuntirilgan, 100% bepul.`,
     crumbs: [home, kursC],
-    body: `<h1>Turk tili kursi A1–B2</h1>
+    body: `<h1>Turk tili kursi A1–C1</h1>
 <p class="lead">Oʻzbek tilida tushuntirilgan toʻliq kurs: har boʻlimda lugʻat, grammatika, dialog, oʻqish matni va mashqlar. Har daraja oxirida 4 qismli test (oʻqish, tinglash, yozish, gapirish).</p>
 <a class="cta" href="../#placement">Darajangizni aniqlang (5 daqiqa)</a>
 ${COURSE.levels.map(l => `<section class="card"><h2>${esc(l.title)}</h2><p class="muted">${esc(l.intro)}</p>
 <ol class="toc">${l.units.map(id => { const u = KU[id]; return `<li><a href="${id}.html"><span class="code">${esc(u.level)}.${u.n}</span><span><b>${esc(u.title)}</b><small>${esc(u.sub)}</small></span></a></li>`; }).join("")}</ol></section>`).join("\n")}`,
-    ld: { "@context": "https://schema.org", "@type": "Course", name: "Turk tili kursi A1–B2", description: "Oʻzbek tilida soʻzlashuvchilar uchun turk tili kursi", inLanguage: "uz", isAccessibleForFree: true, provider: { "@type": "Organization", name: "Türkçe Yoʻl", url: SITE }, hasCourseInstance: { "@type": "CourseInstance", courseMode: "online", courseWorkload: "PT10M" }, offers: { "@type": "Offer", price: 0, priceCurrency: "UZS", category: "Free" } }
+    ld: { "@context": "https://schema.org", "@type": "Course", name: "Turk tili kursi A1–C1", description: "Oʻzbek tilida soʻzlashuvchilar uchun turk tili kursi", inLanguage: "uz", isAccessibleForFree: true, provider: { "@type": "Organization", name: "Türkçe Yoʻl", url: SITE }, hasCourseInstance: { "@type": "CourseInstance", courseMode: "online", courseWorkload: "PT10M" }, offers: { "@type": "Offer", price: 0, priceCurrency: "UZS", category: "Free" } }
   });
 
   // ---- Grammar guide topics

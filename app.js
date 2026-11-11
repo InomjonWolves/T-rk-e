@@ -1070,7 +1070,7 @@ function viewHome() {
       <div class="unit-body"><small class="eyebrow">${u.level} · ${u.n}-boʻlim</small><b class="k-next-title" lang="tr">${esc(u.title)}</b></div>${pctRing(p)}</div>
     <p class="muted">${esc(u.sub)}</p>
     <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${COURSE.units.length}" aria-valuenow="${kDoneCount()}" aria-label="Kurs: ${kDoneCount()}/${COURSE.units.length} boʻlim"><i style="width:${pct(kDoneCount(), COURSE.units.length)}%"></i></div>
-    <small class="muted">Kurs: ${kDoneCount()}/${COURSE.units.length} boʻlim · A1 → B2</small></a></section>`; })()}
+    <small class="muted">Kurs: ${kDoneCount()}/${COURSE.units.length} boʻlim · A1 → C1</small></a></section>`; })()}
 
   <section class="section wd-sec">
     <div class="section-head"><h2>Bugungi soʻz</h2></div>
@@ -1802,7 +1802,7 @@ async function saveProfile(p) {
 /* Course vocabulary joins the shared word list (thematic words keep their place, duplicates are skipped) */
 const ALL_BY_TR = {};
 ALL.forEach(w => { const k = fold(w.tr); if (!(k in ALL_BY_TR)) ALL_BY_TR[k] = w; });
-[["A1", "sky"], ["A2", "violet"], ["B1", "orange"], ["B2", "pink"]].forEach(([lv, color]) => {
+[["A1", "sky"], ["A2", "violet"], ["B1", "orange"], ["B2", "pink"], ["C1", "teal"]].forEach(([lv, color]) => {
   const ui = UNITS.length, unit = { id: "kurs" + lv, tr: "Kurs " + lv, uz: "Kurs lugʻati " + lv, course: lv, tip: ["Kurs lugʻati", `${lv} darajasidagi kurs boʻlimlarining soʻzlari.`], words: [] };
   UNITS.push(unit);
   COURSE.units.filter(u => u.level === lv).forEach(u => u.vocab.forEach(g => g.words.forEach(([tr, uzz]) => {
@@ -1816,7 +1816,7 @@ ALL.forEach(w => { const k = fold(w.tr); if (!(k in ALL_BY_TR)) ALL_BY_TR[k] = w
 /* Vocabulary base (lugat.js): thematic packs A1–B2. New words join the shared list (one SRS state per word);
    each pack keeps its full list, including words already taught elsewhere. */
 const LPACKS = typeof LUGAT !== "undefined" ? LUGAT : [], LWORDS = {}, LBY = {};
-const LV_COLOR = { A1: "sky", A2: "violet", B1: "orange", B2: "pink" };
+const LV_COLOR = { A1: "sky", A2: "violet", B1: "orange", B2: "pink", C1: "teal" };
 LPACKS.forEach(p => {
   const ui = UNITS.length, unit = { id: "lug-" + p.id, tr: p.tr, uz: p.uz, lug: p.lv, tip: ["Lugʻat bazasi", `${p.lv} darajasidagi faol soʻzlar: ${p.uz.toLocaleLowerCase("uz")}.`], words: [] };
   UNITS.push(unit); LBY[p.id] = p; p.ui = ui;
@@ -1973,7 +1973,7 @@ let SEQ_N = 0;
 function kUnitRow(u) {
   const p = kProgress(u.id), done = kDone(u.id), now = !done && u === kNext();
   return `<a class="unit glass${now ? " now" : ""}" href="#${kHash(u.id)}">
-    <span class="art ${done ? "green" : { A1: "sky", A2: "violet", B1: "orange", B2: "pink" }[u.level]}"><span style="font-size:15px">${u.level}.${u.n}</span></span>
+    <span class="art ${done ? "green" : LV_COLOR[u.level]}"><span style="font-size:15px">${u.level}.${u.n}</span></span>
     <span class="unit-body">${now ? `<small class="tag sky-t now-tag">Shu yerdan davom eting</small>` : ""}<span class="unit-title" lang="tr">${esc(u.title)}</span><span class="unit-sub">${esc(u.sub)}</span></span>
     ${done ? `<span class="state done" title="Tugallangan">${ICON.check}</span>` : pctRing(p)}
   </a>`;
@@ -1987,8 +1987,8 @@ function viewCourse() {
   ${lessonTabs("course")}
   <div class="k-hero glass">
     <div class="k-hero-txt"><span class="tag green-t">${ICON.check}100% bepul</span>
-      <h2>Turk tili A1 → B2</h2>
-      <p>32 boʻlim, 4 ta daraja testi va ${Object.values(KWORDS).reduce((a, w) => a + w.length, 0)} ta soʻz. Oʻzbek tilida tushuntirilgan, reklamasiz.</p>
+      <h2>Turk tili A1 → C1</h2>
+      <p>${COURSE.units.length} boʻlim, ${COURSE.levels.length} ta daraja testi va ${Object.values(KWORDS).reduce((a, w) => a + w.length, 0)} ta soʻz. Oʻzbek tilida tushuntirilgan, reklamasiz.</p>
       <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}" aria-label="Kurs: ${done}/${total} boʻlim"><i style="width:${pct(done, total)}%"></i></div>
       <small class="muted">${done}/${total} boʻlim tugallangan</small></div>
     <div class="k-hero-cat">${mascot("cap")}</div>
@@ -2179,6 +2179,7 @@ const ACH = [
   { id: "kA2", cat: "course", t: "A2 bitiruvchisi", d: "A2 ning 8 boʻlimi", v: () => kDoneCount("A2"), n: 8, c: "violet", ico: "cap" },
   { id: "kB1", cat: "course", t: "B1 bitiruvchisi", d: "B1 ning 8 boʻlimi", v: () => kDoneCount("B1"), n: 8, c: "orange", ico: "cap" },
   { id: "kB2", cat: "course", t: "B2 bitiruvchisi", d: "B2 ning 8 boʻlimi", v: () => kDoneCount("B2"), n: 8, c: "pink", ico: "cap" },
+  { id: "kC1", cat: "course", t: "C1 bitiruvchisi", d: "C1 ning 8 boʻlimi", v: () => kDoneCount("C1"), n: 8, c: "teal", ico: "cap" },
   { id: "kt1", cat: "course", t: "Test gʻolibi", d: "1 ta daraja testidan oʻtish", v: () => COURSE.levels.filter(l => kTestBest(l.id) >= l.test.pass).length, n: 1, c: "teal", ico: "star" },
   { id: "kt4", cat: "course", t: "A1 → B2", d: "4 ta testdan oʻtish", v: () => COURSE.levels.filter(l => kTestBest(l.id) >= l.test.pass).length, n: 4, c: "green", ico: "crown" },
   { id: "gram", cat: "gram", t: "Grammatika", d: "10 asosiy mavzu", v: gramCount, n: GRAMMAR.length, c: "violet", ico: "cap" },
@@ -2310,7 +2311,7 @@ const TIPS = [
   ["Doʻstingiz bilan oʻrganing", "Reytingda doʻstingiz bilan bellashing — birga oʻrganish 2 barobar qiziqarli."],
   ["Ğ oʻqilmaydi", "dağ [daa], öğretmen [öö-retmen] — ğ oldingi unlini choʻzadi."],
   ["Dialoglarni rol oʻynab oʻqing", "Kurs dialoglarini ikkala rolda ovoz chiqarib oʻqing, keyin tinglash tugmasi bilan solishtiring."],
-  ["Bepul — lekin jiddiy", "Bu kurs A1 dan B2 gacha toʻliq daraja beradi: 32 boʻlim, 4 test. Hech qanday toʻlov yoʻq."],
+  ["Bepul — lekin jiddiy", "Bu kurs A1 dan C1 gacha toʻliq daraja beradi: 40 boʻlim, 5 test. Hech qanday toʻlov yoʻq."],
   ["Bir kunda emas, har kuni", "Damlaya damlaya göl olur — tomchi-tomchi koʻl boʻlur. Kuniga 10 daqiqa, oyiga 300 daqiqa!"]
 ];
 const tipOfDay = () => TIPS[dayNum() % TIPS.length];
@@ -2394,7 +2395,7 @@ function viewHelp() {
 
   <section class="section"><div class="section-head"><h2>Koʻp soʻraladigan savollar</h2></div>
     <details class="glass pad"><summary><b>Sayt rostdan ham bepulmi?</b></summary><p class="muted" style="margin-top:6px">Ha, 100% bepul va reklamasiz. Barcha darslar, kurs, testlar va tarjimon bepul.</p></details>
-    <details class="glass pad"><summary><b>Qaysi darajagacha oʻrganish mumkin?</b></summary><p class="muted" style="margin-top:6px">A1 (boshlangʻich) dan B2 (yuqori oʻrta) gacha: 32 boʻlim, 4 ta daraja testi, 1000 dan ortiq soʻz.</p></details>
+    <details class="glass pad"><summary><b>Qaysi darajagacha oʻrganish mumkin?</b></summary><p class="muted" style="margin-top:6px">A1 (boshlangʻich) dan C1 (ilgʻor) gacha: 40 boʻlim, 5 ta daraja testi, 1000 dan ortiq soʻz.</p></details>
     <details class="glass pad"><summary><b>Natijalarim yoʻqolmaydimi?</b></summary><p class="muted" style="margin-top:6px">Hisobga kirgan boʻlsangiz, natijalaringiz serverda saqlanadi va istalgan qurilmada davom etasiz.</p></details>
     <details class="glass pad"><summary><b>Ovoz eshitilmayapti, nima qilay?</b></summary><p class="muted" style="margin-top:6px">Telefon sozlamalarida «Matnni nutqqa aylantirish» (Text-to-speech) boʻlimida turk tilini yuklab oling va ovoz balandligini tekshiring.</p></details>
     <details class="glass pad"><summary><b>Internetsiz ishlaydimi?</b></summary><p class="muted" style="margin-top:6px">Ha, sayt bir marta ochilgandan keyin darslar internetsiz ham ochiladi. Tarjimon va reyting uchun internet kerak.</p></details>
@@ -2408,7 +2409,7 @@ function viewHelp() {
 /* ---------- First-run tour ---------- */
 const ONB = [
   { m: "wave", t: "Salom! Men Pamukman", d: "Turk tilini oʻzbek tilida, 100% bepul va reklamasiz oʻrganishga yordam beraman. Har kuni atigi 10 daqiqa yetarli." },
-  { m: "cap", t: "A1 dan B2 gacha toʻliq kurs", d: "32 boʻlim, grammatika qoʻllanmasi, 1000 dan ortiq soʻz va daraja testlari. Hammasi tartib bilan, oʻzbekcha tushuntirish bilan." },
+  { m: "cap", t: "A1 dan C1 gacha toʻliq kurs", d: "40 boʻlim, grammatika qoʻllanmasi, 1000 dan ortiq soʻz va daraja testlari. Hammasi tartib bilan, oʻzbekcha tushuntirish bilan." },
   { m: "trophy", t: "Yutuqlar va reyting", d: "Har kuni mashq qiling, seriyani uzmang, yutuqlarni yigʻing va doʻstlaringiz bilan reytingda bellashing." },
   { m: "sit", t: "Telefoningizga oʻrnating", d: "Saytni ilova sifatida oʻrnatsangiz, u tezroq ochiladi va internetsiz ham ishlaydi. Yoʻriqnoma: Profil → Yordam." }
 ];
@@ -3156,7 +3157,7 @@ function wrRun(id, key) {
 }
 function viewWrite() {
   const tasks = wrTasks(), cur = COURSE.units.indexOf(kNext());
-  const lv = ["A1", "A2", "B1", "B2"];
+  const lv = ["A1", "A2", "B1", "B2", "C1"];
   return `${topbar()}
   <div><a class="back" href="#practice">${ICON.back}Mashq</a></div>
   <div class="lesson-head">
@@ -3174,7 +3175,8 @@ function viewWrite() {
 /* ---------- Level tests in four parts ----------
    Okuma = the book's own questions (grammar/vocabulary + reading). Dinleme, Yazma and Konuşma are built
    from the same level's vocabulary, dialogs, exercises and reading questions, fresh for every attempt. */
-const LVS = ["A1", "A2", "B1", "B2"];
+const LVS = ["A1", "A2", "B1", "B2", "C1"];
+const PL_LVS = LVS.slice(0, 4); // darajani aniqlash testi A1–B2 ni qamraydi; C1 ga daraja testi orqali oʻtiladi
 let KT_GEN = {}, KT_ANS = { lv: null, l: {}, w: {}, s: {} }, KT_REC = null;
 function ktGen(lv) {
   if (KT_GEN[lv]) return KT_GEN[lv];
@@ -3211,10 +3213,10 @@ function skLevel(id) {
 }
 function skLevelsCard() {
   // Next test to take: the level after the highest one passed in this skill
-  const next = id => { const lv = skLevel(id); return lv ? LVS[Math.min(LVS.indexOf(lv) + 1, 3)] : "A1"; };
+  const next = id => { const lv = skLevel(id); return lv ? LVS[Math.min(LVS.indexOf(lv) + 1, LVS.length - 1)] : "A1"; };
   return `<section class="section"><div class="section-head"><h2>Koʻnikma boʻyicha daraja</h2><span class="tag teal-t">daraja testlaridan</span></div>
     <div class="sk-lv">${SKILLS.map(s => { const lv = skLevel(s.id), nx = next(s.id); return `<a class="sk-lv-item glass" href="#ktest-${nx.toLowerCase()}">
-      <span class="ico ${s.c}-t">${ICON[s.ico]}</span><small>${s.tr}</small><b>${lv || "—"}</b><span class="muted">${lv === "B2" ? "Eng yuqori" : `Keyingi: ${nx} testi`}</span></a>`; }).join("")}</div>
+      <span class="ico ${s.c}-t">${ICON[s.ico]}</span><small>${s.tr}</small><b>${lv || "—"}</b><span class="muted">${lv === LVS[LVS.length - 1] ? "Eng yuqori" : `Keyingi: ${nx} testi`}</span></a>`; }).join("")}</div>
     <p class="muted" style="font-size:13px;margin-top:8px">Daraja testining har bir qismi alohida baholanadi. Qismdan ${KLEVEL("A1").test.pass}% va undan yuqori olsangiz, oʻsha koʻnikmada daraja tasdiqlanadi.</p></section>`;
 }
 function ktPartHead(id, name) {
@@ -3286,7 +3288,7 @@ function plMic(i, btn) {
 let PL = null;
 function plGen() {
   const it = { r: [], l: [], w: [], s: [] };
-  LVS.forEach(lv => {
+  PL_LVS.forEach(lv => {
     const saved = KT_GEN[lv]; KT_GEN[lv] = null;
     const g = ktGen(lv);
     KT_GEN[lv] = saved;
@@ -3352,17 +3354,17 @@ function plFinish() {
     ...(sTried ? it.s.map((q, i) => ({ sk: "s", lv: q.lv, ok: !!P.ans.s[i] && P.ans.s[i].score >= ktNeed(q) })) : [])
   ];
   const byLv = {};
-  LVS.forEach(lv => { const r = rows.filter(x => x.lv === lv); byLv[lv] = r.length ? Math.round(r.filter(x => x.ok).length / r.length * 100) : 0; });
+  PL_LVS.forEach(lv => { const r = rows.filter(x => x.lv === lv); byLv[lv] = r.length ? Math.round(r.filter(x => x.ok).length / r.length * 100) : 0; });
   // Highest level answered well, counting up from A1 without gaps
   let passed = null;
-  for (const lv of LVS) { if (byLv[lv] >= 60) passed = lv; else break; }
-  const start = !passed ? "A1" : passed === "B2" ? "B2" : LVS[LVS.indexOf(passed) + 1];
+  for (const lv of PL_LVS) { if (byLv[lv] >= 60) passed = lv; else break; }
+  const start = !passed ? "A1" : passed === "B2" ? "B2" : PL_LVS[PL_LVS.indexOf(passed) + 1];
   const sk = {};
   SKILLS.forEach(s => {
     const r = rows.filter(x => x.sk === s.id);
     if (!r.length) { sk[s.id] = null; return; }
     let best = "";
-    for (const lv of LVS) { const q = r.filter(x => x.lv === lv); if (!q.length) continue; if (q.filter(x => x.ok).length / q.length >= 0.5) best = lv; else break; }
+    for (const lv of PL_LVS) { const q = r.filter(x => x.lv === lv); if (!q.length) continue; if (q.filter(x => x.ok).length / q.length >= 0.5) best = lv; else break; }
     sk[s.id] = best;
   });
   rows.forEach(x => skillLog(x.sk, x.ok));
@@ -3376,7 +3378,7 @@ function plResultHtml(r) {
   const su = COURSE.units.find(u => u.level === r.start);
   return `<div class="glass pad k-result pass">${mascot("trophy")}<h2>${r.start}</h2>
     <p>${r.passed ? `Siz ${r.passed} darajasigacha boʻlgan savollarni yaxshi bildingiz. Kursni <b>${r.start}</b> dan boshlashni tavsiya qilamiz.` : "Kursni boshidan — A1 dan boshlashni tavsiya qilamiz. Har bir boʻlim sizga mos tezlikda."}</p>
-    <div class="sk-bars" style="text-align:left;margin-top:10px;width:100%;align-self:stretch">${LVS.map(lv => `<div class="sk-line"><span></span><span class="sk-name"><b>${lv}</b><small>savollar</small></span>
+    <div class="sk-bars" style="text-align:left;margin-top:10px;width:100%;align-self:stretch">${PL_LVS.map(lv => `<div class="sk-line"><span></span><span class="sk-name"><b>${lv}</b><small>savollar</small></span>
       <span class="sk-track"><i style="width:${r.byLv[lv]}%;background:var(--${r.byLv[lv] >= 60 ? "green" : "pink"})"></i></span><span class="sk-val">${r.byLv[lv]}%<small>${r.byLv[lv] >= 60 ? "✔" : "✘"}</small></span></div>`).join("")}</div>
     <div class="tags" style="justify-content:center;margin-top:10px">${SKILLS.map(s => `<span class="tag ${s.c}-t">${s.tr}: ${r.sk[s.id] === null ? "—" : r.sk[s.id] || "boshlangʻich"}</span>`).join("")}</div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;width:100%">
@@ -3503,8 +3505,8 @@ function adminAgg(docs) {
   const balB = [0, 0, 0, 0, 0];
   active.forEach(x => balB[Math.min(4, Math.floor((x.bal || 0) / 20))]++);
   const lvl = {};
-  SKILLS.forEach(s => { lvl[s.id] = { "": 0, A1: 0, A2: 0, B1: 0, B2: 0 }; all.forEach(x => { const v = (x.lvl || {})[s.id] || ""; if (v in lvl[s.id]) lvl[s.id][v]++; }); });
-  const course = { A1: 0, A2: 0, B1: 0, B2: 0 };
+  SKILLS.forEach(s => { lvl[s.id] = { "": 0, A1: 0, A2: 0, B1: 0, B2: 0, C1: 0 }; all.forEach(x => { const v = (x.lvl || {})[s.id] || ""; if (v in lvl[s.id]) lvl[s.id][v]++; }); });
+  const course = { A1: 0, A2: 0, B1: 0, B2: 0, C1: 0 };
   all.forEach(x => { if (x.lv in course) course[x.lv]++; });
   const tests = {};
   LVS.forEach(lv => { tests[lv] = {}; SKILLS.forEach(s => { const v = all.map(x => ((x.kt || {})[lv] || {})[s.id]).filter(v => typeof v === "number"); tests[lv][s.id] = v.length ? { avg: Math.round(v.reduce((a, b) => a + b, 0) / v.length), n: v.length } : null; }); });

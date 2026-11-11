@@ -16,7 +16,7 @@ test("generated pages match the content (run `node tools/seo.js` after editing c
     const extra = fs.readdirSync(path.join(ROOT, dir)).filter(f => !OUT[`${dir}/${f}`]);
     assert.deepEqual(extra, [], `old files in ${dir}/`);
   }
-  assert.equal(Object.keys(OUT).filter(f => f.startsWith("kurs/")).length, 33);
+  assert.equal(Object.keys(OUT).filter(f => f.startsWith("kurs/")).length, 41);
   const C = require("./helpers").loadContent();
   assert.equal(Object.keys(OUT).filter(f => f.startsWith("qoida/")).length, C.GUIDE.reduce((a, l) => a + l.groups.reduce((b, g) => b + g.items.length, 0), 0) + 1);
   assert.equal(Object.keys(OUT).filter(f => f.startsWith("lugat/")).length, C.LUGAT.length + 1);

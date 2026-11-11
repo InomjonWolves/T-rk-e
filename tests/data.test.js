@@ -85,8 +85,8 @@ test("one address: the old GitHub Pages copy sends every page to the same page o
   }
 });
 
-test("course: 32 units, tests answerable, reading answers match questions", () => {
-  assert.equal(C.COURSE.units.length, 32);
+test("course: 40 units, tests answerable, reading answers match questions", () => {
+  assert.equal(C.COURSE.units.length, 40);
   for (const l of C.COURSE.levels) {
     for (const p of l.test.parts) p.qs.forEach((q, i) => assert.ok(q.a >= 0 && q.a < q.o.length, `${l.id} test ${p.name} #${i + 1}`));
     for (const id of l.units) assert.ok(C.COURSE.units.some(u => u.id === id), `${l.id}: unknown unit ${id}`);
@@ -167,4 +167,22 @@ test("Uzbek spelling: oʻ/gʻ and the tutuq belgisi ʼ, never a plain apostrophe
     const s = read(f), bad = [...s.matchAll(re)].map(m => s.slice(m.index, m.index + 18).trim());
     assert.deepEqual(bad, [], `${f}: plain apostrophe in Uzbek words`);
   }
+});
+
+// C1 (2026-11): advanced level — longer dialogs, extended readings, its own level test
+test("course: C1 has 8 units with long dialogs, extended readings, six exercises and a 20-question test", () => {
+  const lv = C.COURSE.levels.find(l => l.id === "C1");
+  assert.ok(lv, "C1 level");
+  assert.equal(lv.units.length, 8);
+  for (const id of lv.units) {
+    const u = C.COURSE.units.find(x => x.id === id);
+    assert.equal(u.level, "C1");
+    const dlg = u.sections.find(s => s.kind === "dialog").blocks.find(b => b.dlg).dlg;
+    assert.ok(dlg.length >= 12, `${id}: ${dlg.length} dialog lines`);
+    assert.ok(u.reading.text.length >= 1000, `${id}: reading ${u.reading.text.length} chars`);
+    assert.equal(u.reading.qs.length, 6, `${id}: reading questions`);
+    assert.ok(u.exercises.length >= 6 && u.exercises.some(e => /^Yozish/.test(e.title)), `${id}: exercises and a writing task`);
+    assert.ok(u.vocab[0].words.length >= 15, `${id}: vocabulary`);
+  }
+  assert.equal(lv.test.parts[0].qs.length + lv.test.parts[1].qs.length, 20);
 });

@@ -58,6 +58,7 @@ module.exports = [
       { h: "A2 — elementar", list: ["Kundalik vaziyatlar: do'konda, shifokorda, transportda", "O'tgan va kelasi zamon haqida gapirish", "Qisqa xat va xabarlar yozish", "Taxminan 1200–1500 so'z"] },
       { h: "B1 — o'rta", list: ["Ish, o'qish, sayohat haqida erkin suhbat", "Fikringizni sabablari bilan tushuntirish", "Gazeta maqolalarining asosiy mazmunini tushunish", "Taxminan 2500–3000 so'z, murakkab gaplar"] },
       { h: "B2 — o'rta-yuqori", list: ["Ijtimoiy mavzularda munozara", "Film va yangiliklarni ko'p qismini tushunish", "Rasmiy xat va insho yozish", "Ish va o'qish uchun yetarli daraja"] },
+      { h: "C1 — ilg'or", list: ["Uzun va murakkab matnlarni, yashirin ma'nolarni tushunish", "Akademik va rasmiy uslubda dalilli insho yozish", "Tayyorgarliksiz ravon va aniq gapirish", "Universitet va kasbiy imtihonlarga tayyor daraja"] },
       { h: "Darajangizni qanday aniqlash mumkin?", p: ["Qisqa test o'qish, tinglash, yozish va gapirish bo'yicha savollar beradi va qaysi darajadan boshlash kerakligini ko'rsatadi. Har daraja oxirida 4 qismli test bilan natijangizni tasdiqlashingiz mumkin."], cta: ["Darajani aniqlash testi (5 daqiqa)", "#placement"] }
     ]
   }

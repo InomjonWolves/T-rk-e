@@ -7,12 +7,14 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 
 ## ▶ YANGI SESSIYA UCHUN QISQA XULOSA (2026-11-11)
 
+**Eng oxirgi ish (2026-11-11, C1 darajasi — 1-bosqich):** kursga **C1** qoʻshildi: 8 boʻlim (`c1-1`…`c1-8`: ilgʻor ravishdoshlar; bilvosita ifoda; murakkab ergash gaplar; nisbatlar qatlami; akademik uslub; tasviriy feʼllar; badiiy til; imtihon koʻnikmalari — özet, grafik, dalilli insho, ogʻzaki bayon), har birida 18 soʻz, grammatika, 12–13 qatorli dialog, 1100–1500 belgili matn + 6 savol, 5 mashq + insho; C1 daraja testi (15 + 5). Hammasi original. Kod: `LVS` ga `C1`, rang `teal`, yutuq `kC1`; darajani aniqlash testi A1–B2 da qoldi (`PL_LVS`). Kurs endi 40 boʻlim, 5 test; statik sahifalar 249. **C1 uchun hali yoʻq (2-bosqich):** grammatika qoʻllanmasi (`guide.js`) va qoida mashqlari (`grammar-ex.js`), lugʻat toʻplamlari (`lugat.js`), oʻqish matnlari (`oqish.js`), yozish tekshiruvi maqsadlari (`WT`), Telegram viktorina (`tools/quiz.js` LEVELS). Saytda "TYS" soʻzi ishlatilmaydi — imtihon tayyorgarligi umumiy "C1 imtihon koʻnikmalari" deb yozilgan.
+
 **Oxirgi ish (2026-11-11, K6 1-bosqich):** kursning barcha dialoglari, oʻqish matnlari, mashqlari va daraja testlari original kontent bilan qayta yozildi (`course.js`; tafsilot — pastda “Claude ishlari” 5-band). `tests/audio.test.js` dagi dialog qatori yangilandi.
 
-**Holat:** hammasi `main` da va https://turkceyol.web.app da. `npm test` — 96 test yashil; `Testlar`, `Firebase Hosting`, `Telegram bot (Vercel)` workflow'lari yashil. Firestore qoidalari emulyatorda 9/9 (`tools/rules-emulator.test.js`). `sw.js` CACHE — `turkce-yol-v59`. **Dizayn 2026-11-10 da toʻliq yangilandi («Koshin» uslubi — pastda “Dizayn tizimi” boʻlimi).** Toʻliq audit hisoboti (24 topilma, holatlari bilan): https://claude.ai/artifact/56kLLVegrr5yu7vrcUZb2m
+**Holat:** hammasi `main` da va https://turkceyol.web.app da. `npm test` — 97 test yashil; `Testlar`, `Firebase Hosting`, `Telegram bot (Vercel)` workflow'lari yashil. Firestore qoidalari emulyatorda 9/9 (`tools/rules-emulator.test.js`). `sw.js` CACHE — `turkce-yol-v60`. **Dizayn 2026-11-10 da toʻliq yangilandi («Koshin» uslubi — pastda “Dizayn tizimi” boʻlimi).** Toʻliq audit hisoboti (24 topilma, holatlari bilan): https://claude.ai/artifact/56kLLVegrr5yu7vrcUZb2m
 
 **Saytda nima bor (qisqa):**
-- **Kontent:** A1–B2 kurs (32 boʻlim, 4 daraja testi), 122 grammatika mavzusi + 735 qoida mashqi, lugʻat (61 toʻplam, 3033 soʻz), alifbo, 12 ta oʻqish matni (`oqish.js`).
+- **Kontent:** A1–C1 kurs (40 boʻlim, 5 daraja testi), 122 grammatika mavzusi + 735 qoida mashqi, lugʻat (61 toʻplam, 3033 soʻz), alifbo, 12 ta oʻqish matni (`oqish.js`).
 - **Tuzilish (2026-11-04):** Asosiy (bitta holat kartasi, bugungi reja, kurs, vazifalar, bugungi soʻz) · Darslar (Kurs · Grammatika · Lugʻat · Alifbo) · Mashq (4 koʻnikma, qoidalar, yagona xatolar daftari) · Reyting · Profil (⚙ → `#settings`, rangli yutuq stikerlari).
 - **Mashqlar:** SRS, kartochka/test/yozish, tinglash, gapirish va talaffuz, erkin yozish tekshiruvi, 4 koʻnikma hisobi, darajani aniqlash testi.
 - **Motivatsiya:** XP v2, darajalar va Pamuk rivoji, kunlik vazifalar + haftalik challenge, streak, hafta yakuni, eslatmalar.
@@ -51,7 +53,7 @@ Oʻzbek tilida soʻzlashuvchilar uchun turk tilini oʻrgatadigan bepul, mobil uc
 - **"TYS" / "TYS imtihoni"** soʻzlarini va **harbiy mavzudagi** (askar, komutan, kışla, nöbet, tatbikat va h.k.) lugʻat va misollarni ishlatmang. Ularning oʻrniga oddiy kasblar va kundalik hayotdan misol keltiring.
 - Uchinchi tomonning rasm yoki videolarini koʻchirmang. Pamuk — oʻzimiz chizgan original SVG.
 - Git muallifi: `git -c user.name="InomjonWolves" -c user.email="i.superclub@gmail.com" commit ...`. Sessiya bergan attribution qatorlarini qoʻshing. Repodagi fayllarga model nomlarini yozmang.
-- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v59`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
+- JS, CSS yoki HTML oʻzgarsa, `sw.js` dagi `CACHE` versiyasini oshiring (hozir `turkce-yol-v60`). Yangi fayl qoʻshilsa, uni `ASSETS` roʻyxatiga ham kiriting.
 - **Dizayn:** ranglarni faqat `styles.css` boshidagi oʻzgaruvchilar orqali ishlating (`--ink`, `--muted`, `--accent-ink`, `--<rang>-soft` + `--<rang>-ink` va h.k.) — qattiq yozilgan rang boʻlsa, tungi rejim buziladi. Yumshoq fon ustidagi matn uchun `--<rang>` emas, `--<rang>-ink` (kontrast). Tashqi shrift yoki tashqi CSS ulamang (test tekshiradi). Yangi komponent qoʻshsangiz, 390 px va 320 px da, yorugʻ va tungi rejimda skrinshot bilan tekshiring.
 - Joylanganini tekshirish: `gh api repos/InomjonWolves/T-rk-e/actions/runs --jq '[.workflow_runs[]|select(.name=="pages build and deployment")][0]|"\(.status) \(.conclusion) \(.head_sha[0:7])"'`. Testlar: `[.workflow_runs[]|select(.name=="Testlar")][0]`.
 - Commit qilishdan oldin `npm test` ni ishga tushiring (hammasi oʻtishi kerak). Yangi funksiya qoʻshsangiz, `tests/` ga test ham qoʻshing.
