@@ -3166,8 +3166,8 @@ function viewWrite() {
   </div>
   ${lv.map(l => { const ts = tasks.filter(t => t.u.level === l); return ts.length ? `<div class="toc-group" style="padding-left:2px">${l}</div><div class="list">${ts.map(t => {
     const best = ((S.k[t.u.id] || {}).wb || {})[t.key], locked = COURSE.units.indexOf(t.u) > cur + 1;
-    return `<a class="unit glass" href="#${kHash(t.u.id)}" data-act="wr-open" data-id="${t.u.id}">
-      <span class="art ${best >= 70 ? "green" : "pink"}"><span style="font-size:14px">${t.u.level}.${t.u.n}</span></span>
+    return `<a class="unit glass long" href="#${kHash(t.u.id)}" data-act="wr-open" data-id="${t.u.id}">
+      <span class="art ${best >= 70 ? "green" : LV_COLOR[t.u.level]}"><span style="font-size:14px">${t.u.level}.${t.u.n}</span></span>
       <span class="unit-body"><span class="unit-title">${esc(t.e.title.replace(/^Yozish\.?\s*/, ""))}</span><span class="unit-sub">${best !== undefined ? `Eng yaxshi natija: ${best} ball` : locked ? "Kursda hali bu boʻlimga yetmagansiz" : "Hali yozilmagan"}</span></span>
       ${best !== undefined ? pctRing(best / 100) : ICON.chev}</a>`; }).join("")}</div>` : ""; }).join("")}`;
 }
@@ -3899,6 +3899,14 @@ function renderResult() {
   foot.innerHTML = `<button class="btn btn-ghost" data-act="close-session">Yopish</button>${SES.mode === "gx" ? (() => { const nx = GX_CODES[GX_CODES.indexOf(SES.u) + 1]; return nx ? `<button class="btn btn-grad" data-act="gx-start" data-c="${nx}">Keyingi: ${esc(nx)}</button>` : ""; })() : ["review", "mistakes", "gxm", "lmis", "smis"].includes(SES.mode) ? "" : `<button class="btn btn-grad" data-act="again">Yana mashq</button>`}`;
 }
 
+// The browser bar (and the phone's status bar in the installed app) takes the colour of the page: by the system setting, or the chosen theme
+function themeMeta(v) {
+  const m = document.querySelectorAll('meta[name="theme-color"]');
+  if (m.length < 2) return;
+  m[0].media = v === "auto" ? "(prefers-color-scheme: light)" : ""; m[0].content = v === "dark" ? "#0d1124" : "#f7f4ee";
+  m[1].media = v === "auto" ? "(prefers-color-scheme: dark)" : ""; m[1].content = v === "light" ? "#f7f4ee" : "#0d1124";
+}
+
 /* ---------- Events ---------- */
 function onAct(e) {
   const b = e.target.closest("[data-act]");
@@ -3937,6 +3945,7 @@ function onAct(e) {
     const v = b.dataset.v;
     try { if (v === "auto") localStorage.removeItem("ty-theme"); else localStorage.setItem("ty-theme", v); } catch (err) {}
     if (v === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = v;
+    themeMeta(v);
     const y = window.scrollY; route(); window.scrollTo(0, y);
   }
   else if (act === "remind") remSet(b.dataset.v);
