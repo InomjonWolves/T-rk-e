@@ -1,14 +1,15 @@
 name: Audio
 
-# Saytdagi barcha turkcha so'z va gaplarning audiosi (Google Cloud TTS) — tools/audio-gen.js.
+# Saytdagi barcha turkcha so'z va gaplarning audiosi (Microsoft Edge neyron ovozlari — edge-tts, kalitsiz; yoki Google Cloud TTS) — tools/audio-gen.js.
 # Faqat yangi yoki o'zgargan matnlar ovozlanadi; natija audio/ papkasiga commit qilinadi va sayt qayta joylanadi.
-# Secret: GOOGLE_TTS_KEY. Ovoz: tools/audio-voice.json.
+# Ovoz va provayder: tools/audio-voice.json ("provider": "edge" — kalit kerak emas; aks holda secret GOOGLE_TTS_KEY).
 on:
   push:
     branches: [main]
     paths:
       - "tools/audio-voice.json"
       - "tools/audio-gen.js"
+      - "tools/audio-edge.py"
       - "tools/audio-texts.js"
       - "content.js"
       - "lugat.js"
@@ -34,27 +35,21 @@ jobs:
     env:
       GOOGLE_TTS_KEY: ${{ secrets.GOOGLE_TTS_KEY }}
     steps:
-      - name: Kalit tekshiruvi
-        if: env.GOOGLE_TTS_KEY == ''
-        run: echo "GOOGLE_TTS_KEY sozlanmagan — o'tkazib yuborildi."
       - uses: actions/checkout@v5
-        if: env.GOOGLE_TTS_KEY != ''
         with:
           ref: main
       - uses: actions/setup-node@v5
-        if: env.GOOGLE_TTS_KEY != ''
         with:
           node-version: 22
       - name: Playwright (matnlar ro'yxati ilovadan olinadi)
-        if: env.GOOGLE_TTS_KEY != ''
         run: |
           npm install --no-audit --no-fund
           npx playwright install --with-deps chromium
+      - name: edge-tts
+        run: pip install -q edge-tts
       - name: Audio yaratish
-        if: env.GOOGLE_TTS_KEY != ''
         run: node tools/audio-gen.js
       - name: Commit va saytni qayta joylash
-        if: env.GOOGLE_TTS_KEY != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

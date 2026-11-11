@@ -1,4 +1,6 @@
-// Recorded audio for the site with Google Cloud Text-to-Speech (.github/workflows/audio.yml).
+// Recorded audio for the site (.github/workflows/audio.yml). Provider from tools/audio-voice.json:
+//   "provider": "edge"  — Microsoft Edge neural voices through the edge-tts Python package (no key, free; tools/audio-edge.py)
+//   otherwise           — Google Cloud Text-to-Speech (needs GOOGLE_TTS_KEY)
 //   node tools/audio-gen.js --samples   every tr-TR voice reads the same words/sentences → ./samples (to choose a voice)
 //   node tools/audio-gen.js             writes the missing audio/<k2>/<key>.mp3 for tools/audio-texts.js, removes
 //                                       files no text needs any more, and rewrites audio/index.txt
@@ -74,6 +76,7 @@ async function samples(sa, tok) {
   console.log(`${index.length} ta ovoz, ${chars} belgi`);
 }
 async function full(sa, tok) {
+  // sa/tok — faqat Google uchun
   const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, "audio-voice.json"), "utf8"));
   if (!cfg.a || !cfg.a.name) { console.log("tools/audio-voice.json da ovoz tanlanmagan — avval namunalar (--samples)"); return; }
   const list = await require("./audio-texts.js").collect();
@@ -82,6 +85,21 @@ async function full(sa, tok) {
   const todo = [...want].filter(([k]) => !fs.existsSync(fileOf(k)));
   const limit = +(process.env.AUDIO_MAX_CHARS || 400000);
   console.log(`${want.size} ta matn, ${todo.length} tasi yangi, ${todo.reduce((a, [, x]) => a + x[1].length, 0)} belgi`);
+  if (cfg.provider === "edge") {
+    const jobs = [];
+    for (const [k, [v, t]] of todo) {
+      if (chars + t.length > limit) continue;
+      chars += t.length;
+      jobs.push({ out: fileOf(k), voice: (cfg[v] && cfg[v].name) || cfg.a.name, text: t, rate: (cfg[v] && cfg[v].rate) || cfg.rate || 0.9 });
+    }
+    if (jobs.length) {
+      const tmp = path.join(require("os").tmpdir(), "audio-jobs.json");
+      fs.writeFileSync(tmp, JSON.stringify(jobs));
+      const r = require("child_process").spawnSync("python3", [path.join(__dirname, "audio-edge.py"), tmp], { stdio: "inherit" });
+      if (r.status !== 0) throw new Error("audio-edge.py: " + r.status);
+      made = jobs.filter(j => fs.existsSync(j.out)).length;
+    }
+  } else {
   let i = 0;
   const worker = async () => {
     while (i < todo.length) {
@@ -96,6 +114,7 @@ async function full(sa, tok) {
     }
   };
   await Promise.all(Array.from({ length: 6 }, worker));
+  }
   // Files no text needs any more (text changed or removed)
   if (fs.existsSync(DIR)) for (const d of fs.readdirSync(DIR)) {
     const p = path.join(DIR, d);
@@ -108,6 +127,8 @@ async function full(sa, tok) {
   console.log(`Yaratildi: ${made} (${chars} belgi), o'chirildi: ${removed}, jami audio: ${have.length}/${want.size}`);
 }
 async function main() {
+  const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, "audio-voice.json"), "utf8"));
+  if (cfg.provider === "edge" && !process.argv.includes("--samples")) return full(null, null);
   const sa = JSON.parse(process.env.GOOGLE_TTS_KEY || "null");
   if (!sa) { console.log("GOOGLE_TTS_KEY yo'q — o'tkazib yuborildi"); return; }
   const tok = await accessToken(sa);
