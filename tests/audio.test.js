@@ -72,7 +72,7 @@ test("audio: the text list covers every word, dialogs and readings; site config 
   assert.ok(b.length > 50, "second dialog voice");
   const keys = new Set(list.map(([v, t]) => gen.audioKey(t, v)));
   assert.equal(keys.size, list.length, "no key collisions");
-  assert.ok(list.some(x => x[1] === "Günaydın, hocam!"), "course dialog line");
+  assert.ok(list.some(x => x[1] === "Ben de memnun oldum."), "course dialog line");
   assert.ok(list.some(x => x[1].startsWith("Merhaba! Benim adım Ali.")), "reading paragraph");
   const chars = list.reduce((s, x) => s + x[1].length, 0);
   assert.ok(chars < 300000, `${chars} characters — keep it inside the free tier`);
