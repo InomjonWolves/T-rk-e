@@ -1042,6 +1042,7 @@ function viewHome() {
   ${greeting()}
   <div class="home-side">
   ${statusCard()}
+  ${guestCard()}
   ${comebackCard()}
   ${gtHomeCard()}
   ${dqCard()}
@@ -2553,6 +2554,7 @@ function closeSession() {
   route();
   celebrateQueued();
   if (PAMUK_LATER) { const [m, t] = PAMUK_LATER; PAMUK_LATER = null; setTimeout(() => pamukSay(m, t), 500); }
+  setTimeout(guestNudge, 1200);
 }
 function progressBar() {
   const n = SES.items.length;
@@ -4035,6 +4037,10 @@ function onAct(e) {
   else if (act === "photo-remove") { setMyPhoto(""); const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "auth-tab") setAuthTab(b.dataset.t);
   else if (act === "auth-google") googleSignIn();
+  else if (act === "auth-guest") startGuest();
+  else if (act === "close-sheet") closeSheet(true);
+  else if (act === "guest-signup") { closeSheet(true); const u = auth && auth.currentUser; if (u && !USER) { showVerify(u); verifyCheck(true); } else { showAuth(false); setAuthTab("signup"); $("auth-email").open = false; window.scrollTo(0, 0); } }
+  else if (act === "pass-eye") { const i = $("a-pass"), on = i.type === "password"; i.type = on ? "text" : "password"; b.setAttribute("aria-pressed", String(on)); b.textContent = on ? "Yashirish" : "Koʻrsatish"; }
   else if (act === "auth-reset") resetPassword();
   else if (act === "logout") { ADMIN = false; ADMIN_DATA = null; setLastUser(null); cloudFlush().then(() => auth && auth.signOut()); go("home"); }
   else if (act === "verify-again") verifySend();
@@ -4562,6 +4568,43 @@ const AUTH_ERR = {
   "auth/redirect-cancelled-by-user": "Kirish bekor qilindi."
 };
 const authMsg = e => AUTH_ERR[e && e.code] || ("Xatolik yuz berdi" + (e && e.code ? ` (${e.code})` : "") + ". Qayta urinib koʻring.");
+/* ---------- Guest mode: the app opens without an account; progress stays on the device until the visitor signs in ---------- */
+const GUEST_KEY = "ty-guest";
+function isGuest() { try { return localStorage.getItem(GUEST_KEY) === "1"; } catch (e) { return false; } }
+function guestEnd() { try { localStorage.removeItem(GUEST_KEY); localStorage.removeItem(KEY); localStorage.removeItem("ty-guest-asked"); } catch (e) {} }
+function startGuest() {
+  try { localStorage.setItem(GUEST_KEY, "1"); } catch (e) {}
+  hideVerify(); hideAuth();
+  if (!USER) { KEYU = KEY; S = loadLocal(KEY); }
+  lgSettle(); route(); showWelcome();
+}
+// Sign-in buttons work as soon as they are visible: they wait for the SDK if it is still loading
+let FB_READY = null;
+async function authReady() {
+  if (auth) return true;
+  authError("Ulanmoqda…", true);
+  try { await FB_READY; } catch (e) {}
+  if (auth) { authError(""); return true; }
+  authError("Internetga ulanib boʻlmadi. “Hoziroq boshlash” ni bosib, hisobsiz davom etishingiz mumkin.");
+  return false;
+}
+// A gentle, one-time offer to keep the result after the first finished exercise
+function guestNudge() {
+  if (!isGuest() || USER || !(S.xp > 0) || SES || !$("sheet").hidden) return;
+  try { if (localStorage.getItem("ty-guest-asked")) return; localStorage.setItem("ty-guest-asked", "1"); } catch (e) { return; }
+  openSheet(`<div class="guest-sheet">${mascot("happy")}<h2>Zoʻr boshladingiz!</h2>
+    <p>Hozircha natijangiz faqat shu qurilmada turibdi. Hisob ochsangiz, u saqlanib qoladi: telefon almashsa ham yoʻqolmaydi, reyting va doʻstlar ochiladi.</p>
+    <button class="btn btn-grad btn-block" data-act="guest-signup">Natijamni saqlash</button>
+    <button class="btn btn-ghost btn-block" data-act="close-sheet">Keyinroq</button></div>`);
+}
+function guestCard() {
+  if (USER || EARLY || !window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey || !isGuest()) return "";
+  const u = auth && auth.currentUser, wait = u && needsVerify(u);
+  if (!wait && !(S.xp > 0)) return ""; // nothing to save yet: let the visitor look around first
+  return `<section class="section guest-card"><div class="glass pad"><b>${wait ? "Pochtangizni tasdiqlang" : "Natijangizni saqlab qoʻying"}</b>
+    <p class="muted">${wait ? `${esc(u.email || "")} manziliga xat yubordik. Tasdiqlasangiz, natijangiz hisobingizga saqlanadi.` : "Hozir natijalar faqat shu qurilmada. Hisob oching — yoʻqolmaydi, reyting va doʻstlar ochiladi."}</p>
+    <button class="btn btn-grad btn-block" data-act="guest-signup">${wait ? "Tasdiqlash" : "Hisob ochish (bepul)"}</button></div></section>`;
+}
 function authError(e, ok) {
   const el = $("auth-err");
   if (e && (e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request")) { el.textContent = ""; return; }
@@ -4573,13 +4616,12 @@ function setAuthTab(t) {
   const up = t === "signup";
   $("tab-login").setAttribute("aria-selected", String(!up));
   $("tab-signup").setAttribute("aria-selected", String(up));
-  $("f-name").hidden = !up; $("f-pass2").hidden = !up; $("auth-reset").hidden = up;
-  $("f-gender").hidden = !up; $("f-birth").hidden = !up;
+  $("f-name").hidden = !up; $("auth-reset").hidden = up;
   $("auth-speech").textContent = up ? "Tanishaylik! Men Pamuk." : "Salom! Men Pamuk.";
   $("a-pass").setAttribute("autocomplete", up ? "new-password" : "current-password");
   $("auth-submit").textContent = up ? "Roʻyxatdan oʻtish" : "Kirish";
   $("auth-submit").disabled = false;
-  $("auth-err").className = "auth-err"; $("auth-err").textContent = REDIR_MSG || (IN_TG ? "Telegram ichida: email va parol bilan kiring (Google bilan kirish faqat brauzerda ishlaydi)." : "");
+  $("auth-err").className = "auth-err"; $("auth-err").textContent = REDIR_MSG || "";
 }
 function showAuth(loading) {
   document.body.classList.add("locked");
@@ -4588,6 +4630,9 @@ function showAuth(loading) {
   $("auth-loading").hidden = !loading;
   $("auth-body").hidden = !!loading;
   $("auth-body").style.display = loading ? "none" : "flex";
+  const back = isGuest();
+  $("auth-guest").textContent = back ? "Mehmon sifatida davom etish" : "Hoziroq boshlash";
+  $("auth-guest-note").textContent = back ? "Hisob ochsangiz, shu qurilmadagi natijangiz hisobingizga oʻtadi." : "Roʻyxatdan oʻtish shart emas. Natijangizni keyin bir bosishda saqlab olasiz.";
 }
 function hideAuth() { authEl.hidden = true; document.body.classList.remove("locked"); }
 function busy(on) { const b = $("auth-submit"); b.disabled = on; if (on) b.textContent = "Kuting…"; else setAuthTab(authMode); }
@@ -4602,16 +4647,13 @@ document.addEventListener("submit", e => {
 $("auth-form").addEventListener("submit", async e => {
   e.preventDefault();
   const email = $("a-email").value.trim(), pass = $("a-pass").value;
+  if (!email || !pass) { authError("Elektron pochta va parolni yozing."); return; }
+  if (!(await authReady())) return;
   if (authMode === "signup") {
     const name = $("a-name").value.trim();
     if (!name) { authError("Ismingizni kiriting."); return; }
-    const g = document.querySelector('#f-gender [aria-checked="true"]');
-    if (!g) { authError("Jinsingizni tanlang: erkak yoki ayol."); return; }
-    const bd = readBirth("b");
-    if (bd.err) { authError(bd.err); return; }
-    if (pass !== $("a-pass2").value) { authError("Parollar bir xil emas."); return; }
+    if (pass.length < 6) { authError("Parol kamida 6 belgidan iborat boʻlsin."); return; }
     PENDING_NAME = name;
-    PENDING_PROFILE = { gender: g.dataset.g, birth: bd.v };
     busy(true);
     try {
       const cred = await auth.createUserWithEmailAndPassword(email, pass);
@@ -4643,9 +4685,10 @@ document.addEventListener("input", e => {
   CatLife.look(c, -6 + 12 * k, 6);
 });
 // Google refuses sign-in inside app web views (Telegram included): say so and offer the real browser
-const TG_AUTH_MSG = "Telegram ichida Google bilan kirib boʻlmaydi (bu Google cheklovi). Email va parol bilan kiring yoki saytni brauzerda oching: turkceyol.web.app";
-function googleSignIn() {
+const TG_AUTH_MSG = "Telegram ichida Google bilan kirib boʻlmaydi (bu Google cheklovi). “Hoziroq boshlash” ni bosing yoki email va parol bilan kiring. Google uchun saytni brauzerda oching: turkceyol.web.app";
+async function googleSignIn() {
   if (IN_TG) { authError(""); $("auth-err").className = "auth-err"; $("auth-err").textContent = TG_AUTH_MSG; tgOpenBrowser(); return; }
+  if (!(await authReady())) return;
   oauthSignIn(new firebase.auth.GoogleAuthProvider());
 }
 // A popup first, also in the installed app: the page-redirect flow loses the sign-in on browsers that block
@@ -4661,8 +4704,9 @@ function oauthSignIn(provider) {
     } else authError(err);
   });
 }
-function resetPassword() {
+async function resetPassword() {
   const email = $("a-email").value.trim();
+  if (!(await authReady())) return;
   if (!email) { authError("Avval elektron pochtangizni yozing, keyin “Parolni unutdingizmi?” ni bosing."); $("a-email").focus(); return; }
   auth.sendPasswordResetEmail(email)
     .then(() => authError(`Parolni tiklash xati ${email} manziliga yuborildi.`, true))
@@ -4693,6 +4737,12 @@ async function deleteAccount(btn) {
 async function loadCloud(u) {
   KEYU = KEY + ":" + u.uid;
   let local = loadLocal(KEYU);
+  // Coming from guest mode: the progress made without an account moves into the account
+  if (isGuest()) {
+    const g = loadLocal(KEY);
+    if ((g.xp || 0) > (local.xp || 0)) { local = g; try { localStorage.setItem(KEYU, JSON.stringify(g)); } catch (e) {} }
+    guestEnd();
+  }
   USERNAME = u.displayName || PENDING_NAME || "";
   const ref = db.collection("users").doc(u.uid);
   try {
@@ -4702,7 +4752,6 @@ async function loadCloud(u) {
     const d = snap.exists ? snap.data() : null;
     if (d && d.name) USERNAME = d.name;
     PROFILE = { gender: (d && d.gender) || "", birth: (d && d.birth) || "" };
-    if (PENDING_PROFILE) { PROFILE = PENDING_PROFILE; PENDING_PROFILE = null; }
     const cloud = d && d.progress ? Object.assign(blank(), d.progress) : null;
     // More XP wins; with equal XP the copy saved last wins (e.g. a group joined just before signing out)
     const newer = cloud && (cloud.xp > local.xp || (cloud.xp === local.xp && (cloud.savedAt || 0) >= (local.savedAt || 0)));
@@ -4750,7 +4799,6 @@ function tgOpenBrowser(url = "https://turkceyol.web.app/") {
 S = loadLocal(KEY);
 loadMyPhoto();
 try { PROFILE = Object.assign(PROFILE, JSON.parse(localStorage.getItem("ty-profile") || "{}")); } catch (e) {}
-document.querySelector("#f-birth .birth").innerHTML = birthSelects("b", "");
 /* ---------- E-mail verification: a password account enters the app only after confirming its address ---------- */
 const needsVerify = u => !!u && !u.emailVerified && (u.providerData || []).some(p => p && p.providerId === "password");
 const VERIFY_GAP = 60000;
@@ -4797,7 +4845,7 @@ function verifySend() {
     .catch(err => { $("v-msg").className = "auth-err"; $("v-msg").textContent = err && err.code === "auth/too-many-requests" ? "Xat yaqinda yuborilgan. Bir necha daqiqadan keyin qayta urinib koʻring va Spam papkasini tekshiring." : authMsg(err); });
 }
 // Coming back from the mail app: check again without a tap
-document.addEventListener("visibilitychange", () => { if (!document.hidden && VERIFY_U) verifyCheck(true); });
+document.addEventListener("visibilitychange", () => { const u = auth && auth.currentUser; if (!document.hidden && (VERIFY_U || (!USER && u && needsVerify(u)))) verifyCheck(true); });
 
 async function enterApp(u, quiet) {
   EARLY = null;
@@ -4811,8 +4859,7 @@ async function enterApp(u, quiet) {
   if (frPendingGet()) setTimeout(() => frAdd(frPendingGet(), true), 600);
   if (!quiet) hideAuth();
   if (!quiet || !SES) route();
-  if (!PROFILE.gender || !PROFILE.birth) { if ($("sheet").hidden && !SES) profileSheet(true); }
-  else if (!quiet) showWelcome();
+  if (!quiet) { closeSheet(true); showWelcome(); }
 }
 function fbStart() {
   // On a Firebase Hosting site whose sign-in handler is registered with Google, sign in on the same domain
@@ -4829,6 +4876,7 @@ function fbStart() {
   }).catch(err => { showAuth(false); authError(err); });
   auth.onAuthStateChanged(async u => {
     if (!u) {
+      if (isGuest() && !USER && !EARLY) return; // a guest is already using the app on the local copy
       EARLY = null; setLastUser(null);
       USER = null; USERNAME = ""; S = blank(); KEYU = KEY; RANK_CACHE = {}; GRP = {}; GRP_OWN = null; GRP_SYNC_AT = 0; MYPHOTO = ""; PROFILE = { gender: "", birth: "" };
       try { sessionStorage.removeItem("ty-welcomed"); } catch (e) {}
@@ -4837,6 +4885,7 @@ function fbStart() {
       showAuth(false); setAuthTab(authMode);
       return;
     }
+    if (needsVerify(u) && isGuest() && !USER && !EARLY) { VERIFY_U = u; route(); return; } // learning goes on while the mail is on its way
     if (needsVerify(u)) {
       // Not confirmed yet: none of the app (and no cloud writes) until the address is verified
       if (EARLY) { EARLY = null; S = blank(); KEYU = KEY; USERNAME = ""; MYPHOTO = ""; if (SES) closeSession(); }
@@ -4858,10 +4907,14 @@ if (FB) {
     loadMyPhoto();
     route();
     showWelcome();
-  } else showAuth(true);
-  loadFirebase().then(fbStart).catch(() => {
+  } else if (isGuest()) {
+    // A guest from an earlier visit: straight into the app
+    lgSettle(); route(); showWelcome();
+  } else { showAuth(false); setAuthTab(authMode); }
+  FB_READY = loadFirebase().then(fbStart);
+  FB_READY.catch(() => {
     // No SDK (offline and not cached): work locally, as before
-    if (EARLY) return;
+    if (EARLY || isGuest()) return;
     FB = false; hideAuth(); lgSettle(); route(); showWelcome();
   });
 } else {

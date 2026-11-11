@@ -84,9 +84,9 @@ test("returning user signed out elsewhere: the sign-in screen replaces the local
   await page.close();
 });
 
-test("new visitor: loading screen until Firebase answers; no SDK at all falls back to guest mode", async () => {
+test("new visitor: the sign-in screen with its buttons is there at once, before Firebase answers; no SDK at all falls back to guest mode", async () => {
   let { page, errors } = await open({});
-  assert.equal(await page.evaluate(() => !document.getElementById("auth").hidden && !document.getElementById("auth-loading").hidden), true);
+  assert.equal(await page.evaluate(() => !document.getElementById("auth").hidden && document.getElementById("auth-loading").hidden && !document.getElementById("auth-body").hidden), true);
   await page.evaluate(() => __fbResolve(null));
   await page.waitForTimeout(100);
   assert.equal(await page.evaluate(() => !document.getElementById("auth-body").hidden), true);

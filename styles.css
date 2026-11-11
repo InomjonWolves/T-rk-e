@@ -1324,3 +1324,20 @@ details.fold > .list .unit:active { box-shadow: 0 1px 0 var(--line-2); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Kirish oynasi (2026-11): roʻyxatsiz boshlash, Google, yigʻma email formasi ---------- */
+.auth-go { min-height: 56px; font-size: 18px; }
+.auth-email { border: 1px solid var(--line); border-radius: 16px; background: var(--surface-2); }
+.auth-email > summary { list-style: none; cursor: pointer; padding: 14px 16px; font-weight: 700; color: var(--accent-ink); text-align: center; min-height: 44px; }
+.auth-email > summary::-webkit-details-marker { display: none; }
+.auth-email[open] > summary { border-bottom: 1px solid var(--line); }
+.auth-email-body { display: flex; flex-direction: column; gap: 14px; padding: 14px; }
+.auth-email-body form { display: flex; flex-direction: column; gap: 12px; }
+.pass-row { display: flex; gap: 8px; align-items: stretch; }
+.pass-row input { flex: 1; min-width: 0; }
+.pass-eye { flex: none; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--accent-ink); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.guest-sheet { display: flex; flex-direction: column; gap: 12px; align-items: center; text-align: center; }
+.guest-sheet .cat { width: 96px; height: 96px; }
+.guest-sheet p { color: var(--ink-2); line-height: 1.5; }
+.home-side > .guest-card { order: 0; }
+.guest-card .glass { display: flex; flex-direction: column; gap: 10px; border-color: var(--accent); }

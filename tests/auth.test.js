@@ -16,13 +16,13 @@ const gate = page => page.evaluate(() => ({
 test("sign-up with e-mail: the verification screen holds the app until the address is confirmed", async () => {
   const { page, errors } = await openFb(browser, "#home");
   await page.waitForFunction(() => !document.getElementById("auth-body").hidden);
+  // The e-mail form is folded away; sign-up asks only for a name, an address and one password
+  await page.evaluate(() => { document.getElementById("auth-email").open = true; });
   await page.click("#tab-signup");
+  assert.equal(await page.evaluate(() => !!document.getElementById("f-gender") || !!document.getElementById("a-pass2")), false);
   await page.fill("#a-name", "Yasmina");
-  await page.click('#f-gender [data-g="f"]');
-  await page.evaluate(() => { for (const id of ["b-day", "b-month", "b-year"]) { const s = document.getElementById(id); s.selectedIndex = s.options.length > 20 ? 20 : 3; s.dispatchEvent(new Event("change", { bubbles: true })); } });
   await page.fill("#a-email", "yasmina@example.com");
   await page.fill("#a-pass", "parol-123456");
-  await page.fill("#a-pass2", "parol-123456");
   await page.click("#auth-submit");
   await page.waitForFunction(() => !document.getElementById("auth-verify").hidden);
   assert.deepEqual(await gate(page), { verify: true, overlay: true, user: null, email: "yasmina@example.com" });
@@ -40,7 +40,6 @@ test("sign-up with e-mail: the verification screen holds the app until the addre
   await page.waitForFunction(() => USER && USER.uid === "new1" && document.getElementById("auth").hidden);
   const doc = await page.evaluate(() => __db["users/new1"]);
   assert.equal(doc.name, "Yasmina");
-  assert.equal(doc.gender, "f");
   assert.equal(await page.evaluate(() => document.getElementById("auth-verify").hidden), true);
   assert.deepEqual(errors, []);
   await page.close();
@@ -87,6 +86,7 @@ test("Google: a popup even in the installed app; redirect only when the popup is
   await page.waitForFunction(() => /Google bilan kirish yakunlanmadi/.test(document.getElementById("auth-err").textContent));
   assert.equal(await page.evaluate(() => sessionStorage.getItem("ty-redirect")), null);
   // The message stays when the form is redrawn, and a new attempt clears it
+  await page.evaluate(() => { document.getElementById("auth-email").open = true; });
   await page.click("#tab-signup"); await page.click("#tab-login");
   assert.match(await page.textContent("#auth-err"), /yakunlanmadi/);
   await page.click("[data-act=auth-google]");
@@ -102,9 +102,67 @@ test("inside Telegram (Mini App): the Telegram data leaves the address, Google s
   const { page, errors } = await openFb(browser, "#tgWebAppData=query_id%3DAA%26user%3D1&tgWebAppVersion=7.0&tgWebAppPlatform=android");
   assert.equal(await page.evaluate(() => location.hash), "#home");
   assert.equal(await page.evaluate(() => [IN_TG, sessionStorage["ty-tg"], document.documentElement.classList.contains("in-tg")].join()), "true,1,true");
-  assert.match(await page.textContent("#auth-err"), /Telegram ichida: email va parol bilan kiring/);
+  assert.equal(await page.evaluate(() => document.getElementById("auth-guest").offsetParent !== null), true, "the no-account start is offered inside Telegram too");
   await page.click("[data-act=auth-google]");
   assert.match(await page.textContent("#auth-err"), /Google bilan kirib boʻlmaydi/);
   assert.deepEqual(await page.evaluate(() => window.__popups || []), [], "no Google popup inside Telegram");
   assert.deepEqual(errors, []);
+});
+
+// Closes the welcome / celebration overlays that cover the page for a new visitor
+async function closeAll(page) {
+  await page.evaluate(() => { for (const id of ["welcome", "onboard", "celebrate"]) { const el = document.getElementById(id); if (el) el.hidden = true; } document.body.classList.remove("locked"); document.body.style.overflow = ""; });
+}
+
+// Guest mode (2026-11): the app opens without an account; the progress moves into the account on sign-in
+test("guest: start without an account, a card offers to save the result, sign-in keeps the guest progress", async () => {
+  const { openFb } = require("./fakefb");
+  const { page, errors } = await openFb(browser, "#home");
+  await page.waitForFunction(() => !document.getElementById("auth-body").hidden);
+  await page.click("#auth-guest");
+  await page.waitForFunction(() => document.getElementById("auth").hidden && !!document.querySelector("#app").children.length);
+  assert.equal(await page.evaluate(() => [USER, localStorage.getItem("ty-guest")].join()), ",1");
+  await closeAll(page);
+  await page.evaluate(() => { S.xp = 50; save(); route(); });
+  assert.match(await page.textContent(".guest-card"), /Natijangizni saqlab qoʻying/);
+  assert.equal(await page.evaluate(() => Object.keys(__db).length), 0, "a guest writes nothing to the server");
+  // The one-time offer after the first exercise
+  await page.evaluate(() => guestNudge());
+  assert.match(await page.textContent("#sheet-body"), /Natijamni saqlash/);
+  await page.click("#sheet-body [data-act=guest-signup]");
+  assert.equal(await page.evaluate(() => document.getElementById("auth").hidden), false);
+  assert.match(await page.textContent("#auth-guest"), /Mehmon sifatida davom etish/);
+  // Signing in (Google here) carries the guest progress into the account
+  await page.evaluate(() => __fbUser({ uid: "g1", displayName: "Ali", email: "ali@example.com" }));
+  await page.waitForFunction(() => USER && USER.uid === "g1" && document.getElementById("auth").hidden);
+  assert.equal(await page.evaluate(() => S.xp), 50);
+  assert.equal(await page.evaluate(() => __db["users/g1"].progress.xp), 50);
+  assert.equal(await page.evaluate(() => localStorage.getItem("ty-guest")), null);
+  assert.equal(await page.evaluate(() => !!document.querySelector(".guest-card")), false);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("guest: an unconfirmed e-mail account can start learning at once and confirm later", async () => {
+  const { openFb } = require("./fakefb");
+  const { page, errors } = await openFb(browser, "#home");
+  await page.waitForFunction(() => !document.getElementById("auth-body").hidden);
+  await page.evaluate(() => { document.getElementById("auth-email").open = true; });
+  await page.click("#tab-signup");
+  await page.fill("#a-name", "Dilnoza"); await page.fill("#a-email", "d@example.com"); await page.fill("#a-pass", "parol-123456");
+  await page.click("#auth-submit");
+  await page.waitForFunction(() => !document.getElementById("auth-verify").hidden);
+  await page.click("#auth-verify [data-act=auth-guest]");
+  await page.waitForFunction(() => document.getElementById("auth").hidden);
+  await closeAll(page);
+  await page.evaluate(() => route());
+  assert.match(await page.textContent(".guest-card"), /Pochtangizni tasdiqlang/);
+  assert.equal(await page.evaluate(() => !!__db["users/new1"]), false, "still nothing on the server");
+  // Confirmed in the mail app, then back through the card
+  await page.evaluate(() => __fbVerify());
+  await page.evaluate(() => document.querySelector(".guest-card [data-act=guest-signup]").click()); // the first-visit tour may cover the page
+  await page.waitForFunction(() => USER && USER.uid === "new1" && document.getElementById("auth").hidden);
+  assert.equal(await page.evaluate(() => __db["users/new1"].name), "Dilnoza");
+  assert.deepEqual(errors, []);
+  await page.close();
 });
