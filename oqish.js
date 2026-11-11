@@ -1,4 +1,4 @@
-/* Oʻqish matnlari (Okuma): A1–B2, har birida lugʻat va 4 ta savol. Hammasi original matnlar.
+/* Oʻqish matnlari (Okuma): A1–C1, har birida lugʻat va 4 ta savol. Hammasi original matnlar.
    { id, lv, tr: sarlavha, uz: tarjima, text: abzaslar (\n\n), gloss: [[turkcha, oʻzbekcha]], q: [{ q, o: [4 variant], a: toʻgʻri variant indeksi }] } */
 var OQ = [
   {
@@ -131,6 +131,39 @@ var OQ = [
       { q: "Gönüllülük gönüllüye ne kazandırır?", o: ["Yeni beceriler ve tanışıklıklar", "Yüksek maaş", "Ücretsiz tatil", "Diploma"], a: 0 },
       { q: "Tükenmişlik hangi durumda yaşanabilir?", o: ["Kişi gücünü ve zamanını gerçekçi planlamazsa", "Kişi çok uyursa", "Kişi hiç gönüllü olmazsa", "Kişi yalnız çalışırsa"], a: 0 },
       { q: "Metnin ana fikri nedir?", o: ["Gönüllülük artıyor ve hem topluma hem gönüllüye fayda sağlıyor", "Gençler çalışmak istemiyor", "Gönüllülük zararlıdır", "Sadece yaşlılar gönüllü oluyor"], a: 0 }
+    ]
+  },
+  {
+    id: "unutmak", lv: "C1", tr: "Unutmanın faydası", uz: "Unutishning foydasi",
+    text: "Unutkanlıktan yakınmayan yoktur. Bir ismi hatırlayamadığımızda ya da anahtarı nereye koyduğumuzu bulamadığımızda belleğimizin bizi yarı yolda bıraktığını düşünürüz. Oysa sinirbilimciler, unutmanın bir kusur değil, sağlıklı bir belleğin vazgeçilmez işlevi olduğunu ileri sürmektedir.\n\nBeyin, karşılaştığı her ayrıntıyı saklasaydı önemli olanla önemsiz olanı ayırt edemezdi. Dün öğle yemeğinde ne yediğimizi unutmamız, bugünkü toplantının saatini hatırlamamızı kolaylaştırır. Araştırmalar, beynin uyku sırasında gün içinde edinilen bilgileri elediğini, sık kullanılan bağlantıları güçlendirirken kullanılmayanları zayıflattığını göstermektedir. Başka bir deyişle unutmak, yeni bilgiye yer açmaksızın öğrenmenin mümkün olmadığı bir düzende, öğrenmenin ön koşuludur.\n\nBu bulgu, ders çalışma alışkanlıklarımız açısından da önemlidir. Bir bilgiyi unutmak üzereyken yeniden hatırlamaya çalışmak, onu art arda on kez okumaktan daha kalıcı bir iz bırakır. Zorlanarak hatırlanan bilgi, beyin tarafından \"önemli\" olarak işaretlenir.\n\nElbette her unutkanlık zararsız değildir; günlük yaşamı aksatan bellek kayıpları mutlaka bir uzmana danışılmayı gerektirir. Ancak sıradan unutkanlıklar için kendimizi suçlamak yerine şunu hatırlamakta fayda var: iyi bir bellek her şeyi saklayan değil, neyi bırakacağını bilen bellektir.",
+    gloss: [["yakınmak", "nolimoq, shikoyat qilmoq"], ["bellek", "xotira"], ["sinirbilimci", "neyrobiolog"], ["işlev", "vazifa, funksiya"], ["ayırt etmek", "ajrata olmoq"], ["elemek", "saralamoq, elakdan oʻtkazmoq"], ["ön koşul", "dastlabki shart"], ["aksatmak", "izdan chiqarmoq"]],
+    q: [
+      { q: "Sinirbilimcilere göre unutmak nedir?", o: ["Sağlıklı bir belleğin vazgeçilmez işlevi", "Belleğin en büyük kusuru", "Yaşlılığın belirtisi", "Dikkatsizliğin sonucu"], a: 0 },
+      { q: "Beyin her ayrıntıyı saklasaydı ne olurdu?", o: ["Daha hızlı öğrenirdik", "Hiç uyumamız gerekmezdi", "Önemli olanla önemsiz olanı ayırt edemezdik", "Hiçbir şeyi unutmazdık ve mutlu olurduk"], a: 2 },
+      { q: "Hangi yöntem daha kalıcı bir iz bırakır?", o: ["Bilgiyi art arda on kez okumak", "Bilgiyi unutmak üzereyken yeniden hatırlamaya çalışmak", "Bilgiyi yüksek sesle okumak", "Bilgiyi hiç tekrar etmemek"], a: 1 },
+      { q: "Yazara göre iyi bir bellek nasıldır?", o: ["Her şeyi saklar", "Hiçbir şeyi unutmaz", "Yalnızca sayıları hatırlar", "Neyi bırakacağını bilir"], a: 3 }
+    ]
+  },
+  {
+    id: "sessizlik", lv: "C1", tr: "Sessizliğin değeri", uz: "Sukunatning qadri",
+    text: "Büyük şehirlerde yaşayanların çoğu gürültüye o kadar alışmıştır ki onu artık fark etmez. Oysa beden fark etmeyi sürdürür. Araştırmalar, sürekli trafik gürültüsüne maruz kalan kişilerde uyku bozukluklarının, yüksek tansiyonun ve dikkat dağınıklığının daha sık görüldüğünü ortaya koymaktadır. Gürültü, hava kirliliğinden sonra kent sağlığını tehdit eden ikinci büyük çevresel etken sayılmaktadır.\n\nSorun yalnızca ses düzeyiyle ilgili değildir. Beklenmedik ve denetleyemediğimiz sesler, sürekli ama düzenli seslerden çok daha yorucudur. Açık ofislerde çalışanların verimindeki düşüşün nedeni çoğu zaman sesin yüksekliği değil, yarım yamalak duyulan konuşmalardır; zira beyin, anlamlı sesi istemeksizin çözmeye çalışır.\n\nBuna karşın sessizlik bir lüks olarak görülmeye başlanmıştır. Bazı şehirler parklarda \"sessiz bölgeler\" oluşturmakta, trenlerde telefonla konuşulmayan vagonlar ayırmaktadır. Uzmanlara göre günde yalnızca birkaç dakikalık gerçek sessizlik bile stres düzeyini belirgin biçimde düşürmektedir.\n\nSessizlik, sesin yokluğundan ibaret değildir; düşüncenin kendini duyabildiği bir alandır. Şehirleri planlarken yolları ve binaları hesaba kattığımız kadar, insanın susabileceği yerleri de hesaba katmamız gerekir.",
+    gloss: [["bozukluk", "buzilish"], ["tansiyon", "qon bosimi"], ["dikkat dağınıklığı", "diqqatning tarqoqligi"], ["yarım yamalak", "chala-chulpa"], ["çözmek", "anglamoq, yechmoq"], ["ibaret", "iborat"], ["hesaba katmak", "hisobga olmoq"]],
+    q: [
+      { q: "Sürekli gürültüye maruz kalan kişilerde ne görülür?", o: ["Daha iyi uyku", "Uyku bozuklukları, yüksek tansiyon ve dikkat dağınıklığı", "Daha güçlü hafıza", "İşitme yeteneğinin artması"], a: 1 },
+      { q: "Hangi sesler daha yorucudur?", o: ["Beklenmedik ve denetleyemediğimiz sesler", "Sürekli ve düzenli sesler", "Doğa sesleri", "Kısık sesli müzik"], a: 0 },
+      { q: "Açık ofislerde verim neden düşer?", o: ["Ses çok yüksek olduğu için", "Işık yetersiz olduğu için", "Çalışanlar çok konuştuğu için", "Beyin, yarım yamalak duyulan konuşmaları çözmeye çalıştığı için"], a: 3 },
+      { q: "Yazara göre sessizlik nedir?", o: ["Yalnızca sesin yokluğu", "Bir lüks ve gereksiz bir istek", "Düşüncenin kendini duyabildiği bir alan", "Şehirlerde imkânsız bir durum"], a: 2 }
+    ]
+  },
+  {
+    id: "ceviri", lv: "C1", tr: "Çevrilemeyen sözcükler", uz: "Tarjima qilib boʻlmaydigan soʻzlar",
+    text: "Her dilde, başka dillere tek sözcükle aktarılamayan kavramlar vardır. Türkçedeki \"hüzün\", yalnızca üzüntü demek değildir; içinde bir yitirmişlik duygusu, biraz da tatlı bir kabulleniş taşır. \"Gönül\" sözcüğünü \"kalp\" diye çevirdiğimizde ise anlamın yarısı yolda kalır: kalp bir organdır, gönül ise sevginin, isteğin ve kırgınlığın yaşadığı yerdir.\n\nDilbilimciler bu tür sözcükleri bir eksiklik olarak değil, bir pencere olarak görür. Bir toplum neye ad vermişse ona dikkat ediyor demektir. Misafirlikle ilgili sözcüklerin zenginliği, o kültürde konukseverliğin taşıdığı önemi ele verir. Özbekçe ile Türkçe arasında bu açıdan şaşırtıcı bir yakınlık bulunur: iki dilde de \"gönül\" ve \"koʻngil\" neredeyse aynı kapıları açar.\n\nÖte yandan çevrilemezlik mutlak değildir. Tek sözcükle karşılanamayan bir kavram, bir cümleyle, bir örnekle, kimi zaman da bir hikâyeyle anlatılabilir. İyi çevirmen sözcüğün karşılığını aramakla yetinmez; o sözcüğün okurda uyandırdığı duyguyu başka bir dilde yeniden kurmaya çalışır.\n\nYabancı dil öğrenenler için bu sözcükler en değerli kazanımlardır. Çünkü onları gerçekten anladığımız gün, o dili konuşmakla kalmaz, o dilde hissetmeye de başlarız.",
+    gloss: [["aktarmak", "oʻgirmoq, yetkazmoq"], ["yitirmişlik", "yoʻqotganlik hissi"], ["kabulleniş", "tan olish, koʻnish"], ["kırgınlık", "ranjish"], ["ele vermek", "oshkor qilmoq"], ["mutlak", "mutlaq"], ["kazanım", "yutuq"]],
+    q: [
+      { q: "Yazara göre \"hüzün\" sözcüğü neyi içerir?", o: ["Yalnızca üzüntüyü", "Öfke ve kırgınlığı", "Bir yitirmişlik duygusunu ve tatlı bir kabullenişi", "Sevinci ve umudu"], a: 2 },
+      { q: "Dilbilimciler çevrilemeyen sözcükleri nasıl görür?", o: ["Bir pencere olarak", "Bir eksiklik olarak", "Gereksiz sözcükler olarak", "Çeviri hatası olarak"], a: 0 },
+      { q: "İyi çevirmen ne yapmaya çalışır?", o: ["Her sözcüğü sözlükteki karşılığıyla değiştirir", "Çevrilemeyen sözcükleri metinden çıkarır", "Metni kısaltır", "Sözcüğün uyandırdığı duyguyu başka dilde yeniden kurar"], a: 3 },
+      { q: "Bu sözcükleri gerçekten anladığımızda ne olur?", o: ["Ana dilimizi unuturuz", "O dilde hissetmeye de başlarız", "Çeviri yapmayı bırakırız", "Sözlüğe ihtiyacımız artar"], a: 1 }
     ]
   }
 ];

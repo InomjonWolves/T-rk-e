@@ -595,3 +595,63 @@ GUIDE.push({ id: "B2", name: "B2", uz: "Oʻrtadan yuqori", groups: [
   if (!g) { g = { name: group, items: [] }; L.groups.push(g); }
   g.items.push(item);
 });
+
+// C1 — ilgʻor daraja (2026-11): kursning C1 boʻlimlariga mos mavzular. Hammasi oʻzimiz yozgan.
+GUIDE.push({ id: "C1", name: "C1", uz: "Ilgʻor", groups: [
+  { name: "ILGʻOR RAVISHDOSHLAR", items: [
+    { code: "C1.01", tr: "-mAksIzIn", uz: "…masdan (kitobiy)", f: ["FİİL + mAksIzIn", "FEʼL + -masdan"],
+      forms: "bak[maksızın] — qaramasdan · dur[maksızın] — toʻxtamasdan · izin al[maksızın] — ruxsat olmasdan · düşün[meksizin] — oʻylamasdan",
+      rule: "-mAksIzIn — -mAdAn ning yozma va rasmiy shakli. Shaxs qoʻshimchasi olmaydi, ega bosh gap bilan bir xil boʻladi. Ogʻzaki nutqda -mAdAn tabiiyroq.",
+      ex: ["Sözlüğe bak[maksızın] metni çevirdi.", "Lugʻatga qaramasdan matnni tarjima qildi."], q: ["Hiç dinlen[meksizin] mi çalıştın?", "Umuman dam olmasdan ishladingmi?"] },
+    { code: "C1.02", tr: "-DIğI sürece / -DIğI takdirde", uz: "…ar ekan / …gan taqdirda", f: ["FİİL + DIK + iyelik + sürece / takdirde", "FEʼL + -ar ekan / -gan taqdirda"],
+      forms: "çalış[tığın] sürece — ishlar ekansan · ol[duğu] sürece — boʻlar ekan · geç[emediğiniz] takdirde — oʻta olmagan taqdiringizda · iptal ed[ilmesi] hâlinde — bekor qilingan holda",
+      rule: "-DIğI sürece shart amal qilib turgan butun muddatni bildiradi («modomiki, …ar ekan»). -DIğI takdirde va -mAsI hâlinde — rasmiy shart: shartnoma, eʼlon va qoidalarda -sA oʻrnida keladi.",
+      ex: ["Her gün tekrar et[tiğin] sürece unutmazsın.", "Har kuni takrorlar ekansan, unutmaysan."], neg: ["Ödeme yap[ılmadığı] takdirde kayıt silinir.", "Toʻlov qilinmagan taqdirda roʻyxat oʻchiriladi."] },
+    { code: "C1.03", tr: "-mAk üzere", uz: "…ish uchun / …ay deb turibdi", f: ["FİİL + mAk üzere", "FEʼL + -ish uchun · -ay deb qoldi"],
+      forms: "görüş[mek] üzere toplandık — muhokama qilish uchun yigʻildik (maqsad) · film başla[mak] üzere — film boshlanay deb turibdi (arafa) · yarın görüş[mek] üzere — ertaga koʻrishguncha (xayrlashuv)",
+      rule: "Ikki maʼnosi bor. Harakat feʼli oldida — maqsad (için ning rasmiyrog‘i). Gap oxirida, «olmak» siz yoki «-dir / -ydi» bilan — ish boshlanish arafasida.",
+      ex: ["Staj yap[mak] üzere Ankara'ya gitti.", "Amaliyot oʻtash uchun Anqaraga ketdi."], q: ["Ders bit[mek] üzere mi?", "Dars tugay deb qoldimi?"] },
+    { code: "C1.04", tr: "-mAklA birlikte / -AcAğI yerde", uz: "…sa-da / …ish oʻrniga", f: ["FİİL + mAklA birlikte · FİİL + AcAK + iyelik + yerde", "FEʼL + -sa-da · -ish oʻrniga"],
+      forms: "pahalı ol[makla] birlikte — qimmat boʻlsa-da · ezberle[mek] yerine — yodlash oʻrniga (betaraf) · çalış[acağı] yerde — ishlash oʻrniga (taʼna) · özür dile[yeceğine] — uzr soʻrash oʻrniga",
+      rule: "-mAklA birlikte yon berishni bildiradi: bir fikrni tan olib, unga qoʻshimcha qiladi. -mAk yerine — oddiy muqobil. -AcAğI yerde / -AcAğInA — kutilgan ish qilinmagani uchun norozilik.",
+      ex: ["Dil bilgisi önemli ol[makla] birlikte tek başına yetmez.", "Grammatika muhim boʻlsa-da, oʻzi yetarli emas."], neg: ["Yardım ed[eceği] yerde bizi eleştirdi.", "Yordam berish oʻrniga bizni tanqid qildi."] }
+  ] },
+  { name: "BILVOSITA IFODA VA ERGASH GAPLAR", items: [
+    { code: "C1.05", tr: "meğer / güya / sözde", uz: "Bilsam… / goʻyo / nomiga", f: ["meğer + … -(y)mIş · güya / sözde + …", "bilsam … ekan · goʻyo … emish"],
+      forms: "Meğer haber eski[ymiş]. — Bilsam, xabar eski ekan. · Güya her şeyi bil[iyormuş]. — Goʻyo hamma narsani bilar emish. · Sözde yardım ed[ecekti]. — Nomiga yordam bermoqchi edi.",
+      rule: "Meğer — gapiruvchi haqiqatni endi bilib qolganini bildiradi, feʼl doim -mIş / -(y)mIş bilan keladi. Güya va sözde — gapiruvchi aytilgan gapga ishonmasligini, kinoyani bildiradi.",
+      ex: ["Meğer sen de orada[ymışsın]!", "Bilsam, sen ham oʻsha yerda ekansan!"], neg: ["Güya hiç yorul[mamış].", "Goʻyo umuman charchamagan emish."] },
+    { code: "C1.06", tr: "-DIğInA göre / -DIğI kadarıyla", uz: "…gan ekan, demak / …ishimcha", f: ["FİİL + DIK + iyelik + (n)A göre · + kadarıyla", "FEʼL + -gan ekan · -ishimcha"],
+      forms: "ışıklar yan[dığına] göre — chiroqlar yongan ekan, demak · söyle[diğine] göre — uning aytishicha · bil[diğim] kadarıyla — bilishimcha · anla[dığım] kadarıyla — tushunishimcha",
+      rule: "-DIğInA göre ikki vazifada: 1) koʻrinib turgan dalildan xulosa chiqarish; 2) maʼlumot manbasini koʻrsatish. -DIğI kadarıyla gapiruvchi bilimining chegarasini bildiradi: «men bilgan darajada».",
+      ex: ["Telefonu aç[madığına] göre toplantıda.", "Telefonni koʻtarmayapti, demak yigʻilishda."], q: ["Bil[diğin] kadarıyla sınav ne zaman?", "Bilishingcha, imtihon qachon?"] },
+    { code: "C1.07", tr: "-AcAk kadar / -mAyAcAk kadar", uz: "…adigan darajada", f: ["FİİL + (y)AcAK (+ iyelik) + kadar", "FEʼL + -adigan darajada"],
+      forms: "yürü[yemeyecek] kadar yorgun — yura olmaydigan darajada charchagan · herkesin duy[acağı] kadar yüksek — hamma eshitadigan darajada baland · inan[ılmayacak] kadar ucuz — ishonib boʻlmaydigan darajada arzon",
+      rule: "Sifat yoki ravishning darajasini natija orqali bildiradi. Ega bosh gapdagidan boshqa boʻlsa, egalik qoʻshimchasi qoʻshiladi: beş kişinin sığ[acağı] kadar.",
+      ex: ["Konuş[amayacak] kadar heyecanlıydım.", "Gapira olmaydigan darajada hayajonda edim."] }
+  ] },
+  { name: "NISBATLAR VA AKADEMIK USLUB", items: [
+    { code: "C1.08", tr: "Ettirgen + edilgen", uz: "Orttirma + majhul: …tirildi", f: ["FİİL + DIr / t + Il", "FEʼL + -tir + -il"],
+      forms: "hazırla[t][ıl]dı — tayyorlattirildi · yap[tır][ıl]acak — qildiriladi · onayla[t][ıl]mış — tasdiqlatilgan · öğre[t][il]di — oʻrgatildi",
+      rule: "Avval orttirma, keyin majhul qoʻshimchasi keladi. Ishni kim buyurgani ham, kim bajargani ham muhim boʻlmagan rasmiy hisobot va yangiliklarda ishlatiladi. Bajaruvchi kerak boʻlsa — joʻnalish kelishigida: uzmana hazırlatıldı.",
+      ex: ["Rapor bir uzmana hazırla[t][ıl]dı.", "Hisobot bir mutaxassisga tayyorlattirildi."], neg: ["Belgeler henüz onayla[t][ıl]madı.", "Hujjatlar hali tasdiqlatilmadi."] },
+    { code: "C1.09", tr: "-(y)Abil + edilgen", uz: "…ilishi mumkin", f: ["FİİL + Il + (y)Abil", "FEʼL + -ilishi mumkin"],
+      forms: "iptal ed[il][ebil]ir — bekor qilinishi mumkin · önle[n][ebil]irdi — oldini olish mumkin edi · kabul ed[il][emez] — qabul qilib boʻlmaydi · anlaş[ıl][abil]ir — tushunsa boʻladi",
+      rule: "Avval majhul, keyin imkoniyat qoʻshimchasi. Qoida, shartnoma va baholovchi gaplarda: nima qilish mumkin yoki mumkin emasligini bajaruvchini aytmasdan bildiradi. Inkor: -(y)AmA: edilemez.",
+      ex: ["Sözleşme otuz gün içinde iptal ed[il][ebil]ir.", "Shartnoma oʻttiz kun ichida bekor qilinishi mumkin."], neg: ["Bu koşullar kabul ed[il][emez].", "Bu shartlarni qabul qilib boʻlmaydi."] },
+    { code: "C1.10", tr: "dolayısıyla / nitekim / zira", uz: "Akademik bogʻlovchilar", f: ["CÜMLE; dolayısıyla / nitekim / zira + CÜMLE", "GAP; binobarin / darhaqiqat / chunki + GAP"],
+      forms: "dolayısıyla — binobarin (natija) · zira — chunki (kitobiy sabab) · nitekim — darhaqiqat (tasdiqlovchi dalil) · bununla birlikte — shu bilan birga (yon berish) · buna karşın — bunga qarshi oʻlaroq (zidlash)",
+      rule: "Yozma va rasmiy nutq bogʻlovchilari. Dolayısıyla — oldingi gapdan kelib chiqqan natija. Zira — çünkü ning kitobiy shakli. Nitekim — aytilgan fikrni tasdiqlovchi misol yoki dalil keltiradi. Odatda nuqtali vergul yoki nuqtadan keyin keladi.",
+      ex: ["Veri yetersizdir; dolayısıyla kesin bir sonuca varılamaz.", "Maʼlumot yetarli emas; binobarin, aniq xulosaga kelib boʻlmaydi."] }
+  ] },
+  { name: "TASVIRIY FEʼLLAR VA BADIIY TIL", items: [
+    { code: "C1.11", tr: "-(y)Iver / -(y)AyAz / -(y)Akal", uz: "…ib yubormoq / …ishiga oz qoldi / …ib qolmoq", f: ["FİİL + (y)Iver · (y)AyAz · (y)Akal", "FEʼL + -ib yubor · -ishga oz qol · -ib qol"],
+      forms: "aç[ıver] — ochib yubor · başla[yıver]di — birdan boshlanib ketdi · düş[eyaz]dım — yiqilishimga oz qoldi · bak[akal]dım — tikilib qoldim · don[akal]dı — qotib qoldi",
+      rule: "-(y)Iver tezlik, osonlik yoki yumshoq iltimosni bildiradi va unli uygʻunligiga boʻysunadi. -(y)AyAz — ish boʻlishiga sal qolgani (asosan yozma tilda). -(y)Akal — hayrat yoki kutilmagan holatda qotib qolish.",
+      ex: ["Merdivenden düş[eyaz]dım.", "Zinadan yiqilib tushishimga oz qoldi."], q: ["Şu kapıyı aç[ıver]ir misin?", "Shu eshikni ochib yuborasanmi?"] },
+    { code: "C1.12", tr: "Devrik cümle ve pekiştirme", uz: "Teskari tartibli gap va kuchaytirma", f: ["YÜKLEM + diğer ögeler · pekiştirme: ilk hece + m / p / r / s", "KESIM + boshqa boʻlaklar · kuchaytirma"],
+      forms: "Gelmedi o akşam vapur. — Oʻsha oqshom kema kelmadi. · mas[mavi] — koʻm-koʻk · kap[kara] — qop-qora · bem[beyaz] — oppoq · ter[temiz] — top-toza · yapa[yalnız] — yakka-yolgʻiz",
+      rule: "Devrik gapda kesim oxirida kelmaydi; bu hissiy urgʻu beradi va badiiy matn hamda ogʻzaki nutqqa xos, rasmiy matnda ishlatilmaydi. Kuchaytirma sifat birinchi boʻgʻinga m, p, r yoki s qoʻshib yasaladi; qaysi tovush kelishi yodlanadi.",
+      ex: ["Unutamadım annemin sesini.", "Onamning ovozini unuta olmadim."] }
+  ] }
+] });

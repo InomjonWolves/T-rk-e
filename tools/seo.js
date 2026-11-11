@@ -167,7 +167,7 @@ ${GUIDE.map(l => `<section class="card"><h2>${esc(l.name)} — ${esc(l.uz)}</h2>
     crumbs: [home, lugC],
     body: `<h1>Turk tili soʻzlari A1–B2</h1>
 <p class="lead">Eng koʻp ishlatiladigan ${lugTotal} ta soʻz, darajalar va mavzular boʻyicha. Har mavzuni ilovada kartochka, test, yozish, tinglash va talaffuz bilan mashq qilish mumkin.</p>
-${["A1", "A2", "B1", "B2"].map(lv => `<section class="card"><h2>${lv}</h2><ol class="toc">${LUGAT.filter(p => p.lv === lv).map(p => `<li><a href="${p.id}.html"><span class="code">${lv}</span><span><b>${esc(p.uz)}</b><small lang="tr">${esc(p.tr)} · ${pairsOf(p).length} ta soʻz</small></span></a></li>`).join("")}</ol></section>`).join("\n")}`
+${["A1", "A2", "B1", "B2", "C1"].map(lv => `<section class="card"><h2>${lv}</h2><ol class="toc">${LUGAT.filter(p => p.lv === lv).map(p => `<li><a href="${p.id}.html"><span class="code">${lv}</span><span><b>${esc(p.uz)}</b><small lang="tr">${esc(p.tr)} · ${pairsOf(p).length} ta soʻz</small></span></a></li>`).join("")}</ol></section>`).join("\n")}`
   });
 
   // ---- Reading texts
@@ -196,7 +196,7 @@ ${["A1", "A2", "B1", "B2"].map(lv => `<section class="card"><h2>${lv}</h2><ol cl
     crumbs: [home, oqC],
     body: `<h1>Turkcha oʻqish matnlari</h1>
 <p class="lead">Darajangizga mos qisqa matnlar: notanish soʻzlar lugʻati va 4 ta savol bilan. Ilovada matnni tinglash va javoblarni tekshirish mumkin.</p>
-${["A1", "A2", "B1", "B2"].map(lv => `<section class="card"><h2>${lv}</h2><ol class="toc">${OQ.filter(t => t.lv === lv).map(t => `<li><a href="${t.id}.html"><span class="code">${lv}</span><span><b lang="tr">${esc(t.tr)}</b><small>${esc(t.uz)}</small></span></a></li>`).join("")}</ol></section>`).join("\n")}`
+${["A1", "A2", "B1", "B2", "C1"].map(lv => `<section class="card"><h2>${lv}</h2><ol class="toc">${OQ.filter(t => t.lv === lv).map(t => `<li><a href="${t.id}.html"><span class="code">${lv}</span><span><b lang="tr">${esc(t.tr)}</b><small>${esc(t.uz)}</small></span></a></li>`).join("")}</ol></section>`).join("\n")}`
   });
 
   // ---- Articles: hand-written ones (tools/articles.js) and two built from the content

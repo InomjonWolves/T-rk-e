@@ -999,3 +999,91 @@ Object.assign(BX, {
     { t: "o", s: "Sanki rüyadaymış gibi hissediyorum", uz: "Xuddi tushdagidek his qilyapman." }
   ]
 });
+
+// C1 (2026-11)
+Object.assign(BX, {
+  "C1.01": [
+    { t: "c", q: "Ruxsat olmasdan xonaga kirdi.", o: ["İzin alarak odaya girdi.", "İzin almaksızın odaya girdi.", "İzin aldığı için odaya girdi."], a: 1 },
+    { t: "c", q: "Qaysi gap rasmiy uslubda?", o: ["Durmadan çalıştı.", "Hiç durmaksızın çalışmıştır.", "Durmadan çalıştı ya."], a: 1 },
+    { t: "t", q: "Sözlüğe ___ metni çevirdi. (bakmak)", ans: ["bakmaksızın"], uz: "Lugʻatga qaramasdan matnni tarjima qildi." },
+    { t: "t", q: "Ara ___ üç saat konuştu. (vermek)", ans: ["vermeksizin"], uz: "Tanaffus qilmasdan uch soat gapirdi." },
+    { t: "o", s: "Hata yapmaktan korkmaksızın konuşmalısın", uz: "Xato qilishdan qoʻrqmasdan gapirishing kerak." }
+  ],
+  "C1.02": [
+    { t: "c", q: "Sen yonimda boʻlar ekansan, hech narsadan qoʻrqmayman.", o: ["Sen yanımda olduğun sürece hiçbir şeyden korkmam.", "Sen yanımda olduğun gibi hiçbir şeyden korkmam.", "Sen yanımda olacağın yerde hiçbir şeyden korkmam."], a: 0 },
+    { t: "c", q: "Rasmiy eʼlon: «Toʻlov qilinmagan taqdirda…»", o: ["Ödeme yapılmazken…", "Ödeme yapılmadığı sürece de…", "Ödeme yapılmadığı takdirde…"], a: 2 },
+    { t: "t", q: "Her gün tekrar ___ sürece unutmazsın. (etmek, sen)", ans: ["ettiğin"], uz: "Har kuni takrorlar ekansan, unutmaysan." },
+    { t: "t", q: "Belgeler eksik ___ takdirde başvuru reddedilir. (olmak)", ans: ["olduğu"], uz: "Hujjatlar toʻliq boʻlmagan taqdirda ariza rad etiladi." },
+    { t: "o", s: "Çalıştığın sürece mutlaka ilerlersin", uz: "Mashq qilar ekansan, albatta olgʻa siljiysan." }
+  ],
+  "C1.03": [
+    { t: "c", q: "«Film başlamak üzere.» — maʼnosi?", o: ["Film boshlanay deb turibdi.", "Film boshlanishi uchun.", "Film boshlanib boʻldi."], a: 0 },
+    { t: "c", q: "Masalani muhokama qilish uchun yigʻildik.", o: ["Konuyu görüşmek yerine toplandık.", "Konuyu görüşmek üzere toplandık.", "Konuyu görüşmeksizin toplandık."], a: 1 },
+    { t: "t", q: "Pilim ___ üzere, şarj aletin var mı? (bitmek)", ans: ["bitmek"], uz: "Quvvatim tugay deb qoldi, zaryadlagiching bormi?" },
+    { t: "t", q: "Yarın görüşmek ___ ! (xayrlashuv)", ans: ["üzere"], uz: "Ertaga koʻrishguncha!" },
+    { t: "o", s: "Staj yapmak üzere İzmir'e gitti", uz: "Amaliyot oʻtash uchun Izmirga ketdi." }
+  ],
+  "C1.04": [
+    { t: "c", q: "Qimmat boʻlsa-da, sifatli emas.", o: ["Pahalı olacağı yerde kaliteli değil.", "Pahalı olmak üzere kaliteli değil.", "Pahalı olmakla birlikte kaliteli değil."], a: 2 },
+    { t: "c", q: "Qaysi gapda taʼna bor?", o: ["Ezberlemek yerine cümle kurdu.", "Çalışacağı yerde bütün gün uyudu.", "Yürümek yerine otobüse bindi."], a: 1 },
+    { t: "t", q: "Şikâyet etmek ___ çözüm öner. (oʻrniga)", ans: ["yerine"], uz: "Shikoyat qilish oʻrniga yechim taklif qil." },
+    { t: "t", q: "Özür ___ yerde bir de bana kızdı. (dilemek, o)", ans: ["dileyeceği"], uz: "Uzr soʻrash oʻrniga yana mendan jahli chiqdi." },
+    { t: "o", s: "Yorgun olmakla birlikte toplantıya katıldı", uz: "Charchagan boʻlsa-da, yigʻilishda qatnashdi." }
+  ],
+  "C1.05": [
+    { t: "c", q: "Bilsam, xabar yolgʻon ekan.", o: ["Güya haber yalandı.", "Meğer haber yalanmış.", "Sözde haber yalan olacak."], a: 1 },
+    { t: "c", q: "«Güya çok çalışıyormuş.» — gapiruvchi…", o: ["bunga ishonmaydi", "buni oʻzi koʻrgan", "buni endi bilib qolgan"], a: 0 },
+    { t: "t", q: "___ sen haklıymışsın. (bilsam)", ans: ["Meğer", "meğer"], uz: "Bilsam, sen haq ekansan." },
+    { t: "t", q: "Meğer fotoğraf eski___ . (-ymiş)", ans: ["ymiş", "eskiymiş"], uz: "Bilsam, surat eski ekan." },
+    { t: "o", s: "Meğer kapıyı açık bırakmışım", uz: "Bilsam, eshikni ochiq qoldiribman." }
+  ],
+  "C1.06": [
+    { t: "c", q: "Chiroqlar yonib turibdi, demak ular uyda.", o: ["Işıklar yandığına göre evdeler.", "Işıklar yandığı kadarıyla evdeler.", "Işıklar yanacak kadar evdeler."], a: 0 },
+    { t: "c", q: "Bilishimcha, yigʻilish kechiktirildi.", o: ["Bildiğime rağmen toplantı ertelendi.", "Bildiğim sürece toplantı ertelendi.", "Bildiğim kadarıyla toplantı ertelendi."], a: 2 },
+    { t: "t", q: "Telefonu ___ göre meşgul. (açmamak, o)", ans: ["açmadığına"], uz: "Telefonni koʻtarmayapti, demak band." },
+    { t: "t", q: "___ kadarıyla taşınmayı düşünüyorsun. (anlamak, ben)", ans: ["Anladığım", "anladığım"], uz: "Tushunishimcha, koʻchishni oʻylayapsan." },
+    { t: "o", s: "Uzmanların söylediğine göre kış sert geçecek", uz: "Mutaxassislarning aytishicha, qish qattiq keladi." }
+  ],
+  "C1.07": [
+    { t: "c", q: "Yura olmaydigan darajada charchaganman.", o: ["Yürüyemeyecek kadar yorgunum.", "Yürümediğim kadar yorgunum.", "Yürüyemediğime göre yorgunum."], a: 0 },
+    { t: "c", q: "Hamma eshitadigan darajada baland gapirdi.", o: ["Herkesin duyduğu gibi yüksek sesle konuştu.", "Herkesin duyacağı kadar yüksek sesle konuştu.", "Herkes duymaksızın yüksek sesle konuştu."], a: 1 },
+    { t: "t", q: "___ kadar heyecanlıydım. (konuşamamak)", ans: ["Konuşamayacak", "konuşamayacak"], uz: "Gapira olmaydigan darajada hayajonda edim." },
+    { t: "t", q: "Salon yüz kişinin ___ kadar büyük. (sığmak)", ans: ["sığacağı"], uz: "Zal yuz kishi sigʻadigan darajada katta." },
+    { t: "o", s: "Fiyatlar inanılmayacak kadar düşük", uz: "Narxlar ishonib boʻlmaydigan darajada past." }
+  ],
+  "C1.08": [
+    { t: "c", q: "Hisobot bir mutaxassisga tayyorlattirildi.", o: ["Rapor bir uzmana hazırlandı.", "Rapor bir uzmana hazırlatıldı.", "Raporu bir uzman hazırlattı."], a: 1 },
+    { t: "c", q: "Qoʻshimchalar tartibi qaysi birida toʻgʻri?", o: ["yap-ıl-tır-dı", "yap-tı-tır-ıl", "yap-tır-ıl-dı"], a: 2 },
+    { t: "t", q: "Belgeler noterde ___ . (onaylamak, orttirma + majhul, -AcAk)", ans: ["onaylatılacak"], uz: "Hujjatlar notariusda tasdiqlatiladi." },
+    { t: "t", q: "Duvarlar bir ustaya ___ . (boyamak, orttirma + majhul, -DI)", ans: ["boyatıldı"], uz: "Devorlar bir ustaga boʻyattirildi." },
+    { t: "o", s: "Sözleşme iki avukata inceletildi", uz: "Shartnoma ikki advokatga koʻrib chiqtirildi." }
+  ],
+  "C1.09": [
+    { t: "c", q: "Bu xatoning oldini olish mumkin edi.", o: ["Bu hata önlenebilirdi.", "Bu hatayı önleyebilirdi.", "Bu hata önlenmişti."], a: 0 },
+    { t: "c", q: "Taklifni bu shartlarda qabul qilib boʻlmaydi.", o: ["Teklif bu koşullarda kabul edemez.", "Teklif bu koşullarda kabul edilmedi.", "Teklif bu koşullarda kabul edilemez."], a: 2 },
+    { t: "t", q: "Sözleşme otuz gün içinde iptal ___ . (etmek, majhul + -Abil, geniş zaman)", ans: ["edilebilir"], uz: "Shartnoma oʻttiz kun ichida bekor qilinishi mumkin." },
+    { t: "t", q: "Biletler internetten ___ . (almak, majhul + -Abil, geniş zaman)", ans: ["alınabilir"], uz: "Chiptalarni internetdan olish mumkin." },
+    { t: "o", s: "Bu sorun kolayca çözülebilir", uz: "Bu muammoni osongina hal qilish mumkin." }
+  ],
+  "C1.10": [
+    { t: "c", q: "Veri yetersizdir; ___ kesin bir sonuca varılamaz.", o: ["nitekim", "dolayısıyla", "zira"], a: 1 },
+    { t: "c", q: "Dikkatli olunmalıdır, ___ hata payı yüksektir.", o: ["zira", "dolayısıyla", "buna karşın"], a: 0 },
+    { t: "t", q: "Risk büyüktür; ___ geçen yıl üç hata yaşandı. (darhaqiqat)", ans: ["nitekim"], uz: "Xavf katta; darhaqiqat, oʻtgan yili uchta xato boʻldi." },
+    { t: "t", q: "Sistem hızlıdır; bununla ___ pahalıdır. (shu bilan birga)", ans: ["birlikte"], uz: "Tizim tez ishlaydi; shu bilan birga qimmat." },
+    { t: "o", s: "Bütçe yetersizdir dolayısıyla proje ertelenmiştir", uz: "Byudjet yetarli emas, binobarin loyiha kechiktirilgan." }
+  ],
+  "C1.11": [
+    { t: "c", q: "Zinadan yiqilib tushishimga oz qoldi.", o: ["Merdivenden düşüverdim.", "Merdivenden düşeyazdım.", "Merdivenden düşekaldım."], a: 1 },
+    { t: "c", q: "Xabarni eshitib qotib qoldi.", o: ["Haberi duyunca donakaldı.", "Haberi duyunca donuverdi.", "Haberi duyunca donayazdı."], a: 0 },
+    { t: "t", q: "Şu pencereyi ___ misin? (açmak, -(y)Iver, geniş zaman)", ans: ["açıverir"], uz: "Shu derazani ochib yuborasanmi?" },
+    { t: "t", q: "Yağmur birden ___ . (başlamak, -(y)Iver, -DI)", ans: ["başlayıverdi"], uz: "Yomgʻir birdan boshlanib ketdi." },
+    { t: "o", s: "Çocuk bir anda uyuyuverdi", uz: "Bola bir zumda uxlab qoldi." }
+  ],
+  "C1.12": [
+    { t: "c", q: "Qaysi gap devrik?", o: ["O akşam vapur gelmedi.", "Vapur o akşam gelmedi.", "Gelmedi o akşam vapur."], a: 2 },
+    { t: "c", q: "«kara» ning kuchaytirma shakli", o: ["kapkara", "karkara", "kaskara"], a: 0 },
+    { t: "t", q: "Deniz ___ mavi → ___ (bir soʻz bilan: koʻm-koʻk)", ans: ["masmavi"], uz: "koʻm-koʻk" },
+    { t: "t", q: "Kar yağmış, her yer ___ . (oppoq)", ans: ["bembeyaz"], uz: "Qor yogʻibdi, hamma yoq oppoq." },
+    { t: "o", s: "Annemin sesini hiç unutamadım", uz: "Onamning ovozini hech unuta olmadim." }
+  ]
+});

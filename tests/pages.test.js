@@ -29,7 +29,7 @@ test("course unit tabs and guide level chips work", async () => {
     assert.ok(await page.evaluate(() => document.getElementById("app").innerText.length > 100), `tab ${t}`);
   }
   await page.evaluate(() => { location.hash = "#guide"; });
-  for (const lv of ["A1", "A2", "B1", "B2"]) {
+  for (const lv of ["A1", "A2", "B1", "B2", "C1"]) {
     await page.click(`[data-act=guide-lv][data-l=${lv}]`);
     assert.ok(await page.evaluate(lv => document.querySelector(".level-head b").innerText === lv, lv));
   }

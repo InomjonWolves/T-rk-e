@@ -14,7 +14,7 @@ test("vocabulary base: 3000+ words in the app, level pages, pack pages, homonyms
   assert.equal(r.card, true);
   await page.click('a[href="#lugat"]');
   await page.waitForTimeout(100);
-  for (const lv of ["A1", "A2", "B1", "B2"]) {
+  for (const lv of ["A1", "A2", "B1", "B2", "C1"]) {
     await page.click(`[data-act=lug-lv][data-l="${lv}"]`);
     const n = await page.evaluate(lv => [document.querySelectorAll('#app a.unit[href^="#lugat-"]').length, LPACKS.filter(p => p.lv === lv).length], lv);
     assert.equal(n[0], n[1], lv);

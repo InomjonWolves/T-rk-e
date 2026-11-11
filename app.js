@@ -496,7 +496,7 @@ const oqBest = id => (S.oq && S.oq[id]) || null;
 let OQ_LV = "A1";
 function viewOqish() {
   if (!oqReady()) return `${topbar()}<div class="glass empty"><div class="spin"></div>Yuklanmoqda…</div>`;
-  const lvs = ["A1", "A2", "B1", "B2"], list = OQ.filter(t => t.lv === OQ_LV);
+  const lvs = ["A1", "A2", "B1", "B2", "C1"], list = OQ.filter(t => t.lv === OQ_LV);
   return `${topbar()}
   <div><a class="back" href="#practice">${ICON.back}Mashq</a></div>
   <div class="lesson-head"><div class="tags"><span class="tag sky-t">${ICON.book}Okuma</span><span class="tag green-t">${OQ.filter(t => oqBest(t.id) !== null).length}/${OQ.length} oʻqilgan</span></div>
@@ -1199,7 +1199,7 @@ function lugRow(p) {
     ${pctRing(n ? k / n : 0)}</a>`;
 }
 function viewLugat() {
-  const lvs = ["A1", "A2", "B1", "B2"], packs = lugLevel(LUG_LV);
+  const lvs = ["A1", "A2", "B1", "B2", "C1"], packs = lugLevel(LUG_LV);
   const total = ALL.length, learned = learnedCount(), kc = CATS.find(c => c.id === "k" + LUG_LV);
   const kw = kc ? ALL.filter(w => kc.ids.includes(UNITS[w.unit].id)) : [];
   return `${topbar()}
@@ -1364,7 +1364,7 @@ function viewGx() {
   const lv = (lvs.find(l => l.id === GX_LV) || lvs.find(l => gxDoneCount(l.id) < gxCount(l.id)) || lvs[0]).id;
   return `<div><button class="back" data-act="go" data-to="grammar">${ICON.back}Grammatika</button></div>
   <div class="lesson-head">
-    <div class="tags"><span class="tag sky-t">${ICON.quiz}A1–B2 · ${GX_CODES.length} mavzu</span><span class="tag green-t">${gxDoneCount()} tugallangan</span></div>
+    <div class="tags"><span class="tag sky-t">${ICON.quiz}A1–C1 · ${GX_CODES.length} mavzu</span><span class="tag green-t">${gxDoneCount()} tugallangan</span></div>
     <h1>Qoidalar mashqi</h1>
     <p class="sub">Har mavzu qoʻllanmadagi qoida asosida: variant tanlash, toʻldirib yozish va gap tuzish.</p>
   </div>
@@ -2188,6 +2188,7 @@ const ACH = [
   { id: "gxa2", cat: "gram", t: "A2 qoidalari", d: `A2 ning ${gxCount("A2")} ta qoida mashqi`, v: () => gxDoneCount("A2"), n: gxCount("A2"), c: "violet", ico: "crown" },
   { id: "gxb1", cat: "gram", t: "B1 qoidalari", d: `B1 ning ${gxCount("B1")} ta qoida mashqi`, v: () => gxDoneCount("B1"), n: gxCount("B1"), c: "orange", ico: "crown" },
   { id: "gxb2", cat: "gram", t: "B2 qoidalari", d: `B2 ning ${gxCount("B2")} ta qoida mashqi`, v: () => gxDoneCount("B2"), n: gxCount("B2"), c: "pink", ico: "crown" },
+  { id: "gxc1", cat: "gram", t: "C1 qoidalari", d: `C1 ning ${gxCount("C1")} ta qoida mashqi`, v: () => gxDoneCount("C1"), n: gxCount("C1"), c: "teal", ico: "crown" },
   { id: "first", cat: "practice", t: "Birinchi qadam", d: "1 ta mashq", v: () => S.sessions, n: 1, c: "violet", ico: "flag" },
   { id: "sess10", cat: "practice", t: "Tirishqoq", d: "10 ta mashq", v: () => S.sessions, n: 10, c: "sky", ico: "bolt" },
   { id: "sess50", cat: "practice", t: "Chempion", d: "50 ta mashq", v: () => S.sessions, n: 50, c: "orange", ico: "bolt" },
@@ -2387,7 +2388,7 @@ function viewHelp() {
     <div class="glass pad help-box">
       ${step(1, "Har kuni «Bugungi reja» ni bajaring", "Bosh sahifadagi kartada: takrorlash + 10 ta yangi soʻz, taxminan 10 daqiqa.")}
       ${step(2, "Kursni tartib bilan oʻqing", "Darslar → Kurs: A1 dan boshlang. Har boʻlimda Lugʻat → Grammatika → Dialog → Matn → Mashqlar.")}
-      ${step(3, "Grammatika va lugʻatni mustahkamlang", "Darslar → Grammatika: A1–B2 mavzular va har biriga mashq. Darslar → Lugʻat: A1 darslari va mavzuli soʻz toʻplamlari.")}
+      ${step(3, "Grammatika va lugʻatni mustahkamlang", "Darslar → Grammatika: A1–C1 mavzular va har biriga mashq. Darslar → Lugʻat: A1 darslari va mavzuli soʻz toʻplamlari.")}
       ${step(4, "4 koʻnikmani mashq qiling", "Mashq sahifasida: oʻqish, tinglash, yozish va gapirish. Xatolar daftari — barcha xatolaringiz bir joyda.")}
       ${step(5, "Aqlli tarjimondan foydalaning", "Yuqoridagi tarjimon belgisi: tarjima + lugʻat + gapdagi grammatika.")}
       ${step(6, "Daraja testini topshiring", "Har daraja oxirida test bor: 60% dan yuqori — keyingi darajaga oʻting.")}
@@ -3059,6 +3060,14 @@ const WT = {
   "b2-3": [["Xayoliy shart -sAydI", /(saydı|seydi)/], ["Natija -ArdI", /\S{2,}(ardı|erdi|ırdı|irdi|urdu|ürdü)/], ["keşke", /keşke/]],
   "b2-4": [["Zidlik: rağmen, hâlde, oysa", /(rağmen|halde|hâlde|oysa|halbuki|hâlbuki|yine de)/], ["Kuchaytirish: sadece … değil, üstelik", /(sadece|üstelik|dahası|aksine)/], ["Xulosa: sonuç olarak", /(sonuç olarak|kısacası|özetle)/]],
   "b2-5": [["Murojaat: … MÜDÜRLÜĞÜNE", /(müdürlüğüne|rektörlüğüne|başkanlığına|sayın)/], ["Rasmiy shakl: -mAktAyIm, -mIştIr", /(maktayım|mekteyim|maktadır|mektedir|mıştır|miştir|muştur|müştür)/], ["Yakun: Gereğini arz ederim", /(arz ederim|rica ederim|saygılarımla)/]],
+  "c1-1": [["Shart va muddat: -DIğI sürece / takdirde", /(sürece|takdirde)/], ["Muqobil: -mAk yerine / -mAklA birlikte", /(yerine|birlikte)/], ["Xulosa: sonuç olarak", /(sonuç olarak|kısacası|özetle)/]],
+  "c1-2": [["Eshitilgan: -mIş", /\S{2,}(mış|miş|muş|müş)/], ["Shubha: güya, sözde, meğer", /(güya|sözde|meğer|sanki)/], ["Betaraf xabar: söyleniyor, bildirildi", /(söyleniyor|bildirildi|açıklandı|iddia)/]],
+  "c1-3": [["Qiyos: daha, kadar, göre", /(daha|kadar|göre)/], ["Zidlash: oysa, buna karşın, öte yandan", /(oysa|buna karşın|öte yandan|ancak|fakat)/], ["Xulosa: sonuç olarak", /(sonuç olarak|kısacası|özetle)/]],
+  "c1-4": [["Murojaat: Sayın …", /(sayın|müdürlüğüne)/], ["Majhul: -Il / -In + -DI, -mIştIr", /\S{2,}(ıldı|ildi|uldu|üldü|ndı|ndi|ılmıştır|ilmiştir|nmıştır|nmiştir)/], ["Talab va yakun: rica ederim, saygılarımla", /(rica ederim|arz ederim|saygılarımla)/]],
+  "c1-5": [["Akademik bogʻlovchi: dolayısıyla, zira, nitekim", /(dolayısıyla|zira|nitekim|bununla birlikte|buna karşın|öte yandan)/], ["Rasmiy zamon: -mAktAdIr, -mIştIr", /(maktadır|mektedir|mıştır|miştir|muştur|müştür)/], ["Xulosa: sonuç olarak", /(sonuç olarak|özetle|bütün bunlar)/]],
+  "c1-6": [["Tasviriy feʼl: -(y)Iver, -(y)AyAz, -(y)Akal", /\S{2,}(ıver|iver|uver|üver|ayaz|eyaz|akal|ekal)/], ["Sabab-natija: çünkü, bu yüzden", /(çünkü|bu yüzden|dolayısıyla|zira)/], ["Xulosa: sonuç olarak", /(sonuç olarak|kısacası|özetle)/]],
+  "c1-7": [["Kuchaytirma: masmavi, kapkara…", /(masmavi|kapkara|bembeyaz|tertemiz|yemyeşil|yapayalnız|sımsıcak|upuzun|dümdüz)/], ["Ikileme: yavaş yavaş, sessiz sedasız…", /(yavaş yavaş|ağır aksak|sessiz sedasız|ufak tefek|uzun uzun|konu komşu)/], ["Oʻxshatish: gibi, sanki", /(gibi|sanki)/]],
+  "c1-8": [["Tezis: savunulacaktır, … düşünülmektedir", /(savunul|düşünülmektedir|ele alın|söylenebilir)/], ["Qarshi fikr: öne sürülebilir; ancak", /(öne sürülebilir|ancak|bununla birlikte|buna karşın)/], ["Xulosa: göz önüne alındığında, sonuç olarak", /(göz önüne alındığında|sonuç olarak|özetle)/]],
   "b2-6": [["Maqol", /(damlaya|birlikten|bir elin|acele|ayağını|dost kara|ak akçe|sabreden|ağaç yaş|bugünün işini|söz gümüş|az olsun|görünen köy|bin bilsen|her işte)/], ["Misol: örneğin, mesela", /(örneğin|mesela|bence|bana göre)/], ["Xulosa: sonuç olarak", /(sonuç olarak|kısacası|özetle)/]],
   "b2-7": [["Xabar feʼllari: açıkladı, belirtti…", /(açıkladı|belirtti|vurguladı|kaydetti|ifade etti|bildirdi)/], ["Rasmiy birikma: kapsamında, çerçevesinde", /(kapsamında|çerçevesinde|doğrultusunda|ilişkin|ile ilgili)/], ["Raqam yoki sana", /\d|yüzde/]]
 };

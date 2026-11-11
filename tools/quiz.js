@@ -6,7 +6,7 @@ const path = require("path");
 const vm = require("vm");
 
 const ROOT = path.resolve(__dirname, "..");
-const LEVELS = ["A1", "A2", "B1", "B2"];
+const LEVELS = ["A1", "A2", "B1", "B2", "C1"];
 const fold = s => String(s).toLocaleLowerCase("tr").replace(/[.,!?;:…"«»()]/g, "").replace(/\s+/g, " ").trim();
 
 let DATA = null;

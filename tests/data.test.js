@@ -37,13 +37,13 @@ test("rule exercises: every topic exists and every item is answerable", () => {
     });
   }
   // Every level from A1 to B2 has rule exercises
-  for (const lv of ["A1", "A2", "B1", "B2"]) assert.ok(Object.keys(C.BX).some(c => c.startsWith(lv + ".")), `no exercises for ${lv}`);
+  for (const lv of ["A1", "A2", "B1", "B2", "C1"]) assert.ok(Object.keys(C.BX).some(c => c.startsWith(lv + ".")), `no exercises for ${lv}`);
 });
 
 test("vocabulary base: A1–B2 packs, one \"turkcha=oʻzbekcha\" pair per line, every level well filled", () => {
   const ids = new Set(), perLv = {};
   for (const p of C.LUGAT) {
-    assert.ok(["A1", "A2", "B1", "B2"].includes(p.lv), `${p.id}: level`);
+    assert.ok(["A1", "A2", "B1", "B2", "C1"].includes(p.lv), `${p.id}: level`);
     assert.ok(!ids.has(p.id) && /^[a-z0-9-]+$/.test(p.id), `${p.id}: id`); ids.add(p.id);
     assert.ok(p.tr && p.uz, `${p.id}: titles`);
     const lines = p.w.trim().split("\n");

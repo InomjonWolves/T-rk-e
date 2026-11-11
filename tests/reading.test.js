@@ -13,7 +13,7 @@ after(async () => { await browser.close(); });
 const OQ = vm.runInNewContext(fs.readFileSync(path.join(ROOT, "oqish.js"), "utf8") + ";OQ", {});
 
 test("reading texts: three per level, four questions each, glossary, unique ids, correct answers in range", () => {
-  for (const lv of ["A1", "A2", "B1", "B2"]) assert.ok(OQ.filter(t => t.lv === lv).length >= 3, lv);
+  for (const lv of ["A1", "A2", "B1", "B2", "C1"]) assert.ok(OQ.filter(t => t.lv === lv).length >= 3, lv);
   assert.equal(new Set(OQ.map(t => t.id)).size, OQ.length);
   for (const t of OQ) {
     assert.match(t.id, /^[a-z0-9]+$/, t.id);
