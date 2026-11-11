@@ -1020,7 +1020,7 @@ function wordOfDay() {
 function statusCard() {
   const L = lvlInfo(), wk = weekDays(), tn = dayNum(), learned = learnedCount();
   return `<section class="glass status-card">
-    <a class="lvl-card" href="#profile" aria-label="Profil: daraja va Pamuk rivoji">
+    <a class="lvl-card" href="#profile">
       <div class="lvl-cat">${catSVG({ pose: "head", look: L.st.id })}</div>
       <div class="lvl-body"><div class="pcard-head"><b>${L.lv}-daraja · ${esc(L.st.uz)}</b>${lgBadge(S.lg)}</div>
         <div class="bar"><i style="width:${Math.round(L.p * 100)}%"></i></div>
@@ -1089,10 +1089,10 @@ function lvlInfo() {
   return { lv, from: a, to: b, p: (S.xp - a) / (b - a), st: catStage(lv), next: CAT_STAGES.find(s => s.lv > lv) };
 }
 const DQ_GO = {
-  vocab: ["Lugʻat testi", "Kamida 50% toʻgʻri javob bilan", "quiz", "start", "review"],
-  grammar: ["Qoida mashqi", "Bitta grammatika mavzusi mashqi", "cap", "gx", ""],
+  vocab: ["Lugʻat testi", "Kamida 50% toʻgʻri javob", "quiz", "start", "review"],
+  grammar: ["Qoida mashqi", "Bitta mavzu mashqi", "cap", "gx", ""],
   listening: ["Tinglash mashqi", "Eshitib, maʼnosini toping", "ear", "start", "listen"],
-  speaking: ["Gapirish mashqi", "Soʻzlarni ovoz chiqarib ayting", "mic", "start", "say"]
+  speaking: ["Gapirish mashqi", "Ovoz chiqarib ayting", "mic", "start", "say"]
 };
 function dqBtn(k) {
   const g = DQ_GO[k];
@@ -1429,7 +1429,7 @@ function viewPractice() {
     <div class="section-head"><h2>4 koʻnikma</h2><a class="link" href="#skills">Natijalar</a></div>
     <div class="sk-grid">${SKILLS.map(sk => { const g = SK_GO[sk.id], off = sk.id === "s" && !canListen(), on = done.includes(sk);
       const inner = `<span class="ico ${sk.c}-t">${ICON[sk.ico]}</span><b>${sk.uz}</b><small lang="tr">${sk.tr}</small><span class="sk-sub">${g[1]}</span><span class="sk-stat">${off ? "Bu brauzerda ishlamaydi" : stat(sk.id)}</span>${on ? `<span class="sk-done" aria-label="Bugun bajarildi">${ICON.check}</span>` : ""}`;
-      return g[0].startsWith("href") ? `<a class="sk-tile glass" ${g[0]}>${inner}</a>` : `<button class="sk-tile glass" ${g[0]} ${off ? "disabled" : ""} aria-label="${sk.uz} mashqlari">${inner}</button>`; }).join("")}</div>
+      return g[0].startsWith("href") ? `<a class="sk-tile glass" ${g[0]}>${inner}</a>` : `<button class="sk-tile glass" ${g[0]} ${off ? "disabled" : ""}>${inner}</button>`; }).join("")}</div>
     ${canListen() ? "" : `<p class="muted" style="margin-top:8px">Gapirish uchun saytni Chrome (Android, kompyuter) yoki Safari (iPhone) da oching.</p>`}
   </section>
 
@@ -1642,8 +1642,8 @@ function viewSettings() {
         <select class="k-select" data-act="tts-voice" style="max-width:150px">${trVoices().map(v => `<option value="${esc(v.name)}" ${ttsVoice() === v ? "selected" : ""}>${esc(v.name.replace(/^Microsoft |^Google /, "").slice(0, 28))}</option>`).join("")}</select></label>` : ""}
       <div class="set-row rem-row set-wide"><span><b>Kunlik eslatma</b><small>${esc(remText())}</small></span>
         <span class="mini-seg">${[[0, "Yoʻq"], [9, "9:00"], [19, "19:00"], [21, "21:00"]].map(([v, l]) => `<button data-act="remind" data-v="${v}" aria-pressed="${remHour() === v}">${l}</button>`).join("")}</span></div>
-      ${USER ? `<button class="set-row" data-act="pub" role="switch" aria-checked="${S.pub}"><span><b>Reytingda koʻrinish</b><small>Ismingiz va XP boshqa oʻquvchilarga koʻrinadi</small></span><span class="switch" aria-checked="${S.pub}"></span></button>
-      <button class="set-row" data-act="anon" role="switch" aria-checked="${S.anon !== false}"><span><b>Anonim statistika</b><small>Ism va pochtasiz koʻnikma koʻrsatkichlari saytni yaxshilash uchun yuboriladi</small></span><span class="switch" aria-checked="${S.anon !== false}"></span></button>
+      ${USER ? `<button class="set-row" data-act="pub" role="switch" aria-checked="${S.pub}"><span><b>Reytingda koʻrinish</b><small>Ismingiz va XP boshqa oʻquvchilarga koʻrinadi</small></span><span class="switch"></span></button>
+      <button class="set-row" data-act="anon" role="switch" aria-checked="${S.anon !== false}"><span><b>Anonim statistika</b><small>Ism va pochtasiz koʻnikma koʻrsatkichlari saytni yaxshilash uchun yuboriladi</small></span><span class="switch"></span></button>
       ${ADMIN ? `<a class="set-row" href="#admin" style="color:inherit;text-decoration:none"><span><b>Umumiy analitika</b><small>Faqat admin: barcha foydalanuvchilar boʻyicha</small></span>${ICON.chev}</a>` : ""}` : ""}
     </div>
   </section>
@@ -2343,7 +2343,7 @@ function installCard() {
   if (isStandalone()) return "";
   try { if (localStorage.getItem("ty-install-hide")) return ""; } catch (e) {}
   return `<div class="pcard glass install-card">
-    <div class="pcard-head"><b>${ICON.download}Ilovani oʻrnating</b><button class="link" data-act="install-hide" aria-label="Yopish">Keyinroq</button></div>
+    <div class="pcard-head"><b>${ICON.download}Ilovani oʻrnating</b><button class="link" data-act="install-hide">Keyinroq</button></div>
     <p class="muted">Türkçe Yoʻl telefoningizda ilova boʻlib ochiladi, internetsiz ham ishlaydi. Bepul, 1 daqiqa.</p>
     ${INSTALL_EVT ? `<button class="btn btn-grad btn-block" data-act="install">Oʻrnatish</button>` : `<a class="btn btn-soft btn-block" href="#help">Qanday oʻrnatiladi?</a>`}
   </div>`;
@@ -2589,15 +2589,16 @@ function renderCard(w) {
   SES.sk = ["r"];
   stage.innerHTML = `<div class="flip" id="flip">
     <div class="flip-inner">
-      <button class="face" data-act="flip" aria-label="Kartochkani agʻdarish">
+      <button class="face" data-act="flip">
         <span class="q-label">Turkcha</span>
         <span class="q-word" lang="tr">${esc(w.tr)}</span>
         <span class="hint-tap">Tarjimani koʻrish uchun bosing</span>
       </button>
-      <button class="face back-face" data-act="flip" aria-label="Kartochkani agʻdarish">
-        <span class="q-label" style="color:rgba(255,255,255,.85)">Oʻzbekcha</span>
+      <button class="face back-face" data-act="flip">
+        <span class="q-label">Oʻzbekcha</span>
         <span class="q-word">${esc(w.uz)}</span>
         ${w.note ? `<span class="note">${esc(w.note)}</span>` : ""}
+        <span class="sr">Kartochkani agʻdarish</span>
       </button>
     </div>
   </div>
@@ -3777,7 +3778,7 @@ function renderGx(it) {
     SES.ord = [];
     stage.innerHTML = `<div class="q-card">${head}<div class="q-label">Soʻzlardan gap tuzing</div>
       <div class="q-sent q-uz">${esc(ex.uz || "")}</div></div>
-      <div class="ord-ans" id="ord-ans" aria-label="Sizning gapingiz"></div>
+      <div class="ord-ans" id="ord-ans" role="group" aria-label="Sizning gapingiz"></div>
       <div class="ord-pool" id="ord-pool">${order.map(i => `<button class="tok" lang="tr" data-act="ord-tok" data-i="${i}">${esc(toks[i])}</button>`).join("")}</div>
       <div class="feedback" id="fb" aria-live="polite"></div>`;
     foot.innerHTML = `<button class="btn btn-ghost" data-act="gx-skip">Bilmayman</button><button class="btn btn-grad" data-act="gx-order" disabled>Tekshirish</button>`;
