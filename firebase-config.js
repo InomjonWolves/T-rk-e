@@ -16,6 +16,9 @@ window.AUTH_SAME_DOMAIN = [];
 // Kunlik eslatmalar (push): Firebase konsoli → Project settings → Cloud Messaging → Web Push certificates → "Key pair".
 // Boʻsh boʻlsa, server eslatmalari oʻchiq (oʻrnatilgan ilovada brauzerning oʻz eslatmasi baribir ishlaydi).
 window.FCM_VAPID = "";
+// Telegram orqali kirish (Mini App ichida): bot serverining funksiyasi (bot/api/tgauth.js, Vercel).
+// Boʻsh boʻlsa, Telegram tugmasi koʻrinmaydi.
+window.TG_AUTH_URL = "https://turkceyol-bot.vercel.app/api/tgauth";
 /* Namuna:
 window.FIREBASE_CONFIG = {
   apiKey: "AIza...",

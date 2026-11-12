@@ -21,7 +21,9 @@ const KINDS = {
   emailNo: { email: "b@x.uz", email_verified: false, firebase: { sign_in_provider: "password" } },
   google: { email: "g@gmail.com", email_verified: true, firebase: { sign_in_provider: "google.com" } },
   googleNo: { email: "x@example.com", email_verified: false, firebase: { sign_in_provider: "google.com" } },
-  custom: { name: "Aziz", firebase: { sign_in_provider: "custom" } }
+  custom: { name: "Aziz", firebase: { sign_in_provider: "custom" } },
+  // Telegram Mini App: our bot server's custom token (uid "tg<id>", claim tg: true)
+  telegram: { tg: true, firebase: { sign_in_provider: "custom" } }
 };
 const as = (uid, kind) => env.authenticatedContext(uid, KINDS[kind]).firestore();
 const card = () => ({ name: "A", week: "2026-11-02", wxp: 1, xp: 1, streak: 0, last: "", sk: {}, units: 0, lv: "A1", act: 0, at: serverTimestamp() });
@@ -153,4 +155,14 @@ test("stats with return metrics (f, a, ses) are accepted; wrong shapes are not",
   await assertSucceeds(setDoc(doc(U, "stats/st1"), st));
   await assertFails(setDoc(doc(U, "stats/st1"), Object.assign({}, st, { a: "0".repeat(40) })));
   await assertFails(setDoc(doc(U, "stats/st1"), Object.assign({}, st, { ses: "3" })));
+});
+
+test("Telegram sign-in: a tg<id> account with the tg claim is confirmed; a forged uid or a missing claim is not", async () => {
+  await assertSucceeds(setDoc(doc(as("tg12345", "telegram"), "users/tg12345"), { progress: { xp: 1 } }));
+  await assertSucceeds(getDoc(doc(as("tg12345", "telegram"), "users/tg12345")));
+  await assertFails(getDoc(doc(as("tg12345", "telegram"), "users/u-google")), "someone else's progress");
+  await assertFails(setDoc(doc(as("tgx", "telegram"), "users/tgx"), { progress: { xp: 1 } }), "uid must be tg + digits");
+  await assertFails(setDoc(doc(as("tg999", "custom"), "users/tg999"), { progress: { xp: 1 } }), "no tg claim");
+  await assertFails(setDoc(doc(as("tg555", "googleNo"), "users/tg555"), { progress: { xp: 1 } }));
+  await assertSucceeds(setDoc(doc(as("tg12345", "telegram"), "league/tg12345"), { name: "A", week: "2026-11-02", wxp: 1, xp: 1, streak: 0 }));
 });

@@ -4,7 +4,9 @@
 //   3. turns off Vercel login protection (Telegram must reach the URL), finds the production *.vercel.app domain
 //   4. checks the function: with the secret → a reply, without → 401
 //   5. setWebhook (secret_token = TG_SECRET)
-// Needs VERCEL_TOKEN and TELEGRAM_BOT_TOKEN.
+//   6. Telegram sign-in (api/tgauth.js): with TG_LOGIN_SA (a role-less service account key) the function gets
+//      TG_BOT_TOKEN and FB_SA_B64; self-check: a signed initData → a custom token that Firebase really accepts
+// Needs VERCEL_TOKEN and TELEGRAM_BOT_TOKEN; TG_LOGIN_SA is optional (without it Telegram sign-in stays off).
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -22,7 +24,7 @@ function assemble(base = process.env.RUNNER_TEMP || os.tmpdir()) {
   fs.mkdirSync(path.join(dir, "api"), { recursive: true });
   fs.mkdirSync(path.join(dir, "tools"), { recursive: true });
   const cp = (from, to) => fs.copyFileSync(path.join(ROOT, from), path.join(dir, to || from));
-  cp("bot/api/telegram.js", "api/telegram.js"); cp("bot/vercel.json", "vercel.json"); cp("bot/package.json", "package.json");
+  cp("bot/api/telegram.js", "api/telegram.js"); cp("bot/api/tgauth.js", "api/tgauth.js"); cp("bot/vercel.json", "vercel.json"); cp("bot/package.json", "package.json");
   ["telegram.js", "telegram-bot.js", "quiz.js"].forEach(f => cp("tools/" + f));
   ["content.js", "lugat.js", "grammar-ex.js"].forEach(f => cp(f));
   return dir;
@@ -40,7 +42,14 @@ async function main() {
   console.log("::add-mask::" + secret);
   const dir = assemble();
   console.log("Vercel'ga joylanmoqda…");
-  const out = execFileSync("npx", ["--yes", "vercel@latest", "deploy", "--prod", "--yes", "--token", VT, "-e", "TG_SECRET=" + secret], { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] });
+  const envs = ["-e", "TG_SECRET=" + secret];
+  const SA = process.env.TG_LOGIN_SA;
+  if (SA) {
+    const b64 = Buffer.from(SA.trim()).toString("base64");
+    console.log("::add-mask::" + b64);
+    envs.push("-e", "TG_BOT_TOKEN=" + TT, "-e", "FB_SA_B64=" + b64);
+  } else console.log("TG_LOGIN_SA yoʻq — Telegram orqali kirish oʻchiq qoladi");
+  const out = execFileSync("npx", ["--yes", "vercel@latest", "deploy", "--prod", "--yes", "--token", VT, ...envs], { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] });
   const depUrl = (out.match(/https:\/\/\S+\.vercel\.app/g) || []).pop();
   const link = JSON.parse(fs.readFileSync(path.join(dir, ".vercel/project.json"), "utf8"));
   const team = /^team_/.test(link.orgId) ? link.orgId : null;
@@ -71,9 +80,31 @@ async function main() {
   const bad = await fetch(hook, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(upd) });
   if (bad.status !== 401) throw new Error("Kalitsiz soʻrov rad etilmadi: " + bad.status);
   console.log("Funksiya ishlayapti ✔");
+  if (SA) await authCheck(`https://${host}/api/tgauth`);
   await api(TT, "setWebhook", { url: hook, secret_token: secret, allowed_updates: ["message"], max_connections: 20 });
   const info = await api(TT, "getWebhookInfo");
   console.log("Webhook:", info.url, "| kutayotgan xabarlar:", info.pending_update_count, info.last_error_message ? "| oxirgi xato: " + info.last_error_message : "");
+}
+// Telegram sign-in end to end: initData signed the way Telegram does → our function → a custom token → Firebase accepts it.
+// The test account (uid tg1) is removed again right away.
+async function authCheck(url) {
+  const crypto = require("crypto");
+  const p = new URLSearchParams({ auth_date: String(Math.floor(Date.now() / 1000)), query_id: "check", user: JSON.stringify({ id: 1, first_name: "Tekshiruv" }) });
+  const dcs = [...p].map(([k, v]) => k + "=" + v).sort().join("\n");
+  const key = crypto.createHmac("sha256", "WebAppData").update(TT).digest();
+  p.set("hash", crypto.createHmac("sha256", key).update(dcs).digest("hex"));
+  const post = (u, body) => fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+    .then(async r => ({ status: r.status, j: await r.json().catch(() => ({})) }));
+  let a = { status: 0, j: {} };
+  for (let i = 0; i < 6 && !a.j.token; i++) { if (i) await new Promise(r => setTimeout(r, 5000)); a = await post(url, { initData: p.toString() }).catch(e => ({ status: 0, j: { error: e.message } })); }
+  if (a.status !== 200 || !a.j.token) throw new Error("Telegram kirish funksiyasi: " + a.status + " " + JSON.stringify(a.j).slice(0, 200));
+  const bad = await post(url, { initData: p.toString().replace(/hash=[0-9a-f]{4}/, "hash=0000") });
+  if (bad.status !== 401) throw new Error("Telegram kirish: notoʻgʻri imzo rad etilmadi (" + bad.status + ")");
+  const apiKey = (fs.readFileSync(path.join(ROOT, "firebase-config.js"), "utf8").match(/apiKey:\s*"([^"]+)"/) || [])[1];
+  const fb = await post("https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=" + apiKey, { token: a.j.token, returnSecureToken: true });
+  if (fb.status !== 200 || !fb.j.idToken) throw new Error("Firebase custom tokenni qabul qilmadi: " + fb.status + " " + JSON.stringify(fb.j.error || fb.j).slice(0, 300));
+  await post("https://identitytoolkit.googleapis.com/v1/accounts:delete?key=" + apiKey, { idToken: fb.j.idToken }).catch(() => {});
+  console.log("Telegram orqali kirish ishlayapti ✔", url);
 }
 module.exports = { assemble };
 if (require.main === module) main().catch(e => { console.error(e.message); process.exit(1); });

@@ -42,6 +42,7 @@ const FAKE_FIREBASE = `
     getRedirectResult: () => Promise.resolve(null),
     onAuthStateChanged: f => { listeners.push(f); if (user !== undefined) f(user); },
     createUserWithEmailAndPassword: (email) => { window.__fbUser({ uid: "new1", email, providerData: [{ providerId: "password" }], emailVerified: false, updateProfile(p) { Object.assign(this, p); return Promise.resolve(); } }); return Promise.resolve({ user }); },
+    signInWithCustomToken: t => { window.__customTokens = (window.__customTokens || []).concat([t]); const uid = String(t).split(".")[0]; window.__fbUser({ uid, providerData: [], emailVerified: false, displayName: null, updateProfile(p) { Object.assign(this, p); return Promise.resolve(); } }); return Promise.resolve({ user: window.firebase.auth().currentUser }); },
     signInWithPopup: p => { if (window.__popupFail) { window.__popups = (window.__popups || []).concat(["failed:" + p.providerId]); return err(window.__popupFail); } window.__popups = (window.__popups || []).concat([p.providerId + ":" + (p.scopes || []).join(",")]); return Promise.resolve(); },
     signInWithRedirect: p => { window.__popups = (window.__popups || []).concat(["redirect:" + p.providerId]); return Promise.resolve(); },
     signOut: () => { window.__fbUser(null); return Promise.resolve(); }
@@ -56,7 +57,7 @@ async function openFb(browser, hash = "#home", opts = {}) {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));
-  await page.route("**/firebase-config.js", r => r.fulfill({ body: "window.FIREBASE_CONFIG={apiKey:'test',projectId:'test'}", contentType: "text/javascript" }));
+  await page.route("**/firebase-config.js", r => r.fulfill({ body: "window.FIREBASE_CONFIG={apiKey:'test',projectId:'test'};" + (opts.cfg || ""), contentType: "text/javascript" }));
   await page.route(/gstatic\.com\/firebasejs\//, r => r.fulfill({ body: r.request().url().includes("-app-") ? FAKE_FIREBASE : "", contentType: "text/javascript" }));
   await page.route(/^https?:\/\/(?!www\.gstatic\.com\/firebasejs\/)/, r => r.abort());
   await page.addInitScript(([user, seed, ss]) => {
@@ -69,6 +70,8 @@ async function openFb(browser, hash = "#home", opts = {}) {
       Object.defineProperty(window, "firebase", { configurable: true, set(v) { Object.defineProperty(window, "firebase", { value: v, writable: true, configurable: true }); if (user) setTimeout(() => window.__fbUser(user), 0); else setTimeout(() => window.__fbUser(null), 0); } });
     }
   }, [opts.user || null, opts.seed || {}, opts.session || {}]);
+  if (opts.init) await page.addInitScript(opts.init);
+  if (opts.routes) for (const [url, fn] of opts.routes) await page.route(url, fn);
   await page.goto(BASE + hash);
   await page.waitForFunction(() => typeof db !== "undefined" && db);
   if (opts.user) await page.waitForFunction(() => USER && !EARLY);

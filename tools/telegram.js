@@ -61,7 +61,12 @@ const COMMANDS = [
   { command: "yordam", description: "Bot nima qila oladi" }
 ];
 async function api(token, method, body) {
-  const r = await fetch(`https://api.telegram.org/bot${token}/${method}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+  // A dropped connection ("fetch failed") is retried a few times; an answer from Telegram is final
+  let r;
+  for (let i = 0; ; i++) {
+    try { r = await fetch(`https://api.telegram.org/bot${token}/${method}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) }); break; }
+    catch (e) { if (i >= 3) throw e; await new Promise(res => setTimeout(res, 2000 * (i + 1))); }
+  }
   const j = await r.json();
   if (!j.ok) throw new Error(`${method}: ${j.description}`);
   return j.result;

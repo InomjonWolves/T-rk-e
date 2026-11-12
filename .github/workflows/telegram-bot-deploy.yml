@@ -31,6 +31,8 @@ jobs:
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      # Telegram orqali kirish: rolsiz alohida xizmat hisobi kaliti (faqat custom token imzolash uchun)
+      TG_LOGIN_SA: ${{ secrets.TG_LOGIN_SA }}
     steps:
       - name: Kalit tekshiruvi
         if: env.VERCEL_TOKEN == '' || env.TELEGRAM_BOT_TOKEN == ''

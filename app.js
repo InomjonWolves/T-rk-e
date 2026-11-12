@@ -1557,7 +1557,7 @@ function viewProfile() {
   <div class="profile-card glass">
     <button class="avatar-edit" data-act="photo" aria-label="Profil rasmini oʻzgartirish">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "lg")}<span class="cam">${ICON.camera}</span>${genderSticker()}</button>
     <input type="file" id="photo-input" accept="image/*" hidden>
-    <div style="min-width:0"><b>${esc(USERNAME || (USER ? "Oʻquvchi" : "Mehmon"))}</b><span>${esc(USER ? USER.email || "" : "Hisobsiz rejim")}</span>
+    <div style="min-width:0"><b>${esc(USERNAME || (USER ? "Oʻquvchi" : "Mehmon"))}</b><span>${esc(USER ? USER.email || (/^tg\d+$/.test(USER.uid) ? "Telegram hisobi" : "") : "Hisobsiz rejim")}</span>
       ${PROFILE.birth ? `<span style="display:block">${esc(birthText(PROFILE.birth))}</span>` : ""}
       <div class="tags" style="margin-top:6px">${USER && USER.emailVerified ? `<span class="tag green-t">${ICON.check}Tasdiqlangan</span>` : ""}${MYPHOTO ? `<button class="tag pink-t" data-act="photo-remove">Rasmni olib tashlash</button>` : `<button class="tag violet-t" data-act="photo">Rasm qoʻyish</button>`}</div></div>
   </div>
@@ -4038,6 +4038,7 @@ function onAct(e) {
   else if (act === "auth-tab") setAuthTab(b.dataset.t);
   else if (act === "auth-google") googleSignIn();
   else if (act === "auth-guest") startGuest();
+  else if (act === "auth-tg") tgSignIn();
   else if (act === "close-sheet") closeSheet(true);
   else if (act === "guest-signup") { closeSheet(true); const u = auth && auth.currentUser; if (u && !USER) { showVerify(u); verifyCheck(true); } else { showAuth(false); setAuthTab("signup"); $("auth-email").open = false; window.scrollTo(0, 0); } }
   else if (act === "pass-eye") { const i = $("a-pass"), on = i.type === "password"; i.type = on ? "text" : "password"; b.setAttribute("aria-pressed", String(on)); b.textContent = on ? "Yashirish" : "Koʻrsatish"; }
@@ -4631,6 +4632,10 @@ function showAuth(loading) {
   $("auth-body").hidden = !!loading;
   $("auth-body").style.display = loading ? "none" : "flex";
   const back = isGuest();
+  // Inside Telegram the one-tap Telegram sign-in leads; the no-account start becomes the quieter option
+  const tg = !!tgAuthUrl();
+  $("auth-tg").hidden = !tg;
+  $("auth-guest").classList.toggle("btn-grad", !tg); $("auth-guest").classList.toggle("btn-soft", tg);
   $("auth-guest").textContent = back ? "Mehmon sifatida davom etish" : "Hoziroq boshlash";
   $("auth-guest-note").textContent = back ? "Hisob ochsangiz, shu qurilmadagi natijangiz hisobingizga oʻtadi." : "Roʻyxatdan oʻtish shart emas. Natijangizni keyin bir bosishda saqlab olasiz.";
 }
@@ -4684,6 +4689,36 @@ document.addEventListener("input", e => {
   const k = Math.min(1, e.target.value.length / 26);
   CatLife.look(c, -6 + 12 * k, 6);
 });
+/* ---------- Telegram sign-in (inside the bot's Mini App) ----------
+   Telegram signs Telegram.WebApp.initData with the bot token; our bot server (bot/api/tgauth.js) checks the signature
+   and answers with a Firebase custom token for the uid "tg<telegram id>". No password, no e-mail. */
+const tgAuthUrl = () => (IN_TG && window.TG_AUTH_URL) || "";
+function tgInitData() { try { return (window.Telegram && Telegram.WebApp && Telegram.WebApp.initData) || ""; } catch (e) { return ""; } }
+async function tgSignIn() {
+  const btn = $("auth-tg");
+  // telegram-web-app.js may still be loading
+  for (let i = 0; i < 20 && !tgInitData(); i++) await new Promise(r => setTimeout(r, 150));
+  const data = tgInitData();
+  if (!data) {
+    // Opened from a link inside Telegram, not from the bot's button: the bot's "Ilovani ochish" gives the signed data
+    authError("Telegram orqali kirish uchun botdagi “📱 Ilovani ochish” tugmasidan oching. Bot ochilmoqda…");
+    try { if (window.Telegram && Telegram.WebApp && Telegram.WebApp.openTelegramLink) Telegram.WebApp.openTelegramLink(TG_BOT); else location.href = TG_BOT; } catch (e) { location.href = TG_BOT; }
+    return;
+  }
+  if (!(await authReady())) return;
+  btn.disabled = true; authError("Telegram orqali kirilmoqda…", true);
+  try {
+    const r = await fetch(tgAuthUrl(), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: data }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.token) throw new Error(r.status === 503 ? "Telegram orqali kirish hali sozlanmagan. “Hoziroq boshlash” ni bosing." : "Telegram maʼlumotlari tasdiqlanmadi. Ilovani bot orqali qayta oching.");
+    PENDING_NAME = j.name || "";
+    const cred = await auth.signInWithCustomToken(j.token);
+    if (cred && cred.user && !cred.user.displayName && j.name) cred.user.updateProfile({ displayName: j.name }).catch(() => {});
+    authError("");
+  } catch (e) {
+    authError(e && e.message && !e.code ? e.message : "Internet bilan muammo. Qayta urinib koʻring yoki “Hoziroq boshlash” ni bosing.");
+  } finally { btn.disabled = false; }
+}
 // Google refuses sign-in inside app web views (Telegram included): say so and offer the real browser
 const TG_AUTH_MSG = "Telegram ichida Google bilan kirib boʻlmaydi (bu Google cheklovi). “Hoziroq boshlash” ni bosing yoki email va parol bilan kiring. Google uchun saytni brauzerda oching: turkceyol.web.app";
 async function googleSignIn() {
