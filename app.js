@@ -4693,7 +4693,10 @@ document.addEventListener("input", e => {
    Telegram signs Telegram.WebApp.initData with the bot token; our bot server (bot/api/tgauth.js) checks the signature
    and answers with a Firebase custom token for the uid "tg<telegram id>". No password, no e-mail. */
 const tgAuthUrl = () => (IN_TG && window.TG_AUTH_URL) || "";
-function tgInitData() { try { return (window.Telegram && Telegram.WebApp && Telegram.WebApp.initData) || ""; } catch (e) { return ""; } }
+function tgInitData() {
+  try { const d = window.Telegram && Telegram.WebApp && Telegram.WebApp.initData; if (d) return d; } catch (e) {}
+  try { return sessionStorage.getItem("ty-tg-init") || ""; } catch (e) { return ""; }
+}
 async function tgSignIn() {
   const btn = $("auth-tg");
   // telegram-web-app.js may still be loading
@@ -4819,7 +4822,12 @@ const IN_TG = (() => {
   try { if (tg) sessionStorage.setItem("ty-tg", "1"); else tg = sessionStorage.getItem("ty-tg") === "1"; } catch (e) {}
   return tg;
 })();
-if (/tgWebApp/.test(location.hash)) { try { history.replaceState(null, "", location.pathname + location.search + "#home"); } catch (e) { location.hash = "#home"; } }
+// Telegram puts the signed sign-in data (tgWebAppData) in the address; telegram-web-app.js reads it from there.
+// Keep it before the address is cleaned, or Telegram.WebApp.initData would come out empty.
+if (/tgWebApp/.test(location.hash)) {
+  try { const d = new URLSearchParams(location.hash.slice(1)).get("tgWebAppData"); if (d) sessionStorage.setItem("ty-tg-init", d); } catch (e) {}
+  try { history.replaceState(null, "", location.pathname + location.search + "#home"); } catch (e) { location.hash = "#home"; }
+}
 if (IN_TG) {
   document.documentElement.classList.add("in-tg");
   loadScript("https://telegram.org/js/telegram-web-app.js").then(() => { try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch (e) {} }, () => {});

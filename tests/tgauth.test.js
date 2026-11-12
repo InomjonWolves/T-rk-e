@@ -70,9 +70,12 @@ after(async () => { await browser.close(); });
 
 test("site in the Mini App: Telegram sign-in leads, signs in with the server's token and keeps the guest progress", async () => {
   let posted = null;
-  const { page, errors } = await openFb(browser, "#tgWebAppData=query_id%3DAA&tgWebAppVersion=7.0", {
+  // As in real Telegram: the signed data comes only in the address (tgWebAppData). The site cleans the address at once,
+  // so telegram-web-app.js, loaded later, finds nothing there — the site must keep the data itself.
+  const signed = "query_id=AA&user=%7B%22id%22%3A42%7D&auth_date=1&hash=ab";
+  const { page, errors } = await openFb(browser, "#tgWebAppData=" + encodeURIComponent(signed) + "&tgWebAppVersion=7.0&tgWebAppPlatform=android", {
     cfg: "window.TG_AUTH_URL='https://bot.test/api/tgauth';",
-    init: "window.Telegram = { WebApp: { initData: 'signed-by-telegram', ready() {}, expand() {} } }; ",
+    init: "window.Telegram = { WebApp: { initData: '', ready() {}, expand() {} } }; ",
     routes: [["https://bot.test/api/tgauth", r => { posted = JSON.parse(r.request().postData()); r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ token: "tg42.payload.sig", uid: "tg42", name: "Jasur" }) }); }]]
   });
   await page.waitForFunction(() => !document.getElementById("auth-body").hidden);
@@ -82,7 +85,8 @@ test("site in the Mini App: Telegram sign-in leads, signs in with the server's t
   await page.evaluate(() => { localStorage.setItem("ty-guest", "1"); S.xp = 30; save(); });
   await page.click("#auth-tg");
   await page.waitForFunction(() => USER && USER.uid === "tg42" && document.getElementById("auth").hidden);
-  assert.deepEqual(posted, { initData: "signed-by-telegram" });
+  assert.deepEqual(posted, { initData: signed }, "the exact signed string Telegram gave");
+  assert.equal(await page.evaluate(() => location.hash), "#home", "the address is still cleaned");
   assert.equal(await page.evaluate(() => [USERNAME, __db["users/tg42"].name, __db["users/tg42"].progress.xp].join()), "Jasur,Jasur,30");
   assert.deepEqual(errors, []);
   await page.close();
@@ -93,7 +97,8 @@ test("site outside Telegram: no Telegram button; inside Telegram without signed 
   await page.waitForFunction(() => !document.getElementById("auth-body").hidden);
   assert.equal(await page.evaluate(() => document.getElementById("auth-tg").hidden), true);
   await page.close();
-  ({ page, errors } = await openFb(browser, "#tgWebAppData=x", { cfg: "window.TG_AUTH_URL='https://bot.test/api/tgauth';", init: "window.Telegram = { WebApp: { initData: '', ready() {}, expand() {}, openTelegramLink(u) { window.__opened = u; } } };" }));
+  // A link opened inside Telegram (not the bot's button): Telegram's browser, but no signed data in the address
+  ({ page, errors } = await openFb(browser, "#home", { cfg: "window.TG_AUTH_URL='https://bot.test/api/tgauth';", init: "window.TelegramWebviewProxy = {}; window.Telegram = { WebApp: { initData: '', ready() {}, expand() {}, openTelegramLink(u) { window.__opened = u; } } };" }));
   await page.waitForFunction(() => !document.getElementById("auth-body").hidden);
   await page.click("#auth-tg");
   await page.waitForFunction(() => window.__opened, null, { timeout: 8000 });
