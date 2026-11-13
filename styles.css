@@ -918,6 +918,11 @@ body:has(.pamuk-say.show) .toast { bottom: calc(env(safe-area-inset-bottom) + 17
 /* Waving: the whole forearm sways side to side from the elbow, the paw follows a beat later from the wrist */
 .cat[data-pose="wave"] .cat-arm { transform-origin: 178px 190px; animation: catWave 3.2s ease-in-out infinite; }
 .cat[data-pose="wave"] .cat-paw { transform-origin: 200px 136px; animation: catWrist 3.2s ease-in-out infinite; }
+.cat[data-pose="cheer"] .cat-hi { transform-origin: 62px 190px; animation: catHi 3.2s ease-in-out infinite; }
+.cat[data-pose="cheer"] .cat-hi-paw { transform-origin: 40px 136px; animation: catHiWrist 3.2s ease-in-out infinite; }
+@keyframes catHi { 0%, 62%, 100% { transform: rotate(0); } 10% { transform: rotate(9deg); } 22% { transform: rotate(-7deg); } 34% { transform: rotate(8deg); } 46% { transform: rotate(-5deg); } 55% { transform: rotate(2deg); } }
+@keyframes catHiWrist { 0%, 64%, 100% { transform: rotate(0); } 13% { transform: rotate(7deg); } 25% { transform: rotate(-6deg); } 37% { transform: rotate(6deg); } 49% { transform: rotate(-4deg); } 58% { transform: rotate(1deg); } }
+@media (prefers-reduced-motion: reduce) { .cat[data-pose="cheer"] .cat-hi, .cat[data-pose="cheer"] .cat-hi-paw { animation: none; } }
 @keyframes catWave { 0%, 62%, 100% { transform: rotate(0); } 10% { transform: rotate(-9deg); } 22% { transform: rotate(7deg); } 34% { transform: rotate(-8deg); } 46% { transform: rotate(5deg); } 55% { transform: rotate(-2deg); } }
 @keyframes catWrist { 0%, 64%, 100% { transform: rotate(0); } 13% { transform: rotate(-7deg); } 25% { transform: rotate(6deg); } 37% { transform: rotate(-6deg); } 49% { transform: rotate(4deg); } 58% { transform: rotate(-1deg); } }
 .cat .cat-stars path { transform-box: fill-box; transform-origin: center; animation: twinkle 1.8s ease-in-out infinite; }
