@@ -48,7 +48,7 @@ function loadLocal(key) {
   return migrate(v);
 }
 let remTimer;
-function save() { lvlCheck(); S.savedAt = Date.now(); try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {} cloudSave(); clearTimeout(remTimer); remTimer = setTimeout(() => remSync(), 2500); clearTimeout(achTimer); achTimer = setTimeout(checkAch, 450); }
+function save() { lvlCheck(); frameCheck(); S.savedAt = Date.now(); try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {} cloudSave(); clearTimeout(remTimer); remTimer = setTimeout(() => remSync(), 2500); clearTimeout(achTimer); achTimer = setTimeout(checkAch, 450); }
 
 /* ---------- Spaced repetition (simplified SM-2) ----------
    Each word: i = interval in days, e = ease, d = due day, r = successful reviews in a row,
@@ -373,6 +373,76 @@ const LEAGUES = [
 const LG_UP = 0.3, LG_MIN = 300, LG_SOLO = 1000, LG_DOWN = 50;
 const lgOf = n => LEAGUES[Math.min(7, Math.max(1, n || 1)) - 1];
 const lgBadge = (n, cls = "") => { const l = lgOf(n); return `<svg class="lg-badge ${cls}" viewBox="0 0 24 28" aria-label="${l.uz} ligasi"><path d="M12 1l10 4v8c0 7-4.5 11.5-10 14C6.5 24.5 2 20 2 13V5z" fill="${l.c}"/><path d="M12 1l10 4v8c0 7-4.5 11.5-10 14z" fill="#000" opacity=".12"/><text x="12" y="17.5" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">${l.n}</text></svg>`; };
+/* ---------- Avatar frames (ramkalar): a ring round every avatar shows the learner's standing ----------
+   Seven frames named like the leagues. A frame opens with the level (permanent) or with the league (weekly),
+   whichever is higher. Gem from Oltin, laurel from Platina, wings from Usta, crown and a turning glow for Afsona. */
+const FRAMES = [
+  { n: 1, uz: "Bronza", lv: 1 }, { n: 2, uz: "Kumush", lv: 5 }, { n: 3, uz: "Oltin", lv: 10 }, { n: 4, uz: "Platina", lv: 20 },
+  { n: 5, uz: "Olmos", lv: 30 }, { n: 6, uz: "Usta", lv: 40 }, { n: 7, uz: "Afsona", lv: 50 }
+];
+const frameByLv = lv => FRAMES.filter(f => lv >= f.lv).pop().n;
+const frameOf = (xp, lg) => Math.max(frameByLv(lvlOf(+xp || 0)), Math.min(7, Math.max(1, +lg || 1)));
+const myFrame = () => frameOf(S.xp, S.lg);
+// Ornaments, drawn by us (the reference pictures were only ideas): viewBox -30…130, the ring is the 0…100 circle.
+const FR_ORN = (() => {
+  const f = v => v.toFixed(1);
+  // One feather: a pointed leaf from the base (bx, by) along angle a (degrees, y down), length l, half-width w
+  const feather = (bx, by, a, l, w) => {
+    const t = a * Math.PI / 180, cx = Math.cos(t), cy = Math.sin(t), tx = bx + l * cx, ty = by + l * cy;
+    const mx = bx + l * 0.45 * cx, my = by + l * 0.45 * cy, nx = -cy * w, ny = cx * w;
+    return `M${f(bx)} ${f(by)}Q${f(mx + nx)} ${f(my + ny)} ${f(tx)} ${f(ty)}Q${f(mx - nx)} ${f(my - ny)} ${f(bx)} ${f(by)}Z`;
+  };
+  // A wing that rises from behind the ring, low on the left, up to its top: a long pale outer row, a short darker inner row
+  const wingL = big => {
+    const k = big ? 1.1 : 1, out = [], inn = [];
+    [[196, 30], [208, 40], [220, 50], [232, 58], [244, 66], [256, 72], [268, 74]].forEach(([a, l]) => out.push(feather(10, 88, a, l * k, 8.6 * k)));
+    [[204, 24], [220, 34], [236, 42], [252, 50], [266, 54]].forEach(([a, l]) => inn.push(feather(13, 90, a, l * k, 6.4 * k)));
+    return `<path class="fr-fo" d="${out.join("")}"/><path class="fr-fi" d="${inn.join("")}"/>`;
+  };
+  const mirror = x => `<g transform="matrix(-1 0 0 1 100 0)">${x}</g>`;
+  const wings = big => `<g class="fr-wing">${wingL(big)}${mirror(wingL(big))}</g>`;
+  const leaf = d => { const t = d * Math.PI / 180, x = 50 + 58 * Math.cos(t), y = 50 + 58 * Math.sin(t); return `<ellipse cx="${f(x)}" cy="${f(y)}" rx="7.5" ry="3.2" transform="rotate(${d + 90} ${f(x)} ${f(y)})"/>`; };
+  const gem = (x, y, r) => `<path class="fr-gem" d="M${x} ${y - r}L${x + r * 0.72} ${y}L${x} ${y + r}L${x - r * 0.72} ${y}Z"/>`;
+  const spark = (x, y, r, d) => `<path class="fr-spark" style="animation-delay:${d}s" d="M${x} ${y - r}Q${x} ${y} ${x + r} ${y}Q${x} ${y} ${x} ${y + r}Q${x} ${y} ${x - r} ${y}Q${x} ${y} ${x} ${y - r}Z"/>`;
+  // Top crest: a gem between two swept spikes (from Oltin); bottom crest: a smaller gem with short spikes
+  const spikes = (y, s) => `<path class="fr-metal" d="M${50 - 6 * s} ${y}Q${50 - 17 * s} ${y - 9 * s} ${50 - 25 * s} ${y - 2 * s}Q${50 - 16 * s} ${y - 2 * s} ${50 - 6 * s} ${y + 5 * s}ZM${50 + 6 * s} ${y}Q${50 + 17 * s} ${y - 9 * s} ${50 + 25 * s} ${y - 2 * s}Q${50 + 16 * s} ${y - 2 * s} ${50 + 6 * s} ${y + 5 * s}Z"/>`;
+  return {
+    top: `${spikes(-1, 1)}${gem(50, -5, 10)}`,
+    bottom: `<g transform="matrix(1 0 0 -1 0 100)">${spikes(-1, 0.7)}</g>${gem(50, 103, 7)}`,
+    bottomGem: gem(50, 101, 6),
+    sides: `${gem(-1, 50, 7)}${gem(101, 50, 7)}`,
+    laurel: `<g class="fr-leaf">${[104, 121, 138, 155].map(leaf).join("")}${[76, 59, 42, 25].map(leaf).join("")}</g>`,
+    wings,
+    crown: `<path class="fr-crown" d="M28 2L29-17L39-8L50-25L61-8L71-17L72 2Q50-4 28 2Z"/><circle class="fr-pearl" cx="29" cy="-18" r="2.6"/><circle class="fr-pearl" cx="50" cy="-26" r="3"/><circle class="fr-pearl" cx="71" cy="-18" r="2.6"/><circle class="fr-ruby" cx="50" cy="-7" r="4.4"/>`,
+    sparks: `${spark(-12, 8, 5, 0)}${spark(113, 14, 4, 0.7)}${spark(108, 104, 5, 1.4)}${spark(-6, 98, 3.5, 2.1)}`
+  };
+})();
+// The avatar inside its frame; o.lv adds the level chip, o.sm is the small topbar version, o.cls extra classes
+function framed(av, n, o = {}) {
+  n = Math.min(7, Math.max(1, n || 1));
+  // With the level chip at the bottom, the bottom crest would hide under it
+  const O = FR_ORN, bot = o.lv ? "" : n >= 4 ? O.bottom : O.bottomGem, parts = n === 2 ? bot
+    : n === 3 ? O.top + bot
+    : n === 4 ? O.laurel + O.top + bot
+    : n === 5 ? O.laurel + O.top + bot + O.sides + O.sparks
+    : n === 6 ? O.top + bot + O.sides + O.sparks
+    : n === 7 ? O.crown + bot + O.sides + O.sparks : "";
+  // Wings sit behind the ring and the avatar, everything else in front
+  const back = n >= 6 && !o.sm ? `<svg class="fr-orn fr-back" viewBox="-30 -30 160 160" aria-hidden="true">${O.wings(n === 7)}</svg>` : "";
+  const orn = back + (parts && !o.sm ? `<svg class="fr-orn" viewBox="-30 -30 160 160" aria-hidden="true">${parts}</svg>` : "");
+  return `<span class="fr fr${n}${o.sm ? " fr-sm" : ""}${o.cls ? " " + o.cls : ""}" title="${FRAMES[n - 1].uz} ramka">${av}${orn}${o.lv ? `<b class="fr-lv">${o.lv}</b>` : ""}</span>`;
+}
+// A new frame earned: celebrate once (S.frm keeps the highest frame reached)
+function frameCheck() {
+  const n = myFrame();
+  if (!S.frm) { S.frm = n; return; }
+  if (n <= S.frm) return;
+  S.frm = n;
+  const f = FRAMES[n - 1];
+  celebrate({ eyebrow: "Yangi ramka!", title: `${f.uz} ramka ochildi!`, frame: n,
+    text: n < 7 ? `Endi reytingda, doʻstlar roʻyxatida va profilda avataringiz atrofida shu ramka turadi. Keyingisi — ${FRAMES[n].uz}: ${FRAMES[n].lv}-daraja yoki ${FRAMES[n].uz} liga.` : "Eng yuqori ramka — Afsona! Siz Türkçe Yoʻl afsonasisiz.",
+    share: true, shareText: `Türkçe Yoʻl'da «${f.uz}» ramkasini ochdim! Turk tilini bepul oʻrganing:` });
+}
 let LG_BUSY = false;
 async function lgSettle() {
   const wk = weekKey();
@@ -904,10 +974,11 @@ const avClass = s => "c" + (1 + [...String(s)].reduce((a, c) => a + c.charCodeAt
 // A user's photo, or the brand cat on a coloured disc for those without one
 let MYPHOTO = "";
 const AV_CACHE = {};
-function avatarHTML(photo, seed, cls = "") {
-  return photo
+function avatarHTML(photo, seed, cls = "", fr) {
+  const av = photo
     ? `<span class="avatar ${cls}"><img src="${esc(photo)}" alt=""></span>`
     : `<span class="avatar cat-av ${avClass(seed || "me")} ${cls}">${catSVG({ pose: "head", lite: true })}</span>`;
+  return fr ? framed(av, fr.n, fr) : av;
 }
 const photoKey = () => "ty-photo" + (USER ? ":" + USER.uid : EARLY ? ":" + EARLY : "");
 function loadMyPhoto() { try { MYPHOTO = localStorage.getItem(photoKey()) || ""; } catch (e) { MYPHOTO = ""; } }
@@ -943,7 +1014,7 @@ function topbar() {
     <div class="top-actions">
       <a class="icon-btn" href="#translate" aria-label="Aqlli tarjimon">${ICON.translate}</a>
       <button class="icon-btn" data-act="go" data-to="lugat" data-focus="search" aria-label="Soʻz qidirish">${ICON.search}</button>
-      <a href="#profile" aria-label="Profil" style="border-radius:50%">${avatarHTML(MYPHOTO, USER ? USER.uid : "me")}</a>
+      <a href="#profile" aria-label="Profil" style="border-radius:50%">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "", { n: myFrame(), sm: true })}</a>
     </div>
   </header>`;
 }
@@ -1129,6 +1200,17 @@ function comebackCard() {
     <div><b>Pamuk sizni sogʻindi!</b><p class="muted">${away} kun koʻrishmadik. Hech gap emas — 5 daqiqalik takrorlashdan boshlaymiz, soʻzlar tezda esga tushadi.</p>
     <button class="btn btn-grad" data-act="start" data-mode="review">5 daqiqa takrorlash</button></div>
   </section>`;
+}
+// Profile: every frame, the one in use, and what opens the next
+function frameCard() {
+  const cur = myFrame(), nx = FRAMES[cur], seed = USER ? USER.uid : "me";
+  return `<section class="section"><div class="section-head"><h2>Avatar ramkasi</h2><span class="tag orange-t">${FRAMES[cur - 1].uz}</span></div>
+    <div class="glass pad fr-card">
+      <p class="muted">Ramka reytingda, doʻstlar roʻyxatida va profilda avataringiz atrofida turadi — hamma koʻradi. U darajangiz yoki ligangiz bilan ochiladi: qaysi biri yuqori boʻlsa.</p>
+      <div class="fr-gallery">${FRAMES.map(f => `<div class="fr-item${f.n > cur ? " locked" : ""}${f.n === cur ? " on" : ""}">
+        ${avatarHTML(MYPHOTO, seed, "", { n: f.n })}${f.n > cur ? `<i class="fr-lock" aria-label="Yopiq">${ICON.lock}</i>` : ""}<b>${f.uz}</b><small>${f.n === cur ? "Sizda" : f.n < cur ? "Ochilgan" : `${f.lv}-daraja yoki ${f.uz} liga`}</small></div>`).join("")}</div>
+      <p class="fr-next">${nx ? `Keyingi ramka — <b>${nx.uz}</b>: ${nx.lv}-darajaga yana ${Math.max(0, lvlXP(nx.lv) - S.xp)} XP${(S.lg || 1) < nx.n ? ` yoki ${nx.uz} ligasiga chiqing` : ""}.` : "Siz eng yuqori — <b>Afsona</b> ramkasidasiz!"}</p>
+    </div></section>`;
 }
 function pamukGrowCard() {
   const L = lvlInfo();
@@ -1476,7 +1558,7 @@ function loadRankPhotos(ids) {
       const ph = d.exists && d.data().photo;
       if (!ph) return;
       AV_CACHE[id] = ph;
-      document.querySelectorAll(`[data-av="${CSS.escape(id)}"]`).forEach(el => { el.innerHTML = avatarHTML(ph, id); });
+      document.querySelectorAll(`[data-av="${CSS.escape(id)}"]`).forEach(el => { const a = el.querySelector(".avatar"); if (a) a.outerHTML = avatarHTML(ph, id); else el.innerHTML = avatarHTML(ph, id); });
     }).catch(() => {});
   });
 }
@@ -1520,13 +1602,13 @@ async function loadRank() {
     return;
   }
   const me = rows.findIndex(r => r.id === USER.uid);
-  const pod = i => { const r = rows[i]; if (!r) return "<div></div>"; return `<div class="pod${i === 0 ? " first" : ""}">
-      ${i === 0 ? `<svg class="crown" viewBox="0 0 24 18" fill="#ffc83d" aria-hidden="true"><path d="M2 5l5 4 5-8 5 8 5-4-2 12H4z"/></svg>` : `<span class="place">${i + 1}</span>`}
-      <span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id)}</span>
+  const pod = i => { const r = rows[i]; if (!r) return "<div></div>"; const fr = frameOf(r.xp, r.lg); return `<div class="pod${i === 0 ? " first" : ""}">
+      ${i === 0 && fr === 7 ? `<span class="crown" aria-hidden="true"></span>` : i === 0 ? `<svg class="crown" viewBox="0 0 24 18" fill="#ffc83d" aria-hidden="true"><path d="M2 5l5 4 5-8 5 8 5-4-2 12H4z"/></svg>` : `<span class="place">${i + 1}</span>`}
+      <span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id, "", { n: fr, lv: lvlOf(r.xp) })}</span>
       <b>${esc(r.name || "Oʻquvchi")}</b><span>${r[key]} XP${tab === "all" ? ` · ${lvlOf(r.xp)}-dar.` : ""}</span><i class="ped" aria-hidden="true">${i + 1}</i></div>`; };
   $("rank-body").innerHTML = `<div class="glass podium">${pod(1)}${pod(0)}${pod(2)}</div>
     ${rows.length > 3 ? `<div class="glass words" style="margin-top:12px">${rows.slice(3, 50).map((r, i) => `<div class="rank-row${r.id === USER.uid ? " me" : ""}">
-      <span class="n">${i + 4}</span><span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id)}</span>
+      <span class="n">${i + 4}</span><span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id, "", { n: frameOf(r.xp, r.lg) })}</span>
       <span style="min-width:0"><b>${esc(r.name || "Oʻquvchi")}</b><small>${sub(r)}</small></span><span class="xp">${r[key]} XP</span></div>${i + 4 === upN && rows.length > upN ? `<div class="lg-zone">⬆ Koʻtarilish zonasi</div>` : ""}`).join("")}</div>` : ""}
     <p class="sub" style="text-align:center;margin-top:12px">${me >= 0 ? `Siz ${me + 1}-oʻrindasiz · eng yaxshi ${Math.max(1, Math.round((me + 1) / rows.length * 100))}%` : S.pub ? "Mashq qilib XP toʻplang, shunda reytingda paydo boʻlasiz." : "Siz reytingda koʻrinmaysiz. Buni Profil → Sozlamalarda yoqish mumkin."}</p>`;
   loadRankPhotos(rows.slice(0, 50).map(r => r.id));
@@ -1537,7 +1619,7 @@ function frRender(rows) {
   const others = rows.filter(r => r.id !== USER.uid);
   const hidden = frList().length - others.length;
   $("rank-body").innerHTML = `${others.length ? `<div class="glass words">${rows.map((r, i) => `<div class="rank-row${r.id === USER.uid ? " me" : ""}">
-      <span class="n">${i + 1}</span><span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id)}</span>
+      <span class="n">${i + 1}</span><span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id, "", { n: frameOf(r.xp, r.lg) })}</span>
       <span style="min-width:0"><b>${esc(r.id === USER.uid ? "Siz" : r.name || "Oʻquvchi")}</b><small>${lvlOf(r.xp)}-daraja · ${lgOf(r.lg).uz} · ${r.streak || 0} kun</small></span>
       <span class="xp">${r.wxp || 0} XP${r.id === USER.uid ? "" : `<button class="fr-x" data-act="fr-del" data-u="${esc(r.id)}" aria-label="Doʻstlikdan olib tashlash">×</button>`}</span></div>`).join("")}</div>
     ${hidden > 0 ? `<p class="sub" style="text-align:center">${hidden} ta doʻstingiz reytingda koʻrinishni oʻchirgan</p>` : ""}`
@@ -1555,7 +1637,7 @@ function viewProfile() {
   const th = (() => { try { return localStorage.getItem("ty-theme") || "auto"; } catch (e) { return "auto"; } })();
   return `<div class="top"><h1 class="page-title">Profil</h1><a class="icon-btn gear-btn" href="#settings" aria-label="Sozlamalar">${ICON.gear}</a></div>
   <div class="profile-card glass">
-    <button class="avatar-edit" data-act="photo" aria-label="Profil rasmini oʻzgartirish">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "lg")}<span class="cam">${ICON.camera}</span>${genderSticker()}</button>
+    <button class="avatar-edit" data-act="photo" aria-label="Profil rasmini oʻzgartirish">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "lg", { n: myFrame(), lv: lvlOf(S.xp) })}<span class="cam">${ICON.camera}</span>${genderSticker()}</button>
     <input type="file" id="photo-input" accept="image/*" hidden>
     <div style="min-width:0"><b>${esc(USERNAME || (USER ? "Oʻquvchi" : "Mehmon"))}</b><span>${esc(USER ? USER.email || (/^tg\d+$/.test(USER.uid) ? "Telegram hisobi" : "") : "Hisobsiz rejim")}</span>
       ${PROFILE.birth ? `<span style="display:block">${esc(birthText(PROFILE.birth))}</span>` : ""}
@@ -1574,6 +1656,7 @@ function viewProfile() {
   </section>
 
   ${pamukGrowCard()}
+  ${frameCard()}
   ${skillsProfileCard()}
   <div class="chart-card glass"><h3>Haftalik faollik</h3><span class="range">${range} · XP</span>${lineChart(xpv, l7.map(d => d.l))}
     <h3 style="margin-top:14px">Oʻqish vaqti</h3><span class="range">daqiqa</span>${barChart(minv, l7.map(d => d.l))}</div>
@@ -2242,7 +2325,7 @@ function showCelebrate() {
   el.innerHTML = `<div class="confetti" aria-hidden="true">${Array.from({ length: 36 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 0.6).toFixed(2)}s;animation-duration:${(2 + Math.random() * 1.5).toFixed(2)}s;transform:rotate(${Math.random() * 360}deg)"></i>`).join("")}</div>
     <div class="cel-card" role="dialog" aria-modal="true" aria-label="${esc(c.eyebrow || "Yangi yutuq")}">
       <div class="cel-cat">${c.look ? catSVG({ pose: "sit", acc: "stars", look: c.look, cls: "mascot" }) : mascot("trophy")}</div>
-      ${c.league ? `<span class="cel-medal">${lgBadge(c.league, "lg-cel")}</span>` : `<span class="medal art ${c.c} cel-medal">${c.badge !== undefined ? `<b class="cel-num">${esc(c.badge)}</b>` : ICON[c.ico] || ICON.star}</span>`}
+      ${c.frame ? `<span class="cel-medal cel-frame">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "", { n: c.frame })}</span>` : c.league ? `<span class="cel-medal">${lgBadge(c.league, "lg-cel")}</span>` : `<span class="medal art ${c.c} cel-medal">${c.badge !== undefined ? `<b class="cel-num">${esc(c.badge)}</b>` : ICON[c.ico] || ICON.star}</span>`}
       <small class="eyebrow">${esc(c.eyebrow || "Yangi yutuq!")}</small>
       <h2>${esc(c.title)}</h2>
       <p>${esc(c.text)}</p>

@@ -56,6 +56,15 @@
   --orange: #f59e0b; --orange-soft: #fff0d2; --orange-ink: #8f5407;
   --pink: #e5484d;   --pink-soft: #ffe7e4;   --pink-ink: #b52f37;
   /* The same six as solid tiles under white text */
+  /* Avatar ramkalari: metall halqa (--frN), bezak rangi (--frNc); ikkala mavzuda bir xil */
+  --fr1: conic-gradient(from 210deg, #8a4b22, #e8ad74, #a9612f, #f3c797, #8a4b22); --fr1c: #b8743f;
+  --fr2: conic-gradient(from 210deg, #6f7b88, #f4f7fa, #98a5b3, #ffffff, #6f7b88); --fr2c: #a3afbc;
+  --fr3: conic-gradient(from 210deg, #b07400, #ffe28c, #e0a100, #fff4c8, #b07400); --fr3c: #f2b31c;
+  --fr4: conic-gradient(from 210deg, #0f7a71, #a8f0e6, #35b3a8, #e4fffb, #0f7a71); --fr4c: #2fb2a6;
+  --fr5: conic-gradient(from 210deg, #1c5bd0, #b9dcff, #4a9cff, #eef7ff, #1c5bd0); --fr5c: #4a9cff;
+  --fr6: conic-gradient(from 210deg, #5a22c4, #d9c4ff, #9b5cff, #f4edff, #5a22c4); --fr6c: #9b5cff;
+  --fr7: conic-gradient(from 0deg, #ff4f87, #ffc83d, #ff7a45, #b44dff, #4a9cff, #ff4f87); --fr7c: #ffb422;
+  --fr-gem: #f2f8ff; --fr-ruby: #d6283f; --fr-feather: #f4ecdc; --fr6f: #e4d8ff; --fr7f: #ffd45c; --fr-flame: #ff7a1a;
   --tile-sky: #3b5bdb; --tile-violet: #7a54e0; --tile-teal: #0a827f; --tile-green: #0c8352; --tile-pink: #d53b41;
   --tile-orange: #ffb422; --tile-orange-ink: #2e1c00;
   --shadow: 0 1px 2px rgba(22, 27, 61, 0.04), 0 10px 24px -16px rgba(22, 27, 61, 0.22);
@@ -1341,3 +1350,56 @@ details.fold > .list .unit:active { box-shadow: 0 1px 0 var(--line-2); }
 .guest-sheet p { color: var(--ink-2); line-height: 1.5; }
 .home-side > .guest-card { order: 0; }
 .guest-card .glass { display: flex; flex-direction: column; gap: 10px; border-color: var(--accent); }
+
+/* ---------- Avatar ramkalari (2026-11): reytingdagi kuch va shon-sharaf ---------- */
+.fr { --frw: 3px; --frg: var(--fr1); --frc: var(--fr1c); position: relative; display: inline-grid; place-items: center; flex: none; padding: var(--frw); border-radius: 50%; isolation: isolate; vertical-align: middle; }
+.fr > .avatar, .pod .fr > .avatar, .pod.first .fr > .avatar, .pod:last-child .fr > .avatar, .rank-row .fr > .avatar { box-shadow: 0 0 0 2px var(--surface); }
+.fr1 { --frw: 2px; }
+.fr2 { --frg: var(--fr2); --frc: var(--fr2c); }
+.fr3 { --frg: var(--fr3); --frc: var(--fr3c); }
+.fr4 { --frg: var(--fr4); --frc: var(--fr4c); --frw: 3.5px; }
+.fr5 { --frg: var(--fr5); --frc: var(--fr5c); --frw: 4px; }
+.fr6 { --frg: var(--fr6); --frc: var(--fr6c); --frw: 4px; box-shadow: 0 0 10px color-mix(in srgb, var(--fr6c) 55%, transparent); }
+.fr7 { --frg: var(--fr7); --frc: var(--fr7c); --frw: 4.5px; background: none; box-shadow: 0 0 14px color-mix(in srgb, var(--fr7c) 60%, transparent); }
+.fr::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--frg); z-index: -1; }
+.fr7::before { animation: fr-spin 6s linear infinite; }
+@keyframes fr-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .fr7::before { animation: none; } }
+.fr-sm { --frw: 2px; box-shadow: none; }
+.fr-sm > .avatar { width: 40px; height: 40px; } /* ramka bilan jami 44 px — yuqori panel tor ekranda siljimasin */
+.fr-orn { position: absolute; left: -30%; top: -30%; width: 160%; height: 160%; pointer-events: none; overflow: visible; z-index: 1; }
+.fr-orn.fr-back { z-index: -2; }
+.fr-orn .fr-gem { fill: var(--fr-gem); stroke: var(--frc); stroke-width: 2.2; stroke-linejoin: round; }
+.fr-orn .fr-metal { fill: var(--frc); stroke: var(--surface); stroke-width: 1.2; stroke-linejoin: round; }
+.fr-orn .fr-crown { fill: var(--fr3c); stroke: var(--surface); stroke-width: 2; stroke-linejoin: round; }
+.fr-orn .fr-pearl { fill: var(--fr-gem); stroke: var(--fr3c); stroke-width: 1.4; }
+.fr-orn .fr-ruby { fill: var(--fr-ruby); stroke: var(--fr-gem); stroke-width: 1.6; }
+.fr-orn .fr-leaf { fill: var(--frc); }
+.fr-orn .fr-fo { fill: var(--fr6f); stroke: var(--frc); stroke-width: 1.4; stroke-linejoin: round; }
+.fr-orn .fr-fi { fill: var(--frc); stroke: var(--fr6f); stroke-width: .9; }
+.fr7 .fr-orn .fr-fo { fill: var(--fr7f); stroke: var(--fr-flame); }
+.fr7 .fr-orn .fr-fi { fill: var(--fr-flame); stroke: var(--fr7f); }
+.fr-orn .fr-spark { fill: var(--fr-gem); transform-box: fill-box; transform-origin: center; animation: fr-twinkle 2.8s ease-in-out infinite; }
+@keyframes fr-twinkle { 0%, 100% { opacity: .2; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
+.fr7 { animation: fr-glow 2.6s ease-in-out infinite; }
+@keyframes fr-glow { 0%, 100% { box-shadow: 0 0 10px color-mix(in srgb, var(--fr-flame) 45%, transparent); } 50% { box-shadow: 0 0 22px color-mix(in srgb, var(--fr-flame) 80%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .fr-orn .fr-spark, .fr7 { animation: none; } }
+.fr-lv { position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); z-index: 2; min-width: 22px; padding: 1px 6px; border-radius: 999px; background: var(--surface); color: var(--ink); border: 2px solid var(--frc); font-size: 11px; font-weight: 800; line-height: 1.3; text-align: center; }
+.pod .fr { margin-bottom: 6px; }
+.profile-card .avatar-edit .fr-lv { bottom: -9px; }
+.cel-medal.cel-frame { width: auto; height: auto; background: none; box-shadow: none; margin-top: -30px; }
+.cel-medal.cel-frame .avatar { width: 64px; height: 64px; }
+/* Profil: ramkalar galereyasi */
+.fr-card { display: flex; flex-direction: column; gap: 12px; }
+.fr-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 18px 8px; padding-top: 10px; }
+.fr-item { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; min-width: 0; }
+.fr-item { position: relative; }
+.fr-item .avatar { width: 52px; height: 52px; }
+.fr-lock { position: absolute; top: 34px; left: calc(50% + 16px); z-index: 3; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); color: var(--muted); box-shadow: 0 0 0 1px var(--line); font-style: normal; font-size: 11px; }
+.fr-lock svg { width: 12px; height: 12px; }
+.fr-item b { font-size: 13px; font-weight: 800; margin-top: 4px; }
+.fr-item small { font-size: 11px; color: var(--muted); line-height: 1.3; }
+.fr-item.on b { color: var(--accent-ink); }
+.fr-item.locked .fr { opacity: .6; }
+.fr-item.locked b { color: var(--muted); }
+.fr-next { font-size: 14px; color: var(--ink-2); line-height: 1.45; }
