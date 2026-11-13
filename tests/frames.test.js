@@ -24,12 +24,12 @@ test("frames: the topbar shows my frame small; a new frame is celebrated once", 
   const { page, errors } = await openApp(browser, "#home");
   await hideOverlays(page);
   assert.equal(await page.evaluate(() => { const f = document.querySelector(".top .fr"); return f && f.classList.contains("fr-sm") && !f.querySelector(".fr-orn"); }), true, "Bronza has no ornaments");
-  // The topbar is a small hall of fame: the frame's ornaments, the level chip and the league shield, away from the edge; no logo; the page never scrolls sideways
+  // The topbar is a small hall of fame: the frame's ornaments and the level chip (no league shield), away from the edge; no logo; the page never scrolls sideways
   for (const [xp, sel] of [[4600, ".fr-gem"], [130000, ".fr-crown"]]) {
     await page.evaluate(xp => { S.xp = xp; S.lvl = lvlOf(xp); S.frm = 9; save(); route(); }, xp);
     for (const w of [320, 390]) {
       await page.setViewportSize({ width: w, height: 800 });
-      const t = await page.evaluate(sel => { const f = document.querySelector(".top .fr"), r = f.getBoundingClientRect(); return [!!f.querySelector(sel), f.querySelector(".fr-lv").textContent === String(lvlOf(S.xp)), !!f.querySelector(".fr-lgb .lg-badge"), !document.querySelector(".top .brand .logo"), Math.round(r.width), innerWidth - r.right >= 22, document.documentElement.scrollWidth <= innerWidth]; }, sel);
+      const t = await page.evaluate(sel => { const f = document.querySelector(".top .fr"), r = f.getBoundingClientRect(); return [!!f.querySelector(sel), f.querySelector(".fr-lv").textContent === String(lvlOf(S.xp)), !f.querySelector(".lg-badge"), !document.querySelector(".top .brand .logo"), Math.round(r.width), innerWidth - r.right >= 22, document.documentElement.scrollWidth <= innerWidth]; }, sel);
       assert.deepEqual(t, [true, true, true, true, w > 360 ? 50 : 46, true, true], `${xp} XP at ${w}px`);
     }
   }

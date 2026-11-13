@@ -1394,14 +1394,12 @@ details.fold > .list .unit:active { box-shadow: 0 1px 0 var(--line-2); }
 .fr7::before { animation: fr-spin 6s linear infinite; }
 @keyframes fr-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .fr7::before { animation: none; } }
-/* Yuqori panel: shon-sharaf belgisi — ramka bezaklari, daraja raqami va liga qalqoni; ekran chetidan joy qoldirilgan */
+/* Yuqori panel: shon-sharaf belgisi — ramka bezaklari va daraja raqami; ekran chetidan joy qoldirilgan */
 .fr-sm { --frw: 3px; }
 .fr-sm > .avatar { width: 44px; height: 44px; }
 .top-av { display: block; border-radius: 50%; margin: 0 12px 0 6px; }
 .top > .brand { font-size: 21px; }
 .fr-sm > b.fr-lv { bottom: -8px; min-width: 22px; padding: 1px 6px 0; font-size: 10.5px; }
-.fr-lgb { position: absolute; right: -10px; bottom: -5px; z-index: 4; width: 18px; height: 21px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .45)); pointer-events: none; }
-.fr-lgb .lg-badge { width: 100%; height: 100%; display: block; }
 @media (max-width: 360px) { .top-av { margin: 0 10px 0 2px; } .fr-sm > .avatar { width: 40px; height: 40px; } }
 .fr-sm .fr-orn { left: 0; top: 0; width: 100%; height: 100%; }
 .fr-orn { position: absolute; left: -30%; top: -30%; width: 160%; height: 160%; pointer-events: none; overflow: visible; z-index: 1; }
