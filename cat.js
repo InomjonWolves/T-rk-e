@@ -1,4 +1,4 @@
-/* Türkçe Yoʻl brand cat: a fluffy blue fold-eared kitten with amber eyes.
+/* Türkçe Yoʻl brand cat: a fluffy blue kitten with pointed, tufted ears and amber eyes (fold ears: ears: "fold").
    catSVG() draws it; CatLife makes every cat on the page blink, look around,
    follow the pointer, breathe and react (happy / sad). */
 
@@ -77,9 +77,9 @@ function catAcc(part, id) {
 }
 
 /* pose: "sit" | "wave" | "head" | "cheer" (thumbs up, a Turkish flag card, eyes shut with joy) | "read" (holds an open book);
-   acc: "cap" | "stars" | null; look: a growth stage (CAT_LOOKS); ears: "fold" (the classic Pamuk) | "up" (pointed, tufted);
+   acc: "cap" | "stars" | null; look: a growth stage (CAT_LOOKS); ears: "up" (pointed, tufted — the default since 2026-11) | "fold" (the first Pamuk);
    lite skips fur detail for tiny sizes */
-function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "", look = "", ears = "fold" } = {}) {
+function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "", look = "", ears = "up" } = {}) {
   const n = ++catSeq, id = s => `${s}${n}`;
   const head = pose === "head", holds = pose === "cheer" || pose === "read";
   if (pose === "cheer") cls = (cls + " joy").trim();
@@ -87,7 +87,7 @@ function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "", 
   // A stage hat replaces the plain graduation cap
   if (acc === "cap" && L.hat) acc = null;
   const hat = L.hat || (acc === "cap" ? "cap" : "");
-  const top = hat === "wizhat" ? -48 : hat === "crown" ? 0 : hat === "cap" ? -6 : head ? 14 : 8;
+  const top = hat === "wizhat" ? -48 : hat === "crown" ? 0 : hat === "cap" ? -6 : head ? (ears === "up" ? 6 : 14) : 8;
   const vb = head ? `30 ${Math.min(14, top)} 180 ${174 - Math.min(14, top)}` : `0 ${top} 240 ${244 - top}`;
   const part = k => L.has(k) ? catAcc(k, id) : "";
   const fur = lite ? "" : `filter="url(#${id("ff")})"`;
