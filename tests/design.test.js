@@ -199,3 +199,19 @@ test("touch targets: buttons a finger lands on are at least 44px, chips and tabs
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+test("home plan and course cards (2026-11): chip, accented title, pill button; Pamuk with pointed ears cheers or reads, dressed for the level", async () => {
+  const { page, errors } = await openApp(browser, "#home");
+  await page.evaluate(() => { for (const id of ["welcome", "onboard", "celebrate"]) { const e = document.getElementById(id); if (e) e.hidden = true; } S.newDay = { d: dayNum(), n: 99 }; S.xp = 4600; S.lvl = lvlOf(4600); ACH_QUEUE.length = 0; save(); route(); });
+  await page.waitForTimeout(200);
+  const h = await page.evaluate(() => { const c = document.querySelector(".hero.warm"); const cat = c.querySelector(".hero-cat .cat"); return [!!c.querySelector(".hero-chip i svg"), c.querySelector("h2 .hl").textContent, !!c.querySelector(".hero-pill .hero-pill-go"), cat.dataset.pose, cat.dataset.ears, cat.classList.contains("joy"), !!cat.querySelector(".cat-glasses"), !!cat.querySelector(".cat-cheer rect")]; });
+  assert.deepEqual(h, [true, "bajarildi!", true, "cheer", "up", true, true, true]);
+  for (const [xp, hat] of [[600, ".cat-acc"], [4600, ".cat-glasses"], [80000, ".cat-crown"]]) {
+    await page.evaluate(xp => { S.xp = xp; S.lvl = lvlOf(xp); ACH_QUEUE.length = 0; save(); location.hash = "#course"; route(); }, xp);
+    await page.waitForTimeout(150);
+    const k = await page.evaluate(sel => { const c = document.querySelector(".k-hero"), cat = c.querySelector(".k-hero-cat .cat"); return [cat.dataset.pose, !!cat.querySelector(".cat-read"), !!cat.querySelector(sel), !!c.querySelector(".hero-prog [role=progressbar]"), /^#k-/.test(c.querySelector(".hero-go").getAttribute("href")), c.querySelector("h2 .hl").textContent]; }, hat);
+    assert.deepEqual(k, ["read", true, true, true, true, "A1 → C1"], `${xp} XP`);
+  }
+  for (const w of [320, 390]) { await page.setViewportSize({ width: w, height: 800 }); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${w}px`); }
+  assert.deepEqual(errors, []);
+});

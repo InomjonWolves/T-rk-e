@@ -790,6 +790,7 @@ const logo = `<span class="logo" aria-hidden="true">${catSVG({ pose: "head", lit
 { const nb = $("nav-brand"); if (nb) nb.innerHTML = `${logo}<span>Türkçe Yoʻl</span>`; }
 
 /* Brand cat poses used across the app (drawn in cat.js) */
+const HERO_CHART = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="13" width="4" height="7" rx="1.2"/><rect x="10" y="9" width="4" height="11" rx="1.2"/><rect x="16" y="4" width="4" height="16" rx="1.2"/></svg>`;
 function mascot(kind, cls = "") {
   const opt = { wave: { pose: "wave" }, cap: { pose: "sit", acc: "cap" }, trophy: { pose: "sit", acc: "stars" }, sit: { pose: "sit" }, head: { pose: "head" } }[kind] || { pose: "sit" };
   return catSVG(Object.assign({ cls: "mascot " + cls, look: catLook() }, opt));
@@ -1124,17 +1125,17 @@ function viewHome() {
   </div>
   <div class="home-main">
   ${todo ? `<section class="hero">
-    <span class="chip-float">${ICON.spark}Bugungi reja</span>
-    <div class="hero-cat">${mascot("cap")}</div>
-    <h2>Kuniga 10 daqiqa yetarli</h2>
+    <span class="hero-chip"><i>${ICON.spark}</i>Bugungi reja</span>
+    <h2>Kuniga <span class="hl">10 daqiqa</span> yetarli</h2>
     <div class="hero-stats"><span><b>${due}</b> takrorlash</span><span><b>${fresh}</b> yangi soʻz</span><span>~<b>${Math.max(1, Math.round(todo * 0.25))}</b> daqiqa</span></div>
-    <button class="btn btn-white" data-act="start" data-mode="review">Boshlash${ICON.arrow}</button>
+    <button class="btn btn-white hero-pill" data-act="start" data-mode="review">Boshlash<span class="hero-pill-go">${ICON.chev}</span></button>
+    <div class="hero-cat">${catSVG({ pose: "wave", acc: "cap", ears: "up", look: catLook(), cls: "mascot" })}</div>
   </section>` : `<section class="hero warm">
-    <span class="chip-float">${ICON.check}Bajarildi</span>
-    <div class="hero-cat">${mascot("trophy")}</div>
-    <h2>Bugungi reja bajarildi!</h2>
-    <p>Soʻzlar unutilish arafasida qaytadi. Ertaga yana keling.</p>
-    <button class="btn btn-white" data-act="go" data-to="practice">Erkin mashq${ICON.arrow}</button>
+    <span class="hero-chip"><i>${ICON.check}</i>Bajarildi</span>
+    <h2>Bugungi reja <span class="hl">bajarildi!</span></h2>
+    <div class="hero-note"><span class="hero-ico">${ICON.bulb}</span><p>Soʻzlar unutilish arafasida qaytadi. Ertaga yana keling.</p></div>
+    <button class="btn hero-pill" data-act="go" data-to="practice">Erkin mashq<span class="hero-pill-go">${ICON.chev}</span></button>
+    <div class="hero-cat">${catSVG({ pose: "cheer", ears: "up", look: catLook(), cls: "mascot" })}</div>
   </section>`}
 
   ${plHomeCard()}
@@ -2072,13 +2073,14 @@ function viewCourse() {
   return `${topbar()}
   <h1 class="page-title">Darslar</h1>
   ${lessonTabs("course")}
-  <div class="k-hero glass">
-    <div class="k-hero-txt"><span class="tag green-t">${ICON.check}100% bepul</span>
-      <h2>Turk tili A1 → C1</h2>
-      <p>${COURSE.units.length} boʻlim, ${COURSE.levels.length} ta daraja testi va ${Object.values(KWORDS).reduce((a, w) => a + w.length, 0)} ta soʻz. Oʻzbek tilida tushuntirilgan, reklamasiz.</p>
-      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}" aria-label="Kurs: ${done}/${total} boʻlim"><i style="width:${pct(done, total)}%"></i></div>
-      <small class="muted">${done}/${total} boʻlim tugallangan</small></div>
-    <div class="k-hero-cat">${mascot("cap")}</div>
+  <div class="k-hero">
+    <div class="k-hero-txt"><span class="hero-chip"><i>${ICON.check}</i>100% bepul</span>
+      <h2>Turk tili <span class="hl">A1 → C1</span></h2>
+      <div class="hero-note"><span class="hero-ico">${HERO_CHART}</span><p>${COURSE.units.length} boʻlim, ${COURSE.levels.length} ta daraja testi va ${Object.values(KWORDS).reduce((a, w) => a + w.length, 0)} ta soʻz. Oʻzbek tilida tushuntirilgan, reklamasiz.</p></div></div>
+    <div class="k-hero-cat"><span class="hero-bubble" aria-hidden="true">Aa</span><span class="hero-mini" aria-hidden="true">${ICON.book}</span>${catSVG({ pose: "read", acc: "cap", ears: "up", look: catLook(), cls: "mascot" })}</div>
+    <div class="hero-prog"><span class="hero-ico">${ICON.trophy}</span><div><small>${done}/${total} boʻlim tugallangan</small>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}" aria-label="Kurs: ${done}/${total} boʻlim"><i style="width:${pct(done, total)}%"></i></div></div></div>
+    <a class="hero-go" href="#k-${kNext().id}" aria-label="Kursni davom ettirish">${ICON.arrow}</a>
   </div>
   <a class="pcard glass" href="#placement" style="color:inherit;text-decoration:none;padding:14px 16px">
     <div class="pcard-head"><b>${ICON.target}${S.place && (S.place.start || S.place.applied) ? `Darajangiz: ${esc(S.place.applied || S.place.start)} dan · qayta aniqlash` : "Darajani aniqlash testi"}</b>${ICON.chev}</div>

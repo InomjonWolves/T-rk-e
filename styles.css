@@ -64,6 +64,13 @@
   --fr5: conic-gradient(from 210deg, #1c5bd0, #b9dcff, #4a9cff, #eef7ff, #1c5bd0); --fr5c: #4a9cff;
   --fr6: conic-gradient(from 210deg, #5a22c4, #d9c4ff, #9b5cff, #f4edff, #5a22c4); --fr6c: #9b5cff;
   --fr7: conic-gradient(from 0deg, #ff4f87, #ffc83d, #ff7a45, #b44dff, #4a9cff, #ff4f87); --fr7c: #ffb422;
+  /* Bosh sahifa va kurs kartalari (2026-11): chuqur zarg‘aldoq va binafsha, yorqin urgʻu, shahar silueti */
+  --hero-or: linear-gradient(120deg, #ad420a 0%, #c4520c 45%, #e27a22 80%, #f3992f 100%);
+  --hero-vi: linear-gradient(120deg, #24187e 0%, #3b25a8 45%, #5f39d4 80%, #7a4ee6 100%);
+  --hero-bl: linear-gradient(120deg, #2235a6 0%, #3150cf 50%, #4b6ef0 100%);
+  --hl-gold: #ffd84d; --hl-vi: linear-gradient(90deg, #cdb6ff, #f2c9ff); --hl-sky: #ffd84d;
+  --hero-chip-ink: #2f1d00; --hero-go: #f07a1a;
+  --skyline: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 130'%3E%3Cpath fill='%23fff' fill-opacity='.13' d='M0 130V104h18V74l3-16 3 16v30h12V92q0-22 26-30q26 8 26 30v12h8V64l3-18 3 18v40h14V96q0-14 15-18q15 4 15 18v8h16V40l5-22 5 22v64h12V86q0-34 38-46q38 12 38 46v18h10V58l3-20 3 20v46h22V74h-6l3-8h-3v-6h6l14-38 14 38h6v6h-3l3 8h-6v56z'/%3E%3C/svg%3E");
   --fr-gem: #f2f8ff; --fr-ruby: #d6283f; --fr-feather: #f4ecdc; --fr6f: #e4d8ff; --fr7f: #ffd45c; --fr-flame: #ff7a1a;
   /* Daraja nishoni (ramka ostidagi raqam): fon, matn, chekka — har bosqichda boyroq */
   --lv1b: linear-gradient(180deg, #eaa772, #a35b29 55%, #7a4019); --lv1t: #fff; --lv1e: #5e3212;
@@ -281,37 +288,52 @@ a.glass:active, button.glass:active, .pcard[data-act]:active, a.pcard:active { t
 .k-next-row .art { width: 52px; height: 52px; border-radius: 16px; font-size: 16px; }
 .k-next-title { font-size: 20px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.2; }
 
-/* ---------- Hero ---------- */
+/* ---------- Hero (2026-11): chip, title with a bright accent, a note with an icon, a pill button; Pamuk stands on a glowing swoosh ---------- */
 .hero {
-  position: relative; overflow: hidden; isolation: isolate; border-radius: var(--r-lg); color: #fff;
-  background: var(--pattern), var(--grad-sky); box-shadow: inset 0 -5px 0 rgba(10, 20, 80, 0.28), var(--shadow-lg);
-  padding: 18px 18px 22px; display: grid; grid-template-columns: minmax(0, 1fr) 124px; grid-template-areas: "chip cat" "title cat" "text cat" "stats cat" "btn btn"; grid-template-rows: auto auto auto 1fr auto; column-gap: 8px; row-gap: 8px; align-items: start;
+  --cat-w: clamp(132px, 43vw, 188px);
+  position: relative; overflow: hidden; isolation: isolate; border-radius: 26px; color: #fff;
+  background: var(--skyline) right -20px bottom -4px / 330px auto no-repeat, var(--pattern), var(--hero-bl); box-shadow: inset 0 -5px 0 rgba(10, 20, 80, 0.3), var(--shadow-lg);
+  padding: 18px 18px 18px 18px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-height: 236px;
 }
-.hero.warm { background: var(--pattern), var(--grad-warm); color: var(--gold-ink); box-shadow: inset 0 -5px 0 rgba(120, 50, 0, 0.22), var(--shadow-lg); }
+/* Text on the left, Pamuk standing at the bottom right (he may reach under the text a little) */
+.hero > :not(.hero-cat) { max-width: calc(100% - var(--cat-w) + 26px); position: relative; z-index: 1; }
+.hero.warm { background: var(--skyline) right -20px bottom -4px / 330px auto no-repeat, var(--pattern), var(--hero-or); box-shadow: inset 0 -5px 0 rgba(110, 40, 0, 0.3), var(--shadow-lg); }
 .hero::before {
   content: ""; position: absolute; z-index: -1; width: 240px; height: 240px; right: -70px; top: -90px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.28), transparent 68%); pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.24), transparent 68%); pointer-events: none;
 }
-.hero > .chip-float { grid-area: chip; justify-self: start; }
-.hero-cat { grid-area: cat; align-self: center; margin: 0 -6px 0 0; }
-.hero-cat, .k-hero-cat, .sun { position: relative; isolation: isolate; display: grid; place-items: center; }
-/* Pamuk sits in front of a rising sun: a blue cat needs a warm backdrop on a blue card */
-.hero-cat::before, .k-hero-cat::before, .sun::before { content: ""; position: absolute; z-index: -1; width: 136px; height: 136px; left: 50%; top: 50%; transform: translate(-50%, -46%); border-radius: 50%; background: radial-gradient(circle at 50% 35%, #ffe08a 0%, #ffbe3d 55%, #ff9f1c 100%); box-shadow: 0 0 0 10px rgba(255, 190, 61, 0.16), 0 0 0 22px rgba(255, 190, 61, 0.08); }
-.hero.warm .hero-cat::before { background: radial-gradient(circle at 50% 35%, #fff 0%, #fff3d6 60%, #ffe2a6 100%); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.25), 0 0 0 22px rgba(255, 255, 255, 0.12); }
-.hero .mascot { width: 132px; height: 126px; filter: drop-shadow(0 10px 12px rgba(8, 16, 70, 0.35)); }
-.hero h2 { grid-area: title; font-size: 25px; font-weight: 800; line-height: 1.14; letter-spacing: -0.03em; margin-top: 4px; }
-.hero p { grid-area: text; font-size: 15px; line-height: 1.45; color: rgba(255, 255, 255, 0.88); }
-.hero.warm p { color: rgba(46, 28, 0, 0.82); }
-.hero-stats { grid-area: stats; display: flex; gap: 6px; flex-wrap: wrap; margin: 2px 0 6px; align-content: flex-start; }
+/* The swoosh under Pamuk: a soft glow and a bright arc */
+.hero::after { content: ""; position: absolute; z-index: -1; right: -70px; bottom: -86px; width: 300px; height: 170px; border-radius: 50%; border-top: 14px solid rgba(255, 214, 110, 0.38); background: radial-gradient(closest-side, rgba(255, 214, 110, 0.4), transparent); pointer-events: none; }
+.hero:not(.warm)::after { right: -40px; bottom: -60px; width: 260px; height: 240px; border-top-color: rgba(255, 216, 77, 0.36); background: radial-gradient(closest-side, rgba(255, 200, 70, 0.8), rgba(255, 170, 40, 0.25) 70%, transparent); }
+.hero-cat { position: absolute; right: -6px; bottom: -14px; width: var(--cat-w); }
+.k-hero-cat, .sun { position: relative; isolation: isolate; display: grid; place-items: center; }
+/* Pamuk in front of a rising sun (the welcome screen and other blue blocks) */
+.sun::before { content: ""; position: absolute; z-index: -1; width: 136px; height: 136px; left: 50%; top: 50%; transform: translate(-50%, -46%); border-radius: 50%; background: radial-gradient(circle at 50% 35%, #ffe08a 0%, #ffbe3d 55%, #ff9f1c 100%); box-shadow: 0 0 0 10px rgba(255, 190, 61, 0.16), 0 0 0 22px rgba(255, 190, 61, 0.08); }
+.hero .mascot { display: block; width: var(--cat-w); height: auto; aspect-ratio: 1; filter: drop-shadow(0 12px 14px rgba(40, 10, 0, 0.35)); }
+.hero h2 { font-size: 27px; font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; text-shadow: 0 2px 10px rgba(60, 20, 0, 0.25); }
+.hero h2 .hl, .k-hero h2 .hl { color: var(--hl-gold); }
+.k-hero h2 .hl { background: var(--hl-vi); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero p { font-size: 14.5px; line-height: 1.42; color: rgba(255, 255, 255, 0.94); margin: 0; }
+.hero-note { display: flex; gap: 10px; align-items: flex-start; }
+.hero-ico { flex: none; width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.17); color: var(--hl-gold); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18); }
+.hero-ico svg { width: 19px; height: 19px; }
+.hero-stats { display: flex; gap: 6px; flex-wrap: wrap; align-content: flex-start; }
 .hero-stats span { padding: 5px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); font-size: 12.5px; font-weight: 600; color: #fff; white-space: nowrap; }
 .hero-stats span b { font-weight: 800; }
-.hero > .btn { grid-area: btn; }
+.hero-chip { display: inline-flex; align-items: center; gap: 8px; justify-self: start; align-self: start; padding: 4px 14px 4px 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.9); color: var(--hero-chip-ink); font-size: 14px; font-weight: 800; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.1); }
+.hero-chip i { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--green); color: #fff; font-style: normal; }
+.hero-chip i svg { width: 15px; height: 15px; }
+.hero:not(.warm) .hero-chip i { background: var(--gold); color: var(--gold-ink); }
+.hero-pill { margin-top: auto; width: auto; white-space: nowrap; min-height: 50px; border-radius: 999px; padding: 2px 6px 6px 22px; gap: 16px; font-weight: 800; }
+.hero.warm .hero-pill { --b: #fff; --e: #e8d3b0; --t: var(--hero-chip-ink); }
+.hero-pill-go { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--hero-go); color: #fff; box-shadow: 0 2px 6px -2px rgba(160, 60, 0, 0.6); }
+.btn-white .hero-pill-go { background: var(--gold-ink); color: var(--gold); box-shadow: none; }
+.hero-pill-go svg { width: 18px; height: 18px; }
 .chip-float {
   display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px 6px 10px; border-radius: 999px;
   background: rgba(255, 255, 255, 0.18); color: #fff; font-size: 13px; font-weight: 700;
 }
 .chip-float svg { width: 15px; height: 15px; }
-.hero.warm .chip-float { background: rgba(255, 255, 255, 0.45); color: var(--gold-ink); }
 
 /* ---------- Buttons: a face (--b), an edge under it (--e), a label (--t) ---------- */
 .btn {
@@ -327,7 +349,6 @@ a.glass:active, button.glass:active, .pcard[data-act]:active, a.pcard:active { t
 .btn svg { width: 20px; height: 20px; flex: none; }
 .btn-grad { --b: var(--primary); --e: var(--primary-2); --t: var(--on-primary); }
 .btn-white { --b: var(--gold); --e: var(--gold-2); --t: var(--gold-ink); width: 100%; font-weight: 800; }
-.hero.warm .btn-white { --b: #fff; --e: #e6d3ad; --t: var(--gold-ink); }
 .btn-soft { --b: var(--accent-soft); --e: var(--accent-soft-2); --t: var(--accent-ink); }
 .btn-ghost { --b: var(--surface); --e: var(--line-2); --t: var(--ink); border: 1px solid var(--line); }
 .btn-danger { --b: var(--danger); --e: var(--danger-2); --t: #fff; }
@@ -878,6 +899,9 @@ body:has(.pamuk-say.show) .toast { bottom: calc(env(safe-area-inset-bottom) + 17
 .cat .cat-joy { opacity: 0; transition: opacity 0.12s; }
 .cat.happy .cat-eye-in { transform: scaleY(0.05); opacity: 0; }
 .cat.happy .cat-joy { opacity: 1; }
+.cat.joy .cat-eye-in { opacity: 0; }
+.cat.joy .cat-joy { opacity: 1; }
+.cat.joy .cat-mouth { opacity: 0; }
 .cat.sad .cat-lid { transform: translateY(21px); transition-duration: 0.25s; }
 .cat .cat-brow { transition: transform 0.3s ease; transform-box: fill-box; transform-origin: center; }
 .cat.sad .cat-brow { transform: rotate(-16deg) translateY(-2px); }
@@ -979,15 +1003,28 @@ body:has(.pamuk-say.show) .toast { bottom: calc(env(safe-area-inset-bottom) + 17
 .tr-text { font-size: 20px; font-weight: 600; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* ---------- Course ---------- */
-.k-hero { position: relative; isolation: isolate; overflow: hidden; padding: 16px 18px 20px 16px; display: grid; grid-template-columns: minmax(0, 1fr) 112px; gap: 14px; align-items: center; color: #fff; border: 0; background: var(--pattern), var(--grad-sky); box-shadow: inset 0 -5px 0 rgba(10, 20, 80, 0.28), var(--shadow-lg); border-radius: var(--r-lg); }
-.k-hero h2 { font-size: 24px; font-weight: 800; margin: 8px 0 4px; letter-spacing: -0.03em; }
-.k-hero p { font-size: 14px; line-height: 1.45; color: rgba(255, 255, 255, 0.9); margin-bottom: 12px; }
-.k-hero .tag { background: rgba(255, 255, 255, 0.18); color: #fff; }
-.k-hero .bar { background: rgba(255, 255, 255, 0.22); }
+.k-hero { --cat-w: clamp(128px, 40vw, 176px); min-height: 272px; position: relative; isolation: isolate; overflow: hidden; padding: 18px 16px 16px 18px; display: flex; flex-direction: column; gap: 14px; color: #fff; border: 0; background: var(--skyline) right -24px bottom 40px / 300px auto no-repeat, var(--pattern), var(--hero-vi); box-shadow: inset 0 -5px 0 rgba(20, 8, 70, 0.4), var(--shadow-lg); border-radius: 26px; }
+.k-hero-txt { max-width: calc(100% - var(--cat-w) + 22px); position: relative; z-index: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.k-hero .hero-chip { background: rgba(255, 255, 255, 0.16); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2); }
+.k-hero .hero-chip i { background: rgba(205, 182, 255, 0.35); }
+.k-hero h2 { font-size: 30px; font-weight: 800; letter-spacing: -0.035em; line-height: 1.06; margin: 0; }
+.k-hero p { font-size: 14px; line-height: 1.42; color: rgba(255, 255, 255, 0.9); margin: 0; }
+.k-hero .hero-ico { color: #d9c8ff; }
+.k-hero-cat { position: absolute; right: -4px; top: 34px; width: var(--cat-w); }
+.k-hero-cat::before { content: ""; position: absolute; z-index: -1; left: 50%; bottom: 0; width: 170px; height: 70px; transform: translateX(-50%); border-radius: 50%; border-top: 10px solid rgba(190, 160, 255, 0.45); background: radial-gradient(closest-side, rgba(170, 130, 255, 0.55), transparent); }
+.k-hero-cat .mascot { display: block; width: 100%; height: auto; aspect-ratio: 1; filter: drop-shadow(0 0 14px rgba(160, 130, 255, 0.55)) drop-shadow(0 10px 12px rgba(8, 4, 50, 0.45)); }
+.hero-bubble { position: absolute; z-index: 2; left: -14px; top: 4px; padding: 5px 9px; border-radius: 12px 12px 12px 4px; background: rgba(255, 255, 255, 0.16); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.32); font-size: 17px; font-weight: 800; letter-spacing: -0.02em; transform: rotate(-8deg); }
+.hero-mini { position: absolute; z-index: 2; left: -10px; bottom: 34%; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.16); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3); transform: rotate(10deg); }
+.hero-mini svg { width: 17px; height: 17px; }
+.hero-prog { position: relative; z-index: 1; margin: auto 62px 0 0; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 7px 16px 7px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16); }
+.hero-prog > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.hero-prog small { font-size: 13px; font-weight: 700; color: #fff; }
+.hero-prog .hero-ico { border-radius: 50%; color: var(--hl-gold); background: rgba(0, 0, 0, 0.2); }
+.k-hero .bar { background: rgba(255, 255, 255, 0.2); height: 6px; }
 .k-hero .bar > i { background: var(--grad-gold); }
-.k-hero small.muted { color: rgba(255, 255, 255, 0.85); display: block; margin-top: 6px; font-weight: 600; }
-.k-hero-cat .mascot { width: 108px; height: 100px; filter: drop-shadow(0 10px 12px rgba(8, 16, 70, 0.35)); }
-.k-hero-cat::before { width: 112px; height: 112px; box-shadow: 0 0 0 8px rgba(255, 190, 61, 0.16), 0 0 0 18px rgba(255, 190, 61, 0.08); }
+.hero-go { position: absolute; z-index: 1; right: 16px; bottom: 16px; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: rgba(255, 255, 255, 0.14); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.42); text-decoration: none; }
+.hero-go svg { width: 22px; height: 22px; }
+.hero-go:active { transform: translateY(1px); }
 .k-tabs { position: sticky; top: 0; z-index: 6; padding-top: 10px; padding-bottom: 10px; background: linear-gradient(var(--bg) 82%, transparent); }
 #k-body { display: flex; flex-direction: column; gap: 22px; }
 #k-body > .btn, #k-body > details { margin-bottom: -10px; }
@@ -1342,19 +1379,17 @@ details.fold > .list .unit:active { box-shadow: 0 1px 0 var(--line-2); }
   .home-main { grid-column: 1; grid-row: 3; }
   .home-side { grid-column: 2; grid-row: 3; }
   .home-main > *, .home-side > * { order: 0 !important; }
-  .view[data-v="home"] .hero { grid-template-columns: minmax(0, 1fr) 150px; padding: 22px 24px 26px; }
-  .view[data-v="home"] .hero h2 { font-size: 30px; }
-  .view[data-v="home"] .hero .mascot { width: 150px; height: 142px; }
-  .view[data-v="home"] .hero-cat::before { width: 156px; height: 156px; }
+  .view[data-v="home"] .hero { --cat-w: 196px; padding: 22px 16px 22px 24px; }
+  .view[data-v="home"] .hero h2 { font-size: 31px; }
 }
 
 @media (max-width: 360px) {
   .app { --gutter: 12px; }
   .achv { grid-template-columns: repeat(2, 1fr); }
   .nav a { font-size: 10.5px; }
-  .hero { grid-template-columns: minmax(0, 1fr) 104px; }
-  .hero .mascot { width: 112px; height: 106px; }
-  .hero h2 { font-size: 22px; }
+  .hero h2 { font-size: 23px; }
+  .hero-note .hero-ico { display: none; }
+  .k-hero h2 { font-size: 26px; }
   .greet h1, .page-title, .lesson-head h1 { font-size: 26px; }
   .btn { padding-left: 16px; padding-right: 16px; }
   .st-item b { font-size: 19px; }

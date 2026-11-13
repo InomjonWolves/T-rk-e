@@ -76,10 +76,13 @@ function catAcc(part, id) {
   return "";
 }
 
-/* pose: "sit" | "wave" | "head"; acc: "cap" | "stars" | null; look: a growth stage (CAT_LOOKS); lite skips fur detail for tiny sizes */
-function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "", look = "" } = {}) {
+/* pose: "sit" | "wave" | "head" | "cheer" (thumbs up, a Turkish flag card, eyes shut with joy) | "read" (holds an open book);
+   acc: "cap" | "stars" | null; look: a growth stage (CAT_LOOKS); ears: "fold" (the classic Pamuk) | "up" (pointed, tufted);
+   lite skips fur detail for tiny sizes */
+function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "", look = "", ears = "fold" } = {}) {
   const n = ++catSeq, id = s => `${s}${n}`;
-  const head = pose === "head";
+  const head = pose === "head", holds = pose === "cheer" || pose === "read";
+  if (pose === "cheer") cls = (cls + " joy").trim();
   const L = catLookParts(look);
   // A stage hat replaces the plain graduation cap
   if (acc === "cap" && L.hat) acc = null;
@@ -115,7 +118,7 @@ function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "", 
       ${lite ? "" : furStrokes(120, 176, 86, 52, 150, 7)}
       <path d="M60 210q4 9 0 16M72 208q4 10 0 18M160 208q-4 10 0 18M172 210q-4 9 0 16" stroke="${CAT_C.furDeep}" stroke-opacity=".35" stroke-width="2" fill="none" stroke-linecap="round"/>
       <path d="M44 168q10 3 18-2M40 180q10 4 20-1M196 168q-10 3-18-2M200 180q-10 4-20-1" stroke="${CAT_C.furDeep}" stroke-opacity=".3" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-      <g ${fur}><ellipse cx="96" cy="182" rx="18" ry="13" fill="url(#${id("fg")})"/>${pose === "wave" ? "" : `<ellipse cx="144" cy="182" rx="18" ry="13" fill="url(#${id("fg")})"/>`}</g>
+      ${holds ? "" : `<g ${fur}><ellipse cx="96" cy="182" rx="18" ry="13" fill="url(#${id("fg")})"/>${pose === "wave" ? "" : `<ellipse cx="144" cy="182" rx="18" ry="13" fill="url(#${id("fg")})"/>`}</g>`}
     </g>
     <ellipse cx="120" cy="160" rx="66" ry="13" fill="${CAT_C.furDeep}" opacity=".35" filter="url(#${id("sb")})"/>`;
   const arm = pose === "wave" ? `
@@ -133,11 +136,40 @@ function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "", 
         <ellipse cx="216.5" cy="111.5" rx="4" ry="4.6" fill="url(#${id("pd")})"/>
       </g>
     </g>` : "";
+  // Paw with toe lines, used by the holding poses
+  const paw = (x, y, rx, ry) => `<g ${fur}><ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#${id("fg")})"/></g><path d="M${x - rx * 0.35} ${y - ry * 0.5}v${ry * 0.55}M${x + rx * 0.05} ${y - ry * 0.62}v${ry * 0.62}M${x + rx * 0.45} ${y - ry * 0.5}v${ry * 0.55}" stroke="${CAT_C.furDeep}" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>`;
+  const hands = pose === "cheer" ? `
+    <g class="cat-cheer">
+      <g class="cat-burst" stroke="#ffd23f" stroke-width="6" stroke-linecap="round"><path d="M30 64l-12-12M22 86l-16-3M44 46l-5-15"/></g>
+      <g transform="rotate(-9 184 176)">
+        <rect x="150" y="146" width="68" height="52" rx="8" fill="#fff" stroke="#e7dfcf" stroke-width="2.5"/>
+        <rect x="158" y="154" width="52" height="36" rx="3" fill="#e30a17"/>
+        <circle cx="179" cy="172" r="9.5" fill="#fff"/><circle cx="182" cy="172" r="7.6" fill="#e30a17"/>
+        <path d="M191.5 166.5l1.5 4.2h4.4l-3.6 2.6 1.4 4.2-3.7-2.6-3.6 2.6 1.4-4.2-3.6-2.6h4.4z" fill="#fff"/>
+      </g>
+      ${paw(160, 194, 17, 14)}
+      <ellipse cx="54" cy="124" rx="22" ry="22" fill="${CAT_C.furDeep}" opacity=".55" filter="url(#${id("sb")})"/>
+      <g ${fur}>
+        <path d="M60 200C44 184 32 154 36 130C40 114 60 114 64 130C68 150 80 172 88 190Z" fill="url(#${id("fg")})"/>
+        <ellipse cx="46" cy="124" rx="18" ry="16" fill="url(#${id("fg")})"/>
+        <path d="M36 118C31 96 37 80 47 80C57 80 59 96 54 118Z" fill="url(#${id("fg")})"/>
+      </g>
+      <path d="M36 118C31 96 37 80 47 80C57 80 59 96 54 118M28 126a18 16 0 0 0 36 0" stroke="${CAT_C.furDeep}" stroke-opacity=".6" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <path d="M30 126q9 4 18 0M31 134q9 4 17 0M42 88q6-4 10 2" stroke="${CAT_C.furDeep}" stroke-opacity=".5" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M41 92q3-6 9-4" stroke="${CAT_C.furHi}" stroke-opacity=".9" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    </g>` : pose === "read" ? `
+    <g class="cat-read">
+      <path d="M120 170L74 158L72 222L120 230Z" fill="#26338a"/><path d="M120 170L166 158L168 222L120 230Z" fill="#2f3ea0"/>
+      <path d="M120 170L78 156L77 163L120 174L163 163L162 156Z" fill="#fff4d6" stroke="#d9c690" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M120 170v60" stroke="#1a2266" stroke-width="3"/>
+      <circle cx="141" cy="194" r="11" fill="#f4f1ff"/><circle cx="145" cy="194" r="8.8" fill="#2f3ea0"/>
+      <path d="M155 188.5l1.6 4.4h4.6l-3.7 2.7 1.4 4.4-3.9-2.7-3.7 2.7 1.4-4.4-3.8-2.7h4.6z" fill="#f4f1ff"/>
+      ${paw(72, 192, 15, 17)}${paw(168, 192, 15, 17)}
+    </g>` : "";
   const stars = acc === "stars" ? `
     <g class="cat-acc cat-stars" fill="#ffc83d">
       <path d="M28 70l4 10 10 4-10 4-4 10-4-10-10-4 10-4z"/><path d="M212 54l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/><path d="M206 132l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5z"/>
     </g>` : "";
-  return `<svg class="cat ${cls}" viewBox="${vb}" ${label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"'} data-pose="${pose}">
+  return `<svg class="cat ${cls}" viewBox="${vb}" ${label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"'} data-pose="${pose}" data-ears="${ears}">
   <defs>
     <radialGradient id="${id("fg")}" cx="38%" cy="28%" r="78%"><stop offset="0" stop-color="${CAT_C.furHi}"/><stop offset=".45" stop-color="${CAT_C.fur}"/><stop offset="1" stop-color="${CAT_C.furLo}"/></radialGradient>
     <radialGradient id="${id("ir")}" cx="50%" cy="64%" r="62%"><stop offset="0" stop-color="${CAT_C.irisHi}"/><stop offset=".45" stop-color="${CAT_C.iris}"/><stop offset=".85" stop-color="${CAT_C.irisLo}"/><stop offset="1" stop-color="${CAT_C.irisRim}"/></radialGradient>
@@ -152,30 +184,35 @@ function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "", 
   ${stars}
   ${head ? "" : part("cape")}
   ${body}
-  ${head ? "" : part("diploma") + part("wand")}
+  ${head || holds ? "" : part("diploma") + part("wand")}
   ${!head && L.has("cape") ? catAcc("ermine", id) : ""}
   ${part("tie")}
   <g class="cat-head">
     <g ${fur}>
-      <path d="M54 70q2-28 32-30q4 2 2 8q-10 14-28 28z" fill="url(#${id("fg")})"/>
-      <path d="M186 70q-2-28-32-30q-4 2-2 8q10 14 28 28z" fill="url(#${id("fg")})"/>
+      ${ears === "up" ? `<path d="M44 92Q36 38 60 16Q86 28 110 52Z" fill="url(#${id("fg")})"/><path d="M196 92Q204 38 180 16Q154 28 130 52Z" fill="url(#${id("fg")})"/>`
+        : `<path d="M54 70q2-28 32-30q4 2 2 8q-10 14-28 28z" fill="url(#${id("fg")})"/>
+      <path d="M186 70q-2-28-32-30q-4 2-2 8q10 14 28 28z" fill="url(#${id("fg")})"/>`}
       <ellipse cx="120" cy="104" rx="82" ry="64" fill="url(#${id("fg")})"/>
       <ellipse cx="56" cy="124" rx="28" ry="22" fill="url(#${id("fg")})"/>
       <ellipse cx="184" cy="124" rx="28" ry="22" fill="url(#${id("fg")})"/>
     </g>
     ${lite ? "" : furStrokes(120, 104, 78, 60, 170, 11)}
-    <path d="M62 62q10-12 24-16M178 62q-10-12-24-16" stroke="${CAT_C.furDeep}" stroke-opacity=".4" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    ${ears === "up" ? `<path d="M56 66Q54 40 64 28Q82 38 96 52Z" fill="${CAT_C.furDeep}" opacity=".55"/><path d="M184 66Q186 40 176 28Q158 38 144 52Z" fill="${CAT_C.furDeep}" opacity=".55"/>
+    <path d="M62 54l6-8M68 58l7-9M178 54l-6-8M172 58l-7-9" stroke="${CAT_C.furHi}" stroke-opacity=".8" stroke-width="2" stroke-linecap="round"/>`
+      : `<path d="M62 62q10-12 24-16M178 62q-10-12-24-16" stroke="${CAT_C.furDeep}" stroke-opacity=".4" stroke-width="2.4" fill="none" stroke-linecap="round"/>`}
     <ellipse cx="120" cy="131" rx="28" ry="18" fill="${CAT_C.muzzle}" opacity=".55" filter="url(#${id("sb")})"/>
     <path class="cat-brow" d="M70 70q16-9 32-1" stroke="${CAT_C.furDeep}" stroke-opacity=".45" stroke-width="3.5" fill="none" stroke-linecap="round"/>
     <path class="cat-brow cat-brow-r" d="M138 69q16-8 32 1" stroke="${CAT_C.furDeep}" stroke-opacity=".45" stroke-width="3.5" fill="none" stroke-linecap="round"/>
     ${eye(86, "l")}${eye(154, "r")}
     <path d="M113 122q7-4 14 0q-3 7-7 8q-4-1-7-8z" fill="${CAT_C.nose}"/>
     <path class="cat-mouth" d="M120 130v4M120 134q-6 6-12 1M120 134q6 6 12 1" stroke="${CAT_C.line}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    ${pose === "cheer" ? `<path class="cat-grin" d="M107 133q13 17 26 0z" fill="${CAT_C.line}"/><path d="M112 139q8 6 16 0q-8-3-16 0z" fill="#ef7e8c"/>` : ""}
     <path d="M96 132l-38-6M96 138l-36 2M144 132l38-6M144 138l36 2" stroke="#dfe6ff" stroke-opacity=".55" stroke-width="1.3" stroke-linecap="round"/>
     ${part("glasses")}
     ${hat ? catAcc(hat, id) : ""}
     ${part("stars")}
   </g>
+  ${hands}
   ${arm}
   ${pose === "wave" ? `<g class="cat-cover">
     <g ${fur}><ellipse cx="88" cy="106" rx="30" ry="24" fill="url(#${id("fg")})"/><ellipse cx="152" cy="106" rx="30" ry="24" fill="url(#${id("fg")})"/></g>
