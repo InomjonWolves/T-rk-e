@@ -116,7 +116,8 @@ function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "", 
         <ellipse cx="166" cy="216" rx="30" ry="16" fill="url(#${id("fg")})"/>
       </g>
       ${lite ? "" : furStrokes(120, 176, 86, 52, 150, 7)}
-      <path d="M60 210q4 9 0 16M72 208q4 10 0 18M160 208q-4 10 0 18M172 210q-4 9 0 16" stroke="${CAT_C.furDeep}" stroke-opacity=".35" stroke-width="2" fill="none" stroke-linecap="round"/>
+${pose === "cheer" ? [74, 166].map(x => `<ellipse cx="${x}" cy="220" rx="8" ry="5.5" fill="url(#${id("pd")})"/><ellipse cx="${x - 10}" cy="213" rx="3" ry="3.4" fill="url(#${id("pd")})"/><ellipse cx="${x}" cy="210.5" rx="3" ry="3.4" fill="url(#${id("pd")})"/><ellipse cx="${x + 10}" cy="213" rx="3" ry="3.4" fill="url(#${id("pd")})"/>`).join("") : `
+      <path d="M60 210q4 9 0 16M72 208q4 10 0 18M160 208q-4 10 0 18M172 210q-4 9 0 16" stroke="${CAT_C.furDeep}" stroke-opacity=".35" stroke-width="2" fill="none" stroke-linecap="round"/>`}
       <path d="M44 168q10 3 18-2M40 180q10 4 20-1M196 168q-10 3-18-2M200 180q-10 4-20-1" stroke="${CAT_C.furDeep}" stroke-opacity=".3" stroke-width="2.2" fill="none" stroke-linecap="round"/>
       ${holds ? "" : `<g ${fur}><ellipse cx="96" cy="182" rx="18" ry="13" fill="url(#${id("fg")})"/>${pose === "wave" ? "" : `<ellipse cx="144" cy="182" rx="18" ry="13" fill="url(#${id("fg")})"/>`}</g>`}
     </g>
@@ -140,7 +141,7 @@ function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "", 
   const paw = (x, y, rx, ry) => `<g ${fur}><ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#${id("fg")})"/></g><path d="M${x - rx * 0.35} ${y - ry * 0.5}v${ry * 0.55}M${x + rx * 0.05} ${y - ry * 0.62}v${ry * 0.62}M${x + rx * 0.45} ${y - ry * 0.5}v${ry * 0.55}" stroke="${CAT_C.furDeep}" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>`;
   const hands = pose === "cheer" ? `
     <g class="cat-cheer">
-      <g class="cat-burst" stroke="#ffd23f" stroke-width="6" stroke-linecap="round"><path d="M30 64l-12-12M22 86l-16-3M44 46l-5-15"/></g>
+      <g class="cat-burst" stroke="#ffd23f" stroke-width="5.5" stroke-linecap="round"><path d="M8 56l-8-8M22 48l-3-12M38 52l2-11"/></g>
       <g transform="rotate(-9 184 176)">
         <rect x="150" y="146" width="68" height="52" rx="8" fill="#fff" stroke="#e7dfcf" stroke-width="2.5"/>
         <rect x="158" y="154" width="52" height="36" rx="3" fill="#e30a17"/>
@@ -148,14 +149,19 @@ function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "", 
         <path d="M191.5 166.5l1.5 4.2h4.4l-3.6 2.6 1.4 4.2-3.7-2.6-3.6 2.6 1.4-4.2-3.6-2.6h4.4z" fill="#fff"/>
       </g>
       ${paw(160, 194, 17, 14)}
-      <ellipse cx="54" cy="124" rx="22" ry="22" fill="${CAT_C.furDeep}" opacity=".55" filter="url(#${id("sb")})"/>
+      <ellipse cx="34" cy="96" rx="26" ry="30" fill="${CAT_C.furDeep}" opacity=".5" filter="url(#${id("sb")})"/>
       <g ${fur}>
-        <path d="M60 200C44 184 32 154 36 130C40 114 60 114 64 130C68 150 80 172 88 190Z" fill="url(#${id("fg")})"/>
-        <ellipse cx="46" cy="124" rx="18" ry="16" fill="url(#${id("fg")})"/>
-        <path d="M36 118C31 96 37 80 47 80C57 80 59 96 54 118Z" fill="url(#${id("fg")})"/>
+        <path d="M62 200C46 182 24 144 22 106C21 92 40 88 44 102C48 132 72 168 88 190Z" fill="url(#${id("fg")})"/>
+        <ellipse cx="32" cy="84" rx="21" ry="20" fill="url(#${id("fg")})"/>
       </g>
-      <path d="M36 118C31 96 37 80 47 80C57 80 59 96 54 118M28 126a18 16 0 0 0 36 0" stroke="${CAT_C.furDeep}" stroke-opacity=".6" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-      <path d="M30 126q9 4 18 0M31 134q9 4 17 0M42 88q6-4 10 2" stroke="${CAT_C.furDeep}" stroke-opacity=".5" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M41 92q3-6 9-4" stroke="${CAT_C.furHi}" stroke-opacity=".9" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <ellipse cx="32" cy="84" rx="21" ry="20" fill="none" stroke="${CAT_C.furDeep}" stroke-opacity=".55" stroke-width="2.2"/>
+      <g class="cat-pads">
+        <ellipse cx="32" cy="90" rx="9" ry="7.5" fill="url(#${id("pd")})"/>
+        <ellipse cx="21.5" cy="79" rx="3.8" ry="4.4" fill="url(#${id("pd")})"/>
+        <ellipse cx="28.5" cy="72.5" rx="3.8" ry="4.6" fill="url(#${id("pd")})"/>
+        <ellipse cx="36.5" cy="72.5" rx="3.8" ry="4.6" fill="url(#${id("pd")})"/>
+        <ellipse cx="43" cy="79.5" rx="3.8" ry="4.4" fill="url(#${id("pd")})"/>
+      </g>
     </g>` : pose === "read" ? `
     <g class="cat-read">
       <path d="M120 170L74 158L72 222L120 230Z" fill="#26338a"/><path d="M120 170L166 158L168 222L120 230Z" fill="#2f3ea0"/>
