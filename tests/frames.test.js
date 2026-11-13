@@ -70,3 +70,23 @@ test("frames in the leaderboard: every row by its own level and league; the podi
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+test("frames on the profile: the gender sticker and the camera sit outside the ring, the level chip keeps its own size", async () => {
+  const { page, errors } = await openApp(browser, "#home");
+  await hideOverlays(page);
+  await page.evaluate(() => { S.xp = 130000; S.lvl = lvlOf(S.xp); S.frm = 7; PROFILE.gender = "m"; ACH_QUEUE.length = 0; save(); location.hash = "#profile"; });
+  await page.waitForTimeout(300);
+  await hideOverlays(page);
+  const r = await page.evaluate(() => {
+    const box = s => document.querySelector(".profile-card " + s).getBoundingClientRect();
+    const av = box(".avatar"), cx = av.left + av.width / 2, cy = av.top + av.height / 2, rad = av.width / 2 + 5;
+    const out = s => { const b = box(s); const r2 = b.width / 2; return Math.hypot(b.left + r2 - cx, b.top + r2 - cy) - r2 >= rad - 1; };
+    const chip = getComputedStyle(document.querySelector(".profile-card .fr-lv"));
+    return { sticker: out(".sticker"), cam: out(".cam"), chip: chip.fontSize, anim: getComputedStyle(document.querySelector(".profile-card .fr-lv")).animationName };
+  });
+  assert.deepEqual(r, { sticker: true, cam: true, chip: "13px", anim: "lv-flow, lv-pulse" });
+  // Higher frames move: the ring turns from Platina, the chip shines; wings flap on Usta and Afsona
+  const m = await page.evaluate(() => [3, 4, 6].map(n => { const d = document.createElement("div"); d.innerHTML = framed("<span class='avatar'></span>", n, { lv: 1 }); document.body.appendChild(d); const f = d.querySelector(".fr"); const o = [getComputedStyle(f, "::before").animationName, getComputedStyle(f.querySelector(".fr-lv"), "::after").animationName, !!f.querySelector(".fr-wl")]; d.remove(); return o; }));
+  assert.deepEqual(m, [["none", "none", false], ["fr-spin", "lv-shine", false], ["fr-spin", "lv-shine", true]]);
+  assert.deepEqual(errors, []);
+});

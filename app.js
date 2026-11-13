@@ -339,7 +339,7 @@ function dqMark(kind) {
   if (!q.k.includes(kind) || q.ok[kind]) return;
   q.ok[kind] = 1;
   if (q.k.every(k => q.ok[k]) && !q.paid) {
-    q.paid = 1; addXPBonus(XP_VAL.daily); save();
+    q.paid = 1; S.dqn = (S.dqn || 0) + 1; addXPBonus(XP_VAL.daily); save();
     celebrate({ eyebrow: "Kunlik vazifalar", title: "Bugungi vazifalar bajarildi!", text: `Uchala vazifa tayyor. Pamuk xursand! +${XP_VAL.daily} XP`, ico: "check", c: "green" });
   }
 }
@@ -359,7 +359,7 @@ function wcMark(sk) {
   if (!w.days.includes(t)) w.days.push(t);
   [].concat(sk || []).forEach(k => { w.sk[k] = (w.sk[k] || 0) + 1; });
   if (!w.paid && ch.v(w) >= ch.n) {
-    w.paid = 1; addXPBonus(XP_VAL.weekly); save();
+    w.paid = 1; S.wcn = (S.wcn || 0) + 1; addXPBonus(XP_VAL.weekly); save();
     celebrate({ eyebrow: "Haftalik challenge", title: `«${ch.t}» bajarildi!`, text: `Haftaning eng katta mukofoti sizniki. +${XP_VAL.weekly} XP`, ico: "crown", c: "pink", share: true });
   }
 }
@@ -400,7 +400,7 @@ const FR_ORN = (() => {
     return `<path class="fr-fo" d="${out.join("")}"/><path class="fr-fi" d="${inn.join("")}"/>`;
   };
   const mirror = x => `<g transform="matrix(-1 0 0 1 100 0)">${x}</g>`;
-  const wings = big => `<g class="fr-wing">${wingL(big)}${mirror(wingL(big))}</g>`;
+  const wings = big => `<g class="fr-wing"><g class="fr-wl">${wingL(big)}</g><g class="fr-wr">${mirror(wingL(big))}</g></g>`;
   const leaf = d => { const t = d * Math.PI / 180, x = 50 + 58 * Math.cos(t), y = 50 + 58 * Math.sin(t); return `<ellipse cx="${f(x)}" cy="${f(y)}" rx="7.5" ry="3.2" transform="rotate(${d + 90} ${f(x)} ${f(y)})"/>`; };
   const gem = (x, y, r) => `<path class="fr-gem" d="M${x} ${y - r}L${x + r * 0.72} ${y}L${x} ${y + r}L${x - r * 0.72} ${y}Z"/>`;
   const spark = (x, y, r, d) => `<path class="fr-spark" style="animation-delay:${d}s" d="M${x} ${y - r}Q${x} ${y} ${x + r} ${y}Q${x} ${y} ${x} ${y + r}Q${x} ${y} ${x - r} ${y}Q${x} ${y} ${x} ${y - r}Z"/>`;
@@ -414,7 +414,7 @@ const FR_ORN = (() => {
     laurel: `<g class="fr-leaf">${[104, 121, 138, 155].map(leaf).join("")}${[76, 59, 42, 25].map(leaf).join("")}</g>`,
     wings,
     crown: `<path class="fr-crown" d="M28 2L29-17L39-8L50-25L61-8L71-17L72 2Q50-4 28 2Z"/><circle class="fr-pearl" cx="29" cy="-18" r="2.6"/><circle class="fr-pearl" cx="50" cy="-26" r="3"/><circle class="fr-pearl" cx="71" cy="-18" r="2.6"/><circle class="fr-ruby" cx="50" cy="-7" r="4.4"/>`,
-    sparks: `${spark(-12, 8, 5, 0)}${spark(113, 14, 4, 0.7)}${spark(108, 104, 5, 1.4)}${spark(-6, 98, 3.5, 2.1)}`
+    sparks: `${spark(-17, 28, 5, 0)}${spark(113, 14, 4, 0.7)}${spark(118, 76, 5, 1.4)}${spark(-6, 98, 3.5, 2.1)}`
   };
 })();
 // The avatar inside its frame; o.lv adds the level chip, o.sm is the small topbar version, o.cls extra classes
@@ -1639,7 +1639,7 @@ function viewProfile() {
   <div class="profile-card glass">
     <button class="avatar-edit" data-act="photo" aria-label="Profil rasmini oʻzgartirish">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "lg", { n: myFrame(), lv: lvlOf(S.xp) })}<span class="cam">${ICON.camera}</span>${genderSticker()}</button>
     <input type="file" id="photo-input" accept="image/*" hidden>
-    <div style="min-width:0"><b>${esc(USERNAME || (USER ? "Oʻquvchi" : "Mehmon"))}</b><span>${esc(USER ? USER.email || (/^tg\d+$/.test(USER.uid) ? "Telegram hisobi" : "") : "Hisobsiz rejim")}</span>
+    <div class="pc-txt"><b>${esc(USERNAME || (USER ? "Oʻquvchi" : "Mehmon"))}</b><span>${esc(USER ? USER.email || (/^tg\d+$/.test(USER.uid) ? "Telegram hisobi" : "") : "Hisobsiz rejim")}</span>
       ${PROFILE.birth ? `<span style="display:block">${esc(birthText(PROFILE.birth))}</span>` : ""}
       <div class="tags" style="margin-top:6px">${USER && USER.emailVerified ? `<span class="tag green-t">${ICON.check}Tasdiqlangan</span>` : ""}${MYPHOTO ? `<button class="tag pink-t" data-act="photo-remove">Rasmni olib tashlash</button>` : `<button class="tag violet-t" data-act="photo">Rasm qoʻyish</button>`}</div></div>
   </div>
@@ -2246,53 +2246,106 @@ function viewCourseTest(lv) {
 let KTEST_ANS = {}, KTEST_RES = null;
 
 /* ---------- Achievements: categories, unlock celebration ---------- */
-const ACH_CATS = [["learn", "Soʻzlar"], ["streak", "Seriya"], ["course", "Kurs"], ["gram", "Grammatika"], ["practice", "Mashq"], ["life", "Faollik"]];
+const ACH_CATS = [["elite", "Mahorat sinovlari"], ["learn", "Soʻzlar"], ["streak", "Seriya"], ["course", "Kurs"], ["gram", "Grammatika"], ["practice", "Mashq"], ["social", "Reyting va doʻstlar"], ["life", "Faollik"]];
+// Rarity: the harder the task, the rarer the sticker and the bigger the reward
+const ACH_TIERS = [null, { uz: "Oddiy", xp: 20 }, { uz: "Nodir", xp: 40 }, { uz: "Epik", xp: 80 }, { uz: "Afsonaviy", xp: 150 }];
+const achTier = a => a.r || 1;
+// Days (kept ~4 months): the best day, days with all four skills, the longest run of days with the daily goal met
+const dayVals = () => Object.values(S.days || {});
+const bestDay = f => Math.max(0, ...dayVals().map(f));
+const fourDays = () => dayVals().filter(d => d.sk && Object.values(d.sk).filter(a => a[1]).length >= 4).length;
+function goalRun() {
+  let best = 0, run = 0;
+  for (let i = 119; i >= 0; i--) { const d = S.days && S.days[keyOf(dayNum() - i)]; run = d && d.xp >= (S.goal || 30) ? run + 1 : 0; best = Math.max(best, run); }
+  return best;
+}
+const plRank = () => { const p = S.place && (S.place.passed || S.place.applied); return p ? LVS.indexOf(p) + 1 : 0; };
 const ACH = [
   { id: "w10", cat: "learn", t: "Ilk 10 soʻz", d: "10 ta soʻz oʻrganildi", v: learnedCount, n: 10, c: "sky", ico: "book" },
   { id: "w50", cat: "learn", t: "50 ta soʻz", d: "50 ta soʻz oʻrganildi", v: learnedCount, n: 50, c: "sky", ico: "book" },
   { id: "w200", cat: "learn", t: "200 ta soʻz", d: "200 ta soʻz oʻrganildi", v: learnedCount, n: 200, c: "green", ico: "book" },
-  { id: "w500", cat: "learn", t: "500 ta soʻz", d: "500 ta soʻz oʻrganildi", v: learnedCount, n: 500, c: "violet", ico: "crown" },
-  { id: "w1000", cat: "learn", t: "Soʻz ustasi", d: "1000 ta soʻz oʻrganildi", v: learnedCount, n: 1000, c: "pink", ico: "crown" },
+  { id: "w500", r: 2, cat: "learn", t: "500 ta soʻz", d: "500 ta soʻz oʻrganildi", v: learnedCount, n: 500, c: "violet", ico: "crown" },
+  { id: "w1000", r: 3, cat: "learn", t: "Soʻz ustasi", d: "1000 ta soʻz oʻrganildi", v: learnedCount, n: 1000, c: "pink", ico: "crown" },
   { id: "s3", cat: "streak", t: "3 kun", d: "3 kun ketma-ket", v: () => S.best, n: 3, c: "orange", ico: "flame" },
   { id: "s7", cat: "streak", t: "1 hafta", d: "7 kun ketma-ket", v: () => S.best, n: 7, c: "orange", ico: "flame" },
-  { id: "s14", cat: "streak", t: "2 hafta", d: "14 kun ketma-ket", v: () => S.best, n: 14, c: "orange", ico: "flame" },
-  { id: "s30", cat: "streak", t: "1 oy", d: "30 kun ketma-ket", v: () => S.best, n: 30, c: "pink", ico: "flame" },
-  { id: "s100", cat: "streak", t: "100 kun", d: "100 kun ketma-ket", v: () => S.best, n: 100, c: "violet", ico: "crown" },
+  { id: "s14", r: 2, cat: "streak", t: "2 hafta", d: "14 kun ketma-ket", v: () => S.best, n: 14, c: "orange", ico: "flame" },
+  { id: "s30", r: 3, cat: "streak", t: "1 oy", d: "30 kun ketma-ket", v: () => S.best, n: 30, c: "pink", ico: "flame" },
+  { id: "s100", r: 4, cat: "streak", t: "100 kun", d: "100 kun ketma-ket", v: () => S.best, n: 100, c: "violet", ico: "crown" },
   { id: "k1", cat: "course", t: "Ilk boʻlim", d: "Kursning 1 boʻlimi tugadi", v: () => kDoneCount(), n: 1, c: "sky", ico: "flag" },
-  { id: "kA1", cat: "course", t: "A1 bitiruvchisi", d: "A1 ning 8 boʻlimi", v: () => kDoneCount("A1"), n: 8, c: "sky", ico: "cap" },
-  { id: "kA2", cat: "course", t: "A2 bitiruvchisi", d: "A2 ning 8 boʻlimi", v: () => kDoneCount("A2"), n: 8, c: "violet", ico: "cap" },
-  { id: "kB1", cat: "course", t: "B1 bitiruvchisi", d: "B1 ning 8 boʻlimi", v: () => kDoneCount("B1"), n: 8, c: "orange", ico: "cap" },
-  { id: "kB2", cat: "course", t: "B2 bitiruvchisi", d: "B2 ning 8 boʻlimi", v: () => kDoneCount("B2"), n: 8, c: "pink", ico: "cap" },
-  { id: "kC1", cat: "course", t: "C1 bitiruvchisi", d: "C1 ning 8 boʻlimi", v: () => kDoneCount("C1"), n: 8, c: "teal", ico: "cap" },
+  { id: "kA1", r: 2, cat: "course", t: "A1 bitiruvchisi", d: "A1 ning 8 boʻlimi", v: () => kDoneCount("A1"), n: 8, c: "sky", ico: "cap" },
+  { id: "kA2", r: 2, cat: "course", t: "A2 bitiruvchisi", d: "A2 ning 8 boʻlimi", v: () => kDoneCount("A2"), n: 8, c: "violet", ico: "cap" },
+  { id: "kB1", r: 3, cat: "course", t: "B1 bitiruvchisi", d: "B1 ning 8 boʻlimi", v: () => kDoneCount("B1"), n: 8, c: "orange", ico: "cap" },
+  { id: "kB2", r: 3, cat: "course", t: "B2 bitiruvchisi", d: "B2 ning 8 boʻlimi", v: () => kDoneCount("B2"), n: 8, c: "pink", ico: "cap" },
+  { id: "kC1", r: 4, cat: "course", t: "C1 bitiruvchisi", d: "C1 ning 8 boʻlimi", v: () => kDoneCount("C1"), n: 8, c: "teal", ico: "cap" },
   { id: "kt1", cat: "course", t: "Test gʻolibi", d: "1 ta daraja testidan oʻtish", v: () => COURSE.levels.filter(l => kTestBest(l.id) >= l.test.pass).length, n: 1, c: "teal", ico: "star" },
-  { id: "kt4", cat: "course", t: "A1 → C1", d: "5 ta testdan oʻtish", v: () => COURSE.levels.filter(l => kTestBest(l.id) >= l.test.pass).length, n: 5, c: "green", ico: "crown" },
+  { id: "kt4", r: 3, cat: "course", t: "A1 → C1", d: "5 ta testdan oʻtish", v: () => COURSE.levels.filter(l => kTestBest(l.id) >= l.test.pass).length, n: 5, c: "green", ico: "crown" },
   { id: "gram", cat: "gram", t: "Grammatika", d: "10 asosiy mavzu", v: gramCount, n: GRAMMAR.length, c: "violet", ico: "cap" },
   { id: "gx10", cat: "gram", t: "Qoida ustasi", d: "10 ta qoida mashqi", v: () => gxDoneCount(), n: 10, c: "sky", ico: "quiz" },
-  { id: "gxa1", cat: "gram", t: "A1 qoidalari", d: `A1 ning ${gxCount("A1")} ta qoida mashqi`, v: () => gxDoneCount("A1"), n: gxCount("A1"), c: "green", ico: "crown" },
-  { id: "gxa2", cat: "gram", t: "A2 qoidalari", d: `A2 ning ${gxCount("A2")} ta qoida mashqi`, v: () => gxDoneCount("A2"), n: gxCount("A2"), c: "violet", ico: "crown" },
-  { id: "gxb1", cat: "gram", t: "B1 qoidalari", d: `B1 ning ${gxCount("B1")} ta qoida mashqi`, v: () => gxDoneCount("B1"), n: gxCount("B1"), c: "orange", ico: "crown" },
-  { id: "gxb2", cat: "gram", t: "B2 qoidalari", d: `B2 ning ${gxCount("B2")} ta qoida mashqi`, v: () => gxDoneCount("B2"), n: gxCount("B2"), c: "pink", ico: "crown" },
-  { id: "gxc1", cat: "gram", t: "C1 qoidalari", d: `C1 ning ${gxCount("C1")} ta qoida mashqi`, v: () => gxDoneCount("C1"), n: gxCount("C1"), c: "teal", ico: "crown" },
+  { id: "gxa1", r: 2, cat: "gram", t: "A1 qoidalari", d: `A1 ning ${gxCount("A1")} ta qoida mashqi`, v: () => gxDoneCount("A1"), n: gxCount("A1"), c: "green", ico: "crown" },
+  { id: "gxa2", r: 2, cat: "gram", t: "A2 qoidalari", d: `A2 ning ${gxCount("A2")} ta qoida mashqi`, v: () => gxDoneCount("A2"), n: gxCount("A2"), c: "violet", ico: "crown" },
+  { id: "gxb1", r: 3, cat: "gram", t: "B1 qoidalari", d: `B1 ning ${gxCount("B1")} ta qoida mashqi`, v: () => gxDoneCount("B1"), n: gxCount("B1"), c: "orange", ico: "crown" },
+  { id: "gxb2", r: 3, cat: "gram", t: "B2 qoidalari", d: `B2 ning ${gxCount("B2")} ta qoida mashqi`, v: () => gxDoneCount("B2"), n: gxCount("B2"), c: "pink", ico: "crown" },
+  { id: "gxc1", r: 3, cat: "gram", t: "C1 qoidalari", d: `C1 ning ${gxCount("C1")} ta qoida mashqi`, v: () => gxDoneCount("C1"), n: gxCount("C1"), c: "teal", ico: "crown" },
   { id: "first", cat: "practice", t: "Birinchi qadam", d: "1 ta mashq", v: () => S.sessions, n: 1, c: "violet", ico: "flag" },
   { id: "sess10", cat: "practice", t: "Tirishqoq", d: "10 ta mashq", v: () => S.sessions, n: 10, c: "sky", ico: "bolt" },
-  { id: "sess50", cat: "practice", t: "Chempion", d: "50 ta mashq", v: () => S.sessions, n: 50, c: "orange", ico: "bolt" },
+  { id: "sess50", r: 2, cat: "practice", t: "Chempion", d: "50 ta mashq", v: () => S.sessions, n: 50, c: "orange", ico: "bolt" },
   { id: "perfect", cat: "practice", t: "Mukammal", d: "xatosiz mashq", v: () => S.perfect, n: 1, c: "pink", ico: "target" },
-  { id: "perfect5", cat: "practice", t: "Aniq nishon", d: "5 ta xatosiz mashq", v: () => S.perfect, n: 5, c: "pink", ico: "target" },
+  { id: "perfect5", r: 2, cat: "practice", t: "Aniq nishon", d: "5 ta xatosiz mashq", v: () => S.perfect, n: 5, c: "pink", ico: "target" },
   { id: "four", cat: "practice", t: "Toʻrt tomonlama", d: "Bir kunda 4 koʻnikmani mashq qilish", v: () => Math.max(0, ...Object.values(S.days).map(d => d.sk ? Object.values(d.sk).filter(a => a[1]).length : 0)), n: 4, c: "violet", ico: "target" },
-  { id: "listen50", cat: "practice", t: "Ziyrak quloq", d: "Tinglashda 50 ta toʻgʻri javob", v: () => S.sk.l[0], n: 50, c: "sky", ico: "ear" },
-  { id: "allA1", cat: "course", t: "Har tomonlama", d: "4 koʻnikmada daraja testidan oʻtish", v: () => SKILLS.filter(s => skLevel(s.id)).length, n: 4, c: "teal", ico: "crown" },
-  { id: "writer5", cat: "practice", t: "Yozuvchi", d: "5 ta yozish topshirigʻida 70+ ball", v: () => Object.values(S.k).reduce((a, st) => a + Object.values(st.wb || {}).filter(v => v >= 70).length, 0), n: 5, c: "pink", ico: "type" },
+  { id: "listen50", r: 2, cat: "practice", t: "Ziyrak quloq", d: "Tinglashda 50 ta toʻgʻri javob", v: () => S.sk.l[0], n: 50, c: "sky", ico: "ear" },
+  { id: "allA1", r: 3, cat: "course", t: "Har tomonlama", d: "4 koʻnikmada daraja testidan oʻtish", v: () => SKILLS.filter(s => skLevel(s.id)).length, n: 4, c: "teal", ico: "crown" },
+  { id: "writer5", r: 2, cat: "practice", t: "Yozuvchi", d: "5 ta yozish topshirigʻida 70+ ball", v: () => Object.values(S.k).reduce((a, st) => a + Object.values(st.wb || {}).filter(v => v >= 70).length, 0), n: 5, c: "pink", ico: "type" },
   { id: "roles3", cat: "practice", t: "Aktyor", d: "3 ta rolli dialogni oʻynash", v: () => S.roles || 0, n: 3, c: "orange", ico: "chat" },
-  { id: "pron20", cat: "practice", t: "Bulbul", d: "20 ta soʻzni toʻgʻri talaffuz qilish", v: () => S.pron[0], n: 20, c: "green", ico: "mic" },
+  { id: "pron20", r: 2, cat: "practice", t: "Bulbul", d: "20 ta soʻzni toʻgʻri talaffuz qilish", v: () => S.pron[0], n: 20, c: "green", ico: "mic" },
   { id: "xp1k", cat: "practice", t: "1000 XP", d: "1000 XP toʻplandi", v: () => S.xp, n: 1000, c: "teal", ico: "star" },
-  { id: "xp5k", cat: "practice", t: "5000 XP", d: "5000 XP toʻplandi", v: () => S.xp, n: 5000, c: "violet", ico: "star" },
+  { id: "xp5k", r: 2, cat: "practice", t: "5000 XP", d: "5000 XP toʻplandi", v: () => S.xp, n: 5000, c: "violet", ico: "star" },
   { id: "photo", cat: "life", t: "Yangi qiyofa", d: "Profil rasmi qoʻyildi", v: () => (MYPHOTO ? 1 : 0), n: 1, c: "sky", ico: "camera" },
   { id: "tr10", cat: "life", t: "Tarjimon", d: "10 marta tarjima", v: () => S.trUses || 0, n: 10, c: "teal", ico: "translate" },
   { id: "share", cat: "life", t: "Doʻstlarga ulashdi", d: "Saytni doʻstlarga ulashish", v: () => S.shared || 0, n: 1, c: "green", ico: "heart" },
   { id: "night", cat: "life", t: "Tungi boyqush", d: "22:00 dan keyin mashq", v: () => S.night || 0, n: 1, c: "violet", ico: "moon" },
-  { id: "early", cat: "life", t: "Erta qush", d: "07:00 dan oldin mashq", v: () => S.early || 0, n: 1, c: "orange", ico: "sun" }
+  { id: "early", cat: "life", t: "Erta qush", d: "07:00 dan oldin mashq", v: () => S.early || 0, n: 1, c: "orange", ico: "sun" },
+  // Harder goals (2026-11): more words, longer streaks, the whole course, top results, leagues
+  { id: "w2000", r: 3, cat: "learn", t: "Lugʻat xazinasi", d: "2000 ta soʻz oʻrganildi", v: learnedCount, n: 2000, c: "teal", ico: "crown" },
+  { id: "w3000", r: 4, cat: "learn", t: "Tirik lugʻat", d: "3000 ta soʻz oʻrganildi", v: learnedCount, n: 3000, c: "orange", ico: "crown" },
+  { id: "s60", r: 3, cat: "streak", t: "2 oy", d: "60 kun ketma-ket", v: () => S.best, n: 60, c: "pink", ico: "flame" },
+  { id: "s180", r: 4, cat: "streak", t: "Yarim yil", d: "180 kun ketma-ket", v: () => S.best, n: 180, c: "violet", ico: "crown" },
+  { id: "s365", r: 4, cat: "streak", t: "Bir yil", d: "365 kun ketma-ket", v: () => S.best, n: 365, c: "orange", ico: "crown" },
+  { id: "kAll", r: 4, cat: "course", t: "Toʻliq kurs", d: `Kursning barcha ${COURSE.units.length} boʻlimi`, v: () => kDoneCount(), n: COURSE.units.length, c: "violet", ico: "cap" },
+  { id: "ktC1", r: 3, cat: "course", t: "C1 sertifikati", d: "C1 daraja testidan 85%+", v: () => (kTestBest("C1") >= 85 ? 1 : 0), n: 1, c: "teal", ico: "star" },
+  { id: "kt90", r: 4, cat: "course", t: "Aʼlochi", d: "Har bir daraja testidan 90%+", v: () => COURSE.levels.filter(l => kTestBest(l.id) >= 90).length, n: COURSE.levels.length, c: "orange", ico: "crown" },
+  { id: "plB2", r: 3, cat: "course", t: "Isbotlangan daraja", d: "Darajani aniqlash testida B2 yoki C1", v: () => (plRank() >= 4 ? 1 : 0), n: 1, c: "pink", ico: "target" },
+  { id: "gxAll", r: 4, cat: "gram", t: "Grammatika professori", d: `Barcha ${GX_CODES.length} ta qoida mashqi`, v: () => gxDoneCount(), n: GX_CODES.length, c: "violet", ico: "cap" },
+  { id: "gx50", r: 2, cat: "gram", t: "Qoidalar bilimdoni", d: "50 ta qoida mashqi", v: () => gxDoneCount(), n: 50, c: "green", ico: "quiz" },
+  { id: "sess200", r: 3, cat: "practice", t: "Marafonchi", d: "200 ta mashq", v: () => S.sessions, n: 200, c: "teal", ico: "bolt" },
+  { id: "sess500", r: 4, cat: "practice", t: "Temir iroda", d: "500 ta mashq", v: () => S.sessions, n: 500, c: "violet", ico: "bolt" },
+  { id: "perfect25", r: 3, cat: "practice", t: "Snayper", d: "25 ta xatosiz mashq", v: () => S.perfect, n: 25, c: "pink", ico: "target" },
+  { id: "perfect100", r: 4, cat: "practice", t: "Benuqson", d: "100 ta xatosiz mashq", v: () => S.perfect, n: 100, c: "orange", ico: "target" },
+  { id: "listen300", r: 3, cat: "practice", t: "Musiqiy quloq", d: "Tinglashda 300 ta toʻgʻri javob", v: () => S.sk.l[0], n: 300, c: "sky", ico: "ear" },
+  { id: "pron200", r: 3, cat: "practice", t: "Notiq", d: "200 ta soʻzni toʻgʻri talaffuz qilish", v: () => S.pron[0], n: 200, c: "green", ico: "mic" },
+  { id: "writer20", r: 3, cat: "practice", t: "Adib", d: "20 ta yozish topshirigʻida 70+ ball", v: () => Object.values(S.k).reduce((a, st) => a + Object.values(st.wb || {}).filter(v => v >= 70).length, 0), n: 20, c: "pink", ico: "type" },
+  { id: "writer90", r: 4, cat: "practice", t: "Qalam sohibi", d: "5 ta yozish topshirigʻida 90+ ball", v: () => Object.values(S.k).reduce((a, st) => a + Object.values(st.wb || {}).filter(v => v >= 90).length, 0), n: 5, c: "violet", ico: "type" },
+  { id: "roles20", r: 3, cat: "practice", t: "Sahna yulduzi", d: "20 ta rolli dialogni oʻynash", v: () => S.roles || 0, n: 20, c: "orange", ico: "chat" },
+  { id: "oq15", r: 3, cat: "practice", t: "Kitobxon", d: "15 ta oʻqish matnida 80%+", v: () => Object.values(S.oq || {}).filter(v => v >= 80).length, n: 15, c: "teal", ico: "book" },
+  { id: "xp20k", r: 3, cat: "practice", t: "20 000 XP", d: "20 000 XP toʻplandi", v: () => S.xp, n: 20000, c: "teal", ico: "star" },
+  { id: "xp50k", r: 4, cat: "practice", t: "50 000 XP", d: "50 000 XP toʻplandi", v: () => S.xp, n: 50000, c: "orange", ico: "star" },
+  { id: "day1k", r: 3, cat: "elite", t: "Rekord kun", d: "Bir kunda 1000 XP", v: () => bestDay(d => d.xp || 0), n: 1000, c: "orange", ico: "bolt" },
+  { id: "hour", r: 2, cat: "elite", t: "Bir soatlik dars", d: "Bir kunda 60 daqiqa mashq", v: () => Math.floor(bestDay(d => d.sec || 0) / 60), n: 60, c: "sky", ico: "clock" },
+  { id: "four7", r: 3, cat: "elite", t: "Toʻliq muvozanat", d: "7 kun davomida bir kunda 4 koʻnikma", v: fourDays, n: 7, c: "violet", ico: "target" },
+  { id: "goal30", r: 4, cat: "elite", t: "Temir intizom", d: "30 kun ketma-ket kunlik XP maqsadi", v: goalRun, n: 30, c: "pink", ico: "flame" },
+  { id: "dq7", r: 2, cat: "elite", t: "Vazifa ustasi", d: "7 kun uchala kunlik vazifa", v: () => S.dqn || 0, n: 7, c: "green", ico: "check" },
+  { id: "dq30", r: 3, cat: "elite", t: "Vazifa sultoni", d: "30 kun uchala kunlik vazifa", v: () => S.dqn || 0, n: 30, c: "teal", ico: "check" },
+  { id: "wc4", r: 3, cat: "elite", t: "Haftalik qahramon", d: "4 ta haftalik challenge", v: () => S.wcn || 0, n: 4, c: "orange", ico: "crown" },
+  { id: "wc12", r: 4, cat: "elite", t: "Mavsum gʻolibi", d: "12 ta haftalik challenge", v: () => S.wcn || 0, n: 12, c: "violet", ico: "crown" },
+  { id: "lg3", r: 2, cat: "social", t: "Oltin liga", d: "Oltin ligaga chiqish", v: () => S.lg || 1, n: 3, c: "orange", ico: "star" },
+  { id: "lg5", r: 3, cat: "social", t: "Olmos liga", d: "Olmos ligaga chiqish", v: () => S.lg || 1, n: 5, c: "sky", ico: "star" },
+  { id: "lg7", r: 4, cat: "social", t: "Afsona liga", d: "Eng yuqori — Afsona ligasi", v: () => S.lg || 1, n: 7, c: "pink", ico: "crown" },
+  { id: "top3", r: 3, cat: "social", t: "Shohsupa", d: "Haftalik ligada top-3", v: () => (S.lgr && S.lgr.rank && S.lgr.rank <= 3 && S.lgr.n >= 5 ? 1 : 0), n: 1, c: "orange", ico: "trophy" },
+  { id: "fr5", r: 2, cat: "social", t: "Doʻstlar davrasi", d: "5 ta doʻst", v: () => frList().length, n: 5, c: "green", ico: "heart" },
+  { id: "frame5", r: 3, cat: "social", t: "Olmos ramka", d: "Olmos avatar ramkasini ochish", v: () => myFrame(), n: 5, c: "sky", ico: "crown" },
+  { id: "frame7", r: 4, cat: "social", t: "Afsona ramka", d: "Afsona avatar ramkasini ochish", v: () => myFrame(), n: 7, c: "pink", ico: "crown" }
 ];
-const achDone = a => a.v() >= a.n;
+// Once earned, an achievement stays (some counts — days kept, the league — can go down later)
+const achDone = a => !!(S.achv && S.achv[a.id]) || a.v() >= a.n;
 let ACH_QUEUE = [], achTimer;
 function checkAch() {
   if (!S.achv) {
@@ -2302,13 +2355,13 @@ function checkAch() {
     try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {}
     return;
   }
-  const fresh = ACH.filter(a => !S.achv[a.id] && achDone(a));
+  const fresh = ACH.filter(a => !S.achv[a.id] && a.v() >= a.n);
   if (!fresh.length) return;
-  fresh.forEach(a => { S.achv[a.id] = todayKey(); addXPBonus(20); });
+  fresh.forEach(a => { S.achv[a.id] = todayKey(); addXPBonus(ACH_TIERS[achTier(a)].xp); });
   lvlCheck();
   try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {}
   cloudSave();
-  fresh.forEach(a => celebrate({ title: a.t, text: `${a.d}. Pamuk sizdan faxrlanadi! +20 XP`, ico: a.ico, c: a.c, share: true }));
+  fresh.forEach(a => { const T = ACH_TIERS[achTier(a)]; celebrate({ eyebrow: achTier(a) > 1 ? `${T.uz} yutuq!` : "Yangi yutuq!", title: a.t, text: `${a.d}. Pamuk sizdan faxrlanadi! +${T.xp} XP`, ico: a.ico, c: a.c, r: achTier(a), share: true }); });
 }
 // During an exercise the pop-up waits for the result screen, so it never covers the answer buttons
 const celebrateLater = () => !!(SES && !SES.done);
@@ -2325,7 +2378,7 @@ function showCelebrate() {
   el.innerHTML = `<div class="confetti" aria-hidden="true">${Array.from({ length: 36 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 0.6).toFixed(2)}s;animation-duration:${(2 + Math.random() * 1.5).toFixed(2)}s;transform:rotate(${Math.random() * 360}deg)"></i>`).join("")}</div>
     <div class="cel-card" role="dialog" aria-modal="true" aria-label="${esc(c.eyebrow || "Yangi yutuq")}">
       <div class="cel-cat">${c.look ? catSVG({ pose: "sit", acc: "stars", look: c.look, cls: "mascot" }) : mascot("trophy")}</div>
-      ${c.frame ? `<span class="cel-medal cel-frame">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "", { n: c.frame })}</span>` : c.league ? `<span class="cel-medal">${lgBadge(c.league, "lg-cel")}</span>` : `<span class="medal art ${c.c} cel-medal">${c.badge !== undefined ? `<b class="cel-num">${esc(c.badge)}</b>` : ICON[c.ico] || ICON.star}</span>`}
+      ${c.frame ? `<span class="cel-medal cel-frame">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "", { n: c.frame })}</span>` : c.league ? `<span class="cel-medal">${lgBadge(c.league, "lg-cel")}</span>` : `<span class="medal art ${c.c} cel-medal${c.r > 2 ? ` ach-r${c.r}` : ""}">${c.badge !== undefined ? `<b class="cel-num">${esc(c.badge)}</b>` : ICON[c.ico] || ICON.star}</span>`}
       <small class="eyebrow">${esc(c.eyebrow || "Yangi yutuq!")}</small>
       <h2>${esc(c.title)}</h2>
       <p>${esc(c.text)}</p>
@@ -2342,12 +2395,14 @@ function nextCelebrate() {
 function viewAchievements() {
   const done = ACH.filter(achDone).length;
   const nextUp = ACH.filter(a => !achDone(a)).map(a => ({ a, p: Math.min(1, a.v() / a.n) })).sort((x, y) => y.p - x.p).slice(0, 3);
+  const tierRow = [1, 2, 3, 4].map(r => { const all = ACH.filter(a => achTier(a) === r); return `<span class="ach-tier r${r}"><i></i>${ACH_TIERS[r].uz} <b>${all.filter(achDone).length}/${all.length}</b></span>`; }).join("");
   return `<div><a class="back" href="#profile">${ICON.back}Profil</a></div>
-  <div class="ach-hero glass">${mascot("trophy")}<div><h1 class="page-title" style="font-size:26px">Yutuqlar</h1><p class="sub">${done} / ${ACH.length} ochildi · har biri +20 XP</p>
+  <div class="ach-hero glass">${mascot("trophy")}<div><h1 class="page-title" style="font-size:26px">Yutuqlar</h1><p class="sub">${done} / ${ACH.length} ochildi · ${[1, 2, 3, 4].map(r => `+${ACH_TIERS[r].xp}`).join(" / ")} XP</p>
     <div class="bar" style="margin-top:8px"><i style="width:${pct(done, ACH.length)}%"></i></div></div></div>
+  <div class="ach-tiers">${tierRow}</div>
   ${nextUp.length ? `<section class="section"><div class="section-head"><h2>Yaqin qolgan yutuqlar</h2></div>
     <div class="list">${nextUp.map(({ a, p }) => `<div class="unit glass"><span class="medal">${ICON[a.ico] || ICON.star}</span>
-      <span class="unit-body"><span class="unit-title">${esc(a.t)}</span><span class="unit-sub">${esc(a.d)} · yana ${Math.max(0, a.n - a.v())} ta</span><span class="bar"><i style="width:${Math.round(p * 100)}%"></i></span></span><span></span></div>`).join("")}</div></section>` : ""}
+      <span class="unit-body"><span class="unit-title">${esc(a.t)} <span class="ach-r-tag r${achTier(a)}">${ACH_TIERS[achTier(a)].uz}</span></span><span class="unit-sub">${esc(a.d)} · yana ${Math.max(0, a.n - a.v())} ta</span><span class="bar"><i style="width:${Math.round(p * 100)}%"></i></span></span><span></span></div>`).join("")}</div></section>` : ""}
   ${ACH_CATS.map(([k, l]) => `<section class="section"><div class="section-head"><h2>${l}</h2><span class="tag violet-t">${ACH.filter(a => a.cat === k && achDone(a)).length}/${ACH.filter(a => a.cat === k).length}</span></div>
     <div class="achv">${ACH.filter(a => a.cat === k).sort((x, y) => achDone(y) - achDone(x)).map(achCard).join("")}</div></section>`).join("")}`;
 }
@@ -2356,12 +2411,13 @@ const ACH_COL = c => ["violet", "sky", "orange", "pink", "green", "teal"].includ
 const achDate = a => { const w = S.achv && S.achv[a.id]; return w ? `${w.slice(8, 10)}.${w.slice(5, 7)}.${w.slice(0, 4)}` : ""; };
 // Earned: a colourful sticker; not yet: a grey lock with progress
 function achSticker(a, i = 0) {
-  return `<span class="ach-st st-${ACH_COL(a.c)}" style="--tilt:${[-7, 5, -3, 8, -5, 3][i % 6]}deg">${ICON[a.ico] || ICON.star}</span>`;
+  return `<span class="ach-st st-${ACH_COL(a.c)}${achTier(a) > 2 ? ` ach-r${achTier(a)}` : ""}" style="--tilt:${[-7, 5, -3, 8, -5, 3][i % 6]}deg">${ICON[a.ico] || ICON.star}</span>`;
 }
 function achCard(a, i) {
   const on = achDone(a), v = Math.min(a.v(), a.n);
-  return `<div class="ach glass${on ? ` on c-${ACH_COL(a.c)}` : ""}">
-    ${on ? achSticker(a, i) : `<span class="medal">${ICON.lock}</span>`}<b>${esc(a.t)}</b><small>${esc(a.d)}</small>
+  const r = achTier(a);
+  return `<div class="ach glass${on ? ` on c-${ACH_COL(a.c)}` : ""} tier${r}">
+    ${on ? achSticker(a, i) : `<span class="medal">${ICON.lock}</span>`}<span class="ach-r-tag r${r}">${ACH_TIERS[r].uz} · +${ACH_TIERS[r].xp}</span><b>${esc(a.t)}</b><small>${esc(a.d)}</small>
     ${on ? (achDate(a) ? `<small class="ach-date">${achDate(a)}</small>` : "") : `<span class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${a.n}" aria-valuenow="${v}" aria-label="${esc(a.t)}: ${v}/${a.n}"><i style="width:${pct(v, a.n)}%"></i></span><small class="muted">${v}/${a.n}</small>`}</div>`;
 }
 // Profile: every earned achievement as a sticker wall (newest first), then the closest ones still to get
@@ -2544,7 +2600,7 @@ function routeNow() {
   else if (h === "achievements") { html = viewAchievements(); tab = "profile"; }
   else if (h === "skills") { html = viewSkills(); tab = "profile"; }
   else if (h === "write") { html = viewWrite(); tab = "practice"; }
-  else if (h === "placement") { html = viewPlacement(); tab = "lessons"; }
+  else if (h === "placement") { html = viewPlacement(); tab = "lessons"; if (!plbReady()) after = () => loadPlb().then(route, () => toast("Test yuklanmadi. Internetni tekshiring")); }
   else if (h === "admin") { html = viewAdmin(); tab = "profile"; }
   else if (h === "groups") { html = viewGroups(); tab = "profile"; after = loadGroups; }
   else if (/^group-[A-Z0-9]{6}$/.test(h)) { html = viewGroup(h.slice(6)); tab = "profile"; after = () => loadGroup(h.slice(6)); }
@@ -3377,29 +3433,67 @@ function plMic(i, btn) {
   micCapture(q, btn, best => { const r = keepBest(plGet().ans.s, i, best), el = $(`pl-s-${i}`); if (el) el.innerHTML = ktHeard(q, r); });
 }
 /* ---------- Placement test (Darajani aniqlash) ----------
-   About 18 questions from A1 to B2 in all four skills, built from the level tests' material. The highest level
-   answered well in a row decides where the course starts (S.kStart); earlier units stay open, nothing is marked done. */
-let PL = null;
+   A1 → C1 in three stages (A1–A2, B1–B2, C1). Every level: 4 reading/grammar questions and 2 writing tasks from the
+   separate bank (placement.js), 2 listening items (course lines, and from B1 a meaning question from the bank), speaking
+   at A1 and B1 (optional). The next stage opens only when every level so far is passed, so a learner who stops at A2
+   is not asked C1 questions, and a C1 result needs the C1 stage: 70% of a level (75% for B2 and C1), with at least half
+   of its reading and half of its writing right — writing has to be produced, it cannot be guessed. "Bilmayman" is always
+   an option. The highest level passed decides where the course starts (S.kStart); earlier units stay open. */
+let PL = null, PLB_P = null;
+const PL_STAGES = [["A1", "A2"], ["B1", "B2"], ["C1"]];
+const plStage = lv => PL_STAGES.findIndex(st => st.includes(lv));
+const plNeed = lv => (lv === "B2" || lv === "C1" ? 75 : 70);
+const plbReady = () => typeof PLB !== "undefined";
+function loadPlb() {
+  if (plbReady()) return Promise.resolve();
+  return PLB_P || (PLB_P = new Promise((ok, fail) => { const sc = document.createElement("script"); sc.src = "placement.js"; sc.onload = ok; sc.onerror = () => { PLB_P = null; sc.remove(); fail(); }; document.head.appendChild(sc); }));
+}
+// A multiple-choice item with its options shuffled (a: index for reading, the text for listening)
+function plMix(q) { const o = shuffle(q.o.slice()); return typeof q.a === "number" ? Object.assign({}, q, { o, a: o.indexOf(q.o[q.a]) }) : Object.assign({}, q, { o }); }
 function plGen() {
   const it = { r: [], l: [], w: [], s: [] };
   PL_LVS.forEach(lv => {
     const saved = KT_GEN[lv]; KT_GEN[lv] = null;
-    const g = ktGen(lv);
+    const g = ktGen(lv), B = PLB[lv];
     KT_GEN[lv] = saved;
-    shuffle(KLEVEL(lv).test.parts[0].qs).slice(0, 2).forEach(q => it.r.push({ lv, q: q.q, o: q.o, a: q.a }));
-    const li = g.l.find(x => x.kind === (lv === "A1" ? "word" : "line")) || g.l[0];
-    it.l.push(Object.assign({ lv }, li));
-    if (g.w[0]) it.w.push(Object.assign({ lv }, g.w[0]));
-    if (lv === "A1" || lv === "B1") { const s = g.s.find(x => x.kind === "line") || g.s[0]; if (s) it.s.push(Object.assign({ lv }, s)); }
+    shuffle(B.r.slice()).slice(0, 4).forEach(q => it.r.push(Object.assign(plMix(q), { lv })));
+    const words = g.l.filter(x => x.kind === "word"), lines = shuffle(g.l.filter(x => x.kind === "line"));
+    const li = lv === "A1" ? [words[0], lines[0]] : B.l ? [lines[0], Object.assign(plMix(shuffle(B.l.slice())[0]), { kind: "mean" })] : lines.slice(0, 2);
+    li.filter(Boolean).forEach(x => it.l.push(Object.assign({}, x, { lv })));
+    shuffle(B.w.slice()).slice(0, 2).forEach(q => it.w.push(Object.assign({}, q, { lv })));
+    if (lv === "A1" || lv === "B1") { const sp = g.s.find(x => x.kind === "line") || g.s[0]; if (sp) it.s.push(Object.assign({ lv }, sp)); }
   });
-  return { it, ans: { r: {}, l: {}, w: {}, s: {} }, res: null };
+  return { it, ans: { r: {}, l: {}, w: {}, s: {} }, stage: 0, res: null };
 }
 const plGet = () => PL || (PL = plGen());
+// Question numbers in the order they are shown (only the stages opened so far)
+function plNums(P) {
+  const nums = { r: [], l: [], w: [], s: [] };
+  let n = 0;
+  for (let st = 0; st <= P.stage; st++) ["r", "l", "w", "s"].forEach(k => P.it[k].forEach((q, i) => { if (plStage(q.lv) === st) nums[k][i] = ++n; }));
+  return nums;
+}
+function plRows(P) {
+  const it = P.it, vis = q => plStage(q.lv) <= P.stage, sTried = canListen() && Object.keys(P.ans.s).length > 0;
+  return [
+    ...it.r.map((q, i) => vis(q) && { sk: "r", lv: q.lv, ok: P.ans.r[i] === q.a }),
+    ...it.l.map((q, i) => vis(q) && { sk: "l", lv: q.lv, ok: q.o[P.ans.l[i]] === q.a }),
+    ...it.w.map((q, i) => vis(q) && { sk: "w", lv: q.lv, ok: ansMatch(P.ans.w[i] || "", q.a) > 0 }),
+    ...(sTried ? it.s.map((q, i) => vis(q) && { sk: "s", lv: q.lv, ok: !!P.ans.s[i] && P.ans.s[i].score >= ktNeed(q) }) : [])
+  ].filter(Boolean);
+}
+function plLevel(rows, lv) {
+  const r = rows.filter(x => x.lv === lv);
+  if (!r.length) return { pct: null, ok: false };
+  const part = sk => { const q = r.filter(x => x.sk === sk); return q.length ? q.filter(x => x.ok).length / q.length : 1; };
+  const pct = Math.round(r.filter(x => x.ok).length / r.length * 100);
+  return { pct, ok: pct >= plNeed(lv) && part("r") >= 0.5 && part("w") >= 0.5 };
+}
 function plHomeCard() {
   if (S.place || kDoneCount() > 0 || S.xp > 400) return "";
   return `<div class="pcard glass">
-    <div class="pcard-head"><b>${ICON.target}Turkchani biroz bilasizmi?</b><span class="tag teal-t">5–7 daq</span></div>
-    <p class="muted">Qisqa test darajangizni aniqlaydi va kursni mos joydan boshlaydi: oʻqish, tinglash, yozish va gapirish boʻyicha.</p>
+    <div class="pcard-head"><b>${ICON.target}Turkchani biroz bilasizmi?</b><span class="tag teal-t">10–15 daq</span></div>
+    <p class="muted">Bosqichma-bosqich test darajangizni aniqlaydi va kursni mos joydan boshlaydi: oʻqish, tinglash, yozish va gapirish boʻyicha.</p>
     <a class="btn btn-grad btn-block" href="#placement" style="margin-top:8px">Darajani aniqlash</a>
     <button class="link" data-act="pl-skip" style="display:block;margin:10px auto 0">Kerak emas, A1 dan boshlayman</button>
   </div>`;
@@ -3407,51 +3501,65 @@ function plHomeCard() {
 function plSection(id, name, sub, body) {
   return `<section class="section">${ktPartHead(id, name)}${sub ? `<p class="sub">${sub}</p>` : ""}${body}</section>`;
 }
-function viewPlacement() {
-  const P = plGet(), res = P.res, it = P.it;
-  let n = 0;
-  const opts = (kind, i, q, chosen, right, trLang) => `<div class="k-opts">${q.o.map((o, oi) => {
+function plStageHtml(P, st, nums) {
+  const res = P.res, it = P.it, locked = !!res || st < P.stage, here = q => plStage(q.lv) === st;
+  const pick = k => it[k].map((q, i) => [q, i]).filter(([q]) => here(q));
+  const opts = (kind, i, q, chosen, trLang) => `<div class="k-opts">${q.o.map((o, oi) => {
     let cls = chosen === oi ? " picked" : "";
     if (res) cls = (kind === "r" ? oi === q.a : o === q.a) ? " right" : chosen === oi ? " wrong" : "";
-    return `<button class="opt${cls}" data-act="pl-${kind}" data-i="${i}" data-o="${oi}" ${trLang ? 'lang="tr"' : ""} ${res ? "disabled" : ""}>${esc(o)}</button>`;
-  }).join("")}</div>`;
+    return `<button class="opt${cls}" data-act="pl-${kind}" data-i="${i}" data-o="${oi}" ${trLang ? 'lang="tr"' : ""} ${locked ? "disabled" : ""}>${esc(o)}</button>`;
+  }).join("")}<button class="opt opt-idk${chosen === q.o.length ? (res ? " wrong" : " picked") : ""}" data-act="pl-${kind}" data-i="${i}" data-o="${q.o.length}" ${locked ? "disabled" : ""}>Bilmayman</button></div>`;
+  const lvs = PL_STAGES[st];
+  const body = plSection("r", "Okuma · Grammatika va lugʻat", "", pick("r").map(([q, i]) => `<div class="k-item glass"><div class="k-q"><b>${nums.r[i]}.</b> <span lang="tr">${esc(q.q)}</span></div>${opts("r", i, q, P.ans.r[i], true)}</div>`).join(""))
+  + plSection("l", "Dinleme · Tinglash", "Tugmani bosib tinglang. Matn koʻrsatilmaydi.", pick("l").map(([q, i]) => `<div class="k-item glass">
+      <div class="k-q" style="display:flex;align-items:center;gap:10px"><b>${nums.l[i]}.</b><button class="say" data-act="ls-play" data-t="${esc(q.t)}" aria-label="Tinglash">${ICON.speak}</button><span>${q.kind === "word" ? "Soʻzning maʼnosini toping" : q.kind === "mean" ? "Eshitgan gapingiz maʼnosini toping" : "Qaysi gapni eshitdingiz?"}</span>${res ? `<span lang="tr" class="muted">— ${esc(q.t)}</span>` : ""}</div>
+      ${opts("l", i, q, P.ans.l[i], q.kind === "line")}</div>`).join(""))
+  + plSection("w", "Yazma · Yozish", "", pick("w").map(([q, i]) => { const v = P.ans.w[i] || "", m = res ? ansMatch(v, q.a) : -1; return `<div class="k-item glass">
+      <div class="k-q"><b>${nums.w[i]}.</b> <small class="muted">${esc(q.title)}</small><div lang="tr" style="margin-top:4px">${esc(q.q)}</div></div>
+      <div class="k-in"><input class="k-input${m > 0 ? " right" : m === 0 ? " wrong" : ""}" data-act="pl-w" data-i="${i}" value="${esc(v)}" lang="tr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Bilmasangiz, boʻsh qoldiring" ${locked ? "disabled" : ""}></div>
+      ${res && m <= 0 ? `<div class="k-fb"><span class="no">Toʻgʻri javob: <b lang="tr">${esc(q.a)}</b></span></div>` : ""}</div>`; }).join(""))
+  + (canListen() && pick("s").length ? plSection("s", "Konuşma · Gapirish", "Ixtiyoriy: hozir gapira olmasangiz, oʻtkazib yuboring.", pick("s").map(([q, i]) => { const r = P.ans.s[i]; return `<div class="k-item glass">
+      <div class="k-q"><b>${nums.s[i]}.</b> Gapni ovoz chiqarib ayting:<div lang="tr" style="margin-top:4px"><b>${esc(q.tr)}</b></div></div>
+      <div class="kt-mic-row">${locked ? "" : `<button class="mic-btn kt-mic" data-act="pl-mic" data-i="${i}" aria-label="Mikrofon">${ICON.mic}</button>`}<div class="kt-heard" id="pl-s-${i}">${r ? ktHeard(q, r) : `<span class="muted">${res ? "Javob berilmadi" : locked ? "Oʻtkazib yuborildi" : "Mikrofonni bosing"}</span>`}</div></div></div>`; }).join("")) : "");
+  const head = `<span class="pl-st-n">${st + 1}-bosqich</span><b>${lvs.join("–")}</b>`;
+  return st < P.stage
+    ? `<details class="pl-stage glass" data-stage="${st}"><summary>${head}<span class="tag green-t">${ICON.check}${lvs.map(lv => `${lv}: ${plLevel(plRows(P), lv).pct}%`).join(" · ")}</span></summary>${body}</details>`
+    : `<div class="pl-stage-head" data-stage="${st}">${head}<span class="tag violet-t">${PL_STAGES.length} bosqichdan</span></div>${body}`;
+}
+function viewPlacement() {
+  if (!plbReady()) return `<div class="glass empty"><div class="spin"></div>Yuklanmoqda…</div>`;
+  const P = plGet(), res = P.res, nums = plNums(P);
+  const last = P.stage === PL_STAGES.length - 1;
   return `<div><a class="back" href="#course">${ICON.back}Kurs</a></div>
-  <div class="lesson-head"><div class="tags"><span class="tag teal-t">${ICON.target}A1 → C1</span><span class="tag violet-t">~${it.r.length + it.l.length + it.w.length + it.s.length} savol</span></div>
+  <div class="lesson-head"><div class="tags"><span class="tag teal-t">${ICON.target}A1 → C1</span><span class="tag violet-t">3 bosqich · 10–15 daq</span></div>
     <h1>Darajani aniqlash</h1>
-    <p class="sub">Savollar osondan qiyinga qarab boradi. Bilmasangiz, taxmin qilmang — oxirgi variantni tanlab davom eting. Natija taxminiy: u kursni qayerdan boshlashni tavsiya qiladi.</p></div>
+    <p class="sub">Test bosqichma-bosqich qiyinlashadi: A1–A2, B1–B2, C1. Keyingi bosqich oldingisini yaxshi bajarsangiz ochiladi. Bilmagan savolingizda taxmin qilmang — «Bilmayman» ni tanlang: natija shunda aniqroq chiqadi.</p></div>
   ${res ? plResultHtml(res) : ""}
-  ${plSection("r", "Okuma · Grammatika va lugʻat", "", it.r.map((q, i) => `<div class="k-item glass"><div class="k-q"><b>${++n}.</b> <span lang="tr">${esc(q.q)}</span></div>${opts("r", i, q, P.ans.r[i], q.a, true)}</div>`).join(""))}
-  ${plSection("l", "Dinleme · Tinglash", "Tugmani bosib tinglang. Matn koʻrsatilmaydi.", it.l.map((q, i) => `<div class="k-item glass">
-      <div class="k-q" style="display:flex;align-items:center;gap:10px"><b>${++n}.</b><button class="say" data-act="ls-play" data-t="${esc(q.t)}" aria-label="Tinglash">${ICON.speak}</button><span>${q.kind === "word" ? "Soʻzning maʼnosini toping" : "Qaysi gapni eshitdingiz?"}</span>${res ? `<span lang="tr" class="muted">— ${esc(q.t)}</span>` : ""}</div>
-      ${opts("l", i, q, P.ans.l[i], q.a, q.kind === "line")}</div>`).join(""))}
-  ${plSection("w", "Yazma · Yozish", "", it.w.map((q, i) => { const v = P.ans.w[i] || "", m = res ? ansMatch(v, q.a) : -1; return `<div class="k-item glass">
-      <div class="k-q"><b>${++n}.</b> <small class="muted">${esc(q.title)}</small><div lang="tr" style="margin-top:4px">${esc(q.q)}</div></div>
-      <div class="k-in"><input class="k-input${m > 0 ? " right" : m === 0 ? " wrong" : ""}" data-act="pl-w" data-i="${i}" value="${esc(v)}" lang="tr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Bilmasangiz, boʻsh qoldiring" ${res ? "disabled" : ""}></div>
-      ${res && m <= 0 ? `<div class="k-fb"><span class="no">Toʻgʻri javob: <b lang="tr">${esc(q.a)}</b></span></div>` : ""}</div>`; }).join(""))}
-  ${canListen() ? plSection("s", "Konuşma · Gapirish", "Ixtiyoriy: hozir gapira olmasangiz, oʻtkazib yuboring.", it.s.map((q, i) => { const r = P.ans.s[i]; return `<div class="k-item glass">
-      <div class="k-q"><b>${++n}.</b> Gapni ovoz chiqarib ayting:<div lang="tr" style="margin-top:4px"><b>${esc(q.tr)}</b></div></div>
-      <div class="kt-mic-row">${res ? "" : `<button class="mic-btn kt-mic" data-act="pl-mic" data-i="${i}" aria-label="Mikrofon">${ICON.mic}</button>`}<div class="kt-heard" id="pl-s-${i}">${r ? ktHeard(q, r) : `<span class="muted">${res ? "Javob berilmadi" : "Mikrofonni bosing"}</span>`}</div></div></div>`; }).join("")) : ""}
-  ${res ? `<button class="btn btn-ghost btn-block" data-act="pl-again">Qayta topshirish</button>` : `<button class="btn btn-grad btn-block" data-act="pl-done">Natijani koʻrish</button>`}`;
+  ${PL_STAGES.map((x, st) => st <= P.stage ? plStageHtml(P, st, nums) : "").join("")}
+  ${res ? `<button class="btn btn-ghost btn-block" data-act="pl-again">Qayta topshirish</button>` : `<button class="btn btn-grad btn-block" data-act="pl-done">${last ? "Natijani koʻrish" : "Tekshirish va davom etish"}</button>`}`;
 }
 function plFinish() {
-  const P = plGet(), it = P.it;
-  const mr = it.r.findIndex((q, i) => P.ans.r[i] === undefined);
-  if (mr >= 0) { toast(`${mr + 1}-savolga javob tanlanmagan`); return; }
-  const ml = it.l.findIndex((q, i) => P.ans.l[i] === undefined);
-  if (ml >= 0) { toast(`${it.r.length + ml + 1}-savolga javob tanlanmagan`); return; }
+  const P = plGet(), it = P.it, cur = q => plStage(q.lv) === P.stage, nums = plNums(P);
+  const mr = it.r.findIndex((q, i) => cur(q) && P.ans.r[i] === undefined);
+  if (mr >= 0) { toast(`${nums.r[mr]}-savolga javob tanlanmagan`); return; }
+  const ml = it.l.findIndex((q, i) => cur(q) && P.ans.l[i] === undefined);
+  if (ml >= 0) { toast(`${nums.l[ml]}-savolga javob tanlanmagan`); return; }
   if (KT_REC) { try { KT_REC.abort(); } catch (e) {} KT_REC = null; }
-  const sTried = canListen() && Object.keys(P.ans.s).length > 0;
-  const rows = [
-    ...it.r.map((q, i) => ({ sk: "r", lv: q.lv, ok: P.ans.r[i] === q.a })),
-    ...it.l.map((q, i) => ({ sk: "l", lv: q.lv, ok: q.o[P.ans.l[i]] === q.a })),
-    ...it.w.map((q, i) => ({ sk: "w", lv: q.lv, ok: ansMatch(P.ans.w[i] || "", q.a) > 0 })),
-    ...(sTried ? it.s.map((q, i) => ({ sk: "s", lv: q.lv, ok: !!P.ans.s[i] && P.ans.s[i].score >= ktNeed(q) })) : [])
-  ];
+  const rows = plRows(P);
+  // Every level so far passed → the next stage opens
+  const done = PL_STAGES.slice(0, P.stage + 1).flat();
+  if (P.stage < PL_STAGES.length - 1 && done.every(lv => plLevel(rows, lv).ok)) {
+    P.stage++;
+    route();
+    toast(`Zoʻr! ${P.stage + 1}-bosqich: ${PL_STAGES[P.stage].join("–")}`);
+    setTimeout(() => { const el = document.querySelector(`.pl-stage-head[data-stage="${P.stage}"]`); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); }, 60);
+    return;
+  }
   const byLv = {};
-  PL_LVS.forEach(lv => { const r = rows.filter(x => x.lv === lv); byLv[lv] = r.length ? Math.round(r.filter(x => x.ok).length / r.length * 100) : 0; });
-  // Highest level answered well, counting up from A1 without gaps
+  PL_LVS.forEach(lv => { byLv[lv] = plLevel(rows, lv).pct; });
+  // Highest level passed, counting up from A1 without gaps
   let passed = null;
-  for (const lv of PL_LVS) { if (byLv[lv] >= 60) passed = lv; else break; }
+  for (const lv of PL_LVS) { if (plLevel(rows, lv).ok) passed = lv; else break; }
   const start = !passed ? "A1" : passed === PL_LVS[PL_LVS.length - 1] ? passed : PL_LVS[PL_LVS.indexOf(passed) + 1];
   const sk = {};
   SKILLS.forEach(s => {
@@ -3471,9 +3579,10 @@ function plFinish() {
 function plResultHtml(r) {
   const su = COURSE.units.find(u => u.level === r.start);
   return `<div class="glass pad k-result pass">${mascot("trophy")}<h2>${r.start}</h2>
-    <p>${r.passed ? `Siz ${r.passed} darajasigacha boʻlgan savollarni yaxshi bildingiz. Kursni <b>${r.start}</b> dan boshlashni tavsiya qilamiz.` : "Kursni boshidan — A1 dan boshlashni tavsiya qilamiz. Har bir boʻlim sizga mos tezlikda."}</p>
+    <p>${r.passed ? `Natija: <b>${r.passed}</b>. ${r.passed === "C1" ? "Siz eng yuqori bosqichdan ham oʻtdingiz — C1 kursi va imtihon koʻnikmalari bilan mahoratingizni mustahkamlang." : `Kursni <b>${r.start}</b> dan boshlashni tavsiya qilamiz.`}` : "Kursni boshidan — A1 dan boshlashni tavsiya qilamiz. Har bir boʻlim sizga mos tezlikda."}</p>
+    <p class="muted" style="font-size:13px">Daraja hisoblanishi uchun shu darajadagi savollarning 70% (B2 va C1 da 75%) toʻgʻri boʻlishi, oʻqish va yozishning har biridan kamida yarmi toʻgʻri boʻlishi kerak.</p>
     <div class="sk-bars" style="text-align:left;margin-top:10px;width:100%;align-self:stretch">${PL_LVS.map(lv => `<div class="sk-line"><span></span><span class="sk-name"><b>${lv}</b><small>savollar</small></span>
-      <span class="sk-track"><i style="width:${r.byLv[lv]}%;background:var(--${r.byLv[lv] >= 60 ? "green" : "pink"})"></i></span><span class="sk-val">${r.byLv[lv]}%<small>${r.byLv[lv] >= 60 ? "✔" : "✘"}</small></span></div>`).join("")}</div>
+      <span class="sk-track"><i style="width:${r.byLv[lv] || 0}%;background:var(--${r.byLv[lv] >= plNeed(lv) ? "green" : "pink"})"></i></span><span class="sk-val">${r.byLv[lv] === null ? "—" : `${r.byLv[lv]}%`}<small>${r.byLv[lv] === null ? "" : PL_LVS.indexOf(lv) <= PL_LVS.indexOf(r.passed) ? "✔" : "✘"}</small></span></div>`).join("")}</div>
     <div class="tags" style="justify-content:center;margin-top:10px">${SKILLS.map(s => `<span class="tag ${s.c}-t">${s.tr}: ${r.sk[s.id] === null ? "—" : r.sk[s.id] || "boshlangʻich"}</span>`).join("")}</div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;width:100%">
       <button class="btn btn-grad btn-block" data-act="pl-apply" data-l="${r.start}">${su ? `${su.level}.${su.n} dan boshlash` : "Boshlash"}</button>

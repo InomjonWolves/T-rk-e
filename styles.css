@@ -65,6 +65,14 @@
   --fr6: conic-gradient(from 210deg, #5a22c4, #d9c4ff, #9b5cff, #f4edff, #5a22c4); --fr6c: #9b5cff;
   --fr7: conic-gradient(from 0deg, #ff4f87, #ffc83d, #ff7a45, #b44dff, #4a9cff, #ff4f87); --fr7c: #ffb422;
   --fr-gem: #f2f8ff; --fr-ruby: #d6283f; --fr-feather: #f4ecdc; --fr6f: #e4d8ff; --fr7f: #ffd45c; --fr-flame: #ff7a1a;
+  /* Daraja nishoni (ramka ostidagi raqam): fon, matn, chekka — har bosqichda boyroq */
+  --lv1b: linear-gradient(180deg, #eaa772, #a35b29 55%, #7a4019); --lv1t: #fff; --lv1e: #5e3212;
+  --lv2b: linear-gradient(180deg, #ffffff, #cfd7e0 55%, #95a1ae); --lv2t: #1d2631; --lv2e: #6f7b88;
+  --lv3b: linear-gradient(180deg, #fff3bf, #f6c33a 50%, #cf8f00); --lv3t: #3a2400; --lv3e: #9a6a00;
+  --lv4b: linear-gradient(180deg, #ecfffc, #86e0d5 50%, #24a094); --lv4t: #032d29; --lv4e: #0f7a71;
+  --lv5b: linear-gradient(180deg, #f5fbff, #a6d4ff 45%, #3f8bf2); --lv5t: #05214b; --lv5e: #1c5bd0;
+  --lv6b: linear-gradient(180deg, #8a4dff, #5419c4 55%, #34097f); --lv6t: #ffe7a3; --lv6e: #e9b949;
+  --lv7b: linear-gradient(180deg, #3a1152, #1f0630); --lv7t: #ffd45c; --lv7e: linear-gradient(90deg, #ff4f87, #ffc83d, #ff7a45, #b44dff, #4a9cff, #ff4f87, #ffc83d);
   --tile-sky: #3b5bdb; --tile-violet: #7a54e0; --tile-teal: #0a827f; --tile-green: #0c8352; --tile-pink: #d53b41;
   --tile-orange: #ffb422; --tile-orange-ink: #2e1c00;
   --shadow: 0 1px 2px rgba(22, 27, 61, 0.04), 0 10px 24px -16px rgba(22, 27, 61, 0.22);
@@ -572,6 +580,26 @@ button.tag { cursor: pointer; }
 .ach.on { background: linear-gradient(180deg, color-mix(in srgb, var(--c, #7652de) 11%, var(--surface)), var(--surface) 70%); }
 .ach.on.c-violet { --c: #7652de; } .ach.on.c-sky { --c: #3b5bdb; } .ach.on.c-orange { --c: #f08c0a; }
 .ach.on.c-pink { --c: #e0444a; } .ach.on.c-green { --c: #149a62; } .ach.on.c-teal { --c: #0c9794; }
+/* Yutuq nodirligi (2026-11): Oddiy · Nodir · Epik · Afsonaviy */
+.ach-tiers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.ach-tier { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 13px; font-weight: 700; color: var(--ink-2); min-width: 0; }
+.ach-tier b { margin-left: auto; color: var(--ink); font-weight: 800; }
+.ach-tier i { width: 12px; height: 12px; border-radius: 50%; flex: none; background: var(--muted); }
+.ach-tier.r2 i { background: var(--sky); } .ach-tier.r3 i { background: var(--violet); } .ach-tier.r4 i { background: var(--fr7); }
+.ach-r-tag { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 800; line-height: 1.5; letter-spacing: 0.01em; background: var(--bg-2); color: var(--muted); vertical-align: 1px; white-space: nowrap; }
+.ach-r-tag.r2 { background: var(--sky-soft); color: var(--sky-ink); }
+.ach-r-tag.r3 { background: var(--violet-soft); color: var(--violet-ink); }
+.ach-r-tag.r4 { background: var(--orange-soft); color: var(--orange-ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 60%, transparent); }
+.ach.tier4.on { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--gold) 70%, transparent), 0 8px 22px -12px var(--gold); }
+.ach.tier3.on { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--violet) 45%, transparent); }
+/* Epik va afsonaviy stikerlar: yaltiraydi; afsonaviy — kamalak halqa bilan */
+.ach-st.ach-r3, .ach-st.ach-r4, .cel-medal.ach-r3, .cel-medal.ach-r4 { position: relative; overflow: hidden; isolation: isolate; }
+.ach-st.ach-r3::after, .ach-st.ach-r4::after, .cel-medal.ach-r3::after, .cel-medal.ach-r4::after { content: ""; position: absolute; inset: -20%; background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, .7) 50%, transparent 60%); transform: translateX(-100%); animation: ach-shine 3.2s ease-in-out infinite; pointer-events: none; }
+.cel-medal.ach-r4 { box-shadow: 0 0 0 4px var(--surface), 0 0 0 7px var(--fr7c), 0 0 26px var(--fr7c); }
+.ach-st.ach-r4 { border-color: transparent; background: radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.55), transparent 42%) padding-box, linear-gradient(145deg, var(--c1), var(--c2)) padding-box, var(--fr7) border-box; box-shadow: 0 0 14px -2px color-mix(in srgb, var(--fr7c) 70%, transparent); }
+.ach-st.ach-r4::after, .cel-medal.ach-r4::after { animation-duration: 2.4s; }
+@keyframes ach-shine { 0%, 50% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .ach-st::after, .cel-medal::after { animation: none !important; display: none; } }
 .sticker-wall { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px 8px; }
 .sw-item { display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center; min-width: 0; }
 .sw-item b { font-size: 11.5px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
@@ -582,9 +610,10 @@ button.tag { cursor: pointer; }
 .ach-hero .mascot { width: 104px; height: 96px; }
 
 /* ---------- Profile and settings ---------- */
-.profile-card { padding: 16px; display: flex; align-items: center; gap: 16px; }
-.profile-card b { display: block; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
-.profile-card span { color: var(--muted); font-size: 14px; word-break: break-all; }
+.profile-card { padding: 18px 16px; display: flex; align-items: center; gap: 16px; }
+.pc-txt { min-width: 0; }
+.pc-txt > b { display: block; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
+.pc-txt > span { color: var(--muted); font-size: 14px; word-break: break-all; }
 .gear-btn svg { width: 22px; height: 22px; }
 .settings { overflow: hidden; }
 .set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 16px; min-height: 60px; width: 100%; text-align: left; }
@@ -1384,9 +1413,57 @@ details.fold > .list .unit:active { box-shadow: 0 1px 0 var(--line-2); }
 .fr7 { animation: fr-glow 2.6s ease-in-out infinite; }
 @keyframes fr-glow { 0%, 100% { box-shadow: 0 0 10px color-mix(in srgb, var(--fr-flame) 45%, transparent); } 50% { box-shadow: 0 0 22px color-mix(in srgb, var(--fr-flame) 80%, transparent); } }
 @media (prefers-reduced-motion: reduce) { .fr-orn .fr-spark, .fr7 { animation: none; } }
-.fr-lv { position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); z-index: 2; min-width: 22px; padding: 1px 6px; border-radius: 999px; background: var(--surface); color: var(--ink); border: 2px solid var(--frc); font-size: 11px; font-weight: 800; line-height: 1.3; text-align: center; }
+/* Daraja nishoni: metall/qimmatbaho tosh koʻrinishi; Platinadan yaltirash oʻtadi, Usta va Afsona — porlaydi */
+.fr > b.fr-lv { --lvb: var(--lv1b); --lvt: var(--lv1t); --lve: var(--lv1e); position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); z-index: 3; display: block; min-width: 24px; padding: 2px 7px 1px; border-radius: 999px; overflow: hidden; isolation: isolate;
+  background: var(--lvb); color: var(--lvt); border: 1.5px solid var(--lve); font-size: 11px; font-weight: 800; line-height: 1.25; letter-spacing: 0; text-align: center; white-space: nowrap;
+  box-shadow: 0 0 0 1.5px var(--surface), 0 3px 8px -3px rgba(0, 0, 0, .55); }
+.fr > b.fr-lv::before { content: ""; position: absolute; left: 2px; right: 2px; top: 1px; height: 46%; border-radius: 999px 999px 40% 40%; background: linear-gradient(rgba(255, 255, 255, .6), rgba(255, 255, 255, 0)); z-index: -1; pointer-events: none; }
+.fr1 > b.fr-lv { text-shadow: 0 1px 0 rgba(0, 0, 0, .4); }
+.fr2 > b.fr-lv { --lvb: var(--lv2b); --lvt: var(--lv2t); --lve: var(--lv2e); }
+.fr3 > b.fr-lv { --lvb: var(--lv3b); --lvt: var(--lv3t); --lve: var(--lv3e); }
+.fr4 > b.fr-lv { --lvb: var(--lv4b); --lvt: var(--lv4t); --lve: var(--lv4e); }
+.fr5 > b.fr-lv { --lvb: var(--lv5b); --lvt: var(--lv5t); --lve: var(--lv5e); }
+.fr6 > b.fr-lv { --lvb: var(--lv6b); --lvt: var(--lv6t); --lve: var(--lv6e); text-shadow: 0 1px 0 rgba(0, 0, 0, .5); box-shadow: 0 0 0 1.5px var(--surface), 0 0 10px color-mix(in srgb, var(--fr6c) 70%, transparent); }
+.fr6 > b.fr-lv::before, .fr7 > b.fr-lv::before { opacity: .35; }
+.fr7 > b.fr-lv { color: var(--lv7t); border: 2px solid transparent; background: var(--lv7b) padding-box, var(--lv7e) border-box; background-size: 100% 100%, 300% 100%; text-shadow: 0 0 6px color-mix(in srgb, var(--fr-flame) 80%, transparent);
+  animation: lv-flow 4s linear infinite, lv-pulse 2.6s ease-in-out infinite; }
+@keyframes lv-flow { to { background-position: 0 0, 150% 0; } }
+@keyframes lv-pulse { 0%, 100% { box-shadow: 0 0 0 1.5px var(--surface), 0 0 8px color-mix(in srgb, var(--fr-flame) 50%, transparent); } 50% { box-shadow: 0 0 0 1.5px var(--surface), 0 0 18px color-mix(in srgb, var(--fr-flame) 90%, transparent); } }
+/* Yaltirash: nishon ustidan oʻtadigan nur (Platina — sekin, Afsona — tez) */
+.fr4 > b.fr-lv::after, .fr5 > b.fr-lv::after, .fr6 > b.fr-lv::after, .fr7 > b.fr-lv::after { content: ""; position: absolute; top: -4px; bottom: -4px; left: 0; width: 60%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .85), transparent); z-index: -1; transform: translateX(-140%); animation: lv-shine 4.5s ease-in-out infinite; pointer-events: none; }
+.fr5 > b.fr-lv::after { animation-duration: 3.6s; }
+.fr6 > b.fr-lv::after { animation-duration: 3s; background: linear-gradient(100deg, transparent, rgba(255, 231, 163, .7), transparent); }
+.fr7 > b.fr-lv::after { animation-duration: 2.4s; background: linear-gradient(100deg, transparent, rgba(255, 212, 92, .65), transparent); }
+@keyframes lv-shine { 0%, 55% { transform: translateX(-140%); } 100% { transform: translateX(260%); } }
+/* Harakat: halqadagi metall nur aylanadi (Platinadan), Usta va Afsonada qanotlar qoqiladi va orqada nur porlaydi */
+.fr4::before { animation: fr-spin 16s linear infinite; }
+.fr5::before { animation: fr-spin 10s linear infinite; }
+.fr6::before { animation: fr-spin 8s linear infinite; }
+.fr6 { animation: fr-glow6 3s ease-in-out infinite; }
+@keyframes fr-glow6 { 0%, 100% { box-shadow: 0 0 8px color-mix(in srgb, var(--fr6c) 45%, transparent); } 50% { box-shadow: 0 0 20px color-mix(in srgb, var(--fr6c) 85%, transparent); } }
+.fr6:not(.fr-sm)::after, .fr7:not(.fr-sm)::after { content: ""; position: absolute; inset: -22%; border-radius: 50%; z-index: -3; pointer-events: none; background: radial-gradient(closest-side, color-mix(in srgb, var(--frc) 55%, transparent), transparent); animation: fr-aura 3s ease-in-out infinite; }
+.fr7:not(.fr-sm)::after { background: radial-gradient(closest-side, color-mix(in srgb, var(--fr-flame) 55%, transparent), color-mix(in srgb, var(--fr7c) 20%, transparent) 70%, transparent); animation-duration: 2.4s; }
+@keyframes fr-aura { 0%, 100% { opacity: .45; transform: scale(.92); } 50% { opacity: 1; transform: scale(1.06); } }
+.fr-orn .fr-wl, .fr-orn .fr-wr { transform-box: fill-box; animation: fr-flap 3.4s ease-in-out infinite; }
+.fr-orn .fr-wl { transform-origin: 100% 92%; }
+.fr-orn .fr-wr { transform-origin: 0 92%; animation-name: fr-flap-r; }
+.fr7 .fr-orn .fr-wl, .fr7 .fr-orn .fr-wr { animation-duration: 2.6s; }
+@keyframes fr-flap { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-7deg); } }
+@keyframes fr-flap-r { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(7deg); } }
+.fr-orn .fr-ruby { animation: fr-ruby 2.2s ease-in-out infinite; }
+@keyframes fr-ruby { 0%, 100% { fill: var(--fr-ruby); } 50% { fill: color-mix(in srgb, var(--fr-ruby) 55%, #fff); } }
+@media (prefers-reduced-motion: reduce) {
+  .fr::before, .fr::after, .fr6, .fr7, .fr > b.fr-lv, .fr > b.fr-lv::after, .fr-orn .fr-wl, .fr-orn .fr-wr, .fr-orn .fr-ruby { animation: none !important; }
+  .fr > b.fr-lv::after { display: none; }
+}
 .pod .fr { margin-bottom: 6px; }
-.profile-card .avatar-edit .fr-lv { bottom: -9px; }
+/* Profil: katta ramka; jins belgisi chap-tepada, kamera oʻng-pastda — ikkalasi ramkadan tashqarida */
+.profile-card .avatar-edit { margin: 16px 12px 16px 14px; }
+.profile-card .avatar.lg { width: 76px; height: 76px; }
+.profile-card .fr > b.fr-lv { bottom: -11px; min-width: 30px; padding: 2px 9px 1px; font-size: 13px; }
+.profile-card .avatar-edit .sticker { left: -18px; top: -20px; z-index: 4; }
+.profile-card .avatar-edit .cam { right: -22px; bottom: -18px; z-index: 4; width: 30px; height: 30px; }
+@media (max-width: 360px) { .profile-card .avatar.lg { width: 64px; height: 64px; } .profile-card .avatar-edit { margin: 14px 10px 14px 12px; } }
 .cel-medal.cel-frame { width: auto; height: auto; background: none; box-shadow: none; margin-top: -30px; }
 .cel-medal.cel-frame .avatar { width: 64px; height: 64px; }
 /* Profil: ramkalar galereyasi */
@@ -1403,3 +1480,14 @@ details.fold > .list .unit:active { box-shadow: 0 1px 0 var(--line-2); }
 .fr-item.locked .fr { opacity: .6; }
 .fr-item.locked b { color: var(--muted); }
 .fr-next { font-size: 14px; color: var(--ink-2); line-height: 1.45; }
+
+/* Darajani aniqlash: bosqichlar (2026-11) */
+.pl-stage-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 22px 0 0; }
+.pl-stage-head b, .pl-stage > summary b { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
+.pl-st-n { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent-ink); }
+.pl-stage-head .tag, .pl-stage > summary .tag { margin-left: auto; }
+.pl-stage { padding: 0 14px; margin-top: 14px; }
+.pl-stage > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 52px; padding: 10px 0; }
+.pl-stage > summary::-webkit-details-marker { display: none; }
+.pl-stage[open] { padding-bottom: 14px; }
+.opt.opt-idk { color: var(--muted); font-weight: 600; border-style: dashed; }

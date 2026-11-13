@@ -99,7 +99,7 @@ test("course: 40 units, tests answerable, reading answers match questions", () =
 
 test("project rule: no exam brand names or military vocabulary in the content", () => {
   const bad = /\bTYS\b|\b(asker|askeri|komutan|kışla|nöbet|tatbikat)\b/i;
-  for (const f of ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js", "oqish.js", "app.js", "index.html"]) {
+  for (const f of ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js", "oqish.js", "placement.js", "app.js", "index.html"]) {
     const m = read(f).match(bad);
     assert.equal(m, null, `${f} contains "${m && m[0]}"`);
   }
@@ -163,7 +163,7 @@ test("vocabulary packs: no word twice in one pack", () => {
 
 test("Uzbek spelling: oʻ/gʻ and the tutuq belgisi ʼ, never a plain apostrophe", () => {
   const re = /(^|[^A-Za-zÇĞİÖŞÜçğıöşüʻʼ])(fe|ma|ta|ba|a|e|va|hay|qat|mas|o|bo|ko|og|so|to|yo|qo|go|sa|ra)'[a-zʻ]/gi;
-  for (const f of ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js", "oqish.js"]) {
+  for (const f of ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js", "oqish.js", "placement.js"]) {
     const s = read(f), bad = [...s.matchAll(re)].map(m => s.slice(m.index, m.index + 18).trim());
     assert.deepEqual(bad, [], `${f}: plain apostrophe in Uzbek words`);
   }

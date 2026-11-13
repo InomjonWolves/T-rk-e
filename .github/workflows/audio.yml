@@ -18,6 +18,7 @@ on:
       - "course.js"
       - "guide.js"
       - "oqish.js"
+      - "placement.js"
   workflow_dispatch:
 
 concurrency:
