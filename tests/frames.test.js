@@ -23,7 +23,17 @@ test("frames: the level or the league opens a frame, whichever is higher; seven 
 test("frames: the topbar shows my frame small; a new frame is celebrated once", async () => {
   const { page, errors } = await openApp(browser, "#home");
   await hideOverlays(page);
-  assert.equal(await page.evaluate(() => { const f = document.querySelector(".top .fr"); return f && f.classList.contains("fr-sm") && !f.querySelector(".fr-orn"); }), true);
+  assert.equal(await page.evaluate(() => { const f = document.querySelector(".top .fr"); return f && f.classList.contains("fr-sm") && !f.querySelector(".fr-orn"); }), true, "Bronza has no ornaments");
+  // From Kumush on the topbar shows the frame's ornaments too (no level chip); the page never scrolls sideways
+  for (const [xp, sel] of [[4600, ".fr-gem"], [130000, ".fr-crown"]]) {
+    await page.evaluate(xp => { S.xp = xp; S.lvl = lvlOf(xp); S.frm = 9; save(); route(); }, xp);
+    for (const w of [320, 390]) {
+      await page.setViewportSize({ width: w, height: 800 });
+      const t = await page.evaluate(sel => { const f = document.querySelector(".top .fr"); return [!!f.querySelector(sel), !f.querySelector(".fr-lv"), Math.round(f.getBoundingClientRect().width), document.documentElement.scrollWidth <= innerWidth]; }, sel);
+      assert.deepEqual(t, [true, true, 44, true], `${xp} XP at ${w}px`);
+    }
+  }
+  await page.evaluate(() => { S.xp = 0; S.lvl = 1; S.frm = 1; save(); });
   await page.evaluate(() => { ACH_QUEUE.length = 0; S.frm = 1; S.xp = 4600; save(); });
   const q = await page.evaluate(() => ACH_QUEUE.filter(c => c.frame).map(c => [c.frame, c.title]));
   assert.deepEqual(q, [[3, "Oltin ramka ochildi!"]]);
