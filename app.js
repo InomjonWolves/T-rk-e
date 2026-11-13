@@ -417,7 +417,7 @@ const FR_ORN = (() => {
     sparks: `${spark(-17, 28, 5, 0)}${spark(113, 14, 4, 0.7)}${spark(118, 76, 5, 1.4)}${spark(-6, 98, 3.5, 2.1)}`
   };
 })();
-// The avatar inside its frame; o.lv adds the level chip, o.sm is the small topbar version (thinner ring), o.cls extra classes
+// The avatar inside its frame; o.lv adds the level chip, o.lg the league shield, o.sm is the topbar version, o.cls extra classes
 function framed(av, n, o = {}) {
   n = Math.min(7, Math.max(1, n || 1));
   // With the level chip at the bottom, the bottom crest would hide under it
@@ -428,12 +428,12 @@ function framed(av, n, o = {}) {
     : n === 6 ? O.top + bot + O.sides + O.sparks
     : n === 7 ? O.crown + bot + O.sides + O.sparks : "";
   // Wings sit behind the ring and the avatar, everything else in front
-  // The small topbar avatar shows the same ornaments (no level chip)
+  // The topbar avatar shows the same ornaments, the level chip and the league shield;
   // there the drawing box is the ring itself (viewBox 0…100, painted outside it) so it never widens a narrow page
   const vb = o.sm ? "0 0 100 100" : "-30 -30 160 160";
   const back = n >= 6 ? `<svg class="fr-orn fr-back" viewBox="${vb}" aria-hidden="true">${O.wings(n === 7)}</svg>` : "";
   const orn = back + (parts ? `<svg class="fr-orn" viewBox="${vb}" aria-hidden="true">${parts}</svg>` : "");
-  return `<span class="fr fr${n}${o.sm ? " fr-sm" : ""}${o.cls ? " " + o.cls : ""}" title="${FRAMES[n - 1].uz} ramka">${av}${orn}${o.lv ? `<b class="fr-lv">${o.lv}</b>` : ""}</span>`;
+  return `<span class="fr fr${n}${o.sm ? " fr-sm" : ""}${o.cls ? " " + o.cls : ""}" title="${FRAMES[n - 1].uz} ramka">${av}${orn}${o.lv ? `<b class="fr-lv">${o.lv}</b>` : ""}${o.lg ? `<span class="fr-lgb">${lgBadge(o.lg)}</span>` : ""}</span>`;
 }
 // A new frame earned: celebrate once (S.frm keeps the highest frame reached)
 function frameCheck() {
@@ -1013,11 +1013,11 @@ function processPhoto(file) {
 }
 function topbar() {
   return `<header class="top">
-    <div class="brand">${logo}<span>Türkçe Yoʻl</span></div>
+    <div class="brand"><span>Türkçe Yoʻl</span></div>
     <div class="top-actions">
       <a class="icon-btn" href="#translate" aria-label="Aqlli tarjimon">${ICON.translate}</a>
       <button class="icon-btn" data-act="go" data-to="lugat" data-focus="search" aria-label="Soʻz qidirish">${ICON.search}</button>
-      <a class="top-av" href="#profile" aria-label="Profil" style="border-radius:50%">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "", { n: myFrame(), sm: true })}</a>
+      <a class="top-av" href="#profile" aria-label="Profil: ${lvlOf(S.xp)}-daraja, ${FRAMES[myFrame() - 1].uz} ramka, ${lgOf(S.lg || 1).uz} ligasi">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "", { n: myFrame(), sm: true, lv: lvlOf(S.xp), lg: S.lg || 1 })}</a>
     </div>
   </header>`;
 }
