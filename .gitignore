@@ -11,3 +11,7 @@ android/.gradle/
 android/build/
 android/app/build/
 android/local.properties
+# Mustaqil ilova (Capacitor): kutubxonalar, yigʻilgan www va ilova ichiga koʻchirilgan nusxa repoga tushmaydi
+native/node_modules/
+native/www/
+native/android/upload-key.jks

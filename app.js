@@ -288,12 +288,19 @@ async function remSet(v) {
   if (h) { toast(`Har kuni ${h}:00 da eslatamiz — agar oʻsha kuni mashq qilmagan boʻlsangiz`); pamukSoon("happy", "Kelishdik! Men sizga eslatib turaman"); }
   else toast("Eslatma oʻchirildi");
 }
+// The standalone Android app (Capacitor) opens these same files from inside the app: tools/native-www.js sets
+// window.TY_NATIVE, the local Firebase SDK folder and the site address for the audio recordings
+const IS_NATIVE = window.TY_NATIVE === 1 || !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const FB_BASE = window.FB_SDK_BASE || "https://www.gstatic.com/firebasejs/10.12.2/";
+const AUDIO_BASE = window.AUDIO_BASE || "";
+if (IS_NATIVE) document.documentElement.classList.add("native");
 let REM_SIG = "", FCM_T = null;
-const swReady = () => location.protocol === "https:" && "serviceWorker" in navigator ? Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(r, 4000))]) : Promise.resolve(null);
+const swReady = () => !IS_NATIVE && location.protocol === "https:" && "serviceWorker" in navigator ? Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(r, 4000))]) : Promise.resolve(null);
 function loadScript(src) { return new Promise((ok, fail) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = fail; document.head.appendChild(s); }); }
 async function fcmToken() {
   if (FCM_T) return FCM_T;
-  if (!firebase.messaging) await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js");
+  if (IS_NATIVE) return null; // the app gets its own push channel later (Android 4-bosqich)
+  if (!firebase.messaging) await loadScript(FB_BASE + "firebase-messaging-compat.js");
   if (!firebase.messaging || (firebase.messaging.isSupported && !firebase.messaging.isSupported())) return null;
   const reg = await swReady();
   FCM_T = await firebase.messaging().getToken(Object.assign({ vapidKey: window.FCM_VAPID }, reg ? { serviceWorkerRegistration: reg } : {}));
@@ -882,11 +889,11 @@ function audioKey(text, v = "a") {
   h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36).padStart(11, "0");
 }
-const audioPath = k => `audio/${k.slice(0, 2)}/${k}.mp3`;
+const audioPath = k => `${AUDIO_BASE}audio/${k.slice(0, 2)}/${k}.mp3`;
 let AUDIO_SET = null, AEL = null, AUDIO_DONE = null, AUDIO_N = 0;
 function audioIndex() {
   if (AUDIO_SET || !window.fetch) return;
-  fetch("audio/index.txt").then(r => r.ok ? r.text() : "").then(t => { const ks = t.split("\n").filter(Boolean); if (ks.length) AUDIO_SET = new Set(ks); }).catch(() => {});
+  fetch(AUDIO_BASE + "audio/index.txt").then(r => r.ok ? r.text() : "").then(t => { const ks = t.split("\n").filter(Boolean); if (ks.length) AUDIO_SET = new Set(ks); }).catch(() => {});
 }
 const hasRec = (text, v = "a") => !!AUDIO_SET && AUDIO_SET.has(audioKey(text, v));
 function audioEl() {
@@ -2487,7 +2494,7 @@ addEventListener("appinstalled", () => { INSTALL_EVT = null; toast("Ilova oʻrna
 // Inside the Android app (Trusted Web Activity) the first page comes with the referrer android-app://uz.turkceyol.app
 const inTwa = () => { try { if (/^android-app:\/\/uz\.turkceyol\.app/.test(document.referrer)) sessionStorage.setItem("ty-twa", "1"); return sessionStorage.getItem("ty-twa") === "1"; } catch (e) { return false; } };
 inTwa();
-const isStandalone = () => inTwa() || matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isStandalone = () => IS_NATIVE || inTwa() || matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
 function installCard() {
   if (isStandalone()) return "";
@@ -4114,6 +4121,8 @@ function renderResult() {
 
 // The browser bar (and the phone's status bar in the installed app) takes the colour of the page: by the system setting, or the chosen theme
 function themeMeta(v) {
+  // In the Android app the status bar icons follow the chosen theme (DARK = light icons for a dark page)
+  if (IS_NATIVE) { try { const sb = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SystemBars; if (sb) sb.setStyle({ style: v === "dark" ? "DARK" : v === "light" ? "LIGHT" : "DEFAULT" }); } catch (e) {} }
   const m = document.querySelectorAll('meta[name="theme-color"]');
   if (m.length < 2) return;
   m[0].media = v === "auto" ? "(prefers-color-scheme: light)" : ""; m[0].content = v === "dark" ? "#0d1124" : "#f7f4ee";
@@ -4697,7 +4706,7 @@ async function grpWipe(uid) {
 let FB = !!(window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey);
 // EARLY: uid of the last signed-in user while the app runs on their local copy, before Firebase confirms the sign-in
 let EARLY = null;
-const FB_SDK = ["app", "auth", "firestore"].map(n => `https://www.gstatic.com/firebasejs/10.12.2/firebase-${n}-compat.js`);
+const FB_SDK = ["app", "auth", "firestore"].map(n => `${FB_BASE}firebase-${n}-compat.js`);
 // The SDK is not render-blocking: scripts download in parallel and run in order (async = false)
 function loadFirebase() {
   if (window.firebase && window.firebase.firestore) return Promise.resolve();
@@ -5167,6 +5176,6 @@ if (FB) {
 }
 // The rest of the course downloads right after the first screen is drawn
 setTimeout(() => loadCourse().catch(() => {}), 0);
-if ("serviceWorker" in navigator && location.protocol === "https:") {
+if (!IS_NATIVE && "serviceWorker" in navigator && location.protocol === "https:") {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }

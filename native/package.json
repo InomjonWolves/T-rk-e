@@ -1,0 +1,18 @@
+{
+  "name": "turkce-yol-native",
+  "private": true,
+  "description": "Türkçe Yoʻl — mustaqil Android ilova (Capacitor). Sayt fayllari ilova ichiga joylanadi: node ../tools/native-www.js && npx cap sync android",
+  "scripts": {
+    "www": "node ../tools/native-www.js",
+    "sync": "node ../tools/native-www.js && cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.6.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "8.6.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.2",
+    "firebase": "10.12.2"
+  }
+}

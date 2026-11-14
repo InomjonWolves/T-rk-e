@@ -1,0 +1,91 @@
+# Mustaqil Android ilova (Capacitor): sayt fayllari ilova ichiga joylanadi, internetsiz ochiladi, brauzerga bog'liq emas.
+# Natija: turkce-yol-ilova.apk (telefonga o'rnatib sinash — Releases → ilova-latest) va turkce-yol-ilova.aab (Google Play).
+# Imzo — birinchi ilova bilan bir xil yuklash kaliti (android/upload-key.jks.enc, parol: secret ANDROID_KEY_PASS),
+# paket nomi ham bir xil (uz.turkceyol.app) — shuning uchun bu ilova eski ilovaning ustiga yangilanish bo'lib o'rnatiladi.
+name: Ilova (Capacitor)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "native/**"
+      - "tools/native-www.js"
+      - ".github/workflows/native.yml"
+      - "*.js"
+      - "*.css"
+      - "index.html"
+      - "privacy.html"
+      - "fonts/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: native
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANDROID_KEY_PASS: ${{ secrets.ANDROID_KEY_PASS }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: native/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Capacitor va Firebase SDK
+        working-directory: native
+        run: npm ci --no-audit --no-fund
+      - name: Sayt fayllarini ilovaga joylash
+        run: |
+          node tools/native-www.js
+          cd native && npx cap sync android
+      - name: Yuklash kaliti
+        id: key
+        run: |
+          if [ "${#ANDROID_KEY_PASS}" -lt 12 ] || [ ! -f android/upload-key.jks.enc ]; then
+            echo "::warning::ANDROID_KEY_PASS yoki android/upload-key.jks.enc yo'q — faqat sinov (debug) APK yig'iladi"
+            echo "ok=0" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in android/upload-key.jks.enc -out native/android/upload-key.jks -pass env:ANDROID_KEY_PASS
+          echo "ok=1" >> "$GITHUB_OUTPUT"
+      - name: Yig'ish
+        working-directory: native/android
+        run: |
+          chmod +x gradlew
+          mkdir -p ../../out
+          if [ "${{ steps.key.outputs.ok }}" = "1" ]; then
+            export ANDROID_VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))
+            ./gradlew --no-daemon -q assembleRelease bundleRelease
+            cp app/build/outputs/apk/release/app-release.apk ../../out/turkce-yol-ilova.apk
+            cp app/build/outputs/bundle/release/app-release.aab ../../out/turkce-yol-ilova.aab
+            keytool -printcert -jarfile ../../out/turkce-yol-ilova.apk | grep -m1 "SHA256"
+          else
+            unset ANDROID_KEY_PASS
+            ./gradlew --no-daemon -q assembleDebug
+            cp app/build/outputs/apk/debug/app-debug.apk ../../out/turkce-yol-ilova-debug.apk
+          fi
+          ls -la ../../out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: turkce-yol-ilova
+          path: out/
+          retention-days: 30
+      - name: Sinov uchun APK (Releases → ilova-latest)
+        if: steps.key.outputs.ok == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete ilova-latest -y --cleanup-tag 2>/dev/null || true
+          gh release create ilova-latest out/turkce-yol-ilova.apk --prerelease --target "$GITHUB_SHA" \
+            --title "Türkçe Yoʻl — mustaqil ilova (sinov, $((1000 + GITHUB_RUN_NUMBER)))" \
+            --notes "Brauzerga bog'liq bo'lmagan ilova (Capacitor). Telefonga o'rnatib sinash uchun. Eski ilova o'rnatilgan bo'lsa, ustiga yangilanadi."

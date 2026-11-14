@@ -1,0 +1,14 @@
+{
+  "appId": "uz.turkceyol.app",
+  "appName": "Türkçe Yoʻl",
+  "webDir": "www",
+  "android": {
+    "path": "android",
+    "backgroundColor": "#f7f4ee",
+    "allowMixedContent": false,
+    "captureInput": true
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}
