@@ -250,3 +250,38 @@ test("old Firestore rules (not yet republished): the league row falls back to th
   assert.deepEqual(Object.keys(await page.evaluate(() => __db["league/u3"])).sort(), ["name", "streak", "week", "wxp", "xp"]);
   assert.deepEqual(errors, []);
 });
+
+/* Server league results (tools/league.js → lgres/{uid}): the same rule over the whole table; the app takes them */
+test("server leagues: the weekly job settles every league with the app's rule", () => {
+  const { settle, lastWeek } = require("../tools/league.js");
+  assert.equal(lastWeek(new Date("2026-11-16T02:17:00Z")), "2026-11-09");
+  const W = "2026-11-09";
+  const rows = [
+    { id: "a", week: W, wxp: 900, lg: 1 }, { id: "b", week: "2026-11-16", pw: W, pwxp: 1200, plg: 1 },
+    { id: "c", week: W, wxp: 500, lg: 1 }, { id: "d", week: W, wxp: 100, lg: 1 }, { id: "e", week: W, wxp: 0, lg: 1 },
+    { id: "f", week: W, wxp: 20, lg: 3 }, { id: "g", week: W, wxp: 5000, lg: 7 }, { id: "h", week: "2026-11-02", wxp: 999, lg: 2 }
+  ];
+  const r = settle(rows, W);
+  // Bronze: b 1200, a 900, c 500, d 100 active → top 30% of 4 = 2 places with ≥300 XP
+  assert.deepEqual([r.b.to, r.b.rank, r.a.to, r.a.rank, r.c.to, r.d.to, r.e.to], [2, 1, 2, 2, 1, 1, 1]);
+  assert.equal(r.a.n, 4);
+  assert.equal(r.f.to, 2, "an idle week moves down");
+  assert.equal(r.g.to, 7, "Legend is the top");
+  assert.equal(r.h, undefined, "an older week is not this week's");
+});
+
+test("server leagues: the app takes the server's result over its own count", async () => {
+  const me = { uid: "u1", displayName: "Aziz Rahimov", email: "a@x.uz" };
+  const seed = {
+    "users/u1": { name: "Aziz Rahimov", gender: "m", birth: "2000-01-01", progress: { onb: 1, xp: 2000, week: LAST_WEEK, wxp: 900, lg: 1, lvl: 6 } },
+    // The table alone would promote (only player), the server says otherwise — the server wins
+    "lgres/u1": { w: LAST_WEEK, from: 1, to: 1, rank: 5, n: 12, xp: 900 }
+  };
+  const { page, errors } = await openFb(browser, "#home", { user: me, seed });
+  await page.waitForFunction(() => S.lgw === weekKey());
+  assert.deepEqual(await page.evaluate(() => [S.lg, S.lgr.rank, S.lgr.n, S.lgr.to]), [1, 5, 12, 1]);
+  assert.match(fs.readFileSync(path.join(ROOT, "firestore.rules"), "utf8"), /match \/lgres\/\{uid\} \{\s*allow read: if okUser\(\) && request\.auth\.uid == uid;\s*\}/);
+  assert.match(fs.readFileSync(path.join(ROOT, ".github/workflows/league.yml"), "utf8"), /node tools\/league\.js/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});

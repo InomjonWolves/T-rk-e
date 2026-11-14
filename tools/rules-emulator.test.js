@@ -122,6 +122,15 @@ test("push rows: only the owner writes, reads and deletes; shape is checked", as
   await assertSucceeds(deleteDoc(doc(U, "push/pu1")));
 });
 
+test("league results: only the owner reads lgres; nobody but the server writes it", async () => {
+  await env.withSecurityRulesDisabled(c => setDoc(doc(c.firestore(), "lgres/lr1"), { w: "2026-11-09", from: 2, to: 3, rank: 1, n: 5, xp: 900 }));
+  const U = as("lr1", "google"), O = as("lr2", "google");
+  await assertSucceeds(getDoc(doc(U, "lgres/lr1")));
+  await assertFails(getDoc(doc(O, "lgres/lr1")), "someone else's result");
+  await assertFails(setDoc(doc(U, "lgres/lr1"), { w: "2026-11-09", from: 2, to: 7 }), "a user can not promote himself");
+  await assertFails(getDoc(doc(as("lr1", "emailNo"), "lgres/lr1")));
+});
+
 test("invites: one writes only one's own note to someone else; the owner reads and clears", async () => {
   const A = as("ia", "google"), B = as("ib", "google"), C = as("ic", "emailOk");
   const note = { name: "Bek", at: serverTimestamp() };

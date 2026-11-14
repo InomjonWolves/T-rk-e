@@ -124,6 +124,10 @@ service cloud.firestore {
         allow delete: if okUser() && (request.auth.uid == uid || g().owner == request.auth.uid);
       }
     }
+    // Haftalik liga natijasi: server (tools/league.js, service account — qoidalarsiz) yozadi; egasi faqat oʻqiydi
+    match /lgres/{uid} {
+      allow read: if okUser() && request.auth.uid == uid;
+    }
     // Kunlik eslatma: FCM token, eslatma soati (UTC), vaqt zonasi, oxirgi mashq kuni, seriya. Faqat egasi; yuboruvchi server (service account) qoidalarsiz oʻqiydi
     match /push/{uid} {
       allow read, delete: if okUser() && request.auth.uid == uid;

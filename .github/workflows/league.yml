@@ -1,0 +1,39 @@
+name: Liga natijalari
+
+# Har dushanba: oʻtgan haftaning liga natijalarini server hisoblaydi (tools/league.js → lgres/{uid}).
+# Ilova natijani oʻzi oʻqiydi; natija boʻlmasa, oʻzi hisoblaydi (firebase-config.js → LEAGUE_SERVER = true boʻlsa biroz kutadi).
+# Kalit: PUSH_SERVICE_ACCOUNT ("Cloud Datastore User" roli) — boʻlmasa hech narsa qilinmaydi. Kechikish zarar qilmaydi.
+on:
+  schedule:
+    - cron: "17 2 * * 1"
+  workflow_dispatch:
+    inputs:
+      week:
+        description: "Hafta (dushanba sanasi, YYYY-MM-DD); boʻsh — oʻtgan hafta"
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  settle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SA: ${{ secrets.PUSH_SERVICE_ACCOUNT }}
+      WEEK: ${{ github.event.inputs.week }}
+    steps:
+      - name: Kalit tekshiruvi
+        if: env.SA == ''
+        run: echo "PUSH_SERVICE_ACCOUNT sozlanmagan — liga ilovaning oʻzida hisoblanadi."
+      - uses: actions/checkout@v5
+        if: env.SA != ''
+        with:
+          sparse-checkout: tools
+      - uses: actions/setup-node@v5
+        if: env.SA != ''
+        with:
+          node-version: 22
+      - name: Liga natijalarini hisoblash
+        if: env.SA != ''
+        run: node tools/league.js

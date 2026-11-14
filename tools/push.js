@@ -68,5 +68,5 @@ async function run(now = new Date()) {
   }
   console.log(`${now.toISOString().slice(0, 16)} UTC: ${rows.length} ta yozuv, ${sent} yuborildi, ${skipped} vaqti kelmagan / mashq qilgan / bugun eslatilgan, ${gone} eskirgan token oʻchirildi`);
 }
-module.exports = { due, text, localDay, localHour, remLocal, streakLeft };
+module.exports = { due, text, localDay, localHour, remLocal, streakLeft, accessToken, fromFs, PROJECT };
 if (require.main === module) run().catch(e => { console.error(e.message); process.exit(1); });

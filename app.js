@@ -520,7 +520,8 @@ const LEAGUES = [
   { n: 1, uz: "Bronza", c: "#cd7f32" }, { n: 2, uz: "Kumush", c: "#9aa7b4" }, { n: 3, uz: "Oltin", c: "#f2b31c" },
   { n: 4, uz: "Platina", c: "#3fb8ae" }, { n: 5, uz: "Olmos", c: "#4a9cff" }, { n: 6, uz: "Usta", c: "#9b5cff" }, { n: 7, uz: "Afsona", c: "#ff4f87" }
 ];
-const LG_UP = 0.3, LG_MIN = 300, LG_SOLO = 1000, LG_DOWN = 50;
+const LG_UP = 0.3, LG_MIN = 300, LG_SOLO = 1000, LG_DOWN = 50; // tools/league.js uses the same
+const LG_WAIT_H = 36;
 const lgOf = n => LEAGUES[Math.min(7, Math.max(1, n || 1)) - 1];
 const lgBadge = (n, cls = "") => { const l = lgOf(n); return `<svg class="lg-badge ${cls}" viewBox="0 0 24 28" aria-label="${l.uz} ligasi"><path d="M12 1l10 4v8c0 7-4.5 11.5-10 14C6.5 24.5 2 20 2 13V5z" fill="${l.c}"/><path d="M12 1l10 4v8c0 7-4.5 11.5-10 14z" fill="#000" opacity=".12"/><text x="12" y="17.5" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">${l.n}</text></svg>`; };
 /* ---------- Avatar frames (ramkalar): a ring round every avatar shows the learner's standing ----------
@@ -605,6 +606,17 @@ async function lgSettle() {
   if (!S.pw) { S.lgw = wk; S.lg = S.lg || 1; return; }
   const me = S.lg || 1, mine = S.pwxp || 0;
   let rank = 0, n = 0;
+  // The server's result (tools/league.js → lgres/{uid}, every Monday) — the whole league table, the same rule
+  if (USER && db) {
+    LG_BUSY = true;
+    let res = null;
+    try { const d = await db.collection("lgres").doc(USER.uid).get(); res = d.exists ? d.data() : null; } catch (e) {}
+    LG_BUSY = false;
+    if (S.lgw === wk) return;
+    if (res && res.w === S.pw && res.from === me && Math.abs((res.to || me) - me) <= 1) return lgApply(wk, me, res.to || me, res.rank || 0, res.n || 0, mine);
+    // With the server switched on (firebase-config.js), wait for it a while before counting on the phone
+    if (window.LEAGUE_SERVER && Date.now() - Date.parse(wk) < LG_WAIT_H * 3600e3) return;
+  }
   if (USER && db && S.pub && mine > 0) {
     LG_BUSY = true;
     try {
@@ -622,6 +634,9 @@ async function lgSettle() {
   }
   const up = mine >= LG_MIN && me < 7 && (rank ? rank <= Math.max(1, Math.ceil(n * LG_UP)) : mine >= LG_SOLO);
   const to = up ? me + 1 : mine < LG_DOWN && me > 1 ? me - 1 : me;
+  lgApply(wk, me, to, rank, n, mine);
+}
+function lgApply(wk, me, to, rank, n, mine) {
   S.lg = to; S.lgw = wk;
   S.lgr = { w: S.pw, from: me, to, rank, n, xp: mine };
   save();
