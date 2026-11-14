@@ -11,6 +11,7 @@
       ".nojekyll",
       "**/.DS_Store",
       "android/**",
+      "native/**",
       "**/node_modules/**",
       "tests/**",
       "package.json",
