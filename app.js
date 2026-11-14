@@ -1291,6 +1291,35 @@ function statusCard() {
     </div>
   </section>`;
 }
+/* Personal advice (Duolingo darajasi, 3): what to practise next, from the learner's own numbers — the weakest of the
+   four skills over 14 days (accuracy below 75% with enough answers, or hardly practised), the fullest mistake
+   notebook, words about to be forgotten, a finished level whose test is waiting. Highest weight first. */
+function recs() {
+  const out = [], st = skStats(14), tot = SKILLS.reduce((a, s) => a + st[s.id].n, 0);
+  const due = dueWords().length;
+  if (due >= 8) out.push({ id: "due", ico: "cards", c: "sky", t: "Takrorlash vaqti", why: `${due} ta soʻz unutilish arafasida`, go: () => startSession("review"), w: 50 + Math.min(due, 40) });
+  if (tot >= 20) {
+    const sk = SKILLS.filter(s => s.id !== "s" || canListen()).map(s => ({ s, n: st[s.id].n, acc: st[s.id].n >= 8 ? st[s.id].o / st[s.id].n : null, share: st[s.id].n / tot }));
+    const low = sk.filter(k => k.acc !== null && k.acc < 0.75).sort((a, b) => a.acc - b.acc)[0];
+    const rare = sk.filter(k => k.share < 0.12).sort((a, b) => a.share - b.share)[0];
+    if (low) out.push({ id: "sk-" + low.s.id, sk: low.s.id, ico: low.s.ico, c: low.s.c, t: `${low.s.uz}ni kuchaytiring`, why: `Oxirgi 14 kunda ${low.s.uz.toLowerCase()}da aniqlik ${Math.round(low.acc * 100)}% — boshqa koʻnikmalardan pastroq`, go: () => skGo(low.s.id), w: 80 + (75 - low.acc * 100) });
+    if (rare && (!low || rare.s.id !== low.s.id)) out.push({ id: "sk-" + rare.s.id, sk: rare.s.id, ico: rare.s.ico, c: rare.s.c, t: `${rare.s.uz} mashqi`, why: rare.n ? `Oxirgi 14 kunda ${rare.s.uz.toLowerCase()} kam mashq qilindi: barcha javoblarning atigi ${Math.max(1, Math.round(rare.share * 100))}%` : `Oxirgi 14 kunda ${rare.s.uz.toLowerCase()} mashqi boʻlmadi — 4 koʻnikma teng oʻssin`, go: () => skGo(rare.s.id), w: 70 });
+  }
+  const books = [["mistakes", mistakeWords().length, "soʻz"], ["gxm", GRAM_FULL ? gxMistakes().length : 0, "qoida"], ["lmis", lsmList("l").length, "tinglash"], ["smis", canListen() ? lsmList("s").length : 0, "gapirish"]].sort((a, b) => b[1] - a[1])[0];
+  if (books[1] >= 5) out.push({ id: "mis", ico: "target", c: "pink", t: "Xatolar ustida ishlang", why: `Xatolar daftarida ${books[1]} ta ${books[2]} xatosi turibdi`, mode: books[0], go: () => startSession(books[0], "all"), w: 55 + Math.min(books[1], 30) });
+  const lvDone = COURSE.levels.find(l => l.units.every(kDone) && kTestBest(l.id) < l.test.pass);
+  if (lvDone) out.push({ id: "test", ico: "trophy", c: "orange", t: `${lvDone.id} daraja testi`, why: `${lvDone.id} ning barcha boʻlimlari tugallandi — endi test bilan mustahkamlang`, go: () => go("ktest-" + lvDone.id.toLowerCase()), w: 90 });
+  return (REC_LAST = out.sort((a, b) => b.w - a.w).slice(0, 3));
+}
+let REC_LAST = [];
+// A tip's button: close a finished practice first, then do what the tip says
+function recRun(id) { const x = REC_LAST.find(r => r.id === id) || recs().find(r => r.id === id); if (SES) closeSession(); if (x) x.go(); }
+function recsCard() {
+  const r = recs();
+  if (!r.length) return "";
+  return `<section class="section recs-sec"><div class="section-head"><h2>Pamuk tavsiyasi</h2><span class="tag violet-t">Siz uchun</span></div>
+    <div class="recs glass">${r.map(x => `<button class="rec-row" data-act="rec" data-id="${x.id}"><span class="ico ${x.c}-t">${ICON[x.ico] || ICON.star}</span><span class="rec-txt"><b>${esc(x.t)}</b><small>${esc(x.why)}</small></span>${ICON.chev}</button>`).join("")}</div></section>`;
+}
 function viewHome() {
   const due = dueWords().length, fresh = Math.min(newLeft(), newWords(NEW_PER_DAY).length), todo = due + fresh;
   const w = wordOfDay(), t = tipOfDay();
@@ -1319,6 +1348,7 @@ function viewHome() {
     <div class="hero-cat">${catSVG({ pose: "cheer", ears: "up", look: catLook(), cls: "mascot" })}</div>
   </section>`}
 
+  ${recsCard()}
   ${plHomeCard()}
   ${(() => { const u = kNext(), p = kProgress(u.id); return `<section class="section">
     <div class="section-head"><h2>Kursni davom ettiring</h2><a class="link" href="#course">Barcha boʻlimlar</a></div>
@@ -1695,9 +1725,9 @@ function viewPractice() {
 
   <section class="section">
     <div class="section-head"><h2>4 koʻnikma</h2><a class="link" href="#skills">Natijalar</a></div>
-    <div class="sk-grid">${SKILLS.map(sk => { const g = SK_GO[sk.id], off = sk.id === "s" && !canListen(), on = done.includes(sk);
-      const inner = `<span class="ico ${sk.c}-t">${ICON[sk.ico]}</span><b>${sk.uz}</b><small lang="tr">${sk.tr}</small><span class="sk-sub">${g[1]}</span><span class="sk-stat">${off ? "Bu brauzerda ishlamaydi" : stat(sk.id)}</span>${on ? `<span class="sk-done" aria-label="Bugun bajarildi">${ICON.check}</span>` : ""}`;
-      return g[0].startsWith("href") ? `<a class="sk-tile glass" ${g[0]}>${inner}</a>` : `<button class="sk-tile glass" ${g[0]} ${off ? "disabled" : ""}>${inner}</button>`; }).join("")}</div>
+    <div class="sk-grid">${(() => { const adv = (recs().find(x => x.sk) || {}).sk; return SKILLS.map(sk => { const g = SK_GO[sk.id], off = sk.id === "s" && !canListen(), on = done.includes(sk), tip = adv === sk.id;
+      const inner = `<span class="ico ${sk.c}-t">${ICON[sk.ico]}</span><b>${sk.uz}</b><small lang="tr">${sk.tr}</small><span class="sk-sub">${g[1]}</span><span class="sk-stat">${off ? "Bu brauzerda ishlamaydi" : stat(sk.id)}</span>${tip ? `<span class="tag violet-t sk-tip">Tavsiya</span>` : ""}${on ? `<span class="sk-done" aria-label="Bugun bajarildi">${ICON.check}</span>` : ""}`;
+      return g[0].startsWith("href") ? `<a class="sk-tile glass${tip ? " tip" : ""}" ${g[0]}>${inner}</a>` : `<button class="sk-tile glass${tip ? " tip" : ""}" ${g[0]} ${off ? "disabled" : ""}>${inner}</button>`; }).join(""); })()}</div>
     ${canListen() ? "" : `<p class="muted" style="margin-top:8px">Gapirish uchun saytni Chrome (Android, kompyuter) yoki Safari (iPhone) da oching.</p>`}
   </section>
 
@@ -4500,6 +4530,7 @@ function renderResult() {
       <div><b>${streakNow()}</b><span>kun ketma-ket</span></div>
     </div>
     ${xpWhy(SES.award) ? `<p class="xp-why">${esc(xpWhy(SES.award))}</p>` : ""}
+    ${(() => { const nx = recs().find(x => x.mode !== SES.mode && !(x.id === "due" && SES.mode === "review")); return nx ? `<button class="rec-row rec-next glass" data-act="rec" data-id="${nx.id}"><span class="ico ${nx.c}-t">${ICON[nx.ico] || ICON.star}</span><span class="rec-txt"><small>Keyingi qadam</small><b>${esc(nx.t)}</b></span>${ICON.chev}</button>` : ""; })()}
     ${dqMini()}
     <p class="muted">Takrorlash navbatida: ${dueWords().length} ta · Xatolar daftarida: ${mistakeWords().length} ta</p>
     ${SES.topicDone ? `<div class="tags" style="justify-content:center"><span class="tag green-t">${ICON.check}${esc(SES.topicDone)} mavzusi tugallandi</span></div>` : ""}
@@ -4677,6 +4708,7 @@ function onAct(e) {
   else if (act === "wr-open") { KTAB = "ex"; closeSheet(true); }
   else if (act === "sheet-close-link") closeSheet(true);
   else if (act === "sk-go") skGo(b.dataset.s);
+  else if (act === "rec") recRun(b.dataset.id);
   else if (act === "say-skip") sayFinish(false, true);
   else if (act === "flip") $("flip").classList.toggle("on");
   else if (act === "card-know") { good(); nextStep(); }

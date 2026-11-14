@@ -1679,3 +1679,19 @@ html.native input, html.native textarea, html.native [contenteditable="true"] { 
 .upd-bar .btn { min-height: 44px; padding: 0 16px; flex: none; }
 .upd-bar .icon-btn { flex: none; }
 @media (min-width: 1000px) { .upd-bar { bottom: 24px; } }
+
+/* Personal advice (Duolingo darajasi, 3): «Pamuk tavsiyasi» on the home page, the next step on the result screen */
+.recs { padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+.rec-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 20px; align-items: center; gap: 12px; width: 100%; padding: 10px; border-radius: 16px; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.recs .rec-row:not(:last-child) { border-bottom: 1px solid var(--hair); border-radius: 16px 16px 4px 4px; }
+.rec-row:active { background: var(--surface-2); }
+.rec-row .ico { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; }
+.rec-row .ico svg { width: 22px; height: 22px; }
+.rec-row > svg { width: 20px; height: 20px; color: var(--muted); }
+.rec-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rec-txt b { font-size: 16px; font-weight: 800; color: var(--ink); }
+.rec-txt small { font-size: 13px; line-height: 1.35; color: var(--muted); font-weight: 600; }
+.rec-next { max-width: 380px; margin: 4px 0; }
+.rec-next .rec-txt small { text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
+.sk-tile.tip { box-shadow: 0 0 0 2px var(--violet), 0 3px 0 var(--line-2); }
+.sk-tip { margin-top: 6px; }

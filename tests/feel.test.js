@@ -136,3 +136,30 @@ test("flash card: the word reads the right way round, the back face after a tap;
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+test("personal advice: the weakest skill, a hardly practised one, the fullest mistake book; home card, practice tile, next step", async () => {
+  const today = key(dn());
+  const state = { onb: 1, xp: 1200, lastDay: today, streak: 3, days: { [today]: { xp: 40, sec: 600, rev: 20, sk: { r: [40, 45, 600], l: [30, 33, 300], w: [14, 24, 200], s: [1, 1, 10] } } } };
+  const { page, errors } = await openApp(browser, "#home", { sr: true, state });
+  const r = await page.evaluate(() => recs().map(x => [x.id, x.why]));
+  assert.deepEqual(r.map(x => x[0]), ["sk-w", "sk-s"]);
+  assert.match(r[0][1], /yozishda aniqlik 58%/);
+  assert.match(r[1][1], /gapirish kam mashq qilindi/);
+  assert.equal(await page.locator(".recs .rec-row").count(), 2);
+  // The tip opens the writing practice sheet
+  await page.evaluate(() => document.querySelector('.rec-row[data-id="sk-w"]').click());
+  await page.waitForSelector("#sheet:not([hidden])");
+  await page.evaluate(() => { closeSheet(true); location.hash = "#practice"; });
+  await page.waitForSelector(".sk-tile.tip");
+  assert.match(await page.textContent(".sk-tile.tip"), /Yozish[\s\S]*Tavsiya/);
+  // A full mistake book comes first when it is the biggest need; the result screen offers the next step
+  await page.evaluate(() => { ALL.slice(0, 40).forEach(w => { S.srs[w.tr] = { i: 1, e: 2.5, d: dayNum() + 3, r: 0, m: 2, w: 3 }; }); save(); });
+  assert.ok(await page.evaluate(() => recs().some(x => x.id === "mis" && x.mode === "mistakes")));
+  await page.evaluate(() => { XP_FAST_MS = 0; startSession("quiz", "all"); });
+  await answerAllRight(page);
+  await page.waitForSelector(".rec-next");
+  await page.evaluate(() => document.querySelector(".rec-next").click());
+  await page.waitForFunction(() => document.getElementById("session").hidden && !document.getElementById("sheet").hidden);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
