@@ -90,3 +90,12 @@ test("app Google sign-in: the phone's account window gives an ID token, Firebase
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+test("google-services.json check: the app must be in the file with a web client", () => {
+  const { check } = require("../tools/google-services-check.js");
+  const app = (oauth) => ({ project_info: { project_id: "t-rk-e" }, client: [{ client_info: { android_client_info: { package_name: "uz.turkceyol.app" } }, oauth_client: oauth }] });
+  assert.deepEqual(check(app([{ client_type: 1 }, { client_type: 3 }])), { ok: true, project: "t-rk-e", web: true, android: true });
+  assert.equal(check(app([])).web, false);
+  assert.equal(check({ client: [{ client_info: { android_client_info: { package_name: "other.app" } } }] }).ok, false);
+  assert.match(read(".github/workflows/native.yml"), /node tools\/google-services-check\.js/);
+});
