@@ -96,6 +96,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release delete ilova-latest -y --cleanup-tag 2>/dev/null || true
-          gh release create ilova-latest out/turkce-yol-ilova.apk --prerelease --target "$GITHUB_SHA" \
+          gh release create ilova-latest out/turkce-yol-ilova.apk out/turkce-yol-ilova.aab --prerelease --target "$GITHUB_SHA" \
             --title "Türkçe Yoʻl — mustaqil ilova (sinov, $((1000 + GITHUB_RUN_NUMBER)))" \
-            --notes "Brauzerga bog'liq bo'lmagan ilova (Capacitor). Telefonga o'rnatib sinash uchun. Eski ilova o'rnatilgan bo'lsa, ustiga yangilanadi."
+            --notes "Brauzerga bog'liq bo'lmagan ilova (Capacitor). APK — telefonga o'rnatib sinash uchun (eski ilova ustiga yangilanadi). AAB — Google Play Console'ga yuklash uchun."

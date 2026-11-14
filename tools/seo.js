@@ -252,7 +252,7 @@ ${a.blocks.map(b => block(b, "../")).join("\n")}
   });
 
   // ---- Sitemap
-  const urls = ["", "kurs/", "qoida/", "lugat/", "oqish/", "maqola/", ...arts.map(a => `maqola/${a.id}.html`), ...order.map(id => `kurs/${id}.html`), ...all.map(i => `qoida/${slug(i.code)}.html`), ...LUGAT.map(p => `lugat/${p.id}.html`), ...OQ.map(t => `oqish/${t.id}.html`), "privacy.html"];
+  const urls = ["", "kurs/", "qoida/", "lugat/", "oqish/", "maqola/", ...arts.map(a => `maqola/${a.id}.html`), ...order.map(id => `kurs/${id}.html`), ...all.map(i => `qoida/${slug(i.code)}.html`), ...LUGAT.map(p => `lugat/${p.id}.html`), ...OQ.map(t => `oqish/${t.id}.html`), "privacy.html", "hisob-ochirish.html"];
   out["sitemap.xml"] = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map(u => `  <url><loc>${SITE}${u}</loc></url>`).join("\n")}
