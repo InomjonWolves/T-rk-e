@@ -25,6 +25,8 @@ async function openApp(browser, hash = "#home", opts = {}) {
   await page.route(/^https?:\/\//, r => r.abort());
   // opts.native: open the page as the standalone Android app does (tools/native-www.js sets these globals)
   if (opts.native) await page.addInitScript(() => { window.TY_NATIVE = 1; window.AUDIO_BASE = "https://turkceyol.web.app/"; window.FB_SDK_BASE = "vendor/firebase/"; });
+  // opts.init: a script run before the page (for example fake Capacitor plugins)
+  if (opts.init) await page.addInitScript(opts.init);
   await page.addInitScript(({ sr, noSR, state }) => {
     sessionStorage["ty-welcomed"] = "1";
     if (!localStorage["turkce-yol-v1"]) localStorage["turkce-yol-v1"] = JSON.stringify(state);

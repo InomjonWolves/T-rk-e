@@ -919,13 +919,26 @@ function audioStop() {
   const a = AEL; if (a) { a.onended = a.onerror = null; try { a.pause(); } catch (e) {} }
   const d = AUDIO_DONE; AUDIO_DONE = null; if (d) d();
 }
-function ttsCancel() { audioStop(); try { speechSynthesis.cancel(); } catch (e) {} }
+/* In the Android app the phone's own text-to-speech (plugin TextToSpeech) speaks texts without a recording:
+   speechSynthesis in the WebView often has no Turkish voice or no voice at all. */
+let NTTS_N = 0;
+const ntts = () => nativePlugin("TextToSpeech");
+function nttsStop() { NTTS_N++; const t = ntts(); if (t) try { const r = t.stop(); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
+// Speaks text; done() runs when it ends (not when it was stopped by another text). false if there is no plugin.
+function nttsSay(text, rate, done, pitch) {
+  const t = ntts(); if (!t) return false;
+  const n = ++NTTS_N;
+  const end = () => { if (n === NTTS_N && done) done(); };
+  try { t.speak({ text, lang: "tr-TR", rate: Math.min(2, Math.max(0.3, rate)), pitch: pitch || 1, volume: 1, queueStrategy: 0 }).then(end, end); } catch (e) { end(); }
+  return true;
+}
+function ttsCancel() { audioStop(); nttsStop(); try { speechSynthesis.cancel(); } catch (e) {} }
 // Plays the recording of text; false if there is none (then the caller uses the device voice).
 // If the file cannot load (offline, not cached), fallback() runs instead — the device voice.
 function playRec(text, v, rate, done, fallback) {
   const a = audioEl();
   if (!a || !hasRec(text, v)) return false;
-  audioStop();
+  audioStop(); nttsStop();
   try { speechSynthesis.cancel(); } catch (e) {}
   const n = AUDIO_N, k = audioKey(text, v);
   AUDIO_DONE = done || null;
@@ -960,6 +973,7 @@ function speak(text, btn, rate) {
   if (btn) btn.classList.add("playing");
   const tts = () => {
     try {
+      if (nttsSay(clean, (rate || 0.85) * ttsRate(), off)) return;
       if (!("speechSynthesis" in window)) { off(); toast(AUDIO_SET ? "Bu matnning audiosi hali yoʻq" : "Bu brauzerda ovoz yoʻq"); return; }
       try { speechSynthesis.cancel(); } catch (e) {}
       const u = new SpeechSynthesisUtterance(clean);
@@ -1743,6 +1757,7 @@ function viewSettings() {
         <select class="k-select" data-act="tts-voice" style="max-width:150px">${trVoices().map(v => `<option value="${esc(v.name)}" ${ttsVoice() === v ? "selected" : ""}>${esc(v.name.replace(/^Microsoft |^Google /, "").slice(0, 28))}</option>`).join("")}</select></label>` : ""}
       <div class="set-row rem-row set-wide"><span><b>Kunlik eslatma</b><small>${esc(remText())}</small></span>
         <span class="mini-seg">${[[0, "Yoʻq"], [9, "9:00"], [19, "19:00"], [21, "21:00"]].map(([v, l]) => `<button data-act="remind" data-v="${v}" aria-pressed="${remHour() === v}">${l}</button>`).join("")}</span></div>
+      ${IS_NATIVE ? `<button class="set-row" data-act="hap" role="switch" aria-checked="${S.hap !== false}"><span><b>Tebranish</b><small>Toʻgʻri javobda yengil, xatoda qisqa tebranish</small></span><span class="switch"></span></button>` : ""}
       ${USER ? `<button class="set-row" data-act="pub" role="switch" aria-checked="${S.pub}"><span><b>Reytingda koʻrinish</b><small>Ismingiz va XP boshqa oʻquvchilarga koʻrinadi</small></span><span class="switch"></span></button>
       <button class="set-row" data-act="anon" role="switch" aria-checked="${S.anon !== false}"><span><b>Anonim statistika</b><small>Ism va pochtasiz koʻnikma koʻrsatkichlari saytni yaxshilash uchun yuboriladi</small></span><span class="switch"></span></button>
       ${ADMIN ? `<a class="set-row" href="#admin" style="color:inherit;text-decoration:none"><span><b>Umumiy analitika</b><small>Faqat admin: barcha foydalanuvchilar boʻyicha</small></span>${ICON.chev}</a>` : ""}` : ""}
@@ -2054,6 +2069,7 @@ function speakSeq(lines) {
     const alt = spk ? who.indexOf(spk) % 2 === 1 : false;
     const later = () => setTimeout(next, 350);
     const tts = () => {
+      if (nttsSay(text, 0.9 * ttsRate(), () => { if (run === SEQ_N) later(); }, alt ? 1.3 : 1)) return;
       try {
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "tr-TR"; u.rate = 0.9 * ttsRate();
@@ -2474,18 +2490,28 @@ const TIPS = [
   ["Bir kunda emas, har kuni", "Damlaya damlaya göl olur — tomchi-tomchi koʻl boʻlur. Kuniga 10 daqiqa, oyiga 300 daqiqa!"]
 ];
 const tipOfDay = () => TIPS[dayNum() % TIPS.length];
+// The app: the phone's own share sheet (plugin Share); the WebView has no navigator.share
+async function nativeShare(o) {
+  const sh = nativePlugin("Share");
+  if (!sh) return false;
+  try { await sh.share(Object.assign({ title: "Türkçe Yoʻl", dialogTitle: "Ulashish" }, o)); }
+  catch (e) { if (!/cancel/i.test(String((e && e.message) || e))) throw e; }
+  return true;
+}
 async function shareSite(text) {
-  const url = /^https?:$/.test(location.protocol) ? "https://turkceyol.web.app/" : location.origin + location.pathname;
+  const url = IS_NATIVE || /^https?:$/.test(location.protocol) ? "https://turkceyol.web.app/" : location.origin + location.pathname;
   const msg = text || "Turk tilini oʻzbek tilida bepul oʻrganing — Pamuk bilan har kuni 10 daqiqa:";
   try {
-    if (navigator.share) { await navigator.share({ title: "Türkçe Yoʻl", text: msg, url }); }
+    if (await nativeShare({ text: msg, url })) {}
+    else if (navigator.share) { await navigator.share({ title: "Türkçe Yoʻl", text: msg, url }); }
     else { await navigator.clipboard.writeText(msg + " " + url); toast("Havola nusxalandi — doʻstlaringizga yuboring"); }
     S.shared = (S.shared || 0) + 1; save();
   } catch (e) { /* the viewer closed the share sheet */ }
 }
 async function shareLink(url, msg) {
   try {
-    if (navigator.share) await navigator.share({ title: "Türkçe Yoʻl", text: msg, url });
+    if (await nativeShare({ text: msg, url })) {}
+    else if (navigator.share) await navigator.share({ title: "Türkçe Yoʻl", text: msg, url });
     else copyText(msg + " " + url, "Havola nusxalandi — oʻquvchilaringizga yuboring");
   } catch (e) { /* the viewer closed the share sheet */ }
 }
@@ -2886,7 +2912,7 @@ function skGo(id) {
 /* ---------- Listening (Dinleme) ----------
    Three exercises built on the browser's text-to-speech: hear a word and pick its meaning, dictation,
    and course dialog lines played without text (pick the sentence you heard, or type the missing word). */
-const canSpeak = () => "speechSynthesis" in window || !!AUDIO_SET;
+const canSpeak = () => "speechSynthesis" in window || !!AUDIO_SET || !!ntts();
 const hasTrVoice = () => !voices.length || voices.some(v => (v.lang || "").toLowerCase().startsWith("tr"));
 function listenNotice() {
   return hasTrVoice() ? "" : `<div class="notice"><div>Qurilmangizda turkcha ovoz topilmadi, talaffuz notoʻgʻri boʻlishi mumkin. Telefon sozlamalarida «Matnni nutqqa aylantirish» boʻlimidan turk tilini yuklab oling.</div></div>`;
@@ -3813,7 +3839,34 @@ function adminHtml(a, at) {
 /* ---------- Pronunciation practice ----------
    Uses the browser's own speech recognition (Web Speech API, tr-TR). Nothing is recorded or stored by the site:
    the browser returns text, and we compare it letter by letter with the target word. */
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+/* In the Android app the WebView has no Web Speech API: the phone's own recognizer (plugin SpeechRecognition,
+   @capacitor-community/speech-recognition) behind the same small interface (lang, start/stop, onresult/onerror/onend). */
+const NSR_ERR = m => /speech input|no match/i.test(m) ? "no-speech" : /network|server/i.test(m) ? "network" : /permission/i.test(m) ? "not-allowed" : /audio/i.test(m) ? "audio-capture" : "aborted";
+class NativeSR {
+  constructor() { this.lang = "tr-TR"; this.maxAlternatives = 5; this.onresult = this.onerror = this.onend = null; this._p = nativePlugin("SpeechRecognition"); }
+  start() {
+    const p = this._p, fire = (f, ev) => { try { if (f) f(ev); } catch (e) {} };
+    const end = () => { if (this._end) return; this._end = true; fire(this.onend, {}); };
+    (async () => {
+      try {
+        const av = await p.available().catch(() => ({ available: true }));
+        if (av && av.available === false) { toast("Telefonda nutqni tanish xizmati yoʻq (Google ilovasini yangilang)"); return end(); }
+        let perm = await p.checkPermissions().catch(() => ({}));
+        if (perm.speechRecognition !== "granted") perm = await p.requestPermissions().catch(() => ({}));
+        if (perm.speechRecognition !== "granted") { fire(this.onerror, { error: "not-allowed" }); return end(); }
+        if (this._stop) return end();
+        const r = await p.start({ language: this.lang, maxResults: this.maxAlternatives, partialResults: false, popup: false });
+        const m = (r && r.matches) || [];
+        if (m.length) { const res = m.map(t => ({ transcript: t })); res.isFinal = true; fire(this.onresult, { results: [res] }); }
+        else fire(this.onerror, { error: "no-speech" });
+      } catch (e) { fire(this.onerror, { error: NSR_ERR(String((e && e.message) || e)) }); }
+      end();
+    })();
+  }
+  stop() { this._stop = true; try { const r = this._p.stop(); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
+  abort() { this.stop(); }
+}
+const SR = IS_NATIVE && nativePlugin("SpeechRecognition") ? NativeSR : window.SpeechRecognition || window.webkitSpeechRecognition;
 const canListen = () => !!SR;
 let REC = null;
 const sayable = w => !/[…\/()=;]/.test(w.tr) && w.tr.length <= 26 && /[a-zçğıöşü]/i.test(w.tr);
@@ -4067,7 +4120,13 @@ function gxBad(it) {
 }
 const sCat = () => $("s-cat").querySelector(".cat");
 // The verdict of the current step: Pamuk reacts and the "next" button takes the colour of the answer
-function sMood(m) { sessionEl.dataset.r = m === "happy" ? "ok" : "no"; CatLife.mood(sCat(), m, m === "happy" ? 1000 : 1600); }
+// The app: a light tap for a right answer, the "error" pattern for a wrong one (Profil → Sozlamalar → Tebranish, S.hap)
+function haptic(ok) {
+  if (S.hap === false) return;
+  const h = nativePlugin("Haptics"); if (!h) return;
+  try { const r = ok ? h.impact({ style: "LIGHT" }) : h.notification({ type: "ERROR" }); if (r && r.catch) r.catch(() => {}); } catch (e) {}
+}
+function sMood(m) { haptic(m === "happy"); sessionEl.dataset.r = m === "happy" ? "ok" : "no"; CatLife.mood(sCat(), m, m === "happy" ? 1000 : 1600); }
 function good() { tick(); const w = SES.items[SES.i]; SES.right++; skillLog(SES.sk, true); grade(w, true); lsmHit(w, SES.m); sMood("happy"); }
 function bad() {
   tick();
@@ -4179,6 +4238,7 @@ function onAct(e) {
   else if (act === "remind") remSet(b.dataset.v);
   else if (act === "tts-rate") { S.tts = Object.assign({}, S.tts, { r: +b.dataset.v }); save(); const y = window.scrollY; route(); window.scrollTo(0, y); speak("Merhaba! Türkçe öğreniyorum."); }
   else if (act === "goal") { S.goal = +b.dataset.v; save(); const y = window.scrollY; route(); window.scrollTo(0, y); }
+  else if (act === "hap") { S.hap = S.hap === false; save(); haptic(true); const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "anon") {
     S.anon = S.anon === false; save();
     if (S.anon) statsPush(true); else if (db && USER) db.collection("stats").doc(USER.uid).delete().catch(() => {});
@@ -4414,6 +4474,27 @@ document.addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
   if (!$("sheet").hidden) { if (!$("sheet").dataset.locked) closeSheet(); } else if (SES) closeSession();
 });
+/* The app's Back button (plugin App): first the window on top closes — a celebration, a sheet, the practice window
+   (an unfinished practice asks for a second press), the welcome card, the tour — then the page history goes back;
+   on the home page the app goes to the background instead of closing. */
+let BACK_AT = 0;
+function nativeBack(canGoBack) {
+  if (!$("celebrate").hidden) { nextCelebrate(); return "celebrate"; }
+  if (!$("sheet").hidden) { if (!$("sheet").dataset.locked) closeSheet(); return "sheet"; }
+  if (SES) {
+    if (SES.done || Date.now() - BACK_AT < 2500) { BACK_AT = 0; closeSession(); return "session"; }
+    BACK_AT = Date.now(); toast("Mashqni yopish uchun yana bir marta «Orqaga» bosing"); return "confirm";
+  }
+  if (!$("welcome").hidden) { hideWelcome(); return "welcome"; }
+  if (!$("onboard").hidden) { endOnboard(); return "onboard"; }
+  if (!["", "#", "#home"].includes(location.hash) && $("auth").hidden) {
+    if (canGoBack) history.back(); else location.hash = "#home";
+    return "history";
+  }
+  const a = nativePlugin("App"); if (a) try { const r = a.minimizeApp(); if (r && r.catch) r.catch(() => {}); } catch (e) {}
+  return "minimize";
+}
+if (IS_NATIVE) { const a = nativePlugin("App"); if (a && a.addListener) try { a.addListener("backButton", e => nativeBack(!!(e && e.canGoBack))); } catch (e) {} }
 
 /* ---------- Groups: a teacher creates a class, learners join with a code or link ----------
    Firestore: groups/{CODE} = { name, owner, oname, at }; groups/{CODE}/members/{uid} = a short progress card.

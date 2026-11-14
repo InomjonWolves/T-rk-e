@@ -39,6 +39,9 @@ test("native project: same package and upload key as the first app, portrait, Pa
   }
   const pkg = JSON.parse(read("native/package.json"));
   assert.equal(pkg.devDependencies.firebase, "10.12.2");
+  for (const d of ["@capacitor-community/speech-recognition", "@capacitor-community/text-to-speech", "@capacitor/app", "@capacitor/haptics", "@capacitor/share"]) assert.ok(pkg.dependencies[d], d);
+  assert.match(read("native/android/app/src/main/AndroidManifest.xml"), /android\.permission\.RECORD_AUDIO/);
+  for (const d of ["capacitor-community-speech-recognition", "capacitor-community-text-to-speech", "capacitor-haptics", "capacitor-share"]) assert.match(read("native/android/capacitor.settings.gradle"), new RegExp(d), "cap sync android was run");
   assert.match(read("app.js"), /firebasejs\/10\.12\.2\//, "the site and the app use one Firebase version");
   const w = read(".github/workflows/native.yml");
   assert.match(w, /android\/upload-key\.jks\.enc/, "signed with the same upload key");
@@ -98,4 +101,135 @@ test("google-services.json check: the app must be in the file with a web client"
   assert.equal(check(app([])).web, false);
   assert.equal(check({ client: [{ client_info: { android_client_info: { package_name: "other.app" } } }] }).ok, false);
   assert.match(read(".github/workflows/native.yml"), /node tools\/google-services-check\.js/);
+});
+
+/* 3-bosqich: the phone's own speech recognition, voice, Back button, vibration and share sheet.
+   Fake Capacitor plugins record their calls in window.__nc. */
+const phone = () => {
+  window.TY_NATIVE = 1;
+  window.__nc = [];
+  const log = (n, a) => window.__nc.push([n, a === undefined ? null : a]);
+  window.__perm = "prompt"; window.__grant = "granted"; window.__heard = null;
+  const P = {
+    SpeechRecognition: {
+      available: async () => ({ available: true }),
+      checkPermissions: async () => ({ speechRecognition: window.__perm }),
+      requestPermissions: async () => { log("perm"); window.__perm = window.__grant; return { speechRecognition: window.__grant }; },
+      start: async o => { log("listen", o); await new Promise(r => setTimeout(r, 30)); if (window.__heard === "!") throw new Error("No speech input"); return { matches: [window.__heard || SES.items[SES.i].tr, "boşluk"] }; },
+      stop: async () => log("stopListen")
+    },
+    TextToSpeech: { speak: async o => { log("speak", o); await new Promise(r => setTimeout(r, 20)); }, stop: async () => log("stopSpeak") },
+    App: { addListener: (ev, f) => { if (ev === "backButton") window.__back = f; return Promise.resolve({ remove() {} }); }, minimizeApp: async () => log("minimize") },
+    Haptics: { impact: async o => log("impact", o.style), notification: async o => log("notify", o.type) },
+    Share: { share: async o => { log("share", o); if (window.__cancelShare) throw new Error("Share canceled"); return {}; } }
+  };
+  window.Capacitor = { isNativePlatform: () => true, isPluginAvailable: n => n in P, Plugins: P };
+};
+const calls = (page, n) => page.evaluate(n => window.__nc.filter(c => c[0] === n).map(c => c[1]), n);
+
+test("app speech recognition: the phone's recognizer (tr-TR) asks for the microphone once, then scores the answer", async () => {
+  const { page, errors } = await openApp(browser, "#practice", { native: true, init: phone });
+  assert.deepEqual(await page.evaluate(() => [canListen(), SR === NativeSR]), [true, true]);
+  await page.evaluate(() => startSession("say", "pron"));
+  await page.click("#mic-btn");
+  await page.waitForFunction(() => !REC && SES.answered);
+  const [o] = await calls(page, "listen");
+  assert.deepEqual([o.language, o.popup, o.maxResults], ["tr-TR", false, 5]);
+  assert.match(await page.textContent("#fb"), /Aferin|Mükemmel/);
+  // The permission is asked only the first time; a silent answer is a "no speech" message
+  await page.evaluate(() => { window.__heard = "!"; });
+  await page.evaluate(() => startSession("say", "pron"));
+  await page.click("#mic-btn");
+  await page.waitForFunction(() => !REC && /Ovoz eshitilmadi/.test(document.getElementById("fb").textContent));
+  assert.equal((await calls(page, "perm")).length, 1);
+  // Microphone refused
+  await page.evaluate(() => { window.__perm = "prompt"; window.__grant = "denied"; window.__heard = null; });
+  await page.click("#mic-btn");
+  await page.waitForFunction(() => !REC && /ruxsat berilmagan/.test(document.getElementById("fb").textContent));
+  assert.equal((await calls(page, "listen")).length, 2);
+  // The placement / level test microphone uses the same recognizer
+  await page.evaluate(() => { window.__grant = "granted"; window.__heard = "Merhaba, nasılsın?"; });
+  const best = await page.evaluate(() => new Promise(ok => { const b = document.createElement("button"); micCapture({ kind: "say", tr: "Merhaba, nasılsın?" }, b, ok); }));
+  assert.equal(best.score, 1);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("app voice: texts without a recording are spoken by the phone (tr-TR, speed setting); dialogs one line after another", async () => {
+  const { page, errors } = await openApp(browser, "#home", { native: true, init: phone });
+  assert.equal(await page.evaluate(() => canSpeak()), true);
+  await page.evaluate(() => { S.tts = { r: 1.2 }; speak("Merhaba"); });
+  await page.waitForFunction(() => window.__nc.some(c => c[0] === "speak"));
+  const [o] = await calls(page, "speak");
+  assert.deepEqual([o.text, o.lang, Math.round(o.rate * 100)], ["Merhaba", "tr-TR", 102]);
+  await page.evaluate(() => speakSeq([["Defne", "Günaydın!"], ["Kerem", "Günaydın, nasılsın?"], ["Defne", "İyiyim."]]));
+  await page.waitForFunction(() => window.__nc.filter(c => c[0] === "speak").length === 4, null, { timeout: 5000 });
+  const seq = (await calls(page, "speak")).slice(1);
+  assert.deepEqual(seq.map(s => [s.text, s.pitch]), [["Günaydın!", 1], ["Günaydın, nasılsın?", 1.3], ["İyiyim.", 1]]);
+  await page.evaluate(() => ttsCancel());
+  assert.ok((await calls(page, "stopSpeak")).length >= 1);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("app Back button: closes the top window first, asks before leaving a practice, then goes back; home goes to the background", async () => {
+  const { page, errors } = await openApp(browser, "#home", { native: true, init: phone });
+  await page.waitForFunction(() => typeof window.__back === "function");
+  const back = () => page.evaluate(() => nativeBack(history.length > 1));
+  await page.evaluate(() => { location.hash = "#lugat"; });
+  await page.waitForFunction(() => document.querySelector('.view[data-v="lugat"]'));
+  await page.evaluate(() => openSheet("<p>test</p>"));
+  assert.equal(await back(), "sheet");
+  assert.equal(await page.evaluate(() => $("sheet").hidden), true);
+  await page.evaluate(() => startSession("say", "pron"));
+  assert.equal(await back(), "confirm");
+  assert.equal(await page.evaluate(() => !!SES), true, "one press does not lose the practice");
+  assert.equal(await back(), "session");
+  assert.equal(await page.evaluate(() => SES), null);
+  assert.equal(await back(), "history");
+  await page.waitForFunction(() => ["", "#home"].includes(location.hash));
+  assert.equal(await back(), "minimize");
+  assert.equal((await calls(page, "minimize")).length, 1);
+  // The plugin's own event reaches the same handler
+  await page.evaluate(() => window.__back({ canGoBack: false }));
+  assert.equal((await calls(page, "minimize")).length, 2);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("app vibration: a light tap when right, the error pattern when wrong; it can be turned off in the settings", async () => {
+  const { page, errors } = await openApp(browser, "#settings", { native: true, init: phone });
+  await page.evaluate(() => { startSession("say", "pron"); sMood("happy"); sMood("sad"); closeSession(); });
+  assert.deepEqual(await page.evaluate(() => window.__nc.filter(c => c[0] === "impact" || c[0] === "notify")), [["impact", "LIGHT"], ["notify", "ERROR"]]);
+  await page.evaluate(() => { location.hash = "#settings"; });
+  await page.waitForSelector('[data-act="hap"][aria-checked="true"]');
+  await page.evaluate(() => document.querySelector('[data-act="hap"]').click());
+  await page.waitForSelector('[data-act="hap"][aria-checked="false"]');
+  const n = (await calls(page, "impact")).length;
+  await page.evaluate(() => { startSession("say", "pron"); sMood("happy"); sMood("sad"); closeSession(); });
+  assert.equal((await calls(page, "impact")).length + (await calls(page, "notify")).length, n + 1, "no vibration when off");
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage["turkce-yol-v1"]).hap), false);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("app share: the phone's share sheet with the site link; closing it is not an error", async () => {
+  const { page, errors } = await openApp(browser, "#home", { native: true, init: phone });
+  await page.evaluate(() => shareSite("Yutuq oldim!"));
+  const [o] = await calls(page, "share");
+  assert.deepEqual([o.text, o.url, o.title], ["Yutuq oldim!", "https://turkceyol.web.app/", "Türkçe Yoʻl"]);
+  assert.equal(await page.evaluate(() => S.shared), 1);
+  await page.evaluate(() => { window.__cancelShare = true; return shareLink("https://turkceyol.web.app/#do-x", "Doʻst boʻlaylik"); });
+  assert.equal((await calls(page, "share")).length, 2);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("website: none of the phone features are used — browser speech, voice and share stay as they were", async () => {
+  const { page, errors } = await openApp(browser, "#settings");
+  const r = await page.evaluate(() => [IS_NATIVE, SR === NativeSR, ntts(), nativePlugin("Share"), !!document.querySelector('[data-act="hap"]')]);
+  assert.deepEqual(r, [false, false, null, null, false]);
+  await page.evaluate(() => { startSession("say", "pron"); sMood("happy"); closeSession(); });
+  assert.deepEqual(errors, []);
+  await page.close();
 });
