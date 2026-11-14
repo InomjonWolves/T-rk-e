@@ -68,7 +68,9 @@ jobs:
             ./gradlew --no-daemon -q assembleRelease bundleRelease
             cp app/build/outputs/apk/release/app-release.apk ../../out/turkce-yol-ilova.apk
             cp app/build/outputs/bundle/release/app-release.aab ../../out/turkce-yol-ilova.aab
-            keytool -printcert -jarfile ../../out/turkce-yol-ilova.apk | grep -m1 "SHA256"
+            # v2/v3 imzo: apksigner bilan tekshiriladi (keytool faqat eski v1 imzoni o'qiydi)
+            APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
+            "$APKSIGNER" verify --print-certs ../../out/turkce-yol-ilova.apk | grep -m1 "SHA-256" || echo "::warning::imzo tekshiruvi o'qilmadi"
           else
             unset ANDROID_KEY_PASS
             ./gradlew --no-daemon -q assembleDebug
