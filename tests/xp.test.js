@@ -18,6 +18,11 @@ const keyOf = n => new Date(n * DAY).toISOString().slice(0, 10);
 const weekStart = n => n - (new Date(n * DAY).getUTCDay() + 6) % 7;
 const THIS_WEEK = keyOf(weekStart(dayNum())), LAST_WEEK = keyOf(weekStart(dayNum()) - 7), TODAY = keyOf(dayNum());
 
+// The result screen counts the XP up from 0: read it once the count has finished
+const resText = async page => {
+  await page.waitForFunction(() => { const b = document.querySelector("[data-count]"); return !b || b.textContent === `+${b.dataset.count} XP`; });
+  return page.textContent(".result");
+};
 test("reward table: accuracy, set size, repeats, fast tapping, daily ceiling, self-rated cards", async () => {
   const { page, errors } = await openApp(browser, "#home");
   const r = await page.evaluate(() => {
@@ -52,17 +57,17 @@ test("a practice session pays once at the end; repeating it pays less and says w
   await page.evaluate(() => startSession("quiz", "0"));
   await answerAllRight(page);
   assert.equal(await page.evaluate(() => S.xp), 30);
-  assert.match(await page.textContent(".result"), /\+30 XP[\s\S]*Lugʻat testi/);
+  assert.match(await resText(page), /\+30 XP[\s\S]*Lugʻat testi/);
   await page.click("[data-act=again]");
   await answerAllRight(page);
   assert.equal(await page.evaluate(() => S.xp), 45);
-  assert.match(await page.textContent(".result"), /\+15 XP[\s\S]*bugun 2-marta/);
+  assert.match(await resText(page), /\+15 XP[\s\S]*bugun 2-marta/);
   await page.click("[data-act=close-session]");
   // Too fast: no XP, the result explains it
   await page.evaluate(() => { XP_FAST_MS = 1e9; startSession("quiz", "1"); });
   await answerAllRight(page);
   assert.equal(await page.evaluate(() => S.xp), 45);
-  assert.match(await page.textContent(".result"), /juda tez/);
+  assert.match(await resText(page), /juda tez/);
   await page.click("[data-act=close-session]");
   await page.evaluate(() => { XP_FAST_MS = 0; });
   // Daily tasks: vocab is done; grammar and the third task finish the set: +100 on top

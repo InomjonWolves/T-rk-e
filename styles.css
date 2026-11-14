@@ -1540,3 +1540,38 @@ details.fold > .list .unit:active { box-shadow: 0 1px 0 var(--line-2); }
 
 /* Mustaqil Android ilova (Capacitor): Google bilan kirish telefonning oʻz oynasi orqali; plagini yoʻq eski versiyada yashiriladi */
 html.native-nogoogle [data-act="auth-google"] { display: none; }
+
+/* ---------- Android 6-bosqich: answer streak (combo), glowing bar, card hop/shake, result screen motion ---------- */
+.session-top { position: relative; }
+.session-top .bar > i { transition: width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1.1), background 0.3s; }
+.combo { position: absolute; left: 0; right: 0; top: calc(100% + 8px); margin: 0 auto; width: max-content; z-index: 3; display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px 5px 8px; border-radius: 999px; background: var(--orange-soft); color: var(--orange-ink); font-weight: 800; font-size: 14px; box-shadow: 0 3px 0 var(--line-2); opacity: 0; pointer-events: none; }
+.combo svg { width: 18px; height: 18px; color: var(--orange); }
+.combo b { font-size: 16px; }
+.combo.show { opacity: 1; animation: combo-in 1.7s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+@keyframes combo-in { 0% { opacity: 0; transform: translateY(-6px) scale(0.6); } 12% { opacity: 1; transform: translateY(0) scale(1.12); } 22% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-4px); } }
+.session[data-combo="hot"] .session-top .bar > i { background: linear-gradient(90deg, var(--gold), var(--orange)); box-shadow: 0 0 10px color-mix(in srgb, var(--orange) 55%, transparent); }
+.session[data-combo="hot"] .session-top .bar > i::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%) 0 0 / 200% 100%; animation: bar-shine 1.2s linear infinite; }
+@keyframes bar-shine { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+.q-card.hop { animation: pop-ok 0.35s cubic-bezier(0.3, 0.8, 0.3, 1.3); }
+.q-card.shake { animation: shake 0.35s ease; }
+.result { position: relative; }
+.result .score { animation: score-pop 0.55s cubic-bezier(0.3, 0.8, 0.3, 1.4) 0.1s both; }
+.result.perfect .score { color: var(--green-ink); }
+@keyframes score-pop { from { transform: scale(0.4); opacity: 0; } to { transform: none; opacity: 1; } }
+.res-grid > div { animation: rise 0.4s ease both; }
+.res-grid > div:nth-child(1) { animation-delay: 0.25s; }
+.res-grid > div:nth-child(2) { animation-delay: 0.35s; }
+.res-grid > div:nth-child(3) { animation-delay: 0.45s; }
+.res-meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.res-meta .tag svg { width: 14px; height: 14px; }
+.res-confetti { position: fixed; inset: 0; z-index: 5; overflow: hidden; }
+.res-confetti i.c0 { background: var(--gold); }
+.res-confetti i.c1 { background: var(--danger); }
+.res-confetti i.c2 { background: var(--accent); }
+.res-confetti i.c3 { background: var(--green); }
+.res-confetti i.c4 { background: var(--violet); }
+.res-confetti i.c5 { background: var(--teal); }
+@media (prefers-reduced-motion: reduce) {
+  .combo.show, .q-card.hop, .q-card.shake, .result .score, .res-grid > div, .session[data-combo="hot"] .session-top .bar > i::before { animation: none; }
+  .res-confetti { display: none; }
+}

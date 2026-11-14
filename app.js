@@ -324,7 +324,7 @@ async function fcmToken() {
 // UTC hour for a local hour (the server runs in UTC)
 const remUtcHour = (h, z = new Date().getTimezoneOffset()) => ((Math.floor(h + z / 60) % 24) + 24) % 24;
 async function remSync() {
-  if (IS_NATIVE) return nremSync();
+  if (IS_NATIVE) { widgetSync(); return nremSync(); }
   const h = remHour(), on = !!h && remOk(), s = streakNow();
   // For the service worker: what to say and whether today already has practice
   try {
@@ -397,6 +397,25 @@ if (IS_NATIVE) (() => {
   // Back in the app (maybe on another day, or the permission was changed in the phone settings)
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") ln.checkPermissions().then(p => { NREM_PERM = p.display || "prompt"; nremSync(); }, () => {}); });
 })();
+
+/* The Android app's home-screen widget (native TyWidget + TyWidgetPlugin): the streak, today's XP and goal, and the
+   word of the day for the next 7 days — the widget itself works out a new day (no practice yet → 0 XP, streak kept
+   only from yesterday). Sent after save() (with the reminders) and when the app goes to the background. */
+let WG_SIG = "";
+function widgetData() {
+  const n = dayNum();
+  return { day: todayKey(), last: S.lastDay || "", streak: S.streak || 0, xp: S.day === todayKey() ? S.dayXp || 0 : 0, goal: S.goal || 50,
+    words: Array.from({ length: 7 }, (_, k) => { const w = wordOfDay(n + k); return [keyOf(n + k), w.tr, w.uz]; }) };
+}
+function widgetSync() {
+  const p = nativePlugin("TyWidget"); if (!p) return;
+  let d; try { d = widgetData(); } catch (e) { return; }
+  const sig = JSON.stringify(d);
+  if (sig === WG_SIG) return;
+  WG_SIG = sig;
+  try { const r = p.update(d); if (r && r.catch) r.catch(() => { WG_SIG = ""; }); } catch (e) { WG_SIG = ""; }
+}
+if (IS_NATIVE) document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") widgetSync(); });
 
 /* ---------- Daily tasks (+100 for all three) and the weekly challenge (+250) ---------- */
 function dqToday() {
@@ -1174,9 +1193,9 @@ function modeSheet(u, title) {
 }
 
 /* ---------- Home ---------- */
-function wordOfDay() {
+function wordOfDay(n = dayNum()) {
   const pool = kNext().level === "A1" ? ALL.filter(w => w.unit < 36) : ALL;
-  return pool[(dayNum() * 7) % pool.length];
+  return pool[(n * 7) % pool.length];
 }
 // Home: one status card (level, streak, today's XP, words, the week), today's plan, where to continue, tasks, the word of the day
 function statusCard() {
@@ -1817,6 +1836,7 @@ function viewSettings() {
         <select class="k-select" data-act="tts-voice" style="max-width:150px">${trVoices().map(v => `<option value="${esc(v.name)}" ${ttsVoice() === v ? "selected" : ""}>${esc(v.name.replace(/^Microsoft |^Google /, "").slice(0, 28))}</option>`).join("")}</select></label>` : ""}
       <div class="set-row rem-row set-wide"><span><b>Kunlik eslatma</b><small>${esc(remText())}</small></span>
         <span class="mini-seg">${[[0, "Yoʻq"], [9, "9:00"], [19, "19:00"], [21, "21:00"]].map(([v, l]) => `<button data-act="remind" data-v="${v}" aria-pressed="${remHour() === v}">${l}</button>`).join("")}</span></div>
+      <button class="set-row" data-act="sfx" role="switch" aria-checked="${S.sfx !== false}"><span><b>Ovoz effektlari</b><small>Toʻgʻri va xato javob, mashq yakuni ovozlari</small></span><span class="switch"></span></button>
       ${IS_NATIVE ? `<button class="set-row" data-act="hap" role="switch" aria-checked="${S.hap !== false}"><span><b>Tebranish</b><small>Toʻgʻri javobda yengil, xatoda qisqa tebranish</small></span><span class="switch"></span></button>` : ""}
       ${USER ? `<button class="set-row" data-act="pub" role="switch" aria-checked="${S.pub}"><span><b>Reytingda koʻrinish</b><small>Ismingiz va XP boshqa oʻquvchilarga koʻrinadi</small></span><span class="switch"></span></button>
       <button class="set-row" data-act="anon" role="switch" aria-checked="${S.anon !== false}"><span><b>Anonim statistika</b><small>Ism va pochtasiz koʻnikma koʻrsatkichlari saytni yaxshilash uchun yuboriladi</small></span><span class="switch"></span></button>
@@ -2467,6 +2487,7 @@ function celebrateQueued() { if (ACH_QUEUE.length && $("celebrate").hidden && !c
 function showCelebrate() {
   const c = ACH_QUEUE[0];
   if (!c) return;
+  beep("fanfare");
   const el = $("celebrate");
   const colors = ["#ffb422", "#e5484d", "#3b5bdb", "#17a36a", "#7a54e0", "#0fa3a0"];
   el.innerHTML = `<div class="confetti" aria-hidden="true">${Array.from({ length: 36 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 0.6).toFixed(2)}s;animation-duration:${(2 + Math.random() * 1.5).toFixed(2)}s;transform:rotate(${Math.random() * 360}deg)"></i>`).join("")}</div>
@@ -2784,9 +2805,10 @@ function startSession(mode, u) {
     // Least-known words first, with a little randomness
     items = shuffle(shuffle(pool).sort((a, b) => known(a) - known(b)).slice(0, 10));
   }
-  SES = { mode, u, items, i: 0, right: 0, xp: 0, answered: false, re: new Set(), skAll: new Set(), times: [], last: Date.now(), had: ACH.filter(achDone).map(a => a.id) };
+  SES = { mode, u, items, i: 0, right: 0, xp: 0, combo: 0, best: 0, t0: Date.now(), answered: false, re: new Set(), skAll: new Set(), times: [], last: Date.now(), had: ACH.filter(achDone).map(a => a.id) };
   sessionEl.hidden = false;
   document.body.style.overflow = "hidden";
+  delete sessionEl.dataset.combo; { const cb = $("s-combo"); if (cb) cb.remove(); }
   $("s-cat").innerHTML = catSVG({ pose: "head", look: catLook() });
   renderStep();
   CatLife.scan();
@@ -4178,15 +4200,81 @@ function gxBad(it) {
   const key = it.code + "#" + it.i;
   if (!SES.re.has(key) && SES.items.length < 40) { SES.re.add(key); SES.items.push(it); }
 }
+/* ---------- Sound effects (Android 6-bosqich, the site too) ----------
+   Short tones made on the spot with Web Audio — our own, no sound files: a rising two-note chime for a right answer,
+   a soft low bump for a wrong one, a brighter run for an answer streak (combo), a short fanfare when a practice
+   ends and a longer one for a celebration. Profil → Sozlamalar → «Ovoz effektlari» (S.sfx, on by default). */
+let ACTX = null;
+function sfxCtx() {
+  if (!ACTX) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; try { ACTX = new C(); } catch (e) { return null; } }
+  if (ACTX.state === "suspended") try { const r = ACTX.resume(); if (r && r.catch) r.catch(() => {}); } catch (e) {}
+  return ACTX;
+}
+// [start s, frequency Hz, length s, wave, volume, glide-to Hz]
+const SFX = {
+  ok: [[0, 784, 0.11, "sine", 0.16], [0.085, 1175, 0.24, "sine", 0.15]],
+  no: [[0, 233, 0.16, "triangle", 0.17, 175], [0.13, 175, 0.24, "triangle", 0.13, 131]],
+  combo: [[0, 1047, 0.09, "sine", 0.13], [0.065, 1319, 0.09, "sine", 0.13], [0.13, 1568, 0.26, "sine", 0.14]],
+  done: [[0, 523, 0.14, "triangle", 0.15], [0.11, 659, 0.14, "triangle", 0.15], [0.22, 784, 0.14, "triangle", 0.15], [0.34, 1047, 0.5, "sine", 0.15], [0.34, 784, 0.5, "sine", 0.08]],
+  fanfare: [[0, 392, 0.13, "triangle", 0.14], [0.12, 523, 0.13, "triangle", 0.14], [0.24, 659, 0.13, "triangle", 0.14], [0.36, 784, 0.2, "triangle", 0.15], [0.56, 659, 0.12, "triangle", 0.12], [0.68, 1047, 0.7, "sine", 0.16], [0.68, 784, 0.7, "sine", 0.09], [0.68, 523, 0.7, "sine", 0.07]]
+};
+function beep(name) {
+  if (S.sfx === false || !SFX[name]) return;
+  const c = sfxCtx(); if (!c) return;
+  try {
+    const t0 = c.currentTime + 0.01;
+    for (const [dt, f, d, type, vol, f2] of SFX[name]) {
+      const o = c.createOscillator(), g = c.createGain(), t = t0 + dt;
+      o.type = type; o.frequency.setValueAtTime(f, t);
+      if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + d + 0.03);
+    }
+  } catch (e) {}
+}
+// Mobile browsers start sound only after a tap: prepare it on the first one
+document.addEventListener("pointerdown", () => { if (S.sfx !== false) sfxCtx(); }, { capture: true, once: true });
 const sCat = () => $("s-cat").querySelector(".cat");
 // The verdict of the current step: Pamuk reacts and the "next" button takes the colour of the answer
 // The app: a light tap for a right answer, the "error" pattern for a wrong one (Profil → Sozlamalar → Tebranish, S.hap)
+function hapticDone() {
+  if (S.hap === false) return;
+  const h = nativePlugin("Haptics"); if (!h) return;
+  try { const r = h.notification({ type: "SUCCESS" }); if (r && r.catch) r.catch(() => {}); } catch (e) {}
+}
 function haptic(ok) {
   if (S.hap === false) return;
   const h = nativePlugin("Haptics"); if (!h) return;
   try { const r = ok ? h.impact({ style: "LIGHT" }) : h.notification({ type: "ERROR" }); if (r && r.catch) r.catch(() => {}); } catch (e) {}
 }
-function sMood(m) { haptic(m === "happy"); sessionEl.dataset.r = m === "happy" ? "ok" : "no"; CatLife.mood(sCat(), m, m === "happy" ? 1000 : 1600); }
+/* Answer streak inside one practice (combo): 3, 5, 10… right answers in a row get a badge, a brighter sound and a glowing bar */
+const COMBO_AT = n => n === 3 || n === 5 || (n >= 10 && n % 5 === 0);
+function comboShow(n) {
+  const top = sessionEl.querySelector(".session-top"); if (!top) return;
+  let b = $("s-combo");
+  if (!b) { b = document.createElement("div"); b.id = "s-combo"; b.className = "combo"; b.setAttribute("role", "status"); top.appendChild(b); }
+  b.innerHTML = `${ICON.flame}<b>${n}</b> ketma-ket!`;
+  b.classList.remove("show"); void b.offsetWidth; b.classList.add("show");
+  clearTimeout(COMBO_T); COMBO_T = setTimeout(() => b.classList.remove("show"), 1800);
+}
+let COMBO_T = 0;
+function sMood(m) {
+  const ok = m === "happy";
+  haptic(ok);
+  sessionEl.dataset.r = ok ? "ok" : "no";
+  if (SES) {
+    SES.combo = ok ? (SES.combo || 0) + 1 : 0;
+    SES.best = Math.max(SES.best || 0, SES.combo);
+    if (SES.combo >= 3) sessionEl.dataset.combo = "hot"; else delete sessionEl.dataset.combo;
+  }
+  const hot = ok && SES && COMBO_AT(SES.combo);
+  beep(hot ? "combo" : ok ? "ok" : "no");
+  if (hot) comboShow(SES.combo);
+  // The question card answers too: a little hop for right, a shake for wrong (choice buttons have their own)
+  const card = stage.querySelector(".q-card");
+  if (card) { card.classList.remove("hop", "shake"); void card.offsetWidth; card.classList.add(ok ? "hop" : "shake"); }
+  CatLife.mood(sCat(), m, ok ? 1000 : 1600);
+}
 function good() { tick(); const w = SES.items[SES.i]; SES.right++; skillLog(SES.sk, true); grade(w, true); lsmHit(w, SES.m); sMood("happy"); }
 function bad() {
   tick();
@@ -4206,6 +4294,16 @@ function sesKind(mode) {
   return "vocab";
 }
 function nextStep() { micStop(true); SES.i++; renderStep(); }
+// The XP on the result screen counts up from 0 (at once when the system asks for less motion)
+function countUp(el) {
+  if (!el) return;
+  const to = +el.dataset.count || 0, fmt = v => `+${v} XP`;
+  if (!to || matchMedia("(prefers-reduced-motion: reduce)").matches) { el.textContent = fmt(to); return; }
+  const t0 = performance.now(), dur = 900;
+  el.textContent = fmt(0);
+  const step = t => { const k = Math.min(1, (t - t0) / dur), v = Math.round(to * (1 - Math.pow(1 - k, 3))); el.textContent = fmt(v); if (k < 1 && el.isConnected) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
 function renderResult() {
   const n = SES.items.length;
   $("s-bar").style.width = "100%";
@@ -4218,17 +4316,25 @@ function renderResult() {
     SES.shown = 0; tick();
     SES.award = xpAward(sesKind(SES.mode), { right: SES.right, n, key: SES.mode + "|" + SES.u, times: SES.times, half: SES.mode === "cards", sk: [...SES.skAll] });
     SES.xp = SES.award.xp;
+    SES.secs = Math.round((Date.now() - (SES.t0 || Date.now())) / 1000);
+    const rr = SES.right / n;
+    beep(rr >= 0.4 ? "done" : "no");
+    if (rr >= 0.7) hapticDone();
   }
+  delete sessionEl.dataset.combo; { const cb = $("s-combo"); if (cb) cb.remove(); }
   const r = SES.right / n;
   const title = r === 1 ? "Mükemmel! Hammasi toʻgʻri" : r >= 0.7 ? "Harika! Juda yaxshi" : r >= 0.4 ? "İyi! Yaxshi boshlanish" : "Pes etme! Taslim boʻlmang";
   const fresh = ACH.filter(a => achDone(a) && !SES.had.includes(a.id));
-  stage.innerHTML = `<div class="result stage" style="flex:none;overflow:visible">
+  const mm = Math.floor((SES.secs || 0) / 60), ss = String((SES.secs || 0) % 60).padStart(2, "0");
+  stage.innerHTML = `<div class="result stage${r === 1 ? " perfect" : ""}" style="flex:none;overflow:visible">
+    ${r >= 0.8 ? `<div class="confetti res-confetti" aria-hidden="true">${Array.from({ length: 24 }, (_, i) => `<i class="c${i % 6}" style="left:${(i * 37 + 11) % 100}%;animation-delay:${(i % 8) * 0.07}s;animation-duration:${(1.8 + (i % 5) * 0.25).toFixed(2)}s"></i>`).join("")}</div>` : ""}
     <div>${mascot(r >= 0.7 ? "trophy" : "sit")}</div>
     <div class="score">${SES.right}/${n}</div>
     <h2>${esc(title)}</h2>
     <p>${r >= 0.7 ? "Pamuk sizdan faxrlanadi!" : "Pamuk aytadi: xatolar ham oʻrganishning bir qismi."}</p>
+    <div class="res-meta"><span class="tag green-t">Aniqlik ${Math.round(r * 100)}%</span>${(SES.best || 0) >= 3 ? `<span class="tag orange-t">${ICON.flame}${SES.best} ketma-ket</span>` : ""}${SES.secs ? `<span class="tag sky-t">${mm}:${ss}</span>` : ""}</div>
     <div class="res-grid">
-      <div class="res-xp"><b>+${SES.xp} XP</b><span>${esc(XP_KIND[SES.award.kind])}</span></div>
+      <div class="res-xp"><b data-count="${SES.xp}">+${SES.xp} XP</b><span>${esc(XP_KIND[SES.award.kind])}</span></div>
       <div><b>${S.dayXp}<i>/${S.goal}</i></b><span>bugungi XP</span></div>
       <div><b>${streakNow()}</b><span>kun ketma-ket</span></div>
     </div>
@@ -4239,6 +4345,7 @@ function renderResult() {
     ${fresh.length ? `<div class="tags" style="justify-content:center">${fresh.map(a => `<span class="tag violet-t">${ICON.star}Yangi yutuq: ${esc(a.t)}</span>`).join("")}</div>` : ""}
   </div>`;
   CatLife.scan();
+  countUp(stage.querySelector("[data-count]"));
   setTimeout(() => CatLife.mood(stage.querySelector(".cat"), r >= 0.7 ? "happy" : "sad", 1500), 250);
   setTimeout(celebrateQueued, 900);
   foot.innerHTML = `<button class="btn btn-ghost" data-act="close-session">Yopish</button>${SES.mode === "gx" ? (() => { const nx = GX_CODES[GX_CODES.indexOf(SES.u) + 1]; return nx ? `<button class="btn btn-grad" data-act="gx-start" data-c="${nx}">Keyingi: ${esc(nx)}</button>` : ""; })() : ["review", "mistakes", "gxm", "lmis", "smis"].includes(SES.mode) ? "" : `<button class="btn btn-grad" data-act="again">Yana mashq</button>`}`;
@@ -4298,6 +4405,7 @@ function onAct(e) {
   else if (act === "remind") remSet(b.dataset.v);
   else if (act === "tts-rate") { S.tts = Object.assign({}, S.tts, { r: +b.dataset.v }); save(); const y = window.scrollY; route(); window.scrollTo(0, y); speak("Merhaba! Türkçe öğreniyorum."); }
   else if (act === "goal") { S.goal = +b.dataset.v; save(); const y = window.scrollY; route(); window.scrollTo(0, y); }
+  else if (act === "sfx") { S.sfx = S.sfx === false; save(); if (S.sfx) beep("ok"); const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "hap") { S.hap = S.hap === false; save(); haptic(true); const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "anon") {
     S.anon = S.anon === false; save();

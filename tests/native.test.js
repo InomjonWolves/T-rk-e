@@ -137,6 +137,7 @@ const phone = () => {
     App: { addListener: (ev, f) => { if (ev === "backButton") window.__back = f; return Promise.resolve({ remove() {} }); }, minimizeApp: async () => log("minimize") },
     Haptics: { impact: async o => log("impact", o.style), notification: async o => log("notify", o.type) },
     Share: { share: async o => { log("share", o); if (window.__cancelShare) throw new Error("Share canceled"); return {}; } },
+    TyWidget: { update: async d => log("widget", d) },
     LocalNotifications: {
       checkPermissions: async () => ({ display: window.__nperm || "prompt" }),
       requestPermissions: async () => { log("nperm"); window.__nperm = window.__ngrant || "granted"; return { display: window.__nperm }; },
@@ -296,4 +297,32 @@ test("app reminders: scheduled on the phone for the coming days at the chosen ho
   assert.equal((await calls(page, "schedule")).length, 2);
   assert.deepEqual(errors, []);
   await page.close();
+});
+
+test("home-screen widget: the app sends the streak, today's XP and a week of words; the native side is registered", async () => {
+  const { page, errors } = await openApp(browser, "#home", { native: true, init: phone });
+  await page.evaluate(() => { S.lastDay = todayKey(); S.streak = 4; S.day = todayKey(); S.dayXp = 30; S.goal = 50; remSync(); });
+  await page.waitForFunction(() => window.__nc.some(c => c[0] === "widget"));
+  const [d] = (await calls(page, "widget")).slice(-1);
+  assert.deepEqual([d.streak, d.xp, d.goal, d.words.length], [4, 30, 50, 7]);
+  assert.equal(d.day, d.last);
+  assert.equal(d.words[0][0], d.day);
+  assert.ok(d.words.every(w => w.length === 3 && w[1] && w[2]));
+  // Nothing changed: not sent again; going to the background sends a change
+  const k = (await calls(page, "widget")).length;
+  await page.evaluate(() => widgetSync());
+  assert.equal((await calls(page, "widget")).length, k);
+  await page.evaluate(() => { S.dayXp = 60; Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true }); document.dispatchEvent(new Event("visibilitychange")); });
+  await page.waitForFunction(n => window.__nc.filter(c => c[0] === "widget").length > n, k);
+  assert.deepEqual(errors, []);
+  await page.close();
+  // Native side: provider in the manifest, plugin registered, only views a home screen can draw
+  const main = "native/android/app/src/main/";
+  assert.match(read(main + "AndroidManifest.xml"), /<receiver[\s\S]*?android:name="\.TyWidget"[\s\S]*?android\.appwidget\.provider[\s\S]*?@xml\/ty_widget_info/);
+  assert.match(read(main + "java/uz/turkceyol/app/MainActivity.java"), /registerPlugin\(TyWidgetPlugin\.class\);\s*super\.onCreate/);
+  assert.match(read(main + "java/uz/turkceyol/app/TyWidgetPlugin.java"), /@CapacitorPlugin\(name = "TyWidget"\)/);
+  const tags = [...read(main + "res/layout/ty_widget.xml").matchAll(/<([A-Za-z.]+)[\s>]/g)].map(m => m[1]);
+  for (const t of tags) assert.ok(["LinearLayout", "FrameLayout", "TextView", "ImageView", "ProgressBar"].includes(t), `RemoteViews cannot show ${t}`);
+  const ids = [...read(main + "res/layout/ty_widget.xml").matchAll(/@\+id\/(\w+)/g)].map(m => m[1]);
+  for (const id of [...read(main + "java/uz/turkceyol/app/TyWidget.java").matchAll(/R\.id\.(\w+)/g)].map(m => m[1])) assert.ok(ids.includes(id), id);
 });

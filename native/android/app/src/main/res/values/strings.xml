@@ -4,4 +4,6 @@
     <string name="title_activity_main">Türkçe Yoʻl</string>
     <string name="package_name">uz.turkceyol.app</string>
     <string name="custom_url_scheme">uz.turkceyol.app</string>
+    <string name="widget_name">Türkçe Yoʻl — bugungi kun</string>
+    <string name="widget_desc">Seriya, bugungi XP va bugungi soʻz</string>
 </resources>
