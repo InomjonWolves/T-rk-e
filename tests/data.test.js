@@ -8,6 +8,15 @@ const { ROOT, loadContent } = require("./helpers");
 const C = loadContent();
 const read = f => fs.readFileSync(path.join(ROOT, f), "utf8");
 
+// TDK writes these compounds apart (Güncel Türkçe Sözlük); checked once with a Turkish spell checker (2026-11-14)
+test("Turkish spelling: TDK compounds written apart, no misspelled loanwords", () => {
+  const files = ["content.js", "lugat.js", "course.js", "guide.js", "grammar-ex.js", "oqish.js", "placement.js", "grammar.js"];
+  for (const f of files) {
+    const t = fs.readFileSync(path.join(ROOT, f), "utf8");
+    for (const w of ["önyargı", "doğalgaz", "yerçekimi", "özgüven", "özsaygı", "alçakgönüllü", "yurtiçi", "çevrimiçi", "dilbilim", "sinirbilim", "algoritm="]) assert.ok(!t.includes(w), `${f}: ${w}`);
+  }
+});
+
 test("grammar guide: unique topic codes and balanced [suffix] marks", () => {
   const all = C.GUIDE.flatMap(l => l.groups.flatMap(g => g.items));
   const codes = all.map(i => i.code);

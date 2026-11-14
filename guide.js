@@ -553,7 +553,7 @@ GUIDE.push({ id: "B2", name: "B2", uz: "Oʻrtadan yuqori", groups: [
     note: "Tekshirish usuli: da / de ni olib tashlasangiz ham gap buzilmasa — bu bogʻlovchi, alohida yoziladi.",
     ex: ["Ben [de] çay istiyorum.", "Men ham choy xohlayman."] }],
   ["A2", "KOʻMAKCHI VA VAQT", { code: "A2.30", tr: "Sıklık zarfları", uz: "Takror ravishlari (har doim, baʼzan)", f: ["SIKLIK ZARFI + FİİL", "RAVISH + FEʼL"],
-    forms: { h: ["Turkcha", "Oʻzbekcha"], r: [["her zaman", "har doim"], ["genellikle / çoğunlukla", "odatda / koʻpincha"], ["sık sık", "tez-tez"], ["bazen / ara sıra", "baʼzan / goh-goh"], ["nadiren", "kamdan-kam"], ["hiç (+ inkor)", "hech qachon"], ["her gün / her hafta", "har kuni / har hafta"], ["günde iki kez", "kuniga ikki marta"]] },
+    forms: { h: ["Turkcha", "Oʻzbekcha"], r: [["her zaman", "har doim"], ["genellikle / çoğunlukla", "odatda / koʻpincha"], ["sık sık", "tez-tez"], ["bazen / ara sıra", "baʼzan / goh-goh"], ["nadiren", "kamdan-kam"], ["hiç", "hech qachon (inkor bilan)"], ["her gün / her hafta", "har kuni / har hafta"], ["günde iki kez", "kuniga ikki marta"]] },
     rule: "Takror ravishlari odatda feʼldan oldin, koʻpincha gap boshida yoki egadan keyin keladi. Ular bilan koʻproq geniş zaman (-Ir) yoki hozirgi zamon (-iyor) ishlatiladi. “Hiç” inkor feʼl bilan keladi: Hiç sigara içmem.",
     ex: ["Sabahları [genellikle] kahve iç[er]im.", "Ertalablari odatda kofe ichaman."], neg: ["[Hiç] et ye[mem].", "Hech goʻsht yemayman."], q: ["Ne [sıklıkla] spor yap[ar]sın?", "Qanchalik tez-tez sport bilan shugʻullanasan?"] }],
   ["A2", "FEʼL: MAYL", { code: "A2.31", tr: "-mAyA başlamak / -mAyI sevmek", uz: "-ishga boshlamoq, -ishni yaxshi koʻrmoq", f: ["FİİL + mAyA / mAyI + FİİL", "FEʼL + -ishga / -ishni + FEʼL"],

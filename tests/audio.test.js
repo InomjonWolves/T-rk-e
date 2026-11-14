@@ -74,6 +74,10 @@ test("audio: the text list covers every word, dialogs and readings; site config 
   assert.equal(keys.size, list.length, "no key collisions");
   assert.ok(list.some(x => x[1] === "Ben de memnun oldum."), "course dialog line");
   assert.ok(list.some(x => x[1].startsWith("Merhaba! Benim adım Ali.")), "reading paragraph");
+  // Content quality (2026-11-14): the Turkish voice reads only Turkish — no Uzbek notes slipped into the Turkish side
+  const UZ_ONLY = new Set(["kerak", "nima", "ekan", "uchun", "bilan", "yoki", "emas", "harakat", "egalik", "kesimda", "inkor", "qanday", "boʻladi"]);
+  const uz = list.filter(([, t]) => t.toLocaleLowerCase("tr").split(/[^a-zçğıöşüâîûʻʼ]+/).some(w => UZ_ONLY.has(w)));
+  assert.deepEqual(uz.map(x => x[1]), [], "Uzbek words in a text read by the Turkish voice");
   const chars = list.reduce((s, x) => s + x[1].length, 0);
   assert.ok(chars < 300000, `${chars} characters — keep it inside the free tier`);
   const sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");

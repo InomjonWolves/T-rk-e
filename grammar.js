@@ -13,7 +13,7 @@ const LETTERS = [
   ["H h", "hava", "havo", "h"],
   ["I ı", "ılık", "iliq", "Nuqtasiz: “qiz”dagi qisqa i", 1],
   ["İ i", "iki", "ikki", "Nuqtali: katta harfda ham nuqta bor", 1],
-  ["J j", "japon", "yapon", "“jurnal”dagi j, kam uchraydi"],
+  ["J j", "Japon", "yapon", "“jurnal”dagi j, kam uchraydi"],
   ["K k", "kedi", "mushuk", "k"],
   ["L l", "limon", "limon", "l"],
   ["M m", "masa", "stol", "m"],
