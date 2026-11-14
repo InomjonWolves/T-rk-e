@@ -110,15 +110,35 @@ const unitProgress = ui => { const ws = unitWords(ui); return ws.length ? ws.fil
 const learnedCount = () => ALL.filter(w => known(w) >= 2).length;
 const gramDone = g => { const r = S.gram[g.id] || []; return g.quiz.every((q, i) => r[i]); };
 const gramCount = () => GRAMMAR.filter(gramDone).length;
-/* Rule exercises tied to the book topics (grammar-ex.js) */
-const GX_CODES = Object.keys(BX);
+/* Rule exercises tied to the book topics (grammar-ex.js → BX) and the grammar guide (guide.js → GUIDE) come right
+   after the first screen (loadGram, like course.js) — the home page does not need them (~190 KB less to load and run
+   before it shows). Until then BX/GUIDE are empty: views that need them wait (needGram → the NEED_COURSE path of
+   route() and taps), the rule achievements are not counted (gxN → Infinity). Both files declare them with var. */
+var BX = typeof BX !== "undefined" ? BX : {}, GUIDE = typeof GUIDE !== "undefined" ? GUIDE : [];
+let GX_CODES = [], GRAM_FULL = false, GRAM_P = null;
+const needGram = () => { if (!GRAM_FULL) throw NEED_COURSE; };
+const gxN = lv => GRAM_FULL ? (lv ? gxCount(lv) : GX_CODES.length) : Infinity;
+function gramInit() {
+  GX_CODES = Object.keys(BX);
+  GUIDE_ALL.length = 0;
+  GUIDE.forEach(l => l.groups.forEach(g => g.items.forEach(i => GUIDE_ALL.push(Object.assign({ level: l.id, group: g.name }, i)))));
+  GRAM_FULL = GX_CODES.length > 0 && GUIDE.length > 0;
+}
+function loadGram() {
+  if (GRAM_FULL) return Promise.resolve();
+  return GRAM_P || (GRAM_P = Promise.all(["guide.js", "grammar-ex.js"].map(src => new Promise((ok, fail) => {
+    const sc = document.createElement("script");
+    sc.src = src; sc.onload = ok; sc.onerror = () => { sc.remove(); fail(new Error(src)); };
+    document.head.appendChild(sc);
+  }))).then(() => { gramInit(); if (!GRAM_FULL) throw new Error("grammar"); }, e => { GRAM_P = null; throw e; }));
+}
 const gxSolved = c => (S.gx[c] || []).filter(Boolean).length;
 const gxDone = c => gxSolved(c) >= BX[c].length;
 const gxDoneCount = lv => GX_CODES.filter(c => (!lv || c.startsWith(lv + ".")) && gxDone(c)).length;
 const gxCount = lv => GX_CODES.filter(c => c.startsWith(lv + ".")).length;
 const gxMistakes = () => Object.keys(S.gxm).filter(k => S.gxm[k] > 0 && BX[k.split("#")[0]]);
 const GUIDE_ALL = [];
-GUIDE.forEach(l => l.groups.forEach(g => g.items.forEach(i => GUIDE_ALL.push(Object.assign({ level: l.id, group: g.name }, i)))));
+if (Object.keys(BX).length && GUIDE.length) gramInit();
 const gxTopic = c => GUIDE_ALL.find(i => i.code === c) || null;
 const gHash = c => "g-" + c.toLowerCase().replace(/\./g, "-");
 const gxNext = () => GX_CODES.find(c => !gxDone(c)) || GX_CODES[0];
@@ -2083,6 +2103,8 @@ const NEED_COURSE = new Error("NEED_COURSE");
 const COURSE_CORE = COURSE, COURSE_BODY = ["sections", "reading", "exercises"];
 let COURSE_FULL = COURSE.units.every(u => Array.isArray(u.sections)), COURSE_P = null;
 if (!COURSE_FULL) COURSE.units.forEach(u => COURSE_BODY.forEach(k => Object.defineProperty(u, k, { get() { throw NEED_COURSE; }, configurable: true })));
+// Everything that comes after the first screen: the course bodies and the grammar files
+const loadData = () => Promise.all([loadGram(), loadCourse()]);
 function loadCourse() {
   if (COURSE_FULL) return Promise.resolve();
   return COURSE_P || (COURSE_P = new Promise((ok, fail) => {
@@ -2463,11 +2485,11 @@ const ACH = [
   { id: "kt4", r: 3, cat: "course", t: "A1 → C1", d: "5 ta testdan oʻtish", v: () => COURSE.levels.filter(l => kTestBest(l.id) >= l.test.pass).length, n: 5, c: "green", ico: "crown" },
   { id: "gram", cat: "gram", t: "Grammatika", d: "10 asosiy mavzu", v: gramCount, n: GRAMMAR.length, c: "violet", ico: "cap" },
   { id: "gx10", cat: "gram", t: "Qoida ustasi", d: "10 ta qoida mashqi", v: () => gxDoneCount(), n: 10, c: "sky", ico: "quiz" },
-  { id: "gxa1", r: 2, cat: "gram", t: "A1 qoidalari", d: `A1 ning ${gxCount("A1")} ta qoida mashqi`, v: () => gxDoneCount("A1"), n: gxCount("A1"), c: "green", ico: "crown" },
-  { id: "gxa2", r: 2, cat: "gram", t: "A2 qoidalari", d: `A2 ning ${gxCount("A2")} ta qoida mashqi`, v: () => gxDoneCount("A2"), n: gxCount("A2"), c: "violet", ico: "crown" },
-  { id: "gxb1", r: 3, cat: "gram", t: "B1 qoidalari", d: `B1 ning ${gxCount("B1")} ta qoida mashqi`, v: () => gxDoneCount("B1"), n: gxCount("B1"), c: "orange", ico: "crown" },
-  { id: "gxb2", r: 3, cat: "gram", t: "B2 qoidalari", d: `B2 ning ${gxCount("B2")} ta qoida mashqi`, v: () => gxDoneCount("B2"), n: gxCount("B2"), c: "pink", ico: "crown" },
-  { id: "gxc1", r: 3, cat: "gram", t: "C1 qoidalari", d: `C1 ning ${gxCount("C1")} ta qoida mashqi`, v: () => gxDoneCount("C1"), n: gxCount("C1"), c: "teal", ico: "crown" },
+  { id: "gxa1", r: 2, cat: "gram", t: "A1 qoidalari", get d() { return `A1 ning ${GRAM_FULL ? gxCount("A1") : "barcha"} ta qoida mashqi`; }, v: () => gxDoneCount("A1"), get n() { return gxN("A1"); }, c: "green", ico: "crown" },
+  { id: "gxa2", r: 2, cat: "gram", t: "A2 qoidalari", get d() { return `A2 ning ${GRAM_FULL ? gxCount("A2") : "barcha"} ta qoida mashqi`; }, v: () => gxDoneCount("A2"), get n() { return gxN("A2"); }, c: "violet", ico: "crown" },
+  { id: "gxb1", r: 3, cat: "gram", t: "B1 qoidalari", get d() { return `B1 ning ${GRAM_FULL ? gxCount("B1") : "barcha"} ta qoida mashqi`; }, v: () => gxDoneCount("B1"), get n() { return gxN("B1"); }, c: "orange", ico: "crown" },
+  { id: "gxb2", r: 3, cat: "gram", t: "B2 qoidalari", get d() { return `B2 ning ${GRAM_FULL ? gxCount("B2") : "barcha"} ta qoida mashqi`; }, v: () => gxDoneCount("B2"), get n() { return gxN("B2"); }, c: "pink", ico: "crown" },
+  { id: "gxc1", r: 3, cat: "gram", t: "C1 qoidalari", get d() { return `C1 ning ${GRAM_FULL ? gxCount("C1") : "barcha"} ta qoida mashqi`; }, v: () => gxDoneCount("C1"), get n() { return gxN("C1"); }, c: "teal", ico: "crown" },
   { id: "first", cat: "practice", t: "Birinchi qadam", d: "1 ta mashq", v: () => S.sessions, n: 1, c: "violet", ico: "flag" },
   { id: "sess10", cat: "practice", t: "Tirishqoq", d: "10 ta mashq", v: () => S.sessions, n: 10, c: "sky", ico: "bolt" },
   { id: "sess50", r: 2, cat: "practice", t: "Chempion", d: "50 ta mashq", v: () => S.sessions, n: 50, c: "orange", ico: "bolt" },
@@ -2496,7 +2518,7 @@ const ACH = [
   { id: "ktC1", r: 3, cat: "course", t: "C1 sertifikati", d: "C1 daraja testidan 85%+", v: () => (kTestBest("C1") >= 85 ? 1 : 0), n: 1, c: "teal", ico: "star" },
   { id: "kt90", r: 4, cat: "course", t: "Aʼlochi", d: "Har bir daraja testidan 90%+", v: () => COURSE.levels.filter(l => kTestBest(l.id) >= 90).length, n: COURSE.levels.length, c: "orange", ico: "crown" },
   { id: "plB2", r: 3, cat: "course", t: "Isbotlangan daraja", d: "Darajani aniqlash testida B2 yoki C1", v: () => (plRank() >= 4 ? 1 : 0), n: 1, c: "pink", ico: "target" },
-  { id: "gxAll", r: 4, cat: "gram", t: "Grammatika professori", d: `Barcha ${GX_CODES.length} ta qoida mashqi`, v: () => gxDoneCount(), n: GX_CODES.length, c: "violet", ico: "cap" },
+  { id: "gxAll", r: 4, cat: "gram", t: "Grammatika professori", get d() { return `Barcha ${GRAM_FULL ? GX_CODES.length : ""} ta qoida mashqi`.replace("  ", " "); }, v: () => gxDoneCount(), get n() { return gxN(); }, c: "violet", ico: "cap" },
   { id: "gx50", r: 2, cat: "gram", t: "Qoidalar bilimdoni", d: "50 ta qoida mashqi", v: () => gxDoneCount(), n: 50, c: "green", ico: "quiz" },
   { id: "sess200", r: 3, cat: "practice", t: "Marafonchi", d: "200 ta mashq", v: () => S.sessions, n: 200, c: "teal", ico: "bolt" },
   { id: "sess500", r: 4, cat: "practice", t: "Temir iroda", d: "500 ta mashq", v: () => S.sessions, n: 500, c: "violet", ico: "bolt" },
@@ -2797,11 +2819,12 @@ function route() {
   catch (err) {
     if (err !== NEED_COURSE) throw err;
     app.innerHTML = `<div class="view"><div class="glass empty"><div class="spin"></div><b>Yuklanmoqda…</b></div></div>`;
-    loadCourse().then(route, () => { app.innerHTML = `<div class="view"><div class="glass empty"><b>Kurs yuklanmadi</b><span class="muted">Internetni tekshiring.</span><button class="btn btn-grad" data-act="course-retry">Qayta urinish</button></div></div>`; });
+    loadData().then(route, () => { app.innerHTML = `<div class="view"><div class="glass empty"><b>Kurs yuklanmadi</b><span class="muted">Internetni tekshiring.</span><button class="btn btn-grad" data-act="course-retry">Qayta urinish</button></div></div>`; });
   }
 }
 function routeNow() {
   const h = (location.hash || "#home").slice(1);
+  if (/^(guide|grammar|gx|g-|practice|group-|translate|achievements|profile)/.test(h)) needGram();
   { const ps = $("pamuk-say"); if (ps) { clearTimeout(sayT); ps.classList.remove("show"); } }
   let html, tab = h, after = null;
   const m = /^lesson-(\d+)$/.exec(h), gm = /^grammar-(\d+)$/.exec(h);
@@ -2863,6 +2886,7 @@ function pickPool(u) {
 }
 const typeable = w => !w.tr.includes("…") && w.tr.length <= 20;
 function startSession(mode, u) {
+  if (mode === "gx" || mode === "gxm") needGram();
   closeSheet();
   let items;
   if (mode === "review") {
@@ -2873,6 +2897,7 @@ function startSession(mode, u) {
     items = shuffle(mistakeWords().slice(0, 15));
     if (!items.length) { toast("Xatolar daftari boʻsh"); return; }
   } else if (mode === "gx") {
+    if (!BX[u]) u = gxNext();
     items = BX[u].map((ex, i) => ({ gx: true, code: u, i, ex }));
   } else if (mode === "gxm") {
     items = shuffle(gxMistakes()).slice(0, 15).map(k => { const [c, i] = k.split("#"); return { gx: true, code: c, i: +i, ex: BX[c][+i] }; });
@@ -3456,7 +3481,7 @@ function wrTarget(title) {
 // Every Turkish word form the site itself uses, keyed by its form without Turkish letters
 let WR_CORPUS = null;
 function wrCorpus() {
-  if (WR_CORPUS) return WR_CORPUS;
+  if (WR_CORPUS && WR_CORPUS.g === GRAM_FULL) return WR_CORPUS;
   const forms = new Set(), byPlain = {};
   const add = t => String(t).toLocaleLowerCase("tr").split(/[^a-zçğıöşüâîû]+/).forEach(w => { if (w.length > 1) forms.add(w); });
   ALL.forEach(w => add(w.tr));
@@ -3464,7 +3489,7 @@ function wrCorpus() {
   COURSE.units.forEach(u => { walk(u.sections); walk(u.reading); walk(u.exercises); u.vocab.forEach(v => v.words.forEach(([tr]) => add(tr))); });
   Object.values(BX).forEach(arr => arr.forEach(x => { (x.o || []).forEach(add); (x.ans || []).forEach(add); if (x.s) add(x.s); }));
   forms.forEach(f => { if (!/[çğıöşü]/.test(f)) return; const p = plain(f); (byPlain[p] = byPlain[p] || []).push(f); });
-  return (WR_CORPUS = { forms, byPlain });
+  return (WR_CORPUS = { forms, byPlain, g: GRAM_FULL });
 }
 function wrCheck(text, task) {
   const t = text.trim(), low = " " + t.toLocaleLowerCase("tr") + " ";
@@ -4526,6 +4551,8 @@ function onAct(e) {
   else if (act === "remind") remSet(b.dataset.v);
   else if (act === "tts-rate") { S.tts = Object.assign({}, S.tts, { r: +b.dataset.v }); save(); const y = window.scrollY; route(); window.scrollTo(0, y); speak("Merhaba! Türkçe öğreniyorum."); }
   else if (act === "goal") { S.goal = +b.dataset.v; save(); const y = window.scrollY; route(); window.scrollTo(0, y); }
+  else if (act === "sw-update") { const bar = $("upd-bar"); SW_UPDATING = true; if (bar && bar._w) bar._w.postMessage("skip"); b.disabled = true; b.textContent = "Yangilanmoqda…"; }
+  else if (act === "sw-later") { const bar = $("upd-bar"); if (bar) bar.remove(); }
   else if (act === "s-say-x") { b.classList.remove("show"); }
   else if (act === "streak") { STK_M = 0; openSheet(streakSheetHTML()); }
   else if (act === "stk-m") { STK_M = Math.max(-3, Math.min(0, STK_M + (+b.dataset.d || 0))); openSheet(streakSheetHTML()); }
@@ -4727,7 +4754,7 @@ function onAct(e) {
 // A tap that needs the full course before it has arrived waits for it, then runs again
 document.addEventListener("click", e => {
   try { onAct(e); }
-  catch (err) { if (err !== NEED_COURSE) throw err; toast("Yuklanmoqda…"); loadCourse().then(() => onAct(e), courseOffline); }
+  catch (err) { if (err !== NEED_COURSE) throw err; toast("Yuklanmoqda…"); loadData().then(() => onAct(e), courseOffline); }
 });
 document.addEventListener("change", e => {
   if (e.target.dataset && e.target.dataset.act === "k-match") { kSubmit(e.target.dataset.id, e.target.dataset.key, e.target.value); kRerender(); }
@@ -5089,6 +5116,12 @@ let FB = !!(window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey);
 let EARLY = null;
 const FB_SDK = ["app", "auth", "firestore"].map(n => `${FB_BASE}firebase-${n}-compat.js`);
 // The SDK is not render-blocking: scripts download in parallel and run in order (async = false)
+// Once the first screen is fully drawn (page loaded, backgrounds and fonts painted) — then the files the first
+// screen does not need start downloading (ms: a short pause after the load event)
+function afterPaint(f, ms = 300) {
+  const go = () => setTimeout(f, ms);
+  if (document.readyState === "complete") go(); else addEventListener("load", go, { once: true });
+}
 function loadFirebase() {
   if (window.firebase && window.firebase.firestore) return Promise.resolve();
   return Promise.all(FB_SDK.map(src => new Promise((ok, fail) => {
@@ -5563,7 +5596,8 @@ if (FB) {
     // A guest from an earlier visit: straight into the app
     lgSettle(); route(); showWelcome();
   } else { showAuth(false); setAuthTab(authMode); }
-  FB_READY = loadFirebase().then(fbStart);
+  // The Firebase SDK too waits for the first paint: it must not share the bandwidth with the screen being drawn
+  FB_READY = new Promise(r => afterPaint(r, 150)).then(loadFirebase).then(fbStart);
   FB_READY.catch(() => {
     // No SDK (offline and not cached): work locally, as before
     if (EARLY || isGuest()) return;
@@ -5575,7 +5609,27 @@ if (FB) {
   showWelcome();
 }
 // The rest of the course downloads right after the first screen is drawn
-setTimeout(() => loadCourse().catch(() => {}), 0);
+// Right after the first screen has been painted: the grammar files (small), then the course bodies
+afterPaint(() => loadGram().catch(() => {}).then(() => loadCourse()).catch(() => {}));
+/* The service worker serves the app from its cache at once; a new version installs in the background and waits.
+   Then a bar offers «Yangilash» (the new version starts now) — otherwise it starts the next time the app opens. */
+let SW_UPDATING = false;
+function updBar(w) {
+  if (!w || $("upd-bar")) return;
+  const b = document.createElement("div");
+  b.id = "upd-bar"; b.className = "upd-bar"; b.setAttribute("role", "status");
+  b.innerHTML = `<span>${ICON.spark}Yangi versiya tayyor</span><button class="btn btn-grad" data-act="sw-update">Yangilash</button><button class="icon-btn" data-act="sw-later" aria-label="Keyinroq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`;
+  b._w = w;
+  document.body.appendChild(b);
+}
+function swWatch(reg) {
+  const ask = w => { if (w && navigator.serviceWorker.controller) updBar(w); };
+  ask(reg.waiting);
+  reg.addEventListener("updatefound", () => { const w = reg.installing; if (w) w.addEventListener("statechange", () => { if (w.state === "installed") ask(w); }); });
+  // Look for a new version whenever the app comes back to the screen
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") reg.update().catch(() => {}); });
+}
 if (!IS_NATIVE && "serviceWorker" in navigator && location.protocol === "https:") {
-  navigator.serviceWorker.register("sw.js").catch(() => {});
+  navigator.serviceWorker.register("sw.js").then(swWatch).catch(() => {});
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (SW_UPDATING) location.reload(); });
 }

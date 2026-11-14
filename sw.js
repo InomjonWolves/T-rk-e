@@ -1,13 +1,23 @@
-// Offline support. App files: network first (so a new version shows at once), cache when offline or slow.
+// Offline support and a fast start. The app's own files (ASSETS) come from the cache at once — no waiting for the
+// network on every launch. A new version is a new sw.js (the deploy writes the commit into CACHE): it downloads all
+// ASSETS in the background and waits; the page shows «Yangi versiya tayyor — Yangilash» (message "skip"), or the new
+// version starts the next time the app is opened. Other pages of the site (kurs/, qoida/…): network first.
 // The site's own font files and the Firebase SDK: cache first.
-const CACHE = "turkce-yol-v87";
+const CACHE = "turkce-yol-v88";
 const META = "ty-meta";
 const ASSETS = ["./", "./index.html", "./firebase-config.js", "./content.js", "./lugat.js", "./grammar.js", "./grammar-ex.js", "./course-core.js", "./course.js", "./app.js", "./cat.js", "./guide.js", "./oqish.js", "./placement.js", "./styles.css", "./fonts/onest-v1.woff2", "./privacy.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", e => {
   // cache: "reload" skips the browser's HTTP cache, so the new cache really gets the new files
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(a => new Request(a, { cache: "reload" })))).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(a => new Request(a, { cache: "reload" })))));
 });
+// The page asks to switch to the waiting version (the «Yangilash» button)
+self.addEventListener("message", e => { if (e.data === "skip") self.skipWaiting(); });
+const ASSET_PATHS = new Set(ASSETS.map(a => new URL(a, self.registration.scope).pathname));
+// One version at a time: the files of the running version from its own cache, the network only if a file is missing
+function cacheFirst(req) {
+  return caches.open(CACHE).then(c => c.match(req, { ignoreSearch: true })).then(hit => hit || networkFirst(req));
+}
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== META).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
@@ -29,7 +39,7 @@ self.addEventListener("fetch", e => {
   if (url.origin === location.origin && /\/audio\/[^/]+\/[^/]+\.mp3$/.test(url.pathname)) return;
   // Font files carry a version in their name and never change: cache first, like the Firebase SDK
   const font = url.origin === location.origin && /\/fonts\/[^/]+\.woff2$/.test(url.pathname);
-  if (url.origin === location.origin && !font) { e.respondWith(networkFirst(e.request)); return; }
+  if (url.origin === location.origin && !font) { e.respondWith(ASSET_PATHS.has(url.pathname) ? cacheFirst(e.request) : networkFirst(e.request)); return; }
   // Firebase API traffic goes straight to the network
   if (!(font || url.pathname.startsWith("/firebasejs/"))) return;
   e.respondWith(caches.match(e.request).then(hit => {

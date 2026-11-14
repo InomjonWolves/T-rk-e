@@ -2,7 +2,7 @@
 // Turlar: c — variant tanlash (o: variantlar, a: toʻgʻri javob raqami),
 //         t — yozish (ans: qabul qilinadigan javoblar), o — gap tuzish (s: toʻgʻri gap).
 // q: savol ("___" — boʻsh joy), uz: tarjima, e: qisqa izoh (javobdan keyin koʻrinadi).
-const BX = {
+var BX = {
   "A1.01": [
     { t: "c", q: "ev + ___", o: ["evler", "evlar"], a: 0, uz: "uylar", e: "Oxirgi unli e → -ler." },
     { t: "c", q: "okul + ___", o: ["okuller", "okullar"], a: 1, uz: "maktablar", e: "Oxirgi unli u → -lar." },

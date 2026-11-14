@@ -76,6 +76,8 @@ async function openFb(browser, hash = "#home", opts = {}) {
   if (opts.routes) for (const [url, fn] of opts.routes) await page.route(url, fn);
   await page.goto(BASE + hash);
   await page.waitForFunction(() => typeof db !== "undefined" && db);
+  // guide.js and grammar-ex.js come after the first screen (loadGram)
+  await page.waitForFunction(() => typeof GRAM_FULL === "undefined" || GRAM_FULL, null, { timeout: 10000 }).catch(() => {});
   if (opts.user) await page.waitForFunction(() => USER && !EARLY);
   await page.waitForTimeout(100);
   return { page, errors };

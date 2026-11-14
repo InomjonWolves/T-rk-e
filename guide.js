@@ -2,7 +2,7 @@
 // Manba: "Turk tili grammatikasi A1–B2" qoʻllanmasi. [ ] ichidagi qism qoʻshimcha sifatida ajratib koʻrsatiladi.
 // f: formula [turkcha, oʻzbekcha]; forms: matn yoki jadval {h, r}; rule: qoida; ex: misol [turkcha, oʻzbekcha];
 // neg / q: boʻlishsiz va soʻroq shakli [turkcha, oʻzbekcha].
-const GUIDE = [
+var GUIDE = [
   { id: "kirish", name: "Kirish", uz: "Unli va undosh qoidalari", groups: [
     { name: "ASOSLAR", items: [
       { code: "K.1", tr: "Ünlü uyumu", uz: "Unli uygʻunligi",

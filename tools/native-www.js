@@ -31,6 +31,7 @@ function patchIndex(html) {
   return html
     .replace(/<script>\/\* Yagona manzil[^<]*<\/script>\s*/, "")
     .replace(/<link rel="preload" as="script" href="https:\/\/www\.gstatic\.com\/[^"]+">\s*/g, "")
+    .replace(/<!-- Firebase SDK:[^>]*-->\s*<link rel="preconnect" href="https:\/\/www\.gstatic\.com"[^>]*>\s*/, "")
     .replace(/<link rel="manifest"[^>]*>\s*/, "")
     .replace(/<meta charset="utf-8">/i, m => m + "\n" + nativeHead());
 }
@@ -66,6 +67,8 @@ function build() {
   if (ver !== FB_VERSION) throw new Error(`firebase ${ver} — app.js ${FB_VERSION} ni kutadi`);
   fs.mkdirSync(path.join(OUT, "vendor", "firebase"), { recursive: true });
   for (const f of FB_FILES) fs.copyFileSync(path.join(fb, f), path.join(OUT, "vendor", "firebase", f));
+  // The phone parses less: the same minified code as the website (tools/minify.js)
+  require("./minify.js").minifyDir(OUT);
   const n = copyAudio();
   return `${OUT} (audio: ${n} ta fayl)`;
 }

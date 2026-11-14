@@ -48,6 +48,8 @@ async function openApp(browser, hash = "#home", opts = {}) {
   }, { sr: !!opts.sr, noSR: !!opts.noSR, state: Object.assign({ onb: 1 }, opts.state || {}) });
   await page.goto(BASE + hash);
   await page.waitForTimeout(250);
+  // guide.js and grammar-ex.js come after the first screen (loadGram)
+  if (!opts.lazy) await page.waitForFunction(() => typeof GRAM_FULL === "undefined" || GRAM_FULL, null, { timeout: 10000 }).catch(() => {});
   await closeCelebrate(page);
   return { page, errors };
 }

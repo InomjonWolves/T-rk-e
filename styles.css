@@ -1671,3 +1671,11 @@ html.native input, html.native textarea, html.native [contenteditable="true"] { 
   html, body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
 }
+
+/* A new version is ready (service worker waiting): a bar above the bottom menu */
+.upd-bar { position: fixed; left: 0; right: 0; margin: 0 auto; bottom: calc(var(--safe-area-inset-bottom, env(safe-area-inset-bottom)) + 92px); z-index: 70; width: min(520px, calc(100% - 2 * var(--gutter, 16px))); display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-lg), 0 3px 0 var(--line-2); animation: up 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.upd-bar > span { flex: 1; display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--ink); min-width: 0; }
+.upd-bar > span svg { width: 20px; height: 20px; color: var(--gold-2); flex: none; }
+.upd-bar .btn { min-height: 44px; padding: 0 16px; flex: none; }
+.upd-bar .icon-btn { flex: none; }
+@media (min-width: 1000px) { .upd-bar { bottom: 24px; } }

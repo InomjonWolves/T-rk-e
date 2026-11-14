@@ -34,9 +34,8 @@
   try { const t = localStorage.getItem("ty-theme"); if (t === "light" || t === "dark") { document.documentElement.dataset.theme = t; document.querySelectorAll('meta[name="theme-color"]').forEach(m => { m.media = ""; m.content = t === "dark" ? "#0d1124" : "#f7f4ee"; }); } } catch (e) {}
 </script>
 <!-- Firebase SDK is loaded by app.js after the first paint; preload only starts the download early -->
-<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
-<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js">
-<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js">
+<!-- Firebase SDK: app.js loads it after the first screen (it must not share the bandwidth with the app's own files) -->
+<link rel="preconnect" href="https://www.gstatic.com">
 </head>
 <body>
 
@@ -125,9 +124,7 @@
 <script src="content.js"></script>
 <script src="lugat.js"></script>
 <script src="grammar.js"></script>
-<script src="grammar-ex.js"></script>
 <script src="course-core.js"></script>
-<script src="guide.js"></script>
 <script src="cat.js"></script>
 <script src="app.js"></script>
 </body>

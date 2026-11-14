@@ -35,6 +35,13 @@ jobs:
           npm install --no-audit --no-fund
           npx playwright install --with-deps chromium
           npm test
+      - name: Kodni siqish va siqilgan nusxani tekshirish
+        if: env.HAS_KEY == 'true'
+        run: |
+          # Repo kodi oʻqiladigan holda qoladi; saytga siqilgan nusxa ketadi. sw.js CACHE = commit (har joylash — yangi versiya)
+          node tools/minify.js . --version "${GITHUB_SHA::8}"
+          # Ilovaning ishlashini tekshiradigan testlar siqilgan kod bilan (manba matnini oʻqiydigan testlar emas)
+          node --test --test-concurrency=2 tests/pages.test.js tests/practice.test.js tests/xp.test.js tests/reading.test.js tests/placement.test.js tests/achievements.test.js tests/lugat.test.js tests/layout.test.js tests/checks.test.js tests/groups.test.js tests/auth.test.js
       - name: Firebase Hosting'ga joylash
         if: env.HAS_KEY == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0

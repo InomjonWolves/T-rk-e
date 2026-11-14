@@ -134,7 +134,8 @@ test("home is drawn without course.js; a unit page and a tap wait for it", async
   await page.waitForFunction(() => document.querySelector("#app .view"));
   const home = await page.evaluate(() => ({ full: COURSE_FULL, loading: !!document.querySelector("#app .spin"), next: kNext().id, progress: kProgress("a1-1") }));
   assert.deepEqual(home, { full: false, loading: false, next: "a1-1", progress: 0 });
-  // Other pages that do not need the course body also work
+  // Other pages that do not need the course body also work (grammar pages wait for the grammar files, not the course)
+  await page.waitForFunction(() => GRAM_FULL);
   for (const h of ["#course", "#practice", "#guide", "#profile", "#skills"]) {
     await page.evaluate(h => { location.hash = h; }, h);
     await page.waitForTimeout(50);
@@ -151,4 +152,54 @@ test("home is drawn without course.js; a unit page and a tap wait for it", async
   assert.equal(await page.evaluate(() => KU["a1-2"].exercises.length > 0 && COURSE.units[0] === KU["a1-1"]), true);
   assert.deepEqual(errors, []);
   await page.close();
+});
+
+/* Speed (2026-11-14): the grammar files come after the first screen, the service worker serves the app from its cache
+   and offers a new version, the deploy minifies the code */
+test("speed: home shows before guide.js and grammar-ex.js arrive; rule achievements wait for them; grammar pages wait too", async () => {
+  const { openApp } = require("./helpers");
+  // Hold the two scripts until __go()
+  const hold = () => {
+    const orig = Element.prototype.appendChild; window.__hold = [];
+    Element.prototype.appendChild = function (n) {
+      if (n.tagName === "SCRIPT" && /(guide|grammar-ex)\.js$/.test(n.src) && !window.__released) { window.__hold.push([this, n]); return n; }
+      return orig.call(this, n);
+    };
+    window.__go = () => { window.__released = 1; window.__hold.forEach(([p, n]) => orig.call(p, n)); };
+  };
+  const { page, errors } = await openApp(browser, "#home", { lazy: true, init: hold, state: { gx: {} } });
+  const r = await page.evaluate(() => [typeof GUIDE !== "undefined" && GUIDE.length, GRAM_FULL, !!document.querySelector(".hero"), ACH.filter(a => a.cat === "gram" && /^gx/.test(a.id)).some(a => a.v() >= a.n), [...document.scripts].some(s => /guide\.js|grammar-ex\.js/.test(s.src))]);
+  assert.deepEqual(r, [0, false, true, false, false]);
+  await page.evaluate(() => { location.hash = "#guide"; });
+  await page.waitForFunction(() => /Yuklanmoqda/.test(document.getElementById("app").textContent));
+  await page.evaluate(() => window.__go());
+  await page.waitForFunction(() => GRAM_FULL && document.querySelector('.view[data-v="guide"], .view[data-v="grammar"]'));
+  assert.ok(await page.evaluate(() => GX_CODES.length > 700 / 7 && GUIDE_ALL.length > 100 && ACH.find(a => a.id === "gxa1").n > 0 && ACH.find(a => a.id === "gxa1").n < 99));
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("speed: a new version waits; the bar's «Yangilash» tells the service worker to switch; the deploy minifies and stamps sw.js", async () => {
+  const fs = require("fs"), path = require("path"), os = require("os"), { openApp } = require("./helpers");
+  const sw = fs.readFileSync(path.join(__dirname, "..", "sw.js"), "utf8");
+  assert.doesNotMatch(sw.match(/addEventListener\("install"[\s\S]*?\}\);/)[0], /skipWaiting/, "a new version does not take over by itself");
+  assert.match(sw, /e\.data === "skip"\) self\.skipWaiting\(\)/);
+  assert.match(sw, /ASSET_PATHS\.has\(url\.pathname\) \? cacheFirst\(e\.request\)/);
+  const { page, errors } = await openApp(browser, "#home");
+  await page.evaluate(() => updBar({ postMessage: m => { window.__swMsg = m; } }));
+  await page.evaluate(() => document.querySelector('[data-act="sw-update"]').click());
+  assert.deepEqual(await page.evaluate(() => [window.__swMsg, SW_UPDATING, document.querySelector('[data-act="sw-update"]').disabled]), ["skip", true, true]);
+  assert.deepEqual(errors, []);
+  await page.close();
+  // Minify: every top-level name stays (the scripts share them), comments go; CACHE gets the commit
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ty-min-"));
+  for (const f of ["app.js", "sw.js", "styles.css"]) fs.copyFileSync(path.join(__dirname, "..", f), path.join(dir, f));
+  const { minifyDir, stampCache } = require("../tools/minify.js");
+  const res = minifyDir(dir); stampCache(dir, "abc1234");
+  const min = fs.readFileSync(path.join(dir, "app.js"), "utf8");
+  assert.ok(res.after < res.before * 0.9);
+  for (const name of ["function routeNow(", "function startSession(", "const IS_NATIVE=", "function beep(", "GRAM_FULL=!1", "function nativeBack("]) assert.ok(min.includes(name), name);
+  assert.match(fs.readFileSync(path.join(dir, "sw.js"), "utf8"), /const CACHE = "turkce-yol-abc1234"/);
+  const wf = fs.readFileSync(path.join(__dirname, "..", ".github/workflows/firebase-hosting.yml"), "utf8");
+  assert.match(wf, /node tools\/minify\.js \. --version/);
 });
