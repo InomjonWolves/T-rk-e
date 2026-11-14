@@ -141,7 +141,7 @@ test("home is drawn without course.js; a unit page and a tap wait for it", async
     await page.waitForTimeout(50);
     assert.equal(await page.evaluate(() => !!document.querySelector("#app .spin")), false, `${h} waited for the course`);
   }
-  await page.evaluate(() => { location.hash = "#k-a1-2"; });
+  await page.evaluate(() => { location.hash = "#k-a1-1"; });
   await page.waitForTimeout(50);
   assert.equal(await page.evaluate(() => !!document.querySelector("#app .spin")), true);
   // A tap that needs dialogs (speaking practice sheet) is replayed once the course is there

@@ -1350,7 +1350,11 @@ function viewHome() {
 
   ${recsCard()}
   ${plHomeCard()}
-  ${(() => { const u = kNext(), p = kProgress(u.id); return `<section class="section">
+  ${(() => { const u = kNext(), p = kProgress(u.id), gate = kGate(); if (gate) { const g = KLEVEL(gate); return `<section class="section">
+    <div class="section-head"><h2>Kursni davom ettiring</h2><a class="link" href="#course">Barcha boʻlimlar</a></div>
+    <a class="pcard glass k-next" href="#ktest-${gate.toLowerCase()}"><div class="k-next-row"><span class="art orange">${ICON.trophy}</span>
+      <div class="unit-body"><small class="eyebrow">${gate} · daraja testi</small><b class="k-next-title">${esc(g.test.title)}</b></div>${ICON.chev}</div>
+    <p class="muted">${gate} ning barcha boʻlimlari tugadi. Testdan ${g.test.pass}% olsangiz, ${u.level} darajasi ochiladi.</p></a></section>`; } return `<section class="section">
     <div class="section-head"><h2>Kursni davom ettiring</h2><a class="link" href="#course">Barcha boʻlimlar</a></div>
     <a class="pcard glass k-next" href="#${kHash(u.id)}">
     <div class="k-next-row"><span class="art ${LV_COLOR[u.level]}"><span>${u.level}.${u.n}</span></span>
@@ -2194,7 +2198,43 @@ function kProgress(id) {
 const kDone = id => !!(S.k[id] && S.k[id].done);
 const kDoneCount = (lv) => COURSE.units.filter(u => (!lv || u.level === lv) && kDone(u.id)).length;
 const kNext = () => COURSE.units.find((u, i) => i >= (S.kStart || 0) && !kDone(u.id)) || COURSE.units.find(u => !kDone(u.id)) || COURSE.units[0];
+// When the next unit waits behind a level test, the course goes on through that test
+const kGate = () => { const u = kNext(); if (unitOpen(u.id)) return null; const i = COURSE.levels.findIndex(l => l.id === u.level); return i > 0 ? COURSE.levels[i - 1].id : null; };
 const kTestBest = lv => (S.ktest && S.ktest[lv]) || 0;
+/* The course order (2026-11-14, foydalanuvchi talabi). Levels open one after another: A1 first, the next one when
+   the previous level's test is passed, or every level up to where the placement test put the learner. Inside a level
+   the units open one by one (a unit when the one before it is finished) and the level test when all units are
+   finished. Never locked: a unit already started (old progress stays reachable), units before the placement start
+   (S.kStart), units a teacher assigned (S.gtk). */
+const kStarted = id => !!(S.k[id] && (S.k[id].done || Object.keys(S.k[id].e || {}).length || Object.keys(S.k[id].v || {}).length));
+const plReach = () => { const p = S.place || {}; return Math.max(...[p.passed, p.start, p.applied].map(x => LVS.indexOf(x))); };
+const kTeacher = id => Object.values(S.gtk || {}).some(arr => (arr || []).some(t => t.kind === "k" && t.ref === id));
+function lvOpen(lv) {
+  const ids = COURSE.levels.map(l => l.id), i = ids.indexOf(lv);
+  if (i <= 0 || plReach() >= i) return true;
+  const prev = KLEVEL(ids[i - 1]);
+  return kTestBest(prev.id) >= prev.test.pass || KLEVEL(lv).units.some(id => kStarted(id) || kTeacher(id));
+}
+function unitOpen(id) {
+  const u = KU[id];
+  if (!u) return false;
+  if (kStarted(id) || kTeacher(id)) return true;
+  if (!lvOpen(u.level)) return false;
+  const lu = KLEVEL(u.level).units, k = lu.indexOf(id);
+  return k <= 0 || u.idx <= (S.kStart || 0) || plReach() > LVS.indexOf(u.level) || kDone(lu[k - 1]);
+}
+const testOpen = lv => lvOpen(lv) && (KLEVEL(lv).units.every(kDone) || kTestBest(lv) > 0 || plReach() > LVS.indexOf(lv) || LVS.indexOf((S.place || {}).passed) >= LVS.indexOf(lv));
+// Why something is locked, and what opens it
+function lockWhy(lv, id) {
+  if (!lvOpen(lv)) { const prev = COURSE.levels[COURSE.levels.findIndex(l => l.id === lv) - 1]; return `${lv} darajasi ${prev.id} testidan ${prev.test.pass}% olinganda ochiladi — yoki darajani aniqlash testi bilan.`; }
+  if (id) { const lu = KLEVEL(lv).units, prevU = KU[lu[lu.indexOf(id) - 1]]; return `Avval ${prevU.level}.${prevU.n} «${prevU.title}» boʻlimini tugating.`; }
+  return `${lv} testi shu darajaning barcha boʻlimlari tugagach ochiladi.`;
+}
+function lockedView(lv, id) {
+  return `<div><a class="back" href="#course">${ICON.back}Kurs</a></div>
+  <div class="glass pad lock-card">${mascot("sit")}<span class="lock-ico">${ICON.lock}</span><h2>Bu qism hali yopiq</h2><p>${esc(lockWhy(lv, id))}</p>
+    <div class="lock-acts">${!lvOpen(lv) ? `<a class="btn btn-grad btn-block" href="#placement">Darajani aniqlash testi</a>` : ""}<a class="btn ${lvOpen(lv) ? "btn-grad" : "btn-ghost"} btn-block" href="#${kGate() ? `ktest-${kGate().toLowerCase()}` : kHash(kNext().id)}">${kGate() ? `${kGate()} testiga oʻtish` : "Joriy boʻlimga qaytish"}</a></div></div>`;
+}
 
 // Normalise an answer for comparison: drop notes in brackets, quotes and punctuation
 const ansNorm = s => fold(String(s).replace(/\([^)]*\)/g, " ").replace(/[«»"“”]/g, "").replace(/[’ʼ`]/g, "'").replace(/\s+—\s+/g, " — "));
@@ -2275,7 +2315,9 @@ function speakSeq(lines) {
 let SEQ_N = 0;
 
 function kUnitRow(u) {
-  const p = kProgress(u.id), done = kDone(u.id), now = !done && u === kNext();
+  const p = kProgress(u.id), done = kDone(u.id), open = unitOpen(u.id), now = !done && open && u === kNext();
+  if (!open) return `<a class="unit glass locked" href="#${kHash(u.id)}"><span class="art"><span style="font-size:15px">${u.level}.${u.n}</span></span>
+    <span class="unit-body"><span class="unit-title" lang="tr">${esc(u.title)}</span><span class="unit-sub">${esc(u.sub)}</span></span><span class="state lock" title="Yopiq">${ICON.lock}</span></a>`;
   return `<a class="unit glass${now ? " now" : ""}" href="#${kHash(u.id)}">
     <span class="art ${done ? "green" : LV_COLOR[u.level]}"><span style="font-size:15px">${u.level}.${u.n}</span></span>
     <span class="unit-body">${now ? `<small class="tag sky-t now-tag">Shu yerdan davom eting</small>` : ""}<span class="unit-title" lang="tr">${esc(u.title)}</span><span class="unit-sub">${esc(u.sub)}</span></span>
@@ -2296,13 +2338,13 @@ function viewCourse() {
     <div class="k-hero-cat"><span class="hero-bubble" aria-hidden="true">Aa</span><span class="hero-mini" aria-hidden="true">${ICON.book}</span>${catSVG({ pose: "read", acc: "cap", ears: "up", look: catLook(), cls: "mascot" })}</div>
     <div class="hero-prog"><span class="hero-ico">${ICON.trophy}</span><div><small>${done}/${total} boʻlim tugallangan</small>
       <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}" aria-label="Kurs: ${done}/${total} boʻlim"><i style="width:${pct(done, total)}%"></i></div></div></div>
-    <a class="hero-go" href="#k-${kNext().id}" aria-label="Kursni davom ettirish">${ICON.arrow}</a>
+    <a class="hero-go" href="#${kGate() ? `ktest-${kGate().toLowerCase()}` : `k-${kNext().id}`}" aria-label="Kursni davom ettirish">${ICON.arrow}</a>
   </div>
   <a class="pcard glass" href="#placement" style="color:inherit;text-decoration:none;padding:14px 16px">
     <div class="pcard-head"><b>${ICON.target}${S.place && (S.place.start || S.place.applied) ? `Darajangiz: ${esc(S.place.applied || S.place.start)} dan · qayta aniqlash` : "Darajani aniqlash testi"}</b>${ICON.chev}</div>
     ${S.place && (S.place.start || S.place.applied) ? "" : `<p class="muted" style="margin:0">Turkchani biroz bilsangiz, 5–7 daqiqada mos boʻlimni topamiz.</p>`}
   </a>
-  <div class="seg glass" role="tablist">${COURSE.levels.map(l => `<button role="tab" data-act="k-lv" data-l="${l.id}" aria-selected="${l.id === lvl.id}">${l.id}</button>`).join("")}</div>
+  <div class="seg glass" role="tablist">${COURSE.levels.map(l => `<button role="tab" data-act="k-lv" data-l="${l.id}" aria-selected="${l.id === lvl.id}"${lvOpen(l.id) ? "" : ` aria-label="${l.id} — yopiq"`}>${l.id}${lvOpen(l.id) ? "" : `<i class="seg-lock">${ICON.lock}</i>`}</button>`).join("")}</div>
   ${S.kView === "list" ? "" : kPath(lvl)}
   ${S.kView !== "list" ? "" : `<div class="glass pad"><div class="pcard-head"><b>${esc(lvl.title)}</b><button class="path-toggle" data-act="k-view" data-v="path" aria-label="Yoʻl koʻrinishi">${ICON.flag}</button></div><p class="sub" style="margin-top:4px">${esc(lvl.intro)}</p></div>
   <div class="list">${lvl.units.map(id => kUnitRow(KU[id])).join("")}
@@ -2322,20 +2364,21 @@ function kPath(lvl) {
   const passed = kTestBest(lvl.id) >= lvl.test.pass;
   const node = (i, html, now) => `<div class="pn-row${now ? " now" : ""}" style="--x:${PATH_X[i % PATH_X.length]}">${html}</div>`;
   const steps = units.map((u, i) => {
-    const done = kDone(u.id), now = !done && u === nx, p = kProgress(u.id);
-    const st = done ? "done" : now ? "now" : p > 0 ? "part" : "next";
+    const done = kDone(u.id), open = unitOpen(u.id), now = !done && open && u === nx, p = kProgress(u.id);
+    const st = done ? "done" : !open ? "lock" : now ? "now" : p > 0 ? "part" : "next";
     const say = now ? (p > 0 ? "Davom etish" : "Boshlash") : "";
     const cat = now ? `<span class="pn-cat${PATH_X[i % PATH_X.length] > 0 ? " left" : ""}" aria-hidden="true">${catSVG({ pose: "wave", look: catLook() })}</span>` : "";
-    return node(i, `<a class="pnode s-${st}" href="#${kHash(u.id)}" style="--p:${Math.round(p * 100)}" aria-label="${u.level}.${u.n} ${esc(u.title)} — ${done ? "tugallangan" : now ? "shu yerdan davom eting" : p > 0 ? `${Math.round(p * 100)}%` : "hali boshlanmagan"}">
-      ${say ? `<span class="pn-bubble">${say}</span>` : ""}<span class="pn-btn">${done ? ICON.check : now ? ICON.star : `<b>${u.n}</b>`}</span>
+    return node(i, `<a class="pnode s-${st}" href="#${kHash(u.id)}" style="--p:${Math.round(p * 100)}" aria-label="${u.level}.${u.n} ${esc(u.title)} — ${done ? "tugallangan" : now ? "shu yerdan davom eting" : p > 0 ? `${Math.round(p * 100)}%` : open ? "hali boshlanmagan" : "yopiq"}">
+      ${say ? `<span class="pn-bubble">${say}</span>` : ""}<span class="pn-btn">${done ? ICON.check : now ? ICON.star : !open ? ICON.lock : `<b>${u.n}</b>`}</span>
       <span class="pn-label"><b>${u.level}.${u.n}</b> <span lang="tr">${esc(u.title)}</span></span></a>${cat}`, now);
   });
-  steps.push(node(units.length, `<a class="pnode s-test${passed ? " s-done" : ""}" href="#ktest-${lvl.id.toLowerCase()}" aria-label="${esc(lvl.test.title)}${passed ? " — oʻtilgan" : ""}">
-    <span class="pn-btn">${ICON.trophy}</span><span class="pn-label"><b>${lvl.id} testi</b>${kTestBest(lvl.id) ? ` ${kTestBest(lvl.id)}%` : ""}</span></a>`));
+  const tOpen = testOpen(lvl.id);
+  steps.push(node(units.length, `<a class="pnode s-test${passed ? " s-done" : tOpen ? "" : " s-lock"}" href="#ktest-${lvl.id.toLowerCase()}" aria-label="${esc(lvl.test.title)}${passed ? " — oʻtilgan" : tOpen ? "" : " — yopiq"}">
+    <span class="pn-btn">${ICON.trophy}${tOpen ? "" : `<i class="pn-lock">${ICON.lock}</i>`}</span><span class="pn-label"><b>${lvl.id} testi</b>${kTestBest(lvl.id) ? ` ${kTestBest(lvl.id)}%` : ""}</span></a>`));
   return `<section class="path lv-${LV_COLOR[lvl.id]}" aria-label="${lvl.id} darajasi yoʻli">
     <div class="path-banner"><div><small>${lvl.id} · ${dn}/${units.length} boʻlim</small><b>${esc(lvl.title)}</b></div>
       <button class="path-toggle" data-act="k-view" data-v="list" aria-label="Roʻyxat koʻrinishi">${ICON.list}</button></div>
-    <p class="sub path-intro">${esc(lvl.intro)}</p>
+    ${lvOpen(lvl.id) ? `<p class="sub path-intro">${esc(lvl.intro)}</p>` : `<div class="lock-note">${ICON.lock}<div><b>${lvl.id} darajasi hali yopiq</b><span>${esc(lockWhy(lvl.id))}</span><a class="link" href="#placement">Darajani aniqlash testi</a></div></div>`}
     <div class="path-road">${steps.join("")}</div>
   </section>`;
 }
@@ -2881,8 +2924,8 @@ function routeNow() {
   else if (h.startsWith("lugat-") && LBY[h.slice(6)]) { html = viewLugPack(LBY[h.slice(6)]); tab = "lessons"; }
   else if (h === "translate") { html = viewTranslate(); tab = "home"; }
   else if (h === "course") { html = viewCourse(); tab = "lessons"; }
-  else if (h.startsWith("k-") && KU[h.slice(2)]) { html = viewCourseUnit(h.slice(2)); tab = "lessons"; }
-  else if (/^ktest-(a1|a2|b1|b2)$/.test(h)) { html = viewCourseTest(h.slice(6).toUpperCase()); tab = "lessons"; }
+  else if (h.startsWith("k-") && KU[h.slice(2)]) { const id = h.slice(2); html = unitOpen(id) ? viewCourseUnit(id) : lockedView(KU[id].level, id); tab = "lessons"; }
+  else if (/^ktest-(a1|a2|b1|b2|c1)$/.test(h)) { const lv = h.slice(6).toUpperCase(); html = testOpen(lv) ? viewCourseTest(lv) : lockedView(lv); tab = "lessons"; }
   else if (h === "achievements") { html = viewAchievements(); tab = "profile"; }
   else if (h === "skills") { html = viewSkills(); tab = "profile"; }
   else if (h === "write") { html = viewWrite(); tab = "practice"; }

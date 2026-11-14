@@ -11,7 +11,7 @@ const GOOD = "Dün sabah erken kalktım. Önce kahvaltı yaptım, sonra işe git
 const BAD = "dun cok guzel bir gun oldu. qizim ile parka gittik ve cok guzel oynadik";
 
 test("writing check: a good text scores high, a careless one gets concrete advice", async () => {
-  const { page, errors } = await openApp(browser, "#write");
+  const { page, errors } = await openApp(browser, "#write", { state: { place: { applied: "C1" } } });
   const r = await page.evaluate(([g, b]) => {
     const u = KU["a2-8"], e = u.exercises.find(x => /^Yozish/.test(x.title));
     const a = wrCheck(g, { u, e }), c = wrCheck(b, { u, e });
@@ -36,7 +36,7 @@ test("writing check: a good text scores high, a careless one gets concrete advic
 });
 
 test("level test: four parts are generated for every level and scored per skill", async () => {
-  const { page, errors } = await openApp(browser, "#ktest-a2", { sr: true });
+  const { page, errors } = await openApp(browser, "#ktest-a2", { sr: true, state: { place: { applied: "C1" } } });
   const sizes = await page.evaluate(() => LVS.map(lv => { const g = ktGen(lv); return [g.l.length, g.w.length, g.s.length]; }));
   sizes.forEach(s => assert.deepEqual(s, [6, 6, 4]));
   await page.evaluate(() => {

@@ -1695,3 +1695,27 @@ html.native input, html.native textarea, html.native [contenteditable="true"] { 
 .rec-next .rec-txt small { text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
 .sk-tile.tip { box-shadow: 0 0 0 2px var(--violet), 0 3px 0 var(--line-2); }
 .sk-tip { margin-top: 6px; }
+
+/* Course order (2026-11-14): locked levels, units and tests */
+.s-lock .pn-btn { background: var(--bg-2); color: var(--muted); box-shadow: 0 6px 0 var(--line-2); opacity: 0.8; }
+.s-lock .pn-label { color: var(--muted); }
+.s-test.s-lock .pn-btn { border-color: var(--line-2); color: var(--muted); }
+.pn-lock { position: absolute; right: -4px; bottom: -2px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 2px solid var(--line-2); color: var(--muted); }
+.pn-lock svg { width: 14px; height: 14px; }
+.seg-lock { display: inline-flex; margin-left: 3px; vertical-align: -2px; }
+.seg-lock svg { width: 13px; height: 13px; }
+.lock-note { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: var(--r-lg); background: var(--surface-2); border: 1px solid var(--line); margin: 4px 0; }
+.lock-note > svg { width: 22px; height: 22px; flex: none; color: var(--muted); margin-top: 2px; }
+.lock-note b { display: block; font-size: 15px; }
+.lock-note span { display: block; font-size: 14px; color: var(--ink-2); line-height: 1.4; margin: 2px 0 6px; }
+.unit.locked { opacity: 0.7; }
+.unit.locked .art { background: var(--bg-2); color: var(--muted); box-shadow: none; }
+.state.lock { color: var(--muted); }
+.state.lock svg { width: 20px; height: 20px; }
+.lock-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; position: relative; }
+.lock-card .mascot { width: 120px; height: 110px; }
+.lock-card .lock-ico { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); margin-top: -18px; border: 2px solid var(--line); }
+.lock-card .lock-ico svg { width: 22px; height: 22px; }
+.lock-card h2 { font-size: 22px; font-weight: 800; }
+.lock-card p { color: var(--ink-2); max-width: 34ch; }
+.lock-acts { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 6px; }
