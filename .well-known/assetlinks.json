@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "uz.turkceyol.app",
+      "sha256_cert_fingerprints": [
+        "E7:66:A8:C1:80:1D:0C:39:E5:76:C6:E8:0F:57:74:A8:99:B6:E8:48:9C:15:89:DB:18:6F:6A:43:FC:86:A2:E4"
+      ]
+    }
+  }
+]
