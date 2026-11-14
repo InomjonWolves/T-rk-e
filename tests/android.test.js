@@ -58,10 +58,8 @@ after(async () => { await browser.close(); });
 
 test("inside the Android app the site does not offer to install itself", async () => {
   const { page, errors } = await openApp(browser, "#home");
-  assert.equal(await page.evaluate(() => IN_TWA), false);
-  await page.evaluate(() => { sessionStorage.setItem("ty-twa", "1"); });
-  await page.reload(); await page.waitForFunction(() => typeof installCard === "function" && typeof IN_TWA !== "undefined");
-  const r = await page.evaluate(() => [IN_TWA, isStandalone(), installCard()]);
+  assert.equal(await page.evaluate(() => inTwa()), false);
+  const r = await page.evaluate(() => { sessionStorage.setItem("ty-twa", "1"); return [inTwa(), isStandalone(), installCard()]; });
   assert.deepEqual(r, [true, true, ""]);
   assert.deepEqual(errors, []);
 });
