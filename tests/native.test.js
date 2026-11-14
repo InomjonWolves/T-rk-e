@@ -326,3 +326,19 @@ test("home-screen widget: the app sends the streak, today's XP and a week of wor
   const ids = [...read(main + "res/layout/ty_widget.xml").matchAll(/@\+id\/(\w+)/g)].map(m => m[1]);
   for (const id of [...read(main + "java/uz/turkceyol/app/TyWidget.java").matchAll(/R\.id\.(\w+)/g)].map(m => m[1])) assert.ok(ids.includes(id), id);
 });
+
+test("app: a long press on text gives no selection or Copy menu; typing fields still can; the website is unchanged", async () => {
+  const { page, errors } = await openApp(browser, "#translate", { native: true, init: phone });
+  const r = await page.evaluate(() => {
+    const us = el => getComputedStyle(el).userSelect || getComputedStyle(el).webkitUserSelect;
+    const field = document.querySelector("textarea, input");
+    const ev = el => { const e = new MouseEvent("contextmenu", { bubbles: true, cancelable: true }); el.dispatchEvent(e); return e.defaultPrevented; };
+    return [us(document.body), us(document.querySelector("h1, .page-title, p") || document.body), field ? us(field) : "text", ev(document.querySelector("h1, p") || document.body), field ? ev(field) : false];
+  });
+  assert.deepEqual(r, ["none", "none", "text", true, false]);
+  assert.deepEqual(errors, []);
+  await page.close();
+  const web = await openApp(browser, "#translate");
+  assert.deepEqual(await web.page.evaluate(() => { const e = new MouseEvent("contextmenu", { bubbles: true, cancelable: true }); document.body.dispatchEvent(e); return [getComputedStyle(document.body).userSelect, e.defaultPrevented]; }), ["auto", false]);
+  await web.page.close();
+});

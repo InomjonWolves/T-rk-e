@@ -116,3 +116,23 @@ test("Pamuk in a practice: a word at the start, a hint after two misses, a cheer
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+test("flash card: the word reads the right way round, the back face after a tap; no other style may take the .flip name", async () => {
+  const fs = require("fs"), path = require("path");
+  const css = fs.readFileSync(path.join(__dirname, "..", "styles.css"), "utf8");
+  assert.equal((css.match(/^\.flip\s*\{/gm) || []).length, 1, ".flip is the flash card only");
+  const { page, errors } = await openApp(browser, "#practice");
+  await page.evaluate(() => startSession("cards", "all"));
+  await page.waitForSelector("#flip");
+  // Front: nothing turned (a mirrored card had transform matrix(-1, 0, 0, 1, 0, 0) on #flip)
+  assert.deepEqual(await page.evaluate(() => [getComputedStyle(document.getElementById("flip")).transform, getComputedStyle(document.querySelector(".flip-inner")).transform]), ["none", "none"]);
+  await page.evaluate(() => document.querySelector(".face[data-act=flip]").click());
+  await page.waitForFunction(() => document.getElementById("flip").classList.contains("on"));
+  await page.waitForTimeout(700);
+  // Back: the inner turns 180°, the back face is turned 180° too → reads normally
+  const m = await page.evaluate(() => [getComputedStyle(document.getElementById("flip")).transform, new DOMMatrix(getComputedStyle(document.querySelector(".flip-inner")).transform).multiply(new DOMMatrix(getComputedStyle(document.querySelector(".back-face")).transform)).m11]);
+  assert.equal(m[0], "none");
+  assert.ok(Math.abs(m[1] - 1) < 1e-6, `back face reads normally (${m[1]})`);
+  assert.deepEqual(errors, []);
+  await page.close();
+});

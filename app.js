@@ -343,6 +343,8 @@ const nativePlugin = name => {
   try { const C = window.Capacitor; if (!IS_NATIVE || !C) return null; if (C.isPluginAvailable && !C.isPluginAvailable(name)) return null; return (C.Plugins && C.Plugins[name]) || (C.registerPlugin ? C.registerPlugin(name) : null); } catch (e) { return null; }
 };
 if (IS_NATIVE) document.documentElement.classList.add("native");
+// The app: a long press on text gives no "Copy / Select all" menu (styles.css → html.native); only typing fields keep it
+if (IS_NATIVE) document.addEventListener("contextmenu", e => { if (!(e.target.closest && e.target.closest("input, textarea, [contenteditable='true']"))) e.preventDefault(); });
 // Google sign-in in the app goes through the phone's own account window (FirebaseAuthentication plugin)
 if (IS_NATIVE && !nativePlugin("FirebaseAuthentication")) document.documentElement.classList.add("native-nogoogle");
 let REM_SIG = "", FCM_T = null;
@@ -2682,7 +2684,7 @@ function streakSheetHTML() {
   return `<div class="stk-head"><span class="stk-flame${st ? "" : " off"}">${ICON.flame}</span><div><b>${st}</b><span>kun ketma-ket</span><small>Eng uzun seriya: ${Math.max(S.best || 0, st)} kun</small></div></div>
     <div class="stk-frz"><span class="frz-row">${Array.from({ length: FRZ_MAX }, (_, i) => `<i class="${i < fzn ? "has" : ""}">${ICON.snow}</i>`).join("")}</span>
       <div><b>Seriya muzlatgichi: ${fzn}/${FRZ_MAX}</b><small>Mashq qilinmagan kunni avtomatik saqlaydi. Har 7 kunlik seriya va haftalik challenge uchun bittadan beriladi.</small></div></div>
-    <div class="stk-cal"><div class="stk-nav"><button class="icon-btn" data-act="stk-m" data-d="-1" aria-label="Oldingi oy" ${STK_M <= -3 ? "disabled" : ""}>${ICON.back}</button><b>${MONTHS[m][0].toUpperCase() + MONTHS[m].slice(1)} ${y}</b><button class="icon-btn" data-act="stk-m" data-d="1" aria-label="Keyingi oy" ${STK_M >= 0 ? "disabled" : ""}><span class="flip">${ICON.back}</span></button></div>
+    <div class="stk-cal"><div class="stk-nav"><button class="icon-btn" data-act="stk-m" data-d="-1" aria-label="Oldingi oy" ${STK_M <= -3 ? "disabled" : ""}>${ICON.back}</button><b>${MONTHS[m][0].toUpperCase() + MONTHS[m].slice(1)} ${y}</b><button class="icon-btn" data-act="stk-m" data-d="1" aria-label="Keyingi oy" ${STK_M >= 0 ? "disabled" : ""}><span class="ico-mirror">${ICON.back}</span></button></div>
       <div class="cal-grid">${["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"].map(d => `<small>${d}</small>`).join("")}${cells.join("")}</div>
       <p class="muted" style="margin:8px 0 0;font-size:13px">Bu oy: ${on} kun mashq qilindi</p></div>
     <button class="btn btn-grad btn-block" data-act="sheet-close-btn">Yopish</button>`;

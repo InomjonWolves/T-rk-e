@@ -1644,7 +1644,7 @@ html.native-nogoogle [data-act="auth-google"] { display: none; }
 .stk-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .stk-nav b { font-size: 16px; font-weight: 800; }
 .stk-nav .icon-btn:disabled { opacity: 0.35; cursor: default; }
-.flip { display: inline-flex; transform: scaleX(-1); }
+.ico-mirror { display: inline-flex; transform: scaleX(-1); }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
 .cal-grid small { font-size: 12px; font-weight: 700; color: var(--muted); padding-bottom: 2px; }
 .cd { aspect-ratio: 1; max-height: 40px; display: grid; place-items: center; border-radius: 50%; font-size: 13px; font-weight: 700; color: var(--ink-2); }
@@ -1661,3 +1661,13 @@ html.native-nogoogle [data-act="auth-google"] { display: none; }
 .s-say.show { opacity: 1; pointer-events: auto; animation: say-in 0.3s cubic-bezier(0.3, 0.8, 0.3, 1.3) both; }
 @keyframes say-in { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .s-say.show { animation: none; } }
+
+/* The Android app and the installed web app: no text selection, "Copy / Select all" menu or image callout on a long
+   press — taps work as before; typing fields (answers, search, translator, writing) can still be selected */
+html.native, html.native body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+html.native img, html.native svg, html.native a { -webkit-user-drag: none; }
+html.native input, html.native textarea, html.native [contenteditable="true"] { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+@media (display-mode: standalone) {
+  html, body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+}
