@@ -17,6 +17,10 @@
       "providers": [
         "google.com"
       ]
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_pamuk",
+      "iconColor": "#3B5BDB"
     }
   }
 }

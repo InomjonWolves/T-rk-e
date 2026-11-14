@@ -265,16 +265,25 @@ const daysAway = () => S.lastDay ? dayNum() - Math.round(Date.parse(S.lastDay) /
    Two ways: the server push (GitHub Actions → tools/push.js reads push/{uid} and sends through FCM; needs
    window.FCM_VAPID) and, without a server, Periodic Background Sync of an installed app (sw.js reads ty-meta). */
 const remHour = () => (S.rem && S.rem.h) || 0;
-const remOk = () => typeof Notification !== "undefined" && Notification.permission === "granted";
+// In the Android app the phone's own notification permission (LocalNotifications plugin, NREM_PERM)
+let NREM_PERM = "prompt";
+const remOk = () => IS_NATIVE ? NREM_PERM === "granted" : typeof Notification !== "undefined" && Notification.permission === "granted";
 function remText() {
   const h = remHour();
   if (!h) return "Mashq qilinmagan kuni eslatamiz";
-  if (!remOk()) return "Bildirishnomalarga ruxsat yoʻq — brauzer sozlamalarida yoqing";
+  if (!remOk()) return `Bildirishnomalarga ruxsat yoʻq — ${IS_NATIVE ? "telefon" : "brauzer"} sozlamalarida yoqing`;
   return `Har kuni ${h}:00 da, agar oʻsha kuni hali mashq qilmagan boʻlsangiz`;
 }
 async function remSet(v) {
   const h = +v || 0;
-  if (h) {
+  if (h && IS_NATIVE) {
+    const ln = nativePlugin("LocalNotifications");
+    if (!ln) { toast("Bu ilova versiyasida eslatmalar yoʻq — ilovani yangilang"); return; }
+    let p = {};
+    try { p = await ln.requestPermissions(); } catch (e) {}
+    NREM_PERM = p.display || "denied";
+    if (NREM_PERM !== "granted") { toast("Eslatmaga ruxsat berilmadi. Telefon sozlamalari → Ilovalar → Türkçe Yoʻl → Bildirishnomalar"); return; }
+  } else if (h) {
     if (typeof Notification === "undefined") { toast(isIOS() && !isStandalone() ? "iPhone'da eslatmalar uchun saytni bosh ekranga qoʻshing (Ulashish → Bosh ekranga)" : "Bu brauzer eslatmalarni qoʻllamaydi"); return; }
     if (Notification.permission !== "granted") {
       let p = "denied";
@@ -315,6 +324,7 @@ async function fcmToken() {
 // UTC hour for a local hour (the server runs in UTC)
 const remUtcHour = (h, z = new Date().getTimezoneOffset()) => ((Math.floor(h + z / 60) % 24) + 24) % 24;
 async function remSync() {
+  if (IS_NATIVE) return nremSync();
   const h = remHour(), on = !!h && remOk(), s = streakNow();
   // For the service worker: what to say and whether today already has practice
   try {
@@ -337,6 +347,56 @@ async function remSync() {
     await db.collection("push").doc(USER.uid).set({ t, h: remUtcHour(h, z), z, d: S.lastDay || "", s, at: firebase.firestore.FieldValue.serverTimestamp() });
   } catch (e) { REM_SIG = ""; }
 }
+
+/* The Android app: reminders scheduled on the phone itself (LocalNotifications), no server needed.
+   The next NREM_DAYS days at the chosen hour get one notification each (ids NREM_ID…); a day with practice gets none,
+   so every save()/return to the app schedules them again: practice today → the list starts tomorrow. After
+   NREM_DAYS days without the app the reminders stop by themselves. */
+const NREM_ID = 7000, NREM_DAYS = 7;
+const NREM_TXT = [
+  ["Pamuk sizni kutyapti", "Bugun 5 daqiqa turk tili? Bir nechta soʻz — katta qadam."],
+  ["Bugungi soʻzni koʻrdingizmi?", "Pamuk yangi soʻz tayyorlab qoʻydi. 5 daqiqalik mashq — va kun bekor ketmaydi."],
+  ["Merhaba! Nasılsın?", "Turk tilingiz sizni sogʻindi. Bitta qisqa mashq bilan qayting."],
+  ["Damlaya damlaya göl olur", "Tomchi-tomchi koʻl boʻlur: bugun ham ozgina mashq qilamizmi?"]
+];
+let NREM_SIG = "";
+// The notifications to schedule (pure: tests read it): [{ id, at, title, body }]
+function nremPlan(now = Date.now()) {
+  const h = remHour(), out = [];
+  if (!h) return out;
+  const done = S.lastDay === todayKey(), s = streakNow(), t0 = new Date(now);
+  for (let k = 0; k < NREM_DAYS; k++) {
+    const at = new Date(t0.getFullYear(), t0.getMonth(), t0.getDate() + k, h, 0, 0, 0);
+    if (k === 0 && (done || at.getTime() <= now + 60e3)) continue;
+    // The streak is still alive only on the first reminder day
+    const first = !out.length && s > 0 && (k === 0 || (k === 1 && done));
+    const [title, body] = first ? ["Seriyangiz yoʻqolmasin!", `${s} kun ketma-ket — bugun ham 5 daqiqa mashq qiling. Pamuk kutyapti!`] : NREM_TXT[(dayNum(at.getTime()) + k) % NREM_TXT.length];
+    out.push({ id: NREM_ID + k, at, title, body });
+  }
+  return out;
+}
+async function nremSync(force) {
+  const ln = nativePlugin("LocalNotifications"); if (!ln) return;
+  const plan = remOk() ? nremPlan() : [];
+  const sig = plan.map(n => n.id + "@" + n.at.getTime() + n.title).join("|");
+  if (sig === NREM_SIG && !force) return;
+  NREM_SIG = sig;
+  try {
+    await ln.cancel({ notifications: Array.from({ length: NREM_DAYS }, (_, k) => ({ id: NREM_ID + k })) });
+    if (!plan.length) return;
+    await ln.schedule({ notifications: plan.map(n => ({ id: n.id, title: n.title, body: n.body, channelId: "remind", smallIcon: "ic_stat_pamuk", iconColor: "#3B5BDB", extra: { url: "#home" }, autoCancel: true, isExactNotification: false, schedule: { at: n.at, allowWhileIdle: true } })) });
+  } catch (e) { NREM_SIG = ""; }
+}
+if (IS_NATIVE) (() => {
+  const ln = nativePlugin("LocalNotifications"); if (!ln) return;
+  try {
+    const c = ln.createChannel({ id: "remind", name: "Kunlik eslatma", description: "Mashq qilinmagan kuni Pamuk eslatadi", importance: 4, visibility: 1 }); if (c && c.catch) c.catch(() => {});
+    ln.addListener("localNotificationActionPerformed", a => { const u = a && a.notification && a.notification.extra && a.notification.extra.url; location.hash = /^#[a-z0-9-]+$/.test(u || "") ? u : "#home"; });
+    ln.checkPermissions().then(p => { NREM_PERM = p.display || "prompt"; nremSync(true); }, () => {});
+  } catch (e) {}
+  // Back in the app (maybe on another day, or the permission was changed in the phone settings)
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") ln.checkPermissions().then(p => { NREM_PERM = p.display || "prompt"; nremSync(); }, () => {}); });
+})();
 
 /* ---------- Daily tasks (+100 for all three) and the weekly challenge (+250) ---------- */
 function dqToday() {

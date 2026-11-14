@@ -39,8 +39,13 @@ test("native project: same package and upload key as the first app, portrait, Pa
   }
   const pkg = JSON.parse(read("native/package.json"));
   assert.equal(pkg.devDependencies.firebase, "10.12.2");
-  for (const d of ["@capacitor-community/speech-recognition", "@capacitor-community/text-to-speech", "@capacitor/app", "@capacitor/haptics", "@capacitor/share"]) assert.ok(pkg.dependencies[d], d);
-  assert.match(read("native/android/app/src/main/AndroidManifest.xml"), /android\.permission\.RECORD_AUDIO/);
+  for (const d of ["@capacitor/local-notifications", "@capacitor-community/speech-recognition", "@capacitor-community/text-to-speech", "@capacitor/app", "@capacitor/haptics", "@capacitor/share"]) assert.ok(pkg.dependencies[d], d);
+  const mf = read("native/android/app/src/main/AndroidManifest.xml");
+  assert.match(mf, /android\.permission\.RECORD_AUDIO/);
+  assert.match(mf, /android\.permission\.POST_NOTIFICATIONS/);
+  assert.match(mf, /SCHEDULE_EXACT_ALARM" tools:node="remove"/, "a daily reminder needs no exact alarm (Play policy)");
+  assert.match(read("native/android/app/src/main/res/drawable/ic_stat_pamuk.xml"), /<vector/);
+  assert.equal(cfg.plugins.LocalNotifications.smallIcon, "ic_stat_pamuk");
   for (const d of ["capacitor-community-speech-recognition", "capacitor-community-text-to-speech", "capacitor-haptics", "capacitor-share"]) assert.match(read("native/android/capacitor.settings.gradle"), new RegExp(d), "cap sync android was run");
   assert.match(read("app.js"), /firebasejs\/10\.12\.2\//, "the site and the app use one Firebase version");
   const w = read(".github/workflows/native.yml");
@@ -121,7 +126,15 @@ const phone = () => {
     TextToSpeech: { speak: async o => { log("speak", o); await new Promise(r => setTimeout(r, 20)); }, stop: async () => log("stopSpeak") },
     App: { addListener: (ev, f) => { if (ev === "backButton") window.__back = f; return Promise.resolve({ remove() {} }); }, minimizeApp: async () => log("minimize") },
     Haptics: { impact: async o => log("impact", o.style), notification: async o => log("notify", o.type) },
-    Share: { share: async o => { log("share", o); if (window.__cancelShare) throw new Error("Share canceled"); return {}; } }
+    Share: { share: async o => { log("share", o); if (window.__cancelShare) throw new Error("Share canceled"); return {}; } },
+    LocalNotifications: {
+      checkPermissions: async () => ({ display: window.__nperm || "prompt" }),
+      requestPermissions: async () => { log("nperm"); window.__nperm = window.__ngrant || "granted"; return { display: window.__nperm }; },
+      createChannel: async o => log("channel", o.id),
+      schedule: async o => { log("schedule", JSON.parse(JSON.stringify(o.notifications))); return { notifications: o.notifications.map(n => ({ id: n.id })) }; },
+      cancel: async o => log("cancel", o.notifications.map(n => n.id)),
+      addListener: (ev, f) => { if (ev === "localNotificationActionPerformed") window.__tap = f; return Promise.resolve({ remove() {} }); }
+    }
   };
   window.Capacitor = { isNativePlatform: () => true, isPluginAvailable: n => n in P, Plugins: P };
 };
@@ -230,6 +243,47 @@ test("website: none of the phone features are used — browser speech, voice and
   const r = await page.evaluate(() => [IS_NATIVE, SR === NativeSR, ntts(), nativePlugin("Share"), !!document.querySelector('[data-act="hap"]')]);
   assert.deepEqual(r, [false, false, null, null, false]);
   await page.evaluate(() => { startSession("say", "pron"); sMood("happy"); closeSession(); });
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("app reminders: scheduled on the phone for the coming days at the chosen hour; a day with practice gets none", async () => {
+  const { page, errors } = await openApp(browser, "#settings", { native: true, init: phone });
+  await page.waitForFunction(() => window.__nc.some(c => c[0] === "channel"));
+  // Permission refused: nothing is turned on
+  await page.evaluate(() => { window.__ngrant = "denied"; document.querySelector('[data-act="remind"][data-v="19"]').click(); });
+  await page.waitForFunction(() => window.__nc.some(c => c[0] === "nperm"));
+  await page.waitForFunction(() => /ruxsat berilmadi/.test(document.getElementById("toast").textContent));
+  assert.equal(await page.evaluate(() => remHour()), 0);
+  await page.evaluate(() => { window.__ngrant = "granted"; document.querySelector('[data-act="remind"][data-v="19"]').click(); });
+  await page.waitForFunction(() => window.__nc.some(c => c[0] === "schedule"));
+  const [ns] = await calls(page, "schedule");
+  assert.ok(ns.length >= 6 && ns.length <= 7, String(ns.length));
+  assert.ok(ns.every(n => new Date(n.schedule.at).getHours() === 19 && n.channelId === "remind" && n.smallIcon === "ic_stat_pamuk" && n.schedule.allowWhileIdle && n.isExactNotification === false));
+  assert.ok(ns.every(n => n.id >= 7000 && n.id < 7007 && n.title && n.body));
+  assert.match(await page.textContent('.rem-row small'), /Har kuni 19:00 da/);
+  // Practised today with a 5-day streak: the list starts tomorrow and keeps the streak
+  await page.evaluate(() => { S.lastDay = todayKey(); S.streak = 5; nremSync(); });
+  await page.waitForFunction(() => window.__nc.filter(c => c[0] === "schedule").length === 2);
+  const ns2 = (await calls(page, "schedule"))[1];
+  assert.equal(ns2.length, 6);
+  assert.equal(ns2[0].id, 7001);
+  assert.deepEqual([ns2[0].title, ns2[0].body], ["Seriyangiz yoʻqolmasin!", "5 kun ketma-ket — bugun ham 5 daqiqa mashq qiling. Pamuk kutyapti!"]);
+  assert.notEqual(ns2[1].title, "Seriyangiz yoʻqolmasin!");
+  assert.deepEqual((await calls(page, "cancel")).pop(), [7000, 7001, 7002, 7003, 7004, 7005, 7006]);
+  // Nothing changed: no new scheduling
+  await page.evaluate(() => nremSync());
+  assert.equal((await calls(page, "schedule")).length, 2);
+  // Tapping the notification opens the home page
+  await page.evaluate(() => window.__tap({ notification: { id: 7001, extra: { url: "#home" } } }));
+  await page.waitForFunction(() => location.hash === "#home");
+  // Turned off: all cancelled, nothing scheduled
+  await page.evaluate(() => { location.hash = "#settings"; });
+  await page.waitForSelector('[data-act="remind"][data-v="0"]');
+  const nc = (await calls(page, "cancel")).length;
+  await page.evaluate(() => document.querySelector('[data-act="remind"][data-v="0"]').click());
+  await page.waitForFunction(n => window.__nc.filter(c => c[0] === "cancel").length > n, nc);
+  assert.equal((await calls(page, "schedule")).length, 2);
   assert.deepEqual(errors, []);
   await page.close();
 });
