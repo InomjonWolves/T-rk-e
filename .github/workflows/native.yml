@@ -49,6 +49,21 @@ jobs:
         run: |
           node tools/native-www.js
           cd native && npx cap sync android
+      - name: google-services.json (Google bilan kirish)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -z "$GOOGLE_SERVICES_JSON" ]; then echo "::warning::GOOGLE_SERVICES_JSON secret yo'q — ilovada Google bilan kirish ishlamaydi"; exit 0; fi
+          printf '%s' "$GOOGLE_SERVICES_JSON" > native/android/app/google-services.json
+          node -e '
+            const j = JSON.parse(require("fs").readFileSync("native/android/app/google-services.json", "utf8"));
+            const c = (j.client || []).find(c => c.client_info && c.client_info.android_client_info && c.client_info.android_client_info.package_name === "uz.turkceyol.app");
+            if (!c) { console.error("::error::google-services.json da uz.turkceyol.app ilovasi yo'q"); process.exit(1); }
+            const web = (c.oauth_client || []).some(o => o.client_type === 3);
+            const android = (c.oauth_client || []).some(o => o.client_type === 1);
+            console.log("loyiha:", j.project_info.project_id, "| veb mijoz:", web, "| android mijoz (SHA-1):", android);
+            if (!web) console.log("::warning::google-services.json da veb mijoz (client_type 3) yo'q — Google bilan kirish yoqilganini tekshiring");
+          '
       - name: Yuklash kaliti
         id: key
         run: |

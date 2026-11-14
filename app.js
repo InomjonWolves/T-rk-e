@@ -293,7 +293,13 @@ async function remSet(v) {
 const IS_NATIVE = window.TY_NATIVE === 1 || !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const FB_BASE = window.FB_SDK_BASE || "https://www.gstatic.com/firebasejs/10.12.2/";
 const AUDIO_BASE = window.AUDIO_BASE || "";
+// Capacitor plugins without a bundler: the native bridge gives a proxy (null on the website or when the plugin is missing)
+const nativePlugin = name => {
+  try { const C = window.Capacitor; if (!IS_NATIVE || !C) return null; if (C.isPluginAvailable && !C.isPluginAvailable(name)) return null; return (C.Plugins && C.Plugins[name]) || (C.registerPlugin ? C.registerPlugin(name) : null); } catch (e) { return null; }
+};
 if (IS_NATIVE) document.documentElement.classList.add("native");
+// Google sign-in in the app goes through the phone's own account window (FirebaseAuthentication plugin)
+if (IS_NATIVE && !nativePlugin("FirebaseAuthentication")) document.documentElement.classList.add("native-nogoogle");
 let REM_SIG = "", FCM_T = null;
 const swReady = () => !IS_NATIVE && location.protocol === "https:" && "serviceWorker" in navigator ? Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(r, 4000))]) : Promise.resolve(null);
 function loadScript(src) { return new Promise((ok, fail) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = fail; document.head.appendChild(s); }); }
@@ -4122,7 +4128,7 @@ function renderResult() {
 // The browser bar (and the phone's status bar in the installed app) takes the colour of the page: by the system setting, or the chosen theme
 function themeMeta(v) {
   // In the Android app the status bar icons follow the chosen theme (DARK = light icons for a dark page)
-  if (IS_NATIVE) { try { const sb = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SystemBars; if (sb) sb.setStyle({ style: v === "dark" ? "DARK" : v === "light" ? "LIGHT" : "DEFAULT" }); } catch (e) {} }
+  if (IS_NATIVE) { try { const sb = nativePlugin("SystemBars"); if (sb) sb.setStyle({ style: v === "dark" ? "DARK" : v === "light" ? "LIGHT" : "DEFAULT" }); } catch (e) {} }
   const m = document.querySelectorAll('meta[name="theme-color"]');
   if (m.length < 2) return;
   m[0].media = v === "auto" ? "(prefers-color-scheme: light)" : ""; m[0].content = v === "dark" ? "#0d1124" : "#f7f4ee";
@@ -4252,7 +4258,7 @@ function onAct(e) {
   else if (act === "guest-signup") { closeSheet(true); const u = auth && auth.currentUser; if (u && !USER) { showVerify(u); verifyCheck(true); } else { showAuth(false); setAuthTab("signup"); $("auth-email").open = false; window.scrollTo(0, 0); } }
   else if (act === "pass-eye") { const i = $("a-pass"), on = i.type === "password"; i.type = on ? "text" : "password"; b.setAttribute("aria-pressed", String(on)); b.textContent = on ? "Yashirish" : "Koʻrsatish"; }
   else if (act === "auth-reset") resetPassword();
-  else if (act === "logout") { ADMIN = false; ADMIN_DATA = null; setLastUser(null); cloudFlush().then(() => auth && auth.signOut()); go("home"); }
+  else if (act === "logout") { ADMIN = false; ADMIN_DATA = null; setLastUser(null); nativeSignOut(); cloudFlush().then(() => auth && auth.signOut()); go("home"); }
   else if (act === "verify-again") verifySend();
   else if (act === "verify-check") verifyCheck(false);
   else if (act === "verify-out") { setLastUser(null); if (auth) auth.signOut(); }
@@ -4936,8 +4942,27 @@ const TG_AUTH_MSG = "Telegram ichida Google bilan kirib boʻlmaydi (bu Google ch
 async function googleSignIn() {
   if (IN_TG) { authError(""); $("auth-err").className = "auth-err"; $("auth-err").textContent = TG_AUTH_MSG; tgOpenBrowser(); return; }
   if (!(await authReady())) return;
+  if (IS_NATIVE) return nativeGoogleSignIn();
   oauthSignIn(new firebase.auth.GoogleAuthProvider());
 }
+// The app: the phone shows its Google account chooser and returns an ID token; Firebase signs in with it,
+// so the rest (onAuthStateChanged, cloud sync, the league) works exactly as on the website
+async function nativeGoogleSignIn() {
+  const fa = nativePlugin("FirebaseAuthentication");
+  if (!fa) { authError("Google bilan kirish ilovaning bu versiyasida yoʻq. Email bilan kiring yoki ilovani yangilang."); return; }
+  authError("");
+  try {
+    const r = await fa.signInWithGoogle();
+    const tok = r && r.credential && r.credential.idToken;
+    if (!tok) throw new Error("token yoʻq");
+    await auth.signInWithCredential(firebase.auth.GoogleAuthProvider.credential(tok));
+  } catch (e) {
+    if (/cancel|bekor/i.test(String(e && (e.message || e.code) || ""))) return; // the chooser was closed
+    authError("Google bilan kirib boʻlmadi. Internetni tekshiring yoki email bilan kiring.");
+  }
+}
+// Leaving the account also forgets the Google account on the phone, so the chooser shows again next time
+function nativeSignOut() { const fa = nativePlugin("FirebaseAuthentication"); if (fa) fa.signOut().catch(() => {}); }
 // A popup first, also in the installed app: the page-redirect flow loses the sign-in on browsers that block
 // cross-site storage (Chrome, Safari) when the sign-in page is on the Firebase auth domain, not the site's own.
 // The redirect is only a fallback when the popup cannot open.

@@ -1538,5 +1538,5 @@ details.fold > .list .unit:active { box-shadow: 0 1px 0 var(--line-2); }
 .pl-stage[open] { padding-bottom: 14px; }
 .opt.opt-idk { color: var(--muted); font-weight: 600; border-style: dashed; }
 
-/* Mustaqil Android ilova (Capacitor): Google bilan kirish telefonning oʻz oynasi orqali keyingi bosqichda ulanadi */
-html.native [data-act="auth-google"] { display: none; }
+/* Mustaqil Android ilova (Capacitor): Google bilan kirish telefonning oʻz oynasi orqali; plagini yoʻq eski versiyada yashiriladi */
+html.native-nogoogle [data-act="auth-google"] { display: none; }

@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("fs");
 const path = require("path");
 const { launch, openApp } = require("./helpers");
+const { openFb } = require("./fakefb");
 const { patchIndex, FILES } = require("../tools/native-www.js");
 const ROOT = path.resolve(__dirname, "..");
 const read = f => fs.readFileSync(path.join(ROOT, f), "utf8");
@@ -51,7 +52,7 @@ let browser;
 before(async () => { browser = await launch(); });
 after(async () => { await browser.close(); });
 
-test("app mode: no install card, no web push, recordings from the site, Google sign-in waits for the phone's own window", async () => {
+test("app mode: no install card, no web push, recordings from the site; Google hidden when the app has no sign-in plugin", async () => {
   const { page, errors } = await openApp(browser, "#home", { native: true });
   const r = await page.evaluate(() => [IS_NATIVE, document.documentElement.classList.contains("native"), isStandalone(), installCard(), audioPath("abcdef"), FB_SDK[0]]);
   assert.deepEqual(r, [true, true, true, "", "https://turkceyol.web.app/audio/ab/abcdef.mp3", "vendor/firebase/firebase-app-compat.js"]);
@@ -62,4 +63,30 @@ test("app mode: no install card, no web push, recordings from the site, Google s
   // The website itself is unchanged
   const web = await openApp(browser, "#home");
   assert.deepEqual(await web.page.evaluate(() => [IS_NATIVE, audioPath("abcdef"), document.documentElement.classList.contains("native")]), [false, "audio/ab/abcdef.mp3", false]);
+});
+
+test("app Google sign-in: the phone's account window gives an ID token, Firebase signs in with it; sign-out forgets the phone account", async () => {
+  const init = () => {
+    window.TY_NATIVE = 1;
+    window.__nativeCalls = [];
+    window.Capacitor = { isNativePlatform: () => true, isPluginAvailable: n => n === "FirebaseAuthentication", Plugins: { FirebaseAuthentication: {
+      signInWithGoogle: async () => { window.__nativeCalls.push("google"); return { credential: { idToken: "tok1" } }; },
+      signOut: async () => { window.__nativeCalls.push("signOut"); }
+    } } };
+  };
+  const { page, errors } = await openFb(browser, "#home", { init });
+  await page.waitForFunction(() => document.querySelector('[data-act="auth-google"]') && getComputedStyle(document.querySelector('[data-act="auth-google"]')).display !== "none");
+  assert.equal(await page.evaluate(() => document.documentElement.classList.contains("native-nogoogle")), false);
+  await page.evaluate(() => document.querySelector('[data-act="auth-google"]').click());
+  await page.waitForFunction(() => (window.__credentials || []).length === 1);
+  const r = await page.evaluate(() => [window.__nativeCalls.slice(), window.__credentials[0].idToken, window.__popups || []]);
+  assert.deepEqual(r, [["google"], "tok1", []], "no web popup in the app");
+  // A closed chooser is not an error
+  await page.evaluate(() => { window.Capacitor.Plugins.FirebaseAuthentication.signInWithGoogle = async () => { throw new Error("The user canceled the sign-in flow."); }; });
+  await page.evaluate(() => nativeGoogleSignIn());
+  assert.equal(await page.evaluate(() => document.getElementById("auth-err").textContent), "");
+  await page.evaluate(() => nativeSignOut());
+  assert.deepEqual(await page.evaluate(() => window.__nativeCalls), ["google", "signOut"]);
+  assert.deepEqual(errors, []);
+  await page.close();
 });

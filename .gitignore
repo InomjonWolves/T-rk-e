@@ -15,3 +15,4 @@ android/local.properties
 native/node_modules/
 native/www/
 native/android/upload-key.jks
+native/android/app/google-services.json

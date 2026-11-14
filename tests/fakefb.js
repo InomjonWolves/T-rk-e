@@ -43,11 +43,13 @@ const FAKE_FIREBASE = `
     onAuthStateChanged: f => { listeners.push(f); if (user !== undefined) f(user); },
     createUserWithEmailAndPassword: (email) => { window.__fbUser({ uid: "new1", email, providerData: [{ providerId: "password" }], emailVerified: false, updateProfile(p) { Object.assign(this, p); return Promise.resolve(); } }); return Promise.resolve({ user }); },
     signInWithCustomToken: t => { window.__customTokens = (window.__customTokens || []).concat([t]); const uid = String(t).split(".")[0]; window.__fbUser({ uid, providerData: [], emailVerified: false, displayName: null, updateProfile(p) { Object.assign(this, p); return Promise.resolve(); } }); return Promise.resolve({ user: window.firebase.auth().currentUser }); },
+    signInWithCredential: c => { window.__credentials = (window.__credentials || []).concat([c]); window.__fbUser({ uid: "g-" + c.idToken, providerData: [{ providerId: "google.com" }], emailVerified: true, displayName: "Google User", email: "g@example.com", updateProfile(p) { Object.assign(this, p); return Promise.resolve(); } }); return Promise.resolve({ user: window.firebase.auth().currentUser }); },
     signInWithPopup: p => { if (window.__popupFail) { window.__popups = (window.__popups || []).concat(["failed:" + p.providerId]); return err(window.__popupFail); } window.__popups = (window.__popups || []).concat([p.providerId + ":" + (p.scopes || []).join(",")]); return Promise.resolve(); },
     signInWithRedirect: p => { window.__popups = (window.__popups || []).concat(["redirect:" + p.providerId]); return Promise.resolve(); },
     signOut: () => { window.__fbUser(null); return Promise.resolve(); }
   });
   auth.GoogleAuthProvider = function () { this.providerId = "google.com"; };
+  auth.GoogleAuthProvider.credential = (idToken, accessToken) => ({ providerId: "google.com", idToken, accessToken });
   window.firebase = { initializeApp: c => { window.__fbConfig = c; }, auth, firestore: fs };
 })();`;
 
