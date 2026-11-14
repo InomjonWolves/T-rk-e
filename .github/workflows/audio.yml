@@ -59,3 +59,5 @@ jobs:
           git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "Audio yangilandi ($(git diff --cached --name-only | wc -l) fayl)"
           for i in 1 2 3; do git pull -q --rebase origin main && git push -q origin HEAD:main && break; sleep 5; done
           gh workflow run firebase-hosting.yml --ref main
+          # The Android app carries every recording inside (tools/native-www.js): build it again with the new audio
+          gh workflow run native.yml --ref main

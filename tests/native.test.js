@@ -16,7 +16,8 @@ test("native bundle: every file the app page loads is packed; the app index has 
   const lazy = [...read("app.js").matchAll(/\.src = "([a-z-]+\.js)"/g)].map(m => m[1]);
   for (const f of [...local, ...lazy]) assert.ok(FILES.includes(f), `${f} is not packed into the app`);
   const out = patchIndex(html);
-  assert.match(out, /<meta charset="utf-8">\n<script>\/\* Ilova \(Capacitor\) \*\/window\.TY_NATIVE=1;window\.FB_SDK_BASE="vendor\/firebase\/";window\.AUDIO_BASE="https:\/\/turkceyol\.web\.app\/";<\/script>/);
+  assert.match(out, /<meta charset="utf-8">\n<script>\/\* Ilova \(Capacitor\) \*\/window\.TY_NATIVE=1;window\.FB_SDK_BASE="vendor\/firebase\/";<\/script>/);
+  assert.doesNotMatch(out, /AUDIO_BASE/, "recordings are inside the app");
   assert.doesNotMatch(out, /gstatic\.com|Yagona manzil|rel="manifest"/);
   assert.ok(out.indexOf("TY_NATIVE") < out.indexOf('src="app.js"'), "flags before the app");
 });
@@ -60,10 +61,10 @@ let browser;
 before(async () => { browser = await launch(); });
 after(async () => { await browser.close(); });
 
-test("app mode: no install card, no web push, recordings from the site; Google hidden when the app has no sign-in plugin", async () => {
+test("app mode: no install card, no web push, recordings from inside the app; Google hidden when the app has no sign-in plugin", async () => {
   const { page, errors } = await openApp(browser, "#home", { native: true });
   const r = await page.evaluate(() => [IS_NATIVE, document.documentElement.classList.contains("native"), isStandalone(), installCard(), audioPath("abcdef"), FB_SDK[0]]);
-  assert.deepEqual(r, [true, true, true, "", "https://turkceyol.web.app/audio/ab/abcdef.mp3", "vendor/firebase/firebase-app-compat.js"]);
+  assert.deepEqual(r, [true, true, true, "", "audio/ab/abcdef.mp3", "vendor/firebase/firebase-app-compat.js"]);
   assert.equal(await page.evaluate(() => fcmToken()), null);
   await page.evaluate(() => { const b = document.createElement("button"); b.dataset.act = "auth-google"; b.id = "g-test"; document.body.appendChild(b); });
   assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById("g-test")).display), "none");
@@ -97,6 +98,15 @@ test("app Google sign-in: the phone's account window gives an ID token, Firebase
   assert.deepEqual(await page.evaluate(() => window.__nativeCalls), ["google", "signOut"]);
   assert.deepEqual(errors, []);
   await page.close();
+});
+
+test("app audio: every recording in audio/index.txt is packed into the app and rebuilt when the audio changes", () => {
+  const { audioFiles } = require("../tools/native-www.js");
+  const files = audioFiles();
+  assert.ok(files.length > 4000, String(files.length));
+  for (const f of files) assert.ok(fs.existsSync(path.join(ROOT, f)), f);
+  assert.match(read(".github/workflows/native.yml"), /- "audio\/\*\*"/);
+  assert.match(read(".github/workflows/audio.yml"), /gh workflow run native\.yml/, "a commit by the workflow token starts no other workflow");
 });
 
 test("google-services.json check: the app must be in the file with a web client", () => {

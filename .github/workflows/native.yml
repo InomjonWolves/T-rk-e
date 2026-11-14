@@ -17,6 +17,7 @@ on:
       - "index.html"
       - "privacy.html"
       - "fonts/**"
+      - "audio/**"
 
 permissions:
   contents: write

@@ -24,7 +24,7 @@ async function openApp(browser, hash = "#home", opts = {}) {
   await page.route("**/firebase-config.js", r => r.fulfill({ body: "window.FIREBASE_CONFIG=null", contentType: "text/javascript" }));
   await page.route(/^https?:\/\//, r => r.abort());
   // opts.native: open the page as the standalone Android app does (tools/native-www.js sets these globals)
-  if (opts.native) await page.addInitScript(() => { window.TY_NATIVE = 1; window.AUDIO_BASE = "https://turkceyol.web.app/"; window.FB_SDK_BASE = "vendor/firebase/"; });
+  if (opts.native) await page.addInitScript(() => { window.TY_NATIVE = 1; window.FB_SDK_BASE = "vendor/firebase/"; });
   // opts.init: a script run before the page (for example fake Capacitor plugins)
   if (opts.init) await page.addInitScript(opts.init);
   await page.addInitScript(({ sr, noSR, state }) => {
