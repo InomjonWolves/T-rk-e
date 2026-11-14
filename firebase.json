@@ -2,13 +2,70 @@
   "hosting": {
     "site": "turkceyol",
     "public": ".",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "tests/**", "package.json", "package-lock.json", "*.md", "firestore.rules", "tools/**", "bot/**"],
+    "ignore": [
+      "firebase.json",
+      ".git/**",
+      ".github/**",
+      ".gitignore",
+      ".firebaserc",
+      ".nojekyll",
+      "**/.DS_Store",
+      "android/**",
+      "**/node_modules/**",
+      "tests/**",
+      "package.json",
+      "package-lock.json",
+      "*.md",
+      "firestore.rules",
+      "tools/**",
+      "bot/**"
+    ],
     "headers": [
-      { "source": "**/*.@(html|js|css|webmanifest)", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
-      { "source": "**/*.@(png|svg)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }] },
-      { "source": "fonts/*.woff2", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] },
-      { "source": "audio/**/*.mp3", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] },
-      { "source": "audio/index.txt", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+      {
+        "source": "**/*.@(html|js|css|webmanifest)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(png|svg)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400"
+          }
+        ]
+      },
+      {
+        "source": "fonts/*.woff2",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "audio/**/*.mp3",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "audio/index.txt",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
     ]
   }
 }

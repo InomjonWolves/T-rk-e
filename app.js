@@ -2484,7 +2484,9 @@ function copyText(t, done) {
 let INSTALL_EVT = null;
 addEventListener("beforeinstallprompt", e => { e.preventDefault(); INSTALL_EVT = e; if (["#help", "#home", ""].includes(location.hash)) kRerender(); });
 addEventListener("appinstalled", () => { INSTALL_EVT = null; toast("Ilova oʻrnatildi! Endi uni bosh ekrandan oching."); });
-const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+// Inside the Android app (Trusted Web Activity) the first page comes with the referrer android-app://uz.turkceyol.app
+const IN_TWA = (() => { try { if (/^android-app:\/\/uz\.turkceyol\.app/.test(document.referrer)) sessionStorage.setItem("ty-twa", "1"); return sessionStorage.getItem("ty-twa") === "1"; } catch (e) { return false; } })();
+const isStandalone = () => IN_TWA || matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
 function installCard() {
   if (isStandalone()) return "";

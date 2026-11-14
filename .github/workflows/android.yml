@@ -1,0 +1,119 @@
+# Android ilova (Trusted Web Activity): saytni Chrome dvigatelida, manzil satrisiz ochadigan ilova.
+# Natija: turkce-yol.aab (Google Play uchun) va turkce-yol.apk (telefonga toʻgʻridan-toʻgʻri oʻrnatib sinash uchun).
+# Kerak: repo secret ANDROID_KEY_PASS — yuklash kalitining paroli (kamida 12 belgi). Birinchi ishga tushishda kalit
+# shu yerda yaratiladi va repoga faqat shifrlangan holda (android/upload-key.jks.enc) yoziladi; sayt manziliga
+# /.well-known/assetlinks.json qoʻshilib, sayt qayta joylanadi. Parolni yoʻqotmang — usiz yangi versiyani imzolab boʻlmaydi.
+name: Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - "tools/assetlinks.js"
+      - ".github/workflows/android.yml"
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: android
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANDROID_KEY_PASS: ${{ secrets.ANDROID_KEY_PASS }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - name: Parol bormi
+        id: pass
+        run: |
+          if [ "${#ANDROID_KEY_PASS}" -lt 12 ]; then
+            echo "::warning::Repo secret ANDROID_KEY_PASS yo'q yoki 12 belgidan qisqa — ilova yig'ilmadi. Settings → Secrets and variables → Actions → New repository secret."
+            echo "ok=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=1" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Parolsiz sinov yig'ish (debug APK — loyiha to'g'riligini tekshirish uchun)
+        if: steps.pass.outputs.ok != '1'
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon -q assembleDebug
+          ls -la app/build/outputs/apk/debug/
+      - uses: actions/upload-artifact@v4
+        if: steps.pass.outputs.ok != '1'
+        with:
+          name: turkce-yol-debug
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 7
+      - uses: actions/setup-node@v5
+        if: steps.pass.outputs.ok == '1'
+        with:
+          node-version: 22
+      - name: Yuklash kaliti (shifrdan ochish yoki birinchi marta yaratish)
+        if: steps.pass.outputs.ok == '1'
+        working-directory: android
+        run: |
+          if [ -f upload-key.jks.enc ]; then
+            openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in upload-key.jks.enc -out upload-key.jks -pass env:ANDROID_KEY_PASS
+          else
+            keytool -genkeypair -keystore upload-key.jks -storetype PKCS12 -alias upload -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Turkce Yol, O=Turkce Yol, C=UZ" -storepass "$ANDROID_KEY_PASS" -keypass "$ANDROID_KEY_PASS"
+            openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -in upload-key.jks -out upload-key.jks.enc -pass env:ANDROID_KEY_PASS
+            echo "Yangi yuklash kaliti yaratildi"
+          fi
+          SHA=$(keytool -list -v -keystore upload-key.jks -storepass "$ANDROID_KEY_PASS" -alias upload | sed -n 's/^.*SHA256: *//p' | head -1)
+          echo "Yuklash kalitining SHA-256: $SHA"
+          echo "UPLOAD_SHA=$SHA" >> "$GITHUB_ENV"
+      - name: Digital Asset Links (saytga)
+        if: steps.pass.outputs.ok == '1'
+        run: node tools/assetlinks.js "$UPLOAD_SHA"
+      - name: Yig'ish (AAB va APK)
+        if: steps.pass.outputs.ok == '1'
+        working-directory: android
+        env:
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon -q bundleRelease assembleRelease
+          mkdir -p ../out
+          cp app/build/outputs/bundle/release/app-release.aab ../out/turkce-yol.aab
+          cp app/build/outputs/apk/release/app-release.apk ../out/turkce-yol.apk
+          ls -la ../out
+      - uses: actions/upload-artifact@v4
+        if: steps.pass.outputs.ok == '1'
+        with:
+          name: turkce-yol-android
+          path: out/
+          retention-days: 30
+      - name: Sinov uchun APK (Releases)
+        if: steps.pass.outputs.ok == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete android-latest -y --cleanup-tag 2>/dev/null || true
+          gh release create android-latest out/turkce-yol.apk --prerelease --target main \
+            --title "Türkçe Yoʻl — Android (sinov, ${{ github.run_number }})" \
+            --notes "Telefonga oʻrnatib sinash uchun APK. Google Play uchun AAB — Actions → Android → Artifacts."
+      - name: Kalit va Asset Links'ni saqlash, saytni qayta joylash
+        if: steps.pass.outputs.ok == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git add android/upload-key.jks.enc .well-known/assetlinks.json
+          if git diff --cached --quiet; then echo "O'zgarish yo'q"; exit 0; fi
+          git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "Android: yuklash kaliti (shifrlangan) va Digital Asset Links"
+          for i in 1 2 3; do git pull -q --rebase origin main && git push -q origin HEAD:main && break; sleep 5; done
+          gh workflow run firebase-hosting.yml --ref main

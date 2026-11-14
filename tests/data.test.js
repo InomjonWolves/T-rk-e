@@ -130,7 +130,9 @@ test("firebase hosting: publishes the site files only, never tests or project no
   const cfg = JSON.parse(read("firebase.json")).hosting;
   assert.equal(cfg.public, ".");
   assert.match(cfg.site, /^[a-z0-9-]{4,30}$/, "site name");
-  for (const x of ["tests/**", "*.md", "package.json", "firestore.rules", "**/.*"]) assert.ok(cfg.ignore.includes(x), `should ignore ${x}`);
+  for (const x of ["tests/**", "*.md", "package.json", "firestore.rules", ".git/**", ".github/**", ".firebaserc", "android/**"]) assert.ok(cfg.ignore.includes(x), `should ignore ${x}`);
+  // /.well-known/assetlinks.json must be served (the Android app's proof), so dotfiles are listed one by one
+  assert.ok(!cfg.ignore.includes("**/.*") && !cfg.ignore.some(x => /well-known/.test(x)), "serve /.well-known");
   assert.equal(JSON.parse(read(".firebaserc")).projects.default, "t-rk-e");
 });
 

@@ -5,3 +5,9 @@ test-results/
 !/icon-192.png
 !/icon-512.png
 !/icon-maskable-512.png
+# Android: the decrypted upload key and build outputs never go to the repo (only upload-key.jks.enc)
+android/upload-key.jks
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties

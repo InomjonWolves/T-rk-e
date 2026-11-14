@@ -1,0 +1,66 @@
+{
+  "packageId": "uz.turkceyol.app",
+  "host": "turkceyol.web.app",
+  "name": "Türkçe Yoʻl",
+  "launcherName": "Türkçe Yoʻl",
+  "display": "standalone",
+  "themeColor": "#F7F4EE",
+  "themeColorDark": "#0D1124",
+  "navigationColor": "#F7F4EE",
+  "navigationColorDark": "#0D1124",
+  "navigationDividerColor": "#F7F4EE",
+  "navigationDividerColorDark": "#0D1124",
+  "backgroundColor": "#F7F4EE",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://turkceyol.web.app/icon-512.png",
+  "maskableIconUrl": "https://turkceyol.web.app/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./upload-key.jks",
+    "alias": "upload"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Bugungi mashq",
+      "shortName": "Mashq",
+      "url": "/#practice",
+      "chosenIconUrl": "https://turkceyol.web.app/icon-192.png"
+    },
+    {
+      "name": "Kurs: A1–C1",
+      "shortName": "Kurs",
+      "url": "/#course",
+      "chosenIconUrl": "https://turkceyol.web.app/icon-192.png"
+    },
+    {
+      "name": "Aqlli tarjimon",
+      "shortName": "Tarjimon",
+      "url": "/#translate",
+      "chosenIconUrl": "https://turkceyol.web.app/icon-192.png"
+    }
+  ],
+  "generatorApp": "unknown",
+  "webManifestUrl": "https://turkceyol.web.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://turkceyol.web.app/",
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": [],
+  "appVersion": "1"
+}

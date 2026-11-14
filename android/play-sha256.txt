@@ -1,0 +1,2 @@
+# Google Play'ning ilova imzosi kaliti (Play Console → Test and release → App integrity → App signing key certificate → SHA-256).
+# Birinchi yuklashdan keyin shu yerga bir qator qilib qoʻshiladi: AA:BB:CC:…  (32 juft). Boʻsh qolsa — faqat yuklash kaliti.
