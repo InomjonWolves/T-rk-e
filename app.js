@@ -3102,15 +3102,10 @@ function renderType(w) {
   SES.sk = ["w"];
   stage.innerHTML = `<div class="q-card"><div class="q-label">Turkchasini yozing</div>
     <div class="q-word">${esc(w.uz)}</div></div>
-    <form class="type-box" id="type-form" autocomplete="off">
-      <label for="type-input" class="sr">Javob</label>
-      <input class="type-input" id="type-input" lang="tr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Javobingiz…">
-      <div class="keys">${["ç", "ş", "ğ", "ı", "İ", "ö", "ü"].map(k => `<button type="button" data-act="key" data-k="${k}">${k}</button>`).join("")}</div>
-    </form>
+    ${bankBox(w.tr)}
     <div class="feedback" id="fb" aria-live="polite"></div>`;
   foot.innerHTML = `<button class="btn btn-ghost" data-act="type-skip">Bilmayman</button><button class="btn btn-grad" data-act="type-check">Tekshirish</button>`;
   $("type-form").addEventListener("submit", e => { e.preventDefault(); if (SES.answered) nextStep(); else checkType(); });
-  setTimeout(() => { const i = $("type-input"); if (i) i.focus(); }, 60);
 }
 function checkType(skip) {
   if (SES.answered) return;
@@ -3292,17 +3287,53 @@ function renderListen(w) {
   foot.innerHTML = `<button class="btn btn-grad btn-block" data-act="next" disabled>Keyingi</button>`;
   speak(w.tr);
 }
-const typeBox = () => `<form class="type-box" id="type-form" autocomplete="off">
+/* Letter bank (2026-11-14, foydalanuvchi talabi): written answers are built from tiles — the answer's own letters
+   shuffled with 5–6 extra ones (first the look-alikes: ı/i, ş/s, ç/c, ğ/g, ö/o, ü/u…) — so the phone keyboard is
+   not needed. Long answers (over BANK_MAX letters or 3+ words) come as word tiles with a few extra words. The tiles
+   write into #type-input, so every check reads the same field; «Klaviatura» switches to typing (inputmode text). */
+const BANK_MAX = 16;
+const BANK_TWIN = { ı: "i", i: "ı", ş: "s", s: "ş", ç: "c", c: "ç", ğ: "g", g: "ğ", ö: "o", o: "ö", ü: "u", u: "ü", e: "a", a: "e", k: "g", d: "t", t: "d", b: "p", p: "b", r: "l", l: "r", n: "m", m: "n" };
+let BANK = null;
+function bankTiles(answer) {
+  const ans = String(answer).replace(/[?!.,;:…«»"]/g, "").replace(/\s+/g, " ").trim();
+  const words = ans.split(" ");
+  if (ans.replace(/ /g, "").length > BANK_MAX || words.length >= 3) {
+    // Word tiles: the answer's words and up to 3 others of a similar length from the vocabulary
+    const extra = shuffle(ALL.map(w => w.tr).filter(t => !/ /.test(t) && !words.includes(t) && t.length >= 2 && t.length <= 12)).slice(0, Math.min(3, words.length));
+    return { kind: "w", tiles: shuffle([...words, ...extra]) };
+  }
+  const letters = [...ans].map(c => c === " " ? "␣" : c);
+  const low = ans.toLocaleLowerCase("tr"), pool = [];
+  [...low].forEach(c => { const t = BANK_TWIN[c]; if (t && !low.includes(t) && !pool.includes(t)) pool.push(t); });
+  const n = letters.length <= 3 ? 5 : 6;
+  for (const c of shuffle("aeiıoöuübcçdgğklmnprsştyz".split(""))) { if (pool.length >= n) break; if (!pool.includes(c)) pool.push(c); }
+  return { kind: "l", tiles: shuffle([...letters, ...shuffle(pool).slice(0, n)]) };
+}
+function bankBox(answer, ph = "Javobingiz…") {
+  const t = bankTiles(answer);
+  BANK = { kind: t.kind, tiles: t.tiles, used: [] };
+  return `<form class="type-box bank-box" id="type-form" autocomplete="off">
     <label for="type-input" class="sr">Javob</label>
-    <input class="type-input" id="type-input" lang="tr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Eshitganingizni yozing…">
-    <div class="keys">${["ç", "ş", "ğ", "ı", "İ", "ö", "ü"].map(k => `<button type="button" data-act="key" data-k="${k}">${k}</button>`).join("")}</div>
+    <div class="bank-line"><input class="type-input" id="type-input" lang="tr" inputmode="none" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="${esc(ph)}">
+      <button type="button" class="icon-btn bank-del" data-act="bk-del" aria-label="Oxirgisini oʻchirish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12z"/><path d="m16 9-5 6M11 9l5 6"/></svg></button></div>
+    <div class="bank${t.kind === "w" ? " words" : ""}" id="bank">${t.tiles.map((x, i) => `<button type="button" class="bk" data-act="bk" data-i="${i}" lang="tr">${esc(x)}</button>`).join("")}</div>
+    <button type="button" class="link bank-kbd" data-act="bk-kbd">Klaviatura bilan yozish</button>
+    <div class="keys" hidden>${["ç", "ş", "ğ", "ı", "İ", "ö", "ü", "'"].map(k => `<button type="button" data-act="key" data-k="${k}">${k}</button>`).join("")}</div>
   </form>`;
+}
+function bankWrite() {
+  const inp = $("type-input"); if (!inp || !BANK) return;
+  const parts = BANK.used.map(i => BANK.tiles[i].replace("␣", " "));
+  inp.value = BANK.kind === "w" ? parts.join(" ") : parts.join("");
+  document.querySelectorAll("#bank .bk").forEach(b => b.classList.toggle("used", BANK.used.includes(+b.dataset.i)));
+}
+const typeBox = answer => bankBox(answer, "Eshitganingizni yozing…");
 function renderDict(w) {
   SES.sk = ["l", "w"];
   stage.innerHTML = `${listenNotice()}<div class="q-card"><div class="q-label">Diktant: eshitganingizni turkcha yozing</div>
     ${playBtns(w.tr)}
     <div class="ls-reveal" id="ls-reveal" hidden><b lang="tr">${esc(w.tr)}</b> — ${esc(w.uz)}</div></div>
-    ${typeBox()}
+    ${typeBox(w.tr)}
     <div class="feedback" id="fb" aria-live="polite"></div>`;
   foot.innerHTML = `<button class="btn btn-ghost" data-act="type-skip">Bilmayman</button><button class="btn btn-grad" data-act="type-check">Tekshirish</button>`;
   $("type-form").addEventListener("submit", e => { e.preventDefault(); if (SES.answered) nextStep(); else checkType(); });
@@ -3351,7 +3382,7 @@ function renderLs(it) {
     stage.innerHTML = `${listenNotice()}<div class="q-card"><div class="q-label">Tinglang va tushib qolgan soʻzni yozing</div>
       ${playBtns(it.t)}
       <div class="q-sent" lang="tr">${blankHtml(it.shown)}</div></div>
-      ${typeBox()}
+      ${typeBox(it.word)}
       <div class="feedback" id="fb" aria-live="polite"></div>`;
     foot.innerHTML = `<button class="btn btn-ghost" data-act="ls-skip">Bilmayman</button><button class="btn btn-grad" data-act="ls-check">Tekshirish</button>`;
     $("type-form").addEventListener("submit", e => { e.preventDefault(); if (SES.answered) nextStep(); else lsCheck(); });
@@ -4328,15 +4359,10 @@ function renderGx(it) {
     stage.innerHTML = `<div class="q-card">${head}<div class="q-label">Boʻsh joyni toʻldiring</div>
       <div class="q-sent" lang="tr">${blankHtml(ex.q)}</div>
       ${ex.uz ? `<div class="sub">${esc(ex.uz)}</div>` : ""}</div>
-      <form class="type-box" id="type-form" autocomplete="off">
-        <label for="type-input" class="sr">Javob</label>
-        <input class="type-input" id="type-input" lang="tr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Javobingiz…">
-        <div class="keys">${["ç", "ş", "ğ", "ı", "İ", "ö", "ü", "'"].map(k => `<button type="button" data-act="key" data-k="${k}">${k}</button>`).join("")}</div>
-      </form>
+      ${bankBox(ex.ans[0])}
       <div class="feedback" id="fb" aria-live="polite"></div>`;
     foot.innerHTML = `<button class="btn btn-ghost" data-act="gx-skip">Bilmayman</button><button class="btn btn-grad" data-act="gx-check">Tekshirish</button>`;
     $("type-form").addEventListener("submit", e => { e.preventDefault(); if (SES.answered) nextStep(); else gxCheckType(); });
-    setTimeout(() => { const i = $("type-input"); if (i) i.focus(); }, 60);
   } else {
     const toks = ex.s.split(" ");
     let order = shuffle(toks.map((t, i) => i));
@@ -4834,6 +4860,9 @@ function onAct(e) {
   }
   else if (act === "type-check") checkType();
   else if (act === "type-skip") checkType(true);
+  else if (act === "bk") { if (SES && SES.answered) return; const i = +b.dataset.i; if (BANK && !BANK.used.includes(i)) { BANK.used.push(i); bankWrite(); } }
+  else if (act === "bk-del") { if (SES && SES.answered) return; if (BANK && BANK.used.length) { BANK.used.pop(); bankWrite(); } else { const inp = $("type-input"); if (inp) inp.value = inp.value.slice(0, -1); } }
+  else if (act === "bk-kbd") { const inp = $("type-input"), f = $("type-form"); if (!inp) return; f.classList.add("kbd"); f.querySelector(".keys").hidden = false; b.hidden = true; inp.setAttribute("inputmode", "text"); BANK = null; inp.focus(); }
   else if (act === "key") {
     const inp = $("type-input");
     const s = inp.selectionStart ?? inp.value.length, en = inp.selectionEnd ?? s;

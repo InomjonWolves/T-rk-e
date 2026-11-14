@@ -119,3 +119,31 @@ test("an achievement earned during an exercise waits for the result screen", asy
   assert.equal(await page.evaluate(() => document.getElementById("celebrate").hidden), false, "pop-up on the result screen");
   assert.deepEqual(errors, []);
 });
+
+test("letter bank: written answers are built from tiles — the answer's letters plus 5–6 extra; long answers as words; the keyboard is optional", async () => {
+  const { page, errors } = await openApp(browser, "#practice");
+  const t = await page.evaluate(() => {
+    const a = bankTiles("şekersiz"), b = bankTiles("Bu sabah okula erken gittim"), c = bankTiles("ev");
+    const has = (tiles, word) => { const left = tiles.slice(); return [...word].every(ch => { const i = left.indexOf(ch); if (i < 0) return false; left.splice(i, 1); return true; }); };
+    return [a.kind, a.tiles.length - 8, has(a.tiles, "şekersiz"), b.kind, ["Bu", "sabah", "okula", "erken", "gittim"].every(w => b.tiles.includes(w)), b.tiles.length > 5, c.tiles.length - 2];
+  });
+  assert.deepEqual(t, ["l", 6, true, "w", true, true, 5]);
+  // Spell a word with the tiles in a writing session and check it
+  await run(page, "type", "all");
+  const word = await page.evaluate(() => SES.items[SES.i].tr);
+  await page.evaluate(w => {
+    const used = new Set();
+    for (const ch of [...w.replace(/[?!.,;:…«»"]/g, "")].map(c => c === " " ? "␣" : c)) {
+      const b = [...document.querySelectorAll("#bank .bk")].find(x => !used.has(x) && x.textContent === ch);
+      used.add(b); b.click();
+    }
+  }, word);
+  assert.equal(await page.evaluate(() => $("type-input").value), word.replace(/[?!.,;:…«»"]/g, ""));
+  await page.evaluate(() => { document.querySelector("[data-act=bk-del]").click(); document.querySelector("[data-act=bk-del]").click(); });
+  assert.equal(await page.evaluate(() => $("type-input").value.length), word.replace(/[?!.,;:…«»"]/g, "").length - 2);
+  assert.equal(await page.getAttribute("#type-input", "inputmode"), "none", "the phone keyboard stays closed");
+  await page.evaluate(() => document.querySelector("[data-act=bk-kbd]").click());
+  assert.deepEqual(await page.evaluate(() => [$("type-input").getAttribute("inputmode"), $("type-form").classList.contains("kbd")]), ["text", true]);
+  assert.deepEqual(errors, []);
+  await page.close();
+});

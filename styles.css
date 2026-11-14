@@ -1719,3 +1719,18 @@ html.native input, html.native textarea, html.native [contenteditable="true"] { 
 .lock-card h2 { font-size: 22px; font-weight: 800; }
 .lock-card p { color: var(--ink-2); max-width: 34ch; }
 .lock-acts { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 6px; }
+
+/* Letter bank (2026-11-14): answers built from tiles instead of the phone keyboard */
+.bank-line { display: flex; gap: 8px; align-items: stretch; }
+.bank-line .type-input { flex: 1; min-width: 0; letter-spacing: 0.02em; caret-color: transparent; }
+.bank-box.kbd .bank-line .type-input { caret-color: auto; }
+.bank-del { flex: none; width: 56px; height: auto; min-height: 52px; border-radius: 16px; }
+.bank-del svg { width: 24px; height: 24px; }
+.bank { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 4px 0; }
+.bk { min-width: 46px; height: 50px; padding: 0 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 4px 0 var(--line-2); font-size: 22px; font-weight: 800; color: var(--ink); cursor: pointer; transition: transform 0.08s ease, box-shadow 0.08s ease; }
+.bk:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line-2); }
+.bk.used { visibility: hidden; }
+.bank.words .bk { font-size: 17px; font-weight: 700; height: 46px; }
+.bank-kbd { align-self: center; font-size: 14px; }
+.bank-box.kbd .bank { display: none; }
+#session[data-r] .bank .bk { pointer-events: none; opacity: 0.6; }
