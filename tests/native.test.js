@@ -30,6 +30,12 @@ test("native project: same package and upload key as the first app, portrait, Pa
   assert.match(g, /System\.getenv\('ANDROID_VERSION_CODE'\) \?: '1000'/, "above the first app's version codes");
   assert.match(read("native/android/app/src/main/AndroidManifest.xml"), /android:screenOrientation="portrait"/);
   for (const d of ["mdpi", "xxxhdpi"]) assert.ok(fs.existsSync(path.join(ROOT, `native/android/app/src/main/res/mipmap-${d}/ic_launcher_foreground.png`)));
+  // Android resource XML: well-formed comments (Gradle refuses "--" inside a comment)
+  const resDir = path.join(ROOT, "native/android/app/src/main/res");
+  for (const d of fs.readdirSync(resDir)) for (const f of fs.readdirSync(path.join(resDir, d)).filter(f => f.endsWith(".xml"))) {
+    const x = fs.readFileSync(path.join(resDir, d, f), "utf8");
+    for (const c of x.match(/<!--[\s\S]*?-->/g) || []) assert.doesNotMatch(c.slice(4, -3), /--/, `${d}/${f}`);
+  }
   const pkg = JSON.parse(read("native/package.json"));
   assert.equal(pkg.devDependencies.firebase, "10.12.2");
   assert.match(read("app.js"), /firebasejs\/10\.12\.2\//, "the site and the app use one Firebase version");
