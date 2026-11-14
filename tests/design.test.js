@@ -157,6 +157,18 @@ test("practice session: the prompt sits on a card, the answer colours the Next b
 test("lists: a finished ring is a tick; the next course unit is marked", async () => {
   const { page, errors } = await openApp(browser, "#course", { state: { k: { "a1-1": { e: {}, v: {}, done: 1 } } } });
   assert.equal(await page.evaluate(() => pctRing(1).includes("full") && !pctRing(0.99).includes("full")), true);
+  // The learning path (default): gold done step, the current step with its bubble and Pamuk, the level test at the end
+  assert.equal(await page.locator(".pnode.s-done").count(), 1);
+  assert.equal(await page.getAttribute(".pnode.s-now", "href"), "#k-a1-2");
+  assert.equal(await page.textContent(".pnode.s-now .pn-bubble"), "Boshlash");
+  assert.equal(await page.locator(".pn-row.now .pn-cat .cat").count(), 1);
+  assert.equal(await page.locator(".pnode").count(), 9);
+  assert.equal(await page.getAttribute(".pnode.s-test", "href"), "#ktest-a1");
+  for (const w of [320, 390]) { await page.setViewportSize({ width: w, height: 800 }); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `path fits ${w}px`); }
+  // The list view is one tap away and is remembered
+  await page.evaluate(() => document.querySelector('[data-act="k-view"]').click());
+  await page.waitForSelector(".unit.now");
+  assert.equal(await page.evaluate(() => [S.kView, document.querySelectorAll(".pnode").length]).then(r => r.join()), "list,0");
   assert.equal(await page.locator(".unit.now").count(), 1);
   assert.equal(await page.getAttribute(".unit.now", "href"), "#k-a1-2");
   assert.match(await page.textContent(".unit.now"), /Shu yerdan davom eting/);

@@ -58,3 +58,61 @@ test("result screen: fanfare, accuracy, best streak and time; XP counts up; conf
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+const DAY = 864e5, dn = () => Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / DAY), key = n => new Date(n * DAY).toISOString().slice(0, 10);
+
+test("streak freeze: a missed day is kept when a freeze is there, shown in the week row; earned every 7 days, 2 at most", async () => {
+  const { page, errors } = await openApp(browser, "#home", { state: { lastDay: key(dn() - 2), streak: 9, frz: 1, xp: 500 } });
+  const r = await page.evaluate(() => [S.frz, S.lastDay === keyOf(dayNum() - 1), S.frzD.length, streakNow(), !!document.querySelector(".day.frz"), document.querySelector(".frz-badge")]);
+  assert.deepEqual(r, [0, true, 1, 9, true, null]);
+  await page.waitForFunction(() => /Muzlatgich seriyangizni saqlab qoldi/.test(document.getElementById("pamuk-say").textContent));
+  // A practice today continues the run
+  await page.evaluate(() => touchDay());
+  assert.equal(await page.evaluate(() => streakNow()), 10);
+  // Earned: every 7 days in a row, never more than 2
+  await page.evaluate(() => { ACH_QUEUE.length = 0; S.frz = 1; S.streak = 14; catStreakCheer(0); catStreakCheer(0); });
+  assert.equal(await page.evaluate(() => S.frz), 2);
+  assert.match(await page.evaluate(() => ACH_QUEUE.find(c => c.eyebrow === "Ketma-ket kunlar").text), /seriya muzlatgichi/);
+  assert.deepEqual(errors, []);
+  await page.close();
+  // Two missed days and one freeze: the streak is lost, the freeze stays
+  const p2 = await openApp(browser, "#home", { state: { lastDay: key(dn() - 3), streak: 9, frz: 1 } });
+  assert.deepEqual(await p2.page.evaluate(() => [S.frz, streakNow()]), [1, 0]);
+  await p2.page.close();
+});
+
+test("streak calendar and the daily goal: the flame opens a month view; reaching the goal is celebrated once a day", async () => {
+  const days = { [key(dn() - 1)]: { xp: 40, sec: 100, rev: 4 } };
+  const { page, errors } = await openApp(browser, "#home", { state: { lastDay: key(dn() - 1), streak: 3, best: 5, frz: 1, frzD: [key(dn() - 2)], days } });
+  await page.evaluate(() => document.querySelector('[data-act="streak"]').click());
+  await page.waitForSelector("#sheet:not([hidden]) .cal-grid");
+  const r = await page.evaluate(() => [document.querySelector(".stk-head b").textContent, document.querySelectorAll(".cd.today").length, document.querySelector(".stk-frz b").textContent,
+    document.querySelector('[data-act="stk-m"][data-d="1"]').disabled, document.querySelector('[data-act="stk-m"][data-d="-1"]').disabled]);
+  assert.deepEqual(r, ["3", 1, "Seriya muzlatgichi: 1/2", true, false]);
+  // Yesterday and the frozen day before it are marked (when they fall in this month)
+  const inMonth = await page.evaluate(() => new Date(dayNum() * DAY - 2 * DAY).getUTCMonth() === new Date().getMonth());
+  if (inMonth) assert.deepEqual(await page.evaluate(() => [document.querySelectorAll(".cd.on").length, document.querySelectorAll(".cd.frz").length]), [1, 1]);
+  await page.evaluate(() => document.querySelector('[data-act="stk-m"][data-d="-1"]').click());
+  await page.waitForSelector('[data-act="stk-m"][data-d="1"]:not([disabled])');
+  await page.evaluate(() => closeSheet(true));
+  // Daily goal
+  await page.evaluate(() => { ACH_QUEUE.length = 0; S.goal = 50; S.dayXp = 20; addXP(40); addXP(10); });
+  assert.deepEqual(await page.evaluate(() => ACH_QUEUE.filter(c => c.eyebrow === "Kunlik maqsad").map(c => c.title)), ["Bugungi maqsad bajarildi!"]);
+  assert.equal(await page.evaluate(() => S.goalD === todayKey()), true);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("Pamuk in a practice: a word at the start, a hint after two misses, a cheer before the last question; a tap hides it", async () => {
+  const { page, errors } = await openApp(browser, "#practice");
+  await page.evaluate(() => startSession("quiz", "all"));
+  await page.waitForFunction(() => { const b = document.getElementById("s-say"); return b && b.classList.contains("show") && b.dataset.k === "start"; });
+  await page.evaluate(() => { bad(); nextStep(); bad(); });
+  assert.equal(await page.evaluate(() => document.getElementById("s-say").dataset.k), "help");
+  await page.evaluate(() => document.getElementById("s-say").click());
+  assert.equal(await page.evaluate(() => document.getElementById("s-say").classList.contains("show")), false);
+  await page.evaluate(() => { SES.i = SES.items.length - 2; nextStep(); });
+  assert.equal(await page.evaluate(() => document.getElementById("s-say").dataset.k), "last");
+  assert.deepEqual(errors, []);
+  await page.close();
+});

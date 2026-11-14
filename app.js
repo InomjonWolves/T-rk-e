@@ -73,6 +73,7 @@ function migrate(st) {
   // Skill stats arrived later: start them from what we already know (pronunciation)
   if (!st.skv) { st.skv = 1; st.sk = skBlank(); const p = st.pron || [0, 0]; st.sk.s[0] = p[0]; st.sk.s[1] = p[1]; }
   ["r", "l", "w", "s"].forEach(id => { if (!st.sk[id]) st.sk[id] = [0, 0, 0, 0]; });
+  frzApply(st);
   return st;
 }
 function grade(w, ok) {
@@ -145,6 +146,7 @@ function touchDay() {
   rollWeek();
   if (!S.first) S.first = firstDay();
   if (S.lastDay === t) return;
+  frzApply();
   const back = S.lastDay ? dayNum() - Math.round(Date.parse(S.lastDay) / DAY) : 0;
   S.streak = S.lastDay === keyOf(dayNum() - 1) ? S.streak + 1 : 1;
   S.lastDay = t;
@@ -157,6 +159,7 @@ function touchDay() {
 function addXP(n) {
   touchDay();
   S.xp += n; S.dayXp += n; S.wxp += n; dayRec().xp += n;
+  goalCheck();
   const hr = new Date().getHours();
   if (hr >= 22) S.night = 1;
   if (hr < 7) S.early = 1;
@@ -252,12 +255,45 @@ function pamukSoon(mood, text) { if (SES && !SES.done) PAMUK_LATER = [mood, text
 function catStreakCheer(back) {
   if (S.streak > 1 && S.streak % 7 === 0) {
     addXPBonus(XP_VAL.streak7);
-    celebrate({ eyebrow: "Ketma-ket kunlar", badge: S.streak, title: `${S.streak} kun ketma-ket!`, text: `Pamuk quvonchdan sakrayapti! Seriya uchun +${XP_VAL.streak7} XP.`, ico: "flame", c: "orange", share: true });
+    const fz = frzGive();
+    celebrate({ eyebrow: "Ketma-ket kunlar", badge: S.streak, title: `${S.streak} kun ketma-ket!`, text: `Pamuk quvonchdan sakrayapti! Seriya uchun +${XP_VAL.streak7} XP${fz ? " va 1 ta seriya muzlatgichi" : ""}.`, ico: "flame", c: "orange", share: true });
   } else if (S.streak > 1) pamukSoon("happy", `${S.streak} kun ketma-ket! Pamuk sizdan juda xursand`);
   else if (back >= 3) pamukSoon("happy", "Qaytganingizdan xursandman! Bugun ozgina boʻlsa ham mashq qilamiz");
 }
 // Bonus XP (daily tasks, streak, weekly challenge) — outside the daily activity ceiling
 function addXPBonus(n) { S.xp += n; S.dayXp += n; S.wxp += n; dayRec().xp += n; }
+
+/* ---------- Streak freeze (Android 6-bosqich, 2-qism) ----------
+   A freeze keeps the streak over a day without practice. Freezes are earned, not bought — spending XP would lower
+   levels, frames and league places: one for every 7 days in a row and one for a weekly challenge, FRZ_MAX at most.
+   Missed days are covered when the progress loads (migrate), the app comes back or the next practice starts:
+   lastDay moves to yesterday, the covered days go to S.frzD (calendar, week row), S.frzNew → one Pamuk message. */
+const FRZ_MAX = 2;
+function frzApply(st = S) {
+  if (!st.lastDay || !st.streak || !st.frz) return 0;
+  const last = Math.round(Date.parse(st.lastDay) / DAY), miss = dayNum() - last - 1;
+  if (miss < 1 || miss > st.frz) return 0;
+  st.frz -= miss;
+  st.frzD = (st.frzD || []).concat(Array.from({ length: miss }, (_, i) => keyOf(last + 1 + i))).slice(-40);
+  st.lastDay = keyOf(dayNum() - 1);
+  st.frzNew = miss;
+  return miss;
+}
+function frzGive() { if ((S.frz || 0) >= FRZ_MAX) return false; S.frz = (S.frz || 0) + 1; return true; }
+function frzNotice() {
+  if (!S.frzNew) return;
+  const n = S.frzNew; delete S.frzNew; save();
+  pamukSoon("happy", `Muzlatgich seriyangizni saqlab qoldi${n > 1 ? ` (${n} kun)` : ""}! Bugun mashq qilib, davom ettiring`);
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && frzApply()) { save(); frzNotice(); kRerender(); } });
+
+/* Daily goal: the first time practice XP today reaches the goal — a celebration (after the practice, like achievements); bonuses alone do not trigger it */
+function goalCheck() {
+  if (S.dayXp < S.goal || S.goalD === todayKey()) return;
+  S.goalD = todayKey(); S.goalN = (S.goalN || 0) + 1;
+  const st = streakNow();
+  celebrate({ eyebrow: "Kunlik maqsad", badge: S.goal, title: "Bugungi maqsad bajarildi!", text: `${S.goal} XP toʻplandi. ${st > 1 ? `Seriya: ${st} kun — ertaga ham kutaman!` : "Ertaga ham shu tempda davom etamiz!"}`, ico: "target", c: "green", share: true, shareText: `Bugun Türkçe Yoʻl'da kunlik maqsadimni bajardim (${S.goal} XP)! Turk tilini bepul oʻrganing:` });
+}
 const daysAway = () => S.lastDay ? dayNum() - Math.round(Date.parse(S.lastDay) / DAY) : 0;
 
 /* ---------- Daily reminders ----------
@@ -451,8 +487,8 @@ function wcMark(sk) {
   if (!w.days.includes(t)) w.days.push(t);
   [].concat(sk || []).forEach(k => { w.sk[k] = (w.sk[k] || 0) + 1; });
   if (!w.paid && ch.v(w) >= ch.n) {
-    w.paid = 1; S.wcn = (S.wcn || 0) + 1; addXPBonus(XP_VAL.weekly); save();
-    celebrate({ eyebrow: "Haftalik challenge", title: `«${ch.t}» bajarildi!`, text: `Haftaning eng katta mukofoti sizniki. +${XP_VAL.weekly} XP`, ico: "crown", c: "pink", share: true });
+    w.paid = 1; S.wcn = (S.wcn || 0) + 1; addXPBonus(XP_VAL.weekly); const fz = frzGive(); save();
+    celebrate({ eyebrow: "Haftalik challenge", title: `«${ch.t}» bajarildi!`, text: `Haftaning eng katta mukofoti sizniki. +${XP_VAL.weekly} XP${fz ? " va 1 ta seriya muzlatgichi" : ""}`, ico: "crown", c: "pink", share: true });
   }
 }
 
@@ -858,6 +894,7 @@ const ICON = {
   crown: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5z"/></svg>',
   cap: sv('<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5M22 9v6"/>'),
   flag: sv('<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>'),
+  snow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M3.3 7l17.4 10M20.7 7 3.3 17M9 3.5l3 2.2 3-2.2M9 20.5l3-2.2 3 2.2M3.6 10.6l3.4-1.3-.6-3.6M20.4 13.4l-3.4 1.3.6 3.6M20.4 10.6 17 9.3l.6-3.6M3.6 13.4 7 14.7l-.6 3.6"/></svg>',
   bolt: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
   lock: sv('<rect x="5" y="11" width="14" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
   word: sv('<path d="M4 7V5h16v2M9 19h6M12 5v14"/>'),
@@ -993,6 +1030,7 @@ function audioUnlock() {
 }
 document.addEventListener("pointerdown", audioUnlock, { capture: true, once: true });
 setTimeout(audioIndex, 1200);
+setTimeout(() => frzNotice(), 2500);
 function audioStop() {
   AUDIO_N++;
   const a = AEL; if (a) { a.onended = a.onerror = null; try { a.pause(); } catch (e) {} }
@@ -1207,12 +1245,12 @@ function statusCard() {
         <div class="bar"><i style="width:${Math.round(L.p * 100)}%"></i></div>
         <small class="muted">${S.xp - L.from}/${L.to - L.from} XP · ${L.next ? `${L.next.lv}-darajada: ${esc(L.next.uz)}` : "Pamuk afsonaga aylandi!"}</small></div></a>
     <div class="stat-row">
-      <div class="st-item"><span class="ico orange-t">${ICON.flame}</span><b>${streakNow()}</b><small>kun ketma-ket</small></div>
+      <button class="st-item st-btn" data-act="streak" aria-label="Seriya: ${streakNow()} kun ketma-ket${S.frz ? `, muzlatgich: ${S.frz}` : ""} — kalendarni ochish"><span class="ico orange-t">${ICON.flame}</span><b>${streakNow()}</b><small>kun ketma-ket</small>${S.frz ? `<span class="frz-badge" aria-hidden="true">${ICON.snow}${S.frz}</span>` : ""}</button>
       <div class="st-item"><span class="ico ${S.dayXp >= S.goal ? "green-t" : "sky-t"}">${S.dayXp >= S.goal ? ICON.check : ICON.bolt}</span><b>${S.dayXp}<i>/${S.goal}</i></b><small>bugungi XP</small></div>
       <div class="st-item"><span class="ico green-t">${ICON.book}</span><b>${learned}</b><small>soʻz oʻrganildi</small></div>
     </div>
     <div class="week" aria-label="Shu hafta">
-      ${wk.map(d => { const on = dayGet(d.k).xp || dayGet(d.k).rev; return `<div class="day${d.n === tn ? " today" : ""}${on ? " on" : ""}"><small>${d.l}</small><b>${new Date(d.n * DAY).getUTCDate()}</b><svg class="mark" viewBox="0 0 24 24" fill="currentColor" aria-label="${on ? "Mashq qilingan" : "Mashq yoʻq"}">${pawPath}</svg></div>`; }).join("")}
+      ${wk.map(d => { const on = dayGet(d.k).xp || dayGet(d.k).rev, fz = !on && (S.frzD || []).includes(d.k); return `<div class="day${d.n === tn ? " today" : ""}${on ? " on" : ""}${fz ? " frz" : ""}"><small>${d.l}</small><b>${new Date(d.n * DAY).getUTCDate()}</b>${fz ? `<span class="mark" role="img" aria-label="Muzlatgich saqlab qoldi">${ICON.snow}</span>` : `<svg class="mark" viewBox="0 0 24 24" fill="currentColor" aria-label="${on ? "Mashq qilingan" : "Mashq yoʻq"}">${pawPath}</svg>`}</div>`; }).join("")}
     </div>
   </section>`;
 }
@@ -2196,13 +2234,41 @@ function viewCourse() {
     ${S.place && (S.place.start || S.place.applied) ? "" : `<p class="muted" style="margin:0">Turkchani biroz bilsangiz, 5–7 daqiqada mos boʻlimni topamiz.</p>`}
   </a>
   <div class="seg glass" role="tablist">${COURSE.levels.map(l => `<button role="tab" data-act="k-lv" data-l="${l.id}" aria-selected="${l.id === lvl.id}">${l.id}</button>`).join("")}</div>
-  <div class="glass pad"><b>${esc(lvl.title)}</b><p class="sub" style="margin-top:4px">${esc(lvl.intro)}</p></div>
+  ${S.kView === "list" ? "" : kPath(lvl)}
+  ${S.kView !== "list" ? "" : `<div class="glass pad"><div class="pcard-head"><b>${esc(lvl.title)}</b><button class="path-toggle" data-act="k-view" data-v="path" aria-label="Yoʻl koʻrinishi">${ICON.flag}</button></div><p class="sub" style="margin-top:4px">${esc(lvl.intro)}</p></div>
   <div class="list">${lvl.units.map(id => kUnitRow(KU[id])).join("")}
     <a class="unit glass" href="#ktest-${lvl.id.toLowerCase()}">
       <span class="art teal"><span style="font-size:13px">TEST</span></span>
       <span class="unit-body"><span class="unit-title">${esc(lvl.test.title)}</span><span class="unit-sub">4 qism: Okuma · Dinleme · Yazma · Konuşma · oʻtish bali ${lvl.test.pass}%${kTestBest(lvl.id) ? ` · eng yaxshi natija ${kTestBest(lvl.id)}%` : ""}</span></span>
       ${kTestBest(lvl.id) >= lvl.test.pass ? `<span class="state done">${ICON.check}</span>` : ICON.chev}
-    </a></div>`;
+    </a></div>`}`;
+}
+/* The learning path (Android 6-bosqich, 2-qism): the units of a level as round steps on a winding road, like a board
+   game — done steps are gold with a tick, the current one is in the level colour with its progress ring, a
+   "Boshlash"/"Davom etish" bubble and Pamuk beside it; the level test is a trophy at the end. Every step stays open
+   (the course never locks a unit). S.kView = "list" shows the old list instead. */
+const PATH_X = [0, -1, -1.6, -1, 0, 1, 1.6, 1];
+function kPath(lvl) {
+  const nx = kNext(), units = lvl.units.map(id => KU[id]), dn = units.filter(u => kDone(u.id)).length;
+  const passed = kTestBest(lvl.id) >= lvl.test.pass;
+  const node = (i, html, now) => `<div class="pn-row${now ? " now" : ""}" style="--x:${PATH_X[i % PATH_X.length]}">${html}</div>`;
+  const steps = units.map((u, i) => {
+    const done = kDone(u.id), now = !done && u === nx, p = kProgress(u.id);
+    const st = done ? "done" : now ? "now" : p > 0 ? "part" : "next";
+    const say = now ? (p > 0 ? "Davom etish" : "Boshlash") : "";
+    const cat = now ? `<span class="pn-cat${PATH_X[i % PATH_X.length] > 0 ? " left" : ""}" aria-hidden="true">${catSVG({ pose: "wave", look: catLook() })}</span>` : "";
+    return node(i, `<a class="pnode s-${st}" href="#${kHash(u.id)}" style="--p:${Math.round(p * 100)}" aria-label="${u.level}.${u.n} ${esc(u.title)} — ${done ? "tugallangan" : now ? "shu yerdan davom eting" : p > 0 ? `${Math.round(p * 100)}%` : "hali boshlanmagan"}">
+      ${say ? `<span class="pn-bubble">${say}</span>` : ""}<span class="pn-btn">${done ? ICON.check : now ? ICON.star : `<b>${u.n}</b>`}</span>
+      <span class="pn-label"><b>${u.level}.${u.n}</b> <span lang="tr">${esc(u.title)}</span></span></a>${cat}`, now);
+  });
+  steps.push(node(units.length, `<a class="pnode s-test${passed ? " s-done" : ""}" href="#ktest-${lvl.id.toLowerCase()}" aria-label="${esc(lvl.test.title)}${passed ? " — oʻtilgan" : ""}">
+    <span class="pn-btn">${ICON.trophy}</span><span class="pn-label"><b>${lvl.id} testi</b>${kTestBest(lvl.id) ? ` ${kTestBest(lvl.id)}%` : ""}</span></a>`));
+  return `<section class="path lv-${LV_COLOR[lvl.id]}" aria-label="${lvl.id} darajasi yoʻli">
+    <div class="path-banner"><div><small>${lvl.id} · ${dn}/${units.length} boʻlim</small><b>${esc(lvl.title)}</b></div>
+      <button class="path-toggle" data-act="k-view" data-v="list" aria-label="Roʻyxat koʻrinishi">${ICON.list}</button></div>
+    <p class="sub path-intro">${esc(lvl.intro)}</p>
+    <div class="path-road">${steps.join("")}</div>
+  </section>`;
 }
 const KTABS = [["vocab", "Lugʻat"], ["grammar", "Grammatika"], ["dialog", "Dialog"], ["read", "Matn"], ["ex", "Mashqlar"]];
 function viewCourseUnit(id) {
@@ -2600,6 +2666,28 @@ function copyText(t, done) {
   try { navigator.clipboard.writeText(t).then(() => toast(done), () => toast(t)); } catch (e) { toast(t); }
 }
 
+/* Streak sheet: the flame, the best run, the freezes and a month calendar (practised days, days a freeze kept) */
+let STK_M = 0;
+function streakSheetHTML() {
+  const now = new Date(), first = new Date(now.getFullYear(), now.getMonth() + STK_M, 1), y = first.getFullYear(), m = first.getMonth();
+  const days = new Date(y, m + 1, 0).getDate(), lead = (first.getDay() + 6) % 7, tn = dayNum(), fz = new Set(S.frzD || []);
+  const cells = Array.from({ length: lead }, () => "<span></span>");
+  let on = 0;
+  for (let d = 1; d <= days; d++) {
+    const n = dayNum(new Date(y, m, d, 12).getTime()), k = keyOf(n), done = !!(dayGet(k).xp || dayGet(k).rev), f = !done && fz.has(k);
+    if (done) on++;
+    cells.push(`<span class="cd${done ? " on" : ""}${f ? " frz" : ""}${n === tn ? " today" : ""}${n > tn ? " fut" : ""}" aria-label="${d}-${MONTHS[m]}${done ? ", mashq qilingan" : f ? ", muzlatgich" : ""}">${f ? ICON.snow : d}</span>`);
+  }
+  const st = streakNow(), fzn = S.frz || 0;
+  return `<div class="stk-head"><span class="stk-flame${st ? "" : " off"}">${ICON.flame}</span><div><b>${st}</b><span>kun ketma-ket</span><small>Eng uzun seriya: ${Math.max(S.best || 0, st)} kun</small></div></div>
+    <div class="stk-frz"><span class="frz-row">${Array.from({ length: FRZ_MAX }, (_, i) => `<i class="${i < fzn ? "has" : ""}">${ICON.snow}</i>`).join("")}</span>
+      <div><b>Seriya muzlatgichi: ${fzn}/${FRZ_MAX}</b><small>Mashq qilinmagan kunni avtomatik saqlaydi. Har 7 kunlik seriya va haftalik challenge uchun bittadan beriladi.</small></div></div>
+    <div class="stk-cal"><div class="stk-nav"><button class="icon-btn" data-act="stk-m" data-d="-1" aria-label="Oldingi oy" ${STK_M <= -3 ? "disabled" : ""}>${ICON.back}</button><b>${MONTHS[m][0].toUpperCase() + MONTHS[m].slice(1)} ${y}</b><button class="icon-btn" data-act="stk-m" data-d="1" aria-label="Keyingi oy" ${STK_M >= 0 ? "disabled" : ""}><span class="flip">${ICON.back}</span></button></div>
+      <div class="cal-grid">${["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"].map(d => `<small>${d}</small>`).join("")}${cells.join("")}</div>
+      <p class="muted" style="margin:8px 0 0;font-size:13px">Bu oy: ${on} kun mashq qilindi</p></div>
+    <button class="btn btn-grad btn-block" data-act="sheet-close-btn">Yopish</button>`;
+}
+
 /* ---------- Install (PWA) and help ---------- */
 let INSTALL_EVT = null;
 addEventListener("beforeinstallprompt", e => { e.preventDefault(); INSTALL_EVT = e; if (["#help", "#home", ""].includes(location.hash)) kRerender(); });
@@ -2808,7 +2896,7 @@ function startSession(mode, u) {
   SES = { mode, u, items, i: 0, right: 0, xp: 0, combo: 0, best: 0, t0: Date.now(), answered: false, re: new Set(), skAll: new Set(), times: [], last: Date.now(), had: ACH.filter(achDone).map(a => a.id) };
   sessionEl.hidden = false;
   document.body.style.overflow = "hidden";
-  delete sessionEl.dataset.combo; { const cb = $("s-combo"); if (cb) cb.remove(); }
+  delete sessionEl.dataset.combo; { const cb = $("s-combo"); if (cb) cb.remove(); const sb = $("s-say"); if (sb) sb.remove(); }
   $("s-cat").innerHTML = catSVG({ pose: "head", look: catLook() });
   renderStep();
   CatLife.scan();
@@ -2831,8 +2919,10 @@ function progressBar() {
 }
 function renderStep() {
   delete sessionEl.dataset.r;
-  if (SES.i >= SES.items.length) return renderResult();
+  if (SES.i >= SES.items.length) { const sb = $("s-say"); if (sb) sb.classList.remove("show"); return renderResult(); }
   SES.answered = false;
+  if (SES.i === 0 && !SES.saidStart) { SES.saidStart = 1; setTimeout(() => { if (SES && SES.i === 0) sSay("start"); }, 350); }
+  else if (SES.items.length >= 5 && SES.i === SES.items.length - 1 && !SES.saidLast) { SES.saidLast = 1; sSay("last"); }
   SES.shown = Date.now();
   progressBar();
   const w = SES.items[SES.i];
@@ -4247,6 +4337,29 @@ function haptic(ok) {
   const h = nativePlugin("Haptics"); if (!h) return;
   try { const r = ok ? h.impact({ style: "LIGHT" }) : h.notification({ type: "ERROR" }); if (r && r.catch) r.catch(() => {}); } catch (e) {}
 }
+/* Pamuk talks during a practice (6-bosqich, 2-qism): a word at the start, a hint after two misses in a row,
+   a cheer halfway and before the last question — short Turkish phrases with the Uzbek meaning. Not on combo steps
+   (the combo badge has the spot then); one bubble at a time, gone after a few seconds or a tap. */
+const PSAY = {
+  start: ["Hadi başlayalım! Qani, boshladik!", "Hazırım! Siz-chi?", "Bugün de harika olacak! Bugun ham zoʻr boʻladi", "Yavaş yavaş — shoshilmasdan, diqqat bilan"],
+  help: ["Sorun yok! Xato — oʻrganishning bir qismi", "Shoshilmang: savolni yana bir bor oʻqing", "Tinglash tugmasi yordam beradi — bosib koʻring", "Ben de yanılırım! Men ham adashaman — davom etamiz"],
+  half: ["Yarısı bitti! Yarmi tugadi", "Çok iyi gidiyorsun! Zoʻr ketyapsiz"],
+  last: ["Son soru! Oxirgi savol", "Bir tane kaldı! Bittagina qoldi"]
+};
+let PSAY_T = 0;
+function sSay(kind) {
+  const list = PSAY[kind], top = sessionEl.querySelector(".session-top");
+  if (!list || !top || !SES) return;
+  let b = $("s-say");
+  if (!b) { b = document.createElement("div"); b.id = "s-say"; b.className = "s-say"; b.setAttribute("role", "status"); b.dataset.act = "s-say-x"; top.appendChild(b); }
+  let t = list[(SES.sayN = (SES.sayN || 0) + 1) % list.length];
+  // The listening hint only where the question has a listen button
+  if (/^Tinglash/.test(t) && !stage.querySelector("button.say, [data-act='say'], [data-act='ls-play']")) t = list[(SES.sayN = SES.sayN + 1) % list.length];
+  b.textContent = t;
+  b.dataset.k = kind;
+  b.classList.remove("show"); void b.offsetWidth; b.classList.add("show");
+  clearTimeout(PSAY_T); PSAY_T = setTimeout(() => b.classList.remove("show"), 3200);
+}
 /* Answer streak inside one practice (combo): 3, 5, 10… right answers in a row get a badge, a brighter sound and a glowing bar */
 const COMBO_AT = n => n === 3 || n === 5 || (n >= 10 && n % 5 === 0);
 function comboShow(n) {
@@ -4269,7 +4382,13 @@ function sMood(m) {
   }
   const hot = ok && SES && COMBO_AT(SES.combo);
   beep(hot ? "combo" : ok ? "ok" : "no");
-  if (hot) comboShow(SES.combo);
+  if (hot) { comboShow(SES.combo); const sb = $("s-say"); if (sb) sb.classList.remove("show"); }
+  else if (SES) {
+    SES.miss = ok ? 0 : (SES.miss || 0) + 1;
+    const n = SES.items.length;
+    if (SES.miss === 2) sSay("help");
+    else if (ok && n >= 6 && SES.i + 1 === Math.ceil(n / 2) && !SES.saidHalf) { SES.saidHalf = 1; sSay("half"); }
+  }
   // The question card answers too: a little hop for right, a shake for wrong (choice buttons have their own)
   const card = stage.querySelector(".q-card");
   if (card) { card.classList.remove("hop", "shake"); void card.offsetWidth; card.classList.add(ok ? "hop" : "shake"); }
@@ -4405,6 +4524,11 @@ function onAct(e) {
   else if (act === "remind") remSet(b.dataset.v);
   else if (act === "tts-rate") { S.tts = Object.assign({}, S.tts, { r: +b.dataset.v }); save(); const y = window.scrollY; route(); window.scrollTo(0, y); speak("Merhaba! Türkçe öğreniyorum."); }
   else if (act === "goal") { S.goal = +b.dataset.v; save(); const y = window.scrollY; route(); window.scrollTo(0, y); }
+  else if (act === "s-say-x") { b.classList.remove("show"); }
+  else if (act === "streak") { STK_M = 0; openSheet(streakSheetHTML()); }
+  else if (act === "stk-m") { STK_M = Math.max(-3, Math.min(0, STK_M + (+b.dataset.d || 0))); openSheet(streakSheetHTML()); }
+  else if (act === "sheet-close-btn") closeSheet();
+  else if (act === "k-view") { S.kView = b.dataset.v === "list" ? "list" : "path"; save(); route(); }
   else if (act === "sfx") { S.sfx = S.sfx === false; save(); if (S.sfx) beep("ok"); const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "hap") { S.hap = S.hap === false; save(); haptic(true); const y = window.scrollY; route(); window.scrollTo(0, y); }
   else if (act === "anon") {

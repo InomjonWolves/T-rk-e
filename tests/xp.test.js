@@ -125,7 +125,7 @@ test("levels from XP and Pamuk's look: kitten → legend, a party on level up", 
   assert.deepEqual(parts, [false, true, true, true, true, true, true]);
   assert.match(await page.textContent(".grow-card"), /Mushukcha/);
   // 90 → 4600 XP: level 10, Pamuk becomes the glasses-wearing scholar
-  const c = await page.evaluate(() => { addXP(4510); return { lvl: S.lvl, cel: ACH_QUEUE.map(c => [c.title, c.look]) }; });
+  const c = await page.evaluate(() => { addXP(4510); return { lvl: S.lvl, cel: ACH_QUEUE.filter(c => c.eyebrow !== "Kunlik maqsad").map(c => [c.title, c.look]) }; });
   assert.equal(c.lvl, 10);
   assert.deepEqual(c.cel[0], ["10-daraja ochildi!", "smart"]);
   await page.waitForSelector("#celebrate:not([hidden]) .cat-glasses");
