@@ -19,6 +19,9 @@ window.FCM_VAPID = "";
 // Telegram orqali kirish (Mini App ichida): bot serverining funksiyasi (bot/api/tgauth.js, Vercel).
 // Boʻsh boʻlsa, Telegram tugmasi koʻrinmaydi.
 window.TG_AUTH_URL = "https://turkceyol-bot.vercel.app/api/tgauth";
+// Liga natijalarini server hisoblaydi (tools/league.js, har dushanba; kalit PUSH_SERVICE_ACCOUNT): ilova yangi haftaning
+// 36 soatigacha lgres/{uid} ni kutadi, kelmasa oʻzi hisoblaydi. false boʻlsa — darhol oʻzi hisoblaydi.
+window.LEAGUE_SERVER = true;
 /* Namuna:
 window.FIREBASE_CONFIG = {
   apiKey: "AIza...",
