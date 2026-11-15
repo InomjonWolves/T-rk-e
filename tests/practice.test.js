@@ -130,17 +130,21 @@ test("letter bank: written answers are built from tiles — the answer's letters
   assert.deepEqual(t, ["l", 6, true, "w", true, true, 5]);
   // Spell a word with the tiles in a writing session and check it
   await run(page, "type", "all");
-  const word = await page.evaluate(() => SES.items[SES.i].tr);
-  await page.evaluate(w => {
+  // (a short answer comes as letters, a long one as words — the session picks the word at random)
+  const [clean, parts, sep] = await page.evaluate(() => {
+    const c = SES.items[SES.i].tr.replace(/[?!.,;:…«»"]/g, "").replace(/\s+/g, " ").trim();
+    return BANK.kind === "w" ? [c, c.split(" "), " "] : [c, [...c].map(x => x === " " ? "␣" : x), ""];
+  });
+  await page.evaluate(ps => {
     const used = new Set();
-    for (const ch of [...w.replace(/[?!.,;:…«»"]/g, "")].map(c => c === " " ? "␣" : c)) {
-      const b = [...document.querySelectorAll("#bank .bk")].find(x => !used.has(x) && x.textContent === ch);
+    for (const t of ps) {
+      const b = [...document.querySelectorAll("#bank .bk")].find(x => !used.has(x) && x.textContent === t);
       used.add(b); b.click();
     }
-  }, word);
-  assert.equal(await page.evaluate(() => $("type-input").value), word.replace(/[?!.,;:…«»"]/g, ""));
+  }, parts);
+  assert.equal(await page.evaluate(() => $("type-input").value), clean);
   await page.evaluate(() => { document.querySelector("[data-act=bk-del]").click(); document.querySelector("[data-act=bk-del]").click(); });
-  assert.equal(await page.evaluate(() => $("type-input").value.length), word.replace(/[?!.,;:…«»"]/g, "").length - 2);
+  assert.equal(await page.evaluate(() => $("type-input").value), parts.slice(0, -2).join(sep).replace(/␣/g, " "));
   assert.equal(await page.getAttribute("#type-input", "inputmode"), "none", "the phone keyboard stays closed");
   await page.evaluate(() => document.querySelector("[data-act=bk-kbd]").click());
   assert.deepEqual(await page.evaluate(() => [$("type-input").getAttribute("inputmode"), $("type-form").classList.contains("kbd")]), ["text", true]);
