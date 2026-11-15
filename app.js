@@ -1284,7 +1284,7 @@ function statusCard() {
         <div class="bar"><i style="width:${Math.round(L.p * 100)}%"></i></div>
         <small class="muted">${S.xp - L.from}/${L.to - L.from} XP · ${L.next ? `${L.next.lv}-darajada: ${esc(L.next.uz)}` : "Pamuk afsonaga aylandi!"}</small></div></a>
     <div class="stat-row">
-      <button class="st-item st-btn" data-act="streak" aria-label="Seriya: ${streakNow()} kun ketma-ket${S.frz ? `, muzlatgich: ${S.frz}` : ""} — kalendarni ochish"><span class="ico orange-t">${ICON.flame}</span><b>${streakNow()}</b><small>kun ketma-ket</small>${S.frz ? `<span class="frz-badge" aria-hidden="true">${ICON.snow}${S.frz}</span>` : ""}</button>
+      <button class="st-item st-btn" data-act="streak"><span class="ico orange-t">${ICON.flame}</span><b>${streakNow()}</b> <small>kun ketma-ket</small>${S.frz ? `<span class="frz-badge"><span class="sr">, muzlatgich: </span>${ICON.snow}${S.frz}</span>` : ""}<span class="sr"> — seriya kalendarini ochish</span></button>
       <div class="st-item"><span class="ico ${S.dayXp >= S.goal ? "green-t" : "sky-t"}">${S.dayXp >= S.goal ? ICON.check : ICON.bolt}</span><b>${S.dayXp}<i>/${S.goal}</i></b><small>bugungi XP</small></div>
       <div class="st-item"><span class="ico green-t">${ICON.book}</span><b>${learned}</b><small>soʻz oʻrganildi</small></div>
     </div>
@@ -1429,7 +1429,7 @@ function frameCard() {
     <div class="glass pad fr-card">
       <p class="muted">Ramka reytingda, doʻstlar roʻyxatida va profilda avataringiz atrofida turadi — hamma koʻradi. U darajangiz yoki ligangiz bilan ochiladi: qaysi biri yuqori boʻlsa.</p>
       <div class="fr-gallery">${FRAMES.map(f => `<div class="fr-item${f.n > cur ? " locked" : ""}${f.n === cur ? " on" : ""}">
-        ${avatarHTML(MYPHOTO, seed, "", { n: f.n })}${f.n > cur ? `<i class="fr-lock" aria-label="Yopiq">${ICON.lock}</i>` : ""}<b>${f.uz}</b><small>${f.n === cur ? "Sizda" : f.n < cur ? "Ochilgan" : `${f.lv}-daraja yoki ${f.uz} liga`}</small></div>`).join("")}</div>
+        ${avatarHTML(MYPHOTO, seed, "", { n: f.n })}${f.n > cur ? `<i class="fr-lock" role="img" aria-label="Yopiq">${ICON.lock}</i>` : ""}<b>${f.uz}</b><small>${f.n === cur ? "Sizda" : f.n < cur ? "Ochilgan" : `${f.lv}-daraja yoki ${f.uz} liga`}</small></div>`).join("")}</div>
       <p class="fr-next">${nx ? `Keyingi ramka — <b>${nx.uz}</b>: ${nx.lv}-darajaga yana ${Math.max(0, lvlXP(nx.lv) - S.xp)} XP${(S.lg || 1) < nx.n ? ` yoki ${nx.uz} ligasiga chiqing` : ""}.` : "Siz eng yuqori — <b>Afsona</b> ramkasidasiz!"}</p>
     </div></section>`;
 }
@@ -1856,7 +1856,7 @@ function viewProfile() {
   const th = (() => { try { return localStorage.getItem("ty-theme") || "auto"; } catch (e) { return "auto"; } })();
   return `<div class="top"><h1 class="page-title">Profil</h1><a class="icon-btn gear-btn" href="#settings" aria-label="Sozlamalar">${ICON.gear}</a></div>
   <div class="profile-card glass">
-    <button class="avatar-edit" data-act="photo" aria-label="Profil rasmini oʻzgartirish">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "lg", { n: myFrame(), lv: lvlOf(S.xp) })}<span class="cam">${ICON.camera}</span>${genderSticker()}</button>
+    <button class="avatar-edit" data-act="photo"><span class="sr">Profil rasmini oʻzgartirish, daraja: </span>${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "lg", { n: myFrame(), lv: lvlOf(S.xp) })}<span class="cam">${ICON.camera}</span>${genderSticker()}</button>
     <input type="file" id="photo-input" accept="image/*" hidden>
     <div class="pc-txt"><b>${esc(USERNAME || (USER ? "Oʻquvchi" : "Mehmon"))}</b><span>${esc(USER ? USER.email || (/^tg\d+$/.test(USER.uid) ? "Telegram hisobi" : "") : "Hisobsiz rejim")}</span>
       ${PROFILE.birth ? `<span style="display:block">${esc(birthText(PROFILE.birth))}</span>` : ""}
@@ -2369,12 +2369,12 @@ function kPath(lvl) {
     const st = done ? "done" : !open ? "lock" : now ? "now" : p > 0 ? "part" : "next";
     const say = now ? (p > 0 ? "Davom etish" : "Boshlash") : "";
     const cat = now ? `<span class="pn-cat${PATH_X[i % PATH_X.length] > 0 ? " left" : ""}" aria-hidden="true">${catSVG({ pose: "wave", look: catLook() })}</span>` : "";
-    return node(i, `<a class="pnode s-${st}" href="#${kHash(u.id)}" style="--p:${Math.round(p * 100)}" aria-label="${u.level}.${u.n} ${esc(u.title)} — ${done ? "tugallangan" : now ? "shu yerdan davom eting" : p > 0 ? `${Math.round(p * 100)}%` : open ? "hali boshlanmagan" : "yopiq"}">
+    return node(i, `<a class="pnode s-${st}" href="#${kHash(u.id)}" style="--p:${Math.round(p * 100)}" aria-label="${say ? say + " " : ""}${u.level}.${u.n} ${esc(u.title)} — ${done ? "tugallangan" : now ? "shu yerdan davom eting" : p > 0 ? `${Math.round(p * 100)}%` : open ? "hali boshlanmagan" : "yopiq"}">
       ${say ? `<span class="pn-bubble">${say}</span>` : ""}<span class="pn-btn">${done ? ICON.check : now ? ICON.star : !open ? ICON.lock : `<b>${u.n}</b>`}</span>
       <span class="pn-label"><b>${u.level}.${u.n}</b> <span lang="tr">${esc(u.title)}</span></span></a>${cat}`, now);
   });
   const tOpen = testOpen(lvl.id);
-  steps.push(node(units.length, `<a class="pnode s-test${passed ? " s-done" : tOpen ? "" : " s-lock"}" href="#ktest-${lvl.id.toLowerCase()}" aria-label="${esc(lvl.test.title)}${passed ? " — oʻtilgan" : tOpen ? "" : " — yopiq"}">
+  steps.push(node(units.length, `<a class="pnode s-test${passed ? " s-done" : tOpen ? "" : " s-lock"}" href="#ktest-${lvl.id.toLowerCase()}" aria-label="${lvl.id} testi${kTestBest(lvl.id) ? ` ${kTestBest(lvl.id)}%` : ""} — ${esc(lvl.test.title)}${passed ? ", oʻtilgan" : tOpen ? "" : ", yopiq"}">
     <span class="pn-btn">${ICON.trophy}${tOpen ? "" : `<i class="pn-lock">${ICON.lock}</i>`}</span><span class="pn-label"><b>${lvl.id} testi</b>${kTestBest(lvl.id) ? ` ${kTestBest(lvl.id)}%` : ""}</span></a>`));
   return `<section class="path lv-${LV_COLOR[lvl.id]}" aria-label="${lvl.id} darajasi yoʻli">
     <div class="path-banner"><div><small>${lvl.id} · ${dn}/${units.length} boʻlim</small><b>${esc(lvl.title)}</b></div>
@@ -2789,7 +2789,7 @@ function streakSheetHTML() {
   for (let d = 1; d <= days; d++) {
     const n = dayNum(new Date(y, m, d, 12).getTime()), k = keyOf(n), done = !!(dayGet(k).xp || dayGet(k).rev), f = !done && fz.has(k);
     if (done) on++;
-    cells.push(`<span class="cd${done ? " on" : ""}${f ? " frz" : ""}${n === tn ? " today" : ""}${n > tn ? " fut" : ""}" aria-label="${d}-${MONTHS[m]}${done ? ", mashq qilingan" : f ? ", muzlatgich" : ""}">${f ? ICON.snow : d}</span>`);
+    cells.push(`<span class="cd${done ? " on" : ""}${f ? " frz" : ""}${n === tn ? " today" : ""}${n > tn ? " fut" : ""}" role="img" aria-label="${d}-${MONTHS[m]}${done ? ", mashq qilingan" : f ? ", muzlatgich" : ""}">${f ? ICON.snow : d}</span>`);
   }
   const st = streakNow(), fzn = S.frz || 0;
   return `<div class="stk-head"><span class="stk-flame${st ? "" : " off"}">${ICON.flame}</span><div><b>${st}</b><span>kun ketma-ket</span><small>Eng uzun seriya: ${Math.max(S.best || 0, st)} kun</small></div></div>
@@ -4608,7 +4608,7 @@ function sSay(kind) {
   b.classList.remove("show"); void b.offsetWidth; b.classList.add("show");
   clearTimeout(PSAY_T); PSAY_T = setTimeout(() => b.classList.remove("show"), 3200);
 }
-/* Pamuk greets at the start of a practice: rises from the bottom edge, waves, says a line and goes back down.
+/* Pamuk greets at the start of a practice: rises from behind the button row, waves, says a line and goes back down.
    It never takes a tap (pointer-events: none) and the first touch sends it away. No motion wanted — the plain bubble. */
 let PEEK_T = 0;
 function sPeek() {
@@ -4618,7 +4618,10 @@ function sPeek() {
   const list = PSAY.start, el = document.createElement("div");
   el.id = "s-peek"; el.className = "s-peek"; el.setAttribute("role", "status");
   el.innerHTML = `<div class="peek-cat">${catSVG({ pose: "wave", look: catLook() })}</div><div class="peek-bubble">${esc(list[(SES.sayN = (SES.sayN || 0) + 1) % list.length])}</div>`;
-  sessionEl.appendChild(el);
+  // It stands on the button row: the box ends at the row's top edge and clips what is below
+  const inner = sessionEl.querySelector(".session-inner"), foot = $("s-foot");
+  el.style.bottom = (foot ? foot.offsetHeight : 0) + "px";
+  inner.appendChild(el);
   CatLife.scan();
   PEEK_T = setTimeout(sPeekOff, 3000);
 }

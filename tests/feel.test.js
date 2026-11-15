@@ -109,6 +109,8 @@ test("Pamuk in a practice: a word at the start, a hint after two misses, a cheer
   // The greeting: Pamuk rises from the bottom edge with a line; it takes no taps and leaves with the first answer
   await page.waitForSelector("#s-peek .peek-cat svg.cat");
   assert.deepEqual(await page.evaluate(() => [getComputedStyle(document.getElementById("s-peek")).pointerEvents, PSAY.start.includes(document.querySelector("#s-peek .peek-bubble").textContent)]), ["none", true]);
+  // It stands on the button row and never covers the buttons
+  assert.equal(await page.evaluate(() => document.getElementById("s-peek").getBoundingClientRect().bottom <= document.getElementById("s-foot").getBoundingClientRect().top + 1), true);
   await page.evaluate(() => { bad(); });
   assert.equal(await page.evaluate(() => document.getElementById("s-peek").classList.contains("out")), true);
   await page.evaluate(() => { nextStep(); bad(); });
