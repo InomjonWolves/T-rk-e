@@ -82,15 +82,26 @@ test("practice: 4 skill tiles, one mistakes notebook with every kind of mistake"
   await page.close();
 });
 
-test("profile: ⚙ opens one settings page with every setting and link; earned achievements are colourful stickers", async () => {
+test("profile: ⚙ opens one settings page with every setting and link; four main achievements stand beside Pamuk, the rest live on their own page", async () => {
   const { page, errors } = await openApp(browser, "#profile", { state: { achv: { w10: "2026-11-02", first: "2026-11-02" }, sessions: 1, known: {} } });
   assert.ok(await page.locator('.top a.gear-btn[href="#settings"]').count(), "gear in the corner");
   assert.equal(await page.locator("#app .settings, #app [data-act=remind], #app [data-act=theme]").count(), 0, "no settings on the profile page");
   const got = await page.evaluate(() => ACH.filter(achDone).length);
   assert.ok(got >= 1);
-  assert.equal(await page.locator(".sticker-wall .ach-st").count(), got, "every earned achievement is on the wall");
-  const bg = await page.evaluate(() => getComputedStyle(document.querySelector(".sticker-wall .ach-st")).backgroundImage);
-  assert.match(bg, /linear-gradient/, "stickers are coloured");
+  // Two medals on each side of Pamuk: the earned ones first, the closest locked ones fill the rest; no wall, no stage row
+  const hero = await page.evaluate(() => ({
+    sides: [...document.querySelectorAll(".ph-stage .ph-side")].map(s => s.querySelectorAll(".ph-medal").length), earned: document.querySelectorAll(".ph-medal:not(.locked) .ach-st").length,
+    locked: document.querySelectorAll(".ph-medal.locked .ach-lock").length, old: document.querySelectorAll(".sticker-wall, .grow-path, .fr-gallery, #app .achv").length,
+    all: document.querySelector(".ph-all").textContent, href: document.querySelector(".ph-all").getAttribute("href"),
+    bg: getComputedStyle(document.querySelector(".ph-medal:not(.locked) .ach-st")).backgroundImage, tilt: getComputedStyle(document.querySelector(".ph-medal .ach-st")).transform
+  }));
+  assert.deepEqual(hero.sides, [2, 2]);
+  assert.equal(hero.earned, Math.min(4, got)); assert.equal(hero.locked, 4 - Math.min(4, got)); assert.equal(hero.old, 0);
+  assert.match(hero.all, new RegExp(`Yutuqlar\\s*${got}/81`)); assert.equal(hero.href, "#achievements");
+  // The medal: enamel (a gradient) in a metal rim (a conic gradient), upright
+  assert.match(hero.bg, /linear-gradient/); assert.match(hero.bg, /conic-gradient/); assert.equal(hero.tilt, "none");
+  // The rarest come first
+  assert.deepEqual(await page.evaluate(() => { const keep = S.achv; S.achv = { first: "2026-11-01", w10: "2026-11-02", lg7: "2026-11-03", s100: "2026-11-04", x5000: "2026-11-05" }; const t = achTop().map(([a, on]) => on && achTier(a)); S.achv = keep; return t; }).then(t => t.every((x, i) => i === 0 || x <= t[i - 1])), true);
   await page.click(".gear-btn");
   await page.waitForTimeout(100);
   const heads = await page.evaluate(() => [...document.querySelectorAll(".section-head h2")].map(h => h.textContent));

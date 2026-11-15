@@ -1423,27 +1423,41 @@ function comebackCard() {
   </section>`;
 }
 // Profile: every frame, the one in use, and what opens the next
-function frameCard() {
-  const cur = myFrame(), nx = FRAMES[cur], seed = USER ? USER.uid : "me";
-  return `<section class="section"><div class="section-head"><h2>Avatar ramkasi</h2><span class="tag orange-t">${FRAMES[cur - 1].uz}</span></div>
-    <div class="glass pad fr-card">
-      <p class="muted">Ramka reytingda, doʻstlar roʻyxatida va profilda avataringiz atrofida turadi — hamma koʻradi. U darajangiz yoki ligangiz bilan ochiladi: qaysi biri yuqori boʻlsa.</p>
-      <div class="fr-gallery">${FRAMES.map(f => `<div class="fr-item${f.n > cur ? " locked" : ""}${f.n === cur ? " on" : ""}">
-        ${avatarHTML(MYPHOTO, seed, "", { n: f.n })}${f.n > cur ? `<i class="fr-lock" role="img" aria-label="Yopiq">${ICON.lock}</i>` : ""}<b>${f.uz}</b><small>${f.n === cur ? "Sizda" : f.n < cur ? "Ochilgan" : `${f.lv}-daraja yoki ${f.uz} liga`}</small></div>`).join("")}</div>
-      <p class="fr-next">${nx ? `Keyingi ramka — <b>${nx.uz}</b>: ${nx.lv}-darajaga yana ${Math.max(0, lvlXP(nx.lv) - S.xp)} XP${(S.lg || 1) < nx.n ? ` yoki ${nx.uz} ligasiga chiqing` : ""}.` : "Siz eng yuqori — <b>Afsona</b> ramkasidasiz!"}</p>
-    </div></section>`;
+/* Profile hero: the big Pamuk stands inside the current frame (the same ring and ornaments as on the avatar, large),
+   two main achievements on each side, the level under it and the next frame as the goal. */
+// The four achievements to show off: the rarest first, then the newest; empty places go to the closest ones still locked
+function achTop(n = 4) {
+  const when = a => (S.achv || {})[a.id] || "";
+  const got = ACH.filter(achDone).sort((x, y) => achTier(y) - achTier(x) || when(y).localeCompare(when(x))).slice(0, n);
+  const next = ACH.filter(a => !achDone(a)).sort((x, y) => y.v() / y.n - x.v() / x.n).slice(0, n - got.length);
+  return [...got.map(a => [a, true]), ...next.map(a => [a, false])];
 }
-function pamukGrowCard() {
-  const L = lvlInfo();
+function frameNextRow() {
+  const cur = myFrame(), nx = FRAMES[cur], seed = USER ? USER.uid : "me";
+  if (!nx) return `<div class="ph-next top"><span class="ph-next-txt"><b>Afsona ramkasi sizda!</b><small>Bundan yuqori ramka yoʻq — siz choʻqqidasiz.</small></span></div>`;
+  const base = lvlXP(FRAMES[frameByLv(lvlOf(S.xp)) - 1].lv), goal = lvlXP(nx.lv), p = Math.max(0, Math.min(1, (S.xp - base) / (goal - base)));
+  return `<div class="ph-next">
+    <span class="ph-next-fr">${avatarHTML(MYPHOTO, seed, "", { n: nx.n })}<i class="fr-lock" role="img" aria-label="Yopiq">${ICON.lock}</i></span>
+    <span class="ph-next-txt"><small class="eyebrow">Keyingi ramka</small><b>${nx.uz}</b>
+      <span class="bar" style="--frn:var(--fr${nx.n}c)" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(p * 100)}" aria-label="${nx.uz} ramkasigacha"><i style="width:${Math.round(p * 100)}%"></i></span>
+      <small class="fr-next">${nx.lv}-darajaga yana ${Math.max(0, goal - S.xp)} XP${(S.lg || 1) < nx.n ? ` yoki ${nx.uz} ligasiga chiqing` : ""}</small></span>
+  </div>`;
+}
+function pamukHero() {
+  const L = lvlInfo(), fr = myFrame(), top = achTop(), done = ACH.filter(achDone).length;
+  const medal = ([a, on], i) => `<a class="ph-medal${on ? "" : " locked"}" href="#achievements" title="${esc(a.d)}">${on ? achSticker(a, i) : `<span class="ach-st ach-lock">${ICON.lock}</span>`}<small>${esc(a.t)}</small></a>`;
+  const side = k => `<div class="ph-side${k ? " right" : ""}">${top.slice(k * 2, k * 2 + 2).map((x, i) => medal(x, k * 2 + i)).join("")}</div>`;
   return `<section class="section">
-    <div class="section-head"><h2>Pamuk rivoji</h2><span class="tag violet-t">${L.lv}-daraja</span></div>
-    <div class="glass pad grow-card">
-      <div class="grow-hero">${catSVG({ pose: "sit", look: L.st.id, cls: "mascot" })}</div>
+    <div class="glass pad grow-card ph-card ph-fr${fr}">
+      <div class="ph-stage">${side(0)}
+        <div class="ph-cat">${framed(`<span class="avatar ph-av">${catSVG({ pose: "sit", look: L.st.id, cls: "mascot" })}</span>`, fr, { cls: "fr-hero" })}</div>
+      ${side(1)}</div>
+      <div class="tags ph-tags"><span class="tag violet-t">${L.lv}-daraja</span><span class="tag orange-t">${FRAMES[fr - 1].uz} ramka</span></div>
       <b>${esc(L.st.uz)}</b><p class="muted">${esc(L.st.d)}</p>
       <div class="bar"><i style="width:${Math.round(L.p * 100)}%"></i></div>
       <small class="muted">${L.lv + 1}-darajagacha ${L.to - S.xp} XP${L.next ? ` · ${L.next.lv}-darajada «${esc(L.next.uz)}»` : ""}</small>
-      <div class="grow-path">${CAT_STAGES.map(st => `<div class="grow-step${st.lv <= L.lv ? " on" : ""}${st === L.st ? " now" : ""}" title="${esc(st.uz)}">
-        ${st.lv <= L.lv ? catSVG({ pose: "head", look: st.id, lite: true }) : `<span class="grow-lock">${ICON.lock}</span>`}<small>${st.lv}</small></div>`).join("")}</div>
+      ${frameNextRow()}
+      <a class="ph-all" href="#achievements"><span>${ICON.trophy}<b>Yutuqlar</b></span><span>${done}/${ACH.length}${ICON.chev}</span></a>
     </div>
   </section>`;
 }
@@ -1864,6 +1878,8 @@ function viewProfile() {
   </div>
   ${isPass && !USER.emailVerified ? `<div class="notice"><div><b>Pochtangizni tasdiqlang.</b> ${esc(USER.email)} manziliga xat yubordik.</div><button class="btn btn-ghost" data-act="verify-again">Xatni qayta yuborish</button></div>` : ""}
 
+  ${pamukHero()}
+
   <section class="section">
     <div class="section-head"><h2>Statistika</h2></div>
     <div class="stat-grid">
@@ -1874,14 +1890,9 @@ function viewProfile() {
     </div>
   </section>
 
-  ${pamukGrowCard()}
-  ${frameCard()}
   ${skillsProfileCard()}
   <div class="chart-card glass"><h3>Haftalik faollik</h3><span class="range">${range} · XP</span>${lineChart(xpv, l7.map(d => d.l))}
     <h3 style="margin-top:14px">Oʻqish vaqti</h3><span class="range">daqiqa</span>${barChart(minv, l7.map(d => d.l))}</div>
-
-${achProfile()}
-
 `;
 }
 
@@ -2705,9 +2716,10 @@ function viewAchievements() {
 // Achievement colours: the sticker's gradient (stars/cap are special colours used by a few achievements)
 const ACH_COL = c => ["violet", "sky", "orange", "pink", "green", "teal"].includes(c) ? c : c === "stars" ? "orange" : "violet";
 const achDate = a => { const w = S.achv && S.achv[a.id]; return w ? `${w.slice(8, 10)}.${w.slice(5, 7)}.${w.slice(0, 4)}` : ""; };
-// Earned: a colourful sticker; not yet: a grey lock with progress
-function achSticker(a, i = 0) {
-  return `<span class="ach-st st-${ACH_COL(a.c)}${achTier(a) > 2 ? ` ach-r${achTier(a)}` : ""}" style="--tilt:${[-7, 5, -3, 8, -5, 3][i % 6]}deg">${ICON[a.ico] || ICON.star}</span>`;
+// Earned: an enamel medal in a metal rim — bronze, silver, gold or the rainbow rim by rarity; not yet: a grey lock with progress
+function achSticker(a) {
+  const r = achTier(a);
+  return `<span class="ach-st st-${ACH_COL(a.c)} t${r}${r > 2 ? ` ach-r${r}` : ""}">${ICON[a.ico] || ICON.star}</span>`;
 }
 function achCard(a, i) {
   const on = achDone(a), v = Math.min(a.v(), a.n);
@@ -2716,18 +2728,6 @@ function achCard(a, i) {
     ${on ? achSticker(a, i) : `<span class="medal">${ICON.lock}</span>`}<span class="ach-r-tag r${r}">${ACH_TIERS[r].uz} · +${ACH_TIERS[r].xp}</span><b>${esc(a.t)}</b><small>${esc(a.d)}</small>
     ${on ? (achDate(a) ? `<small class="ach-date">${achDate(a)}</small>` : "") : `<span class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${a.n}" aria-valuenow="${v}" aria-label="${esc(a.t)}: ${v}/${a.n}"><i style="width:${pct(v, a.n)}%"></i></span><small class="muted">${v}/${a.n}</small>`}</div>`;
 }
-// Profile: every earned achievement as a sticker wall (newest first), then the closest ones still to get
-function achProfile() {
-  const got = ACH.filter(achDone).sort((x, y) => ((S.achv || {})[y.id] || "").localeCompare((S.achv || {})[x.id] || ""));
-  const next = ACH.filter(a => !achDone(a)).sort((x, y) => y.v() / y.n - x.v() / x.n).slice(0, 3);
-  return `<section class="section">
-    <div class="section-head"><h2>Yutuqlar</h2><a class="link" href="#achievements">${got.length}/${ACH.length} · Hammasi</a></div>
-    ${got.length ? `<div class="glass pad sticker-wall">${got.map((a, i) => `<div class="sw-item" title="${esc(a.d)}">${achSticker(a, i)}<b>${esc(a.t)}</b>${achDate(a) ? `<small>${achDate(a)}</small>` : ""}</div>`).join("")}</div>`
-      : `<p class="muted">Birinchi mashqni tugating — birinchi stiker shu yerda paydo boʻladi.</p>`}
-    ${next.length ? `<div class="achv">${next.map(achCard).join("")}</div>` : ""}
-  </section>`;
-}
-
 /* ---------- Tips, encouragement, sharing ---------- */
 const TIPS = [
   ["Bir soʻzni 3 kun ichida 3 marta takrorlang", "Takrorlash tizimi soʻzlarni aynan unutish arafasida qaytaradi. Kuniga 10 daqiqa — eng samarali usul."],

@@ -43,18 +43,23 @@ test("frames: the topbar shows my frame small; a new frame is celebrated once", 
   assert.deepEqual(errors, []);
 });
 
-test("frames: the profile shows my frame with the level chip and a gallery of all seven, the next one explained", async () => {
+test("frames: the profile shows my frame with the level chip; the big Pamuk stands in the same frame; only the next frame is shown as the goal", async () => {
   const { page, errors } = await openApp(browser, "#home");
   await page.evaluate(() => { S.xp = 4600; S.frm = 3; save(); location.hash = "#profile"; });
   await page.waitForTimeout(300);
   const p = await page.evaluate(() => ({
     head: [...document.querySelector(".profile-card .fr").classList].includes("fr3"), chip: document.querySelector(".profile-card .fr-lv").textContent,
-    items: document.querySelectorAll(".fr-gallery .fr-item").length, locked: document.querySelectorAll(".fr-gallery .fr-item.locked").length,
-    on: document.querySelector(".fr-gallery .fr-item.on b").textContent, next: document.querySelector(".fr-next").textContent
+    hero: [...document.querySelector(".ph-card .fr-hero").classList].includes("fr3") && !!document.querySelector(".ph-card .fr-hero .ph-av svg.cat"),
+    frames: document.querySelectorAll("#app .fr").length, nextFr: [...document.querySelector(".ph-next .fr").classList].includes("fr4"),
+    name: document.querySelector(".ph-next-txt b").textContent, next: document.querySelector(".fr-next").textContent, tag: document.querySelector(".ph-tags").textContent
   }));
   assert.deepEqual(p.head && p.chip, "10");
-  assert.equal(p.items, 7); assert.equal(p.locked, 4); assert.equal(p.on, "Oltin");
-  assert.match(p.next, /Platina: 20-darajaga yana \d+ XP yoki Platina ligasiga chiqing/);
+  assert.equal(p.hero, true, "Pamuk inside the Oltin frame");
+  assert.equal(p.frames, 3, "my avatar, Pamuk and the next frame — no gallery of all seven");
+  assert.equal(p.nextFr, true); assert.equal(p.name, "Platina"); assert.match(p.tag, /Oltin ramka/);
+  assert.match(p.next, /20-darajaga yana \d+ XP yoki Platina ligasiga chiqing/);
+  // The highest frame has nothing above it
+  assert.match(await page.evaluate(() => { S.xp = 130000; save(); route(); return document.querySelector(".ph-next").textContent; }), /Afsona ramkasi sizda/);
   assert.deepEqual(errors, []);
 });
 
