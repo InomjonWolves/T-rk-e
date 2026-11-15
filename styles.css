@@ -1733,6 +1733,13 @@ html.native input, html.native textarea, html.native [contenteditable="true"] { 
 .bank.words .bk { font-size: 17px; font-weight: 700; height: 46px; }
 .bank-kbd { align-self: center; font-size: 14px; }
 .bank-box.kbd .bank { display: none; }
+/* The bank under one field of a page with many fields (course exercises, tests) */
+.ibank { scroll-margin-bottom: 120px; margin-top: 10px; padding: 10px 8px 8px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--line); }
+.ibank .bank { padding: 0 0 4px; }
+.ib-acts { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px; }
+.ib-acts .link { font-size: 14px; }
+.ib-acts .bank-del { width: 52px; min-height: 44px; }
+input[data-bk]:not([data-kbd]) { caret-color: transparent; }
 #session[data-r] .bank .bk { pointer-events: none; opacity: 0.6; }
 
 /* One mixed practice (2026-11-14): the main button of a word set, the single kinds folded under it */

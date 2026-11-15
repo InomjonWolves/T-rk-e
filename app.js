@@ -2237,8 +2237,9 @@ function lockedView(lv, id) {
 }
 
 // Normalise an answer for comparison: drop notes in brackets, quotes and punctuation
-const ansNorm = s => fold(String(s).replace(/\([^)]*\)/g, " ").replace(/[«»"“”]/g, "").replace(/[’ʼ`]/g, "'").replace(/\s+—\s+/g, " — "));
-const ansPlain = s => plain(String(s).replace(/\([^)]*\)/g, " ").replace(/[«»"“”’ʼ`']/g, ""));
+// (a dash between two parts — «Saat kaç? — Saat üç.» — is not required: the tiles have no punctuation)
+const ansNorm = s => fold(String(s).replace(/\([^)]*\)/g, " ").replace(/[«»"“”]/g, "").replace(/[’ʼ`]/g, "'").replace(/\s+[—–-]\s+/g, " "));
+const ansPlain = s => plain(String(s).replace(/\([^)]*\)/g, " ").replace(/[«»"“”’ʼ`']/g, "").replace(/\s+[—–-]\s+/g, " "));
 function ansVariants(a) { return String(a).split(/\s+\/\s+|;\s*/).map(x => x.trim()).filter(Boolean).concat([a]); }
 // 2 = exact, 1 = only letters differ (ç/c, ı/i…), 0 = wrong
 function ansMatch(user, right) {
@@ -2439,7 +2440,7 @@ function kItem(id, n, k, prompt, ans, sample, st, label) {
   return `<div class="k-item glass ${status}" data-key="${key}">
     <div class="k-q"><b>${esc(label || k)})</b> <span>${esc(prompt)}</span></div>
     ${dy ? `<div class="k-dy"><button class="opt${val === "D" ? (res === 1 ? " right" : " wrong") : ""}" data-act="k-dy" data-id="${id}" data-key="${key}" data-v="D">D · Toʻgʻri</button><button class="opt${val === "Y" ? (res === 1 ? " right" : " wrong") : ""}" data-act="k-dy" data-id="${id}" data-key="${key}" data-v="Y">Y · Notoʻgʻri</button></div>`
-      : `<div class="k-in"><input class="type-input k-input" id="ki-${id}-${key}" lang="tr" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(val)}" aria-label="Javob ${esc(label || k)}"><button class="btn btn-soft" data-act="k-check" data-id="${id}" data-key="${key}">Tekshirish</button></div>`}
+      : `<div class="k-in"><input class="type-input k-input" id="ki-${id}-${key}" lang="tr" ${res === 1 ? "" : bkAttr(ans)} autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(val)}" aria-label="Javob ${esc(label || k)}"><button class="btn btn-soft" data-act="k-check" data-id="${id}" data-key="${key}">Tekshirish</button></div>`}
     <div class="k-fb">${fb}${sample && res !== 1 ? ` <button class="link" data-act="k-reveal" data-id="${id}" data-key="${key}">Namuna javob</button>` : ""}</div>
   </div>`;
 }
@@ -3341,7 +3342,7 @@ const BANK_MAX = 16;
 const BANK_TWIN = { ı: "i", i: "ı", ş: "s", s: "ş", ç: "c", c: "ç", ğ: "g", g: "ğ", ö: "o", o: "ö", ü: "u", u: "ü", e: "a", a: "e", k: "g", d: "t", t: "d", b: "p", p: "b", r: "l", l: "r", n: "m", m: "n" };
 let BANK = null;
 function bankTiles(answer) {
-  const ans = String(answer).replace(/[?!.,;:…«»"]/g, "").replace(/\s+/g, " ").trim();
+  const ans = String(answer).replace(/[?!.,;:…«»"]/g, "").replace(/\s[—–-](?=\s)/g, " ").replace(/\s+/g, " ").trim();
   const words = ans.split(" ");
   if (ans.replace(/ /g, "").length > BANK_MAX || words.length >= 3) {
     // Word tiles: the answer's words and up to 3 others of a similar length from the vocabulary
@@ -3353,7 +3354,9 @@ function bankTiles(answer) {
   [...low].forEach(c => { const t = BANK_TWIN[c]; if (t && !low.includes(t) && !pool.includes(t)) pool.push(t); });
   const n = letters.length <= 3 ? 5 : 6;
   for (const c of shuffle("aeiıoöuübcçdgğklmnprsştyz".split(""))) { if (pool.length >= n) break; if (!pool.includes(c)) pool.push(c); }
-  return { kind: "l", tiles: shuffle([...letters, ...shuffle(pool).slice(0, n)]) };
+  // An answer in capitals (a letter of the alphabet, an abbreviation) gets capital extras too
+  const up = ans !== low && ans === ans.toLocaleUpperCase("tr");
+  return { kind: "l", tiles: shuffle([...letters, ...shuffle(pool).slice(0, n).map(c => up ? c.toLocaleUpperCase("tr") : c)]) };
 }
 function bankBox(answer, ph = "Javobingiz…") {
   const t = bankTiles(answer);
@@ -3374,6 +3377,53 @@ function bankWrite() {
   document.querySelectorAll("#bank .bk").forEach(b => b.classList.toggle("used", BANK.used.includes(+b.dataset.i)));
 }
 const typeBox = answer => bankBox(answer, "Eshitganingizni yozing…");
+/* The same tiles for pages with many answer fields (course exercises, level tests, the placement test): a tap on a
+   field opens its tiles right under it — one panel at a time; the phone keyboard stays closed (inputmode none).
+   The field keeps its own value, so the checks read it as before; «Klaviatura» turns one field back to typing. */
+let IB = null;
+const bkAttr = ans => `inputmode="none" data-bk="${esc(ansVariants(ans)[0])}"`;
+function ibClose() { const el = $("ibank"); if (el) el.remove(); IB = null; }
+function ibOpen(inp) {
+  if (!inp || inp.disabled || inp.dataset.kbd || !inp.dataset.bk) return ibClose();
+  if (IB && IB.inp === inp && $("ibank")) return;
+  ibClose();
+  const t = inp._bk || (inp._bk = bankTiles(inp.dataset.bk)), used = [];
+  // Tiles already spent by what the field holds
+  const parts = t.kind === "w" ? inp.value.trim().split(/\s+/).filter(Boolean) : [...inp.value].map(c => c === " " ? "␣" : c);
+  parts.forEach(x => { const i = t.tiles.findIndex((y, j) => y === x && !used.includes(j)); if (i >= 0) used.push(i); });
+  IB = { inp, kind: t.kind, tiles: t.tiles, used };
+  const box = document.createElement("div");
+  box.id = "ibank"; box.className = "ibank";
+  box.innerHTML = `<div class="bank${t.kind === "w" ? " words" : ""}">${t.tiles.map((x, i) => `<button type="button" class="bk${used.includes(i) ? " used" : ""}" data-act="ibk" data-i="${i}" lang="tr">${esc(x)}</button>`).join("")}</div>
+    <div class="ib-acts"><button type="button" class="link" data-act="ibk-kbd">Klaviatura bilan yozish</button>
+      <button type="button" class="icon-btn bank-del" data-act="ibk-del" aria-label="Oxirgisini oʻchirish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12z"/><path d="m16 9-5 6M11 9l5 6"/></svg></button></div>`;
+  (inp.closest(".k-in") || inp).after(box);
+  if (box.scrollIntoView) box.scrollIntoView({ block: "nearest" });
+}
+function ibSync() {
+  IB.inp.dispatchEvent(new Event("input", { bubbles: true }));
+  document.querySelectorAll("#ibank .bk").forEach(b => b.classList.toggle("used", IB.used.includes(+b.dataset.i)));
+}
+function ibTap(i) {
+  if (!IB || !IB.inp.isConnected || IB.used.includes(i)) return;
+  const inp = IB.inp, t = IB.tiles[i];
+  IB.used.push(i);
+  inp.value = IB.kind === "w" ? (inp.value.trim() ? inp.value.trim() + " " : "") + t : inp.value + (t === "␣" ? " " : t);
+  ibSync();
+}
+function ibDel() {
+  if (!IB || !IB.inp.isConnected) return;
+  const inp = IB.inp, i = IB.used.pop(), t = i == null ? "" : IB.tiles[i] === "␣" ? " " : IB.tiles[i];
+  inp.value = t && inp.value.endsWith(t) ? inp.value.slice(0, -t.length) : inp.value.slice(0, -1);
+  if (IB.kind === "w") inp.value = inp.value.trimEnd();
+  ibSync();
+}
+function ibKbd() {
+  if (!IB) return;
+  const inp = IB.inp;
+  inp.dataset.kbd = "1"; inp.setAttribute("inputmode", "text");
+  ibClose(); inp.focus();
+}
 function renderDict(w) {
   SES.sk = ["l", "w"];
   stage.innerHTML = `${listenNotice()}<div class="q-card"><div class="q-label">Diktant: eshitganingizni turkcha yozing</div>
@@ -3799,7 +3849,7 @@ function ktWriteHtml(lv, res, start) {
   return `<section class="section">${ktPartHead("w", "Yazma · Yozish")}
     ${g.w.map((q, i) => { const v = KT_ANS.w[i] || "", m = res ? ansMatch(v, q.a) : -1; return `<div class="k-item glass">
       <div class="k-q"><b>${start + i + 1}.</b> <small class="muted">${esc(q.title)}</small><div lang="tr" style="margin-top:4px">${esc(q.q)}</div></div>
-      <div class="k-in"><input class="k-input${m > 0 ? " right" : m === 0 ? " wrong" : ""}" data-act="kt-w" data-i="${i}" value="${esc(v)}" lang="tr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Javob…" ${res ? "disabled" : ""}></div>
+      <div class="k-in"><input class="k-input${m > 0 ? " right" : m === 0 ? " wrong" : ""}" data-act="kt-w" data-i="${i}" value="${esc(v)}" lang="tr" ${bkAttr(q.a)} autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Javob…" ${res ? "disabled" : ""}></div>
       ${res && m <= 0 ? `<div class="k-fb"><span class="no">Toʻgʻri javob: <b lang="tr">${esc(q.a)}</b></span></div>` : ""}</div>`; }).join("")}
   </section>`;
 }
@@ -3927,7 +3977,7 @@ function plStageHtml(P, st, nums) {
       ${opts("l", i, q, P.ans.l[i], q.kind === "line")}</div>`).join(""))
   + plSection("w", "Yazma · Yozish", "", pick("w").map(([q, i]) => { const v = P.ans.w[i] || "", m = res ? ansMatch(v, q.a) : -1; return `<div class="k-item glass">
       <div class="k-q"><b>${nums.w[i]}.</b> <small class="muted">${esc(q.title)}</small><div lang="tr" style="margin-top:4px">${esc(q.q)}</div></div>
-      <div class="k-in"><input class="k-input${m > 0 ? " right" : m === 0 ? " wrong" : ""}" data-act="pl-w" data-i="${i}" value="${esc(v)}" lang="tr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Bilmasangiz, boʻsh qoldiring" ${locked ? "disabled" : ""}></div>
+      <div class="k-in"><input class="k-input${m > 0 ? " right" : m === 0 ? " wrong" : ""}" data-act="pl-w" data-i="${i}" value="${esc(v)}" lang="tr" ${bkAttr(q.a)} autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Bilmasangiz, boʻsh qoldiring" ${locked ? "disabled" : ""}></div>
       ${res && m <= 0 ? `<div class="k-fb"><span class="no">Toʻgʻri javob: <b lang="tr">${esc(q.a)}</b></span></div>` : ""}</div>`; }).join(""))
   + (canListen() && pick("s").length ? plSection("s", "Konuşma · Gapirish", "Ixtiyoriy: hozir gapira olmasangiz, oʻtkazib yuboring.", pick("s").map(([q, i]) => { const r = P.ans.s[i]; return `<div class="k-item glass">
       <div class="k-q"><b>${nums.s[i]}.</b> Gapni ovoz chiqarib ayting:<div lang="tr" style="margin-top:4px"><b>${esc(q.tr)}</b></div></div>
@@ -4909,6 +4959,9 @@ function onAct(e) {
   else if (act === "type-skip") checkType(true);
   else if (act === "bk") { if (SES && SES.answered) return; const i = +b.dataset.i; if (BANK && !BANK.used.includes(i)) { BANK.used.push(i); bankWrite(); } }
   else if (act === "bk-del") { if (SES && SES.answered) return; if (BANK && BANK.used.length) { BANK.used.pop(); bankWrite(); } else { const inp = $("type-input"); if (inp) inp.value = inp.value.slice(0, -1); } }
+  else if (act === "ibk") ibTap(+b.dataset.i);
+  else if (act === "ibk-del") ibDel();
+  else if (act === "ibk-kbd") ibKbd();
   else if (act === "bk-kbd") { const inp = $("type-input"), f = $("type-form"); if (!inp) return; f.classList.add("kbd"); f.querySelector(".keys").hidden = false; b.hidden = true; inp.setAttribute("inputmode", "text"); BANK = null; inp.focus(); }
   else if (act === "key") {
     const inp = $("type-input");
@@ -5463,6 +5516,8 @@ $("auth-form").addEventListener("submit", async e => {
   }
 });
 const authCat = () => $("auth-mascot").querySelector(".cat");
+// Answer fields with tiles: the bank opens under the field that takes the focus
+document.addEventListener("focusin", e => { const t = e.target; if (t && t.dataset && t.dataset.bk) ibOpen(t); });
 document.addEventListener("focusin", e => {
   const c = authCat(); if (!c) return;
   if (e.target.type === "password") c.classList.add("shy");

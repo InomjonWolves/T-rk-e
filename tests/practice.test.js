@@ -152,6 +152,56 @@ test("letter bank: written answers are built from tiles — the answer's letters
   await page.close();
 });
 
+test("tiles on pages with many fields: course exercises, the level test and the placement test open a bank under the tapped field", async () => {
+  const { page, errors } = await openApp(browser, "#k-a1-1", { state: { onb: 1, place: { applied: "C1" } } });
+  await page.evaluate(() => { KTAB = "ex"; route(); });
+  // Builds the answer of a field with its tiles (letters or words) and returns [the field's value, inputmode]
+  const build = sel => page.evaluate(sel => {
+    const inp = typeof sel === "number" ? document.querySelectorAll("input[data-bk]")[sel] : document.querySelector(sel);
+    inp.focus();
+    const c = inp.dataset.bk.replace(/[?!.,;:…«»"]/g, "").replace(/\s[—–-](?=\s)/g, " ").replace(/\s+/g, " ").trim();
+    const parts = IB.kind === "w" ? c.split(" ") : [...c].map(x => x === " " ? "␣" : x), used = new Set();
+    for (const t of parts) { const b = [...document.querySelectorAll("#ibank .bk")].find(x => !used.has(x) && x.textContent === t); used.add(b); b.click(); }
+    return [inp.value === c, inp.getAttribute("inputmode"), document.querySelectorAll("#ibank").length, document.querySelectorAll("#ibank .bk").length - parts.length];
+  }, sel);
+  const idx = await page.evaluate(() => { const ins = [...document.querySelectorAll("input[data-bk]")]; return [ins.findIndex(x => x.dataset.bk.split(" ").length < 3 && x.dataset.bk.length > 1), ins.findIndex(x => x.dataset.bk.split(" ").length >= 3)]; });
+  assert.ok(idx[0] >= 0 && idx[1] >= 0, "a short and a long answer in the unit");
+  const short = await build(idx[0]);
+  assert.deepEqual(short.slice(0, 3), [true, "none", 1], "letters; the phone keyboard stays closed; one panel");
+  assert.ok(short[3] >= 5, "extra letters");
+  const long = await build(idx[1]);
+  assert.deepEqual(long.slice(0, 3), [true, "none", 1], "words; the panel moved to the second field");
+  assert.ok(long[3] >= 1 && long[3] <= 3, "extra words");
+  // ⌫ takes the last tile back; the check accepts the built answer (no punctuation, no dash needed)
+  await page.evaluate(() => document.querySelector("[data-act=ibk-del]").click());
+  assert.equal(await page.evaluate(() => IB.inp.dataset.bk.replace(/[?!.,;:…]/g, "").trim().startsWith(IB.inp.value) && IB.inp.value.length > 0), true);
+  await build(idx[1]).catch(() => {});
+  const res = await page.evaluate(i => {
+    const inp = document.querySelectorAll("input[data-bk]")[i], key = inp.id, bk = inp.dataset.bk;
+    inp.value = bk.replace(/[?!.,;:…«»"]/g, "").replace(/\s[—–-](?=\s)/g, " ").replace(/\s+/g, " ").trim();
+    inp.parentElement.querySelector("[data-act=k-check]").click();
+    return [document.getElementById(key).closest(".k-item").classList.contains("ok"), ansMatch("Saat kaç Saat üç buçuk", "Saat kaç? — Saat üç buçuk.")];
+  }, idx[1]);
+  assert.deepEqual(res, [true, 2]);
+  // «Klaviatura» gives one field back to typing
+  await page.evaluate(() => { const inp = document.querySelector(".k-item:not(.ok) input[data-bk]"); inp.id = "kbd-probe"; inp.focus(); document.querySelector("[data-act=ibk-kbd]").click(); });
+  assert.deepEqual(await page.evaluate(() => [document.getElementById("kbd-probe").getAttribute("inputmode"), !!document.getElementById("ibank"), document.activeElement.id]), ["text", false, "kbd-probe"]);
+  // The level test and the placement test: the tiles write into the stored answers
+  await page.evaluate(() => go("ktest-a1"));
+  await page.waitForSelector("input[data-act=kt-w]");
+  assert.equal((await build('input[data-act=kt-w][data-i="0"]'))[0], true);
+  assert.equal(await page.evaluate(() => ansMatch(KT_ANS.w[0], ktGen("A1").w[0].a) > 0), true);
+  await page.evaluate(() => go("placement"));
+  await page.waitForFunction(() => document.querySelector("[data-act=pl-start]") || document.querySelector("input[data-act=pl-w]"));
+  await page.evaluate(() => { const b = document.querySelector("[data-act=pl-start]"); if (b) b.click(); });
+  await page.waitForSelector("input[data-act=pl-w]");
+  const sel = await page.evaluate(() => { const inp = document.querySelector("input[data-act=pl-w]:not([disabled])"); return `input[data-act=pl-w][data-i="${inp.dataset.i}"]`; });
+  assert.equal((await build(sel))[0], true);
+  assert.equal(await page.evaluate(s => { const i = +document.querySelector(s).dataset.i, P = plGet(); return ansMatch(P.ans.w[i], P.it.w[i].a) > 0; }, sel), true);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test("one mixed practice: a word set mixes the forms; review mixes the four skills; skill tiles start that skill's mix; no duplicate cards", async () => {
   const { page, errors } = await openApp(browser, "#practice", { sr: true, state: { onb: 1, place: { applied: "C1" } } });
   // Known words come in many forms (reading, writing, listening, speaking)
