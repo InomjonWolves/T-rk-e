@@ -5065,19 +5065,17 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
-  if (!$("sheet").hidden) { if (!$("sheet").dataset.locked) closeSheet(); } else if (SES) closeSession();
+  if (!$("sheet").hidden) { if (!$("sheet").dataset.locked) closeSheet(); } else if (SES) quitAsk();
 });
 /* The app's Back button (plugin App): first the window on top closes — a celebration, a sheet, the practice window
-   (an unfinished practice asks for a second press), the welcome card, the tour — then the page history goes back;
+   (an unfinished one opens the «Ketmang» window, like its ✕), the welcome card, the tour — then the page history goes back;
    on the home page the app goes to the background instead of closing. */
-let BACK_AT = 0;
 function nativeBack(canGoBack) {
   if (!$("celebrate").hidden) { nextCelebrate(); return "celebrate"; }
+  // An open window closes first — over a practice that is the «Ketmang» window: Back there means «stay»
   if (!$("sheet").hidden) { if (!$("sheet").dataset.locked) closeSheet(); return "sheet"; }
-  if (SES) {
-    if (SES.done || Date.now() - BACK_AT < 2500) { BACK_AT = 0; closeSession(); return "session"; }
-    BACK_AT = Date.now(); toast("Mashqni yopish uchun yana bir marta «Orqaga» bosing"); return "confirm";
-  }
+  // A practice: the same as its ✕ — an unfinished one asks first (quitAsk), a finished or untouched one closes
+  if (SES) { quitAsk(); return SES ? "confirm" : "session"; }
   if (!$("welcome").hidden) { hideWelcome(); return "welcome"; }
   if (!$("onboard").hidden) { endOnboard(); return "onboard"; }
   if (!["", "#", "#home"].includes(location.hash) && $("auth").hidden) {

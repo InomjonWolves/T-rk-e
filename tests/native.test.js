@@ -196,7 +196,7 @@ test("app voice: texts without a recording are spoken by the phone (tr-TR, speed
   await page.close();
 });
 
-test("app Back button: closes the top window first, asks before leaving a practice, then goes back; home goes to the background", async () => {
+test("app Back button: closes the top window first, a practice asks like its ✕ («Ketmang»), then goes back; home goes to the background", async () => {
   const { page, errors } = await openApp(browser, "#home", { native: true, init: phone });
   await page.waitForFunction(() => typeof window.__back === "function");
   const back = () => page.evaluate(() => nativeBack(history.length > 1));
@@ -205,11 +205,21 @@ test("app Back button: closes the top window first, asks before leaving a practi
   await page.evaluate(() => openSheet("<p>test</p>"));
   assert.equal(await back(), "sheet");
   assert.equal(await page.evaluate(() => $("sheet").hidden), true);
-  await page.evaluate(() => startSession("say", "pron"));
-  assert.equal(await back(), "confirm");
-  assert.equal(await page.evaluate(() => !!SES), true, "one press does not lose the practice");
+  // A practice nobody has answered yet just closes
+  await page.evaluate(() => startSession("quiz", "all"));
   assert.equal(await back(), "session");
   assert.equal(await page.evaluate(() => SES), null);
+  // An unfinished practice: Back opens the same «Ketmang» window as ✕; Back again keeps the practice (the window closes)
+  await page.evaluate(() => { startSession("quiz", "all"); document.querySelector('[data-act=answer]:not([data-ok="1"])').click(); });
+  assert.equal(await back(), "confirm");
+  assert.deepEqual(await page.evaluate(() => [!!SES, !!document.querySelector("#sheet:not([hidden]) .quit-sheet")]), [true, true], "the practice is not lost");
+  assert.equal(await back(), "sheet");
+  assert.deepEqual(await page.evaluate(() => [!!SES, $("sheet").hidden]), [true, true]);
+  assert.equal(await back(), "confirm");
+  await page.evaluate(() => document.querySelector("[data-act=quit-go]").click());
+  assert.equal(await page.evaluate(() => SES), null);
+  // No toast asking for a second press any more
+  assert.ok(!(await page.evaluate(() => document.body.textContent)).includes("yana bir marta «Orqaga»"));
   assert.equal(await back(), "history");
   await page.waitForFunction(() => ["", "#home"].includes(location.hash));
   assert.equal(await back(), "minimize");
