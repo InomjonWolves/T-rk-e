@@ -183,9 +183,15 @@ test("theme: the chosen theme also colours the browser bar, at once and after a 
   await page.click("[data-act=theme][data-v=dark]");
   assert.deepEqual(await metas(), ["|#0d1124", "|#0d1124"]);
   assert.equal(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), "rgb(13, 17, 36)");
-  await page.reload();
-  await page.waitForTimeout(200);
-  assert.deepEqual(await metas(), ["|#0d1124", "|#0d1124"], "applied before the first paint");
+  assert.equal(await page.evaluate(() => localStorage.getItem("ty-theme")), "dark", "the choice is kept");
+  // A new visit with the saved choice: the head script applies it before the first paint. (Not page.reload(): Chromium
+  // hands a fresh localStorage write to the reloaded page a moment later, and on a slow CI machine the test lost that race.)
+  const second = await openApp(browser, "#settings", { init: () => localStorage.setItem("ty-theme", "dark") });
+  const metas2 = () => second.page.evaluate(() => [...document.querySelectorAll('meta[name="theme-color"]')].map(m => m.media + "|" + m.content));
+  assert.deepEqual(await metas2(), ["|#0d1124", "|#0d1124"], "applied before the first paint");
+  assert.equal(await second.page.evaluate(() => document.documentElement.dataset.theme), "dark");
+  assert.deepEqual(second.errors, []);
+  await second.page.close();
   await page.click("[data-act=theme][data-v=light]");
   assert.deepEqual(await metas(), ["|#f7f4ee", "|#f7f4ee"]);
   assert.equal(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), "rgb(247, 244, 238)");
