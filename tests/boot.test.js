@@ -132,22 +132,22 @@ test("home is drawn without course.js; a unit page and a tap wait for it", async
   await page.addInitScript(() => { sessionStorage["ty-welcomed"] = "1"; localStorage["turkce-yol-v1"] = JSON.stringify({ onb: 1 }); });
   await page.goto(BASE + "#home", { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => document.querySelector("#app .view"));
-  const home = await page.evaluate(() => ({ full: COURSE_FULL, loading: !!document.querySelector("#app .spin"), next: kNext().id, progress: kProgress("a1-1") }));
+  const home = await page.evaluate(() => ({ full: COURSE_FULL, loading: !!document.querySelector("#app .cat-loader"), next: kNext().id, progress: kProgress("a1-1") }));
   assert.deepEqual(home, { full: false, loading: false, next: "a1-1", progress: 0 });
   // Other pages that do not need the course body also work (grammar pages wait for the grammar files, not the course)
   await page.waitForFunction(() => GRAM_FULL);
   for (const h of ["#course", "#practice", "#guide", "#profile", "#skills"]) {
     await page.evaluate(h => { location.hash = h; }, h);
     await page.waitForTimeout(50);
-    assert.equal(await page.evaluate(() => !!document.querySelector("#app .spin")), false, `${h} waited for the course`);
+    assert.equal(await page.evaluate(() => !!document.querySelector("#app .cat-loader")), false, `${h} waited for the course`);
   }
   await page.evaluate(() => { location.hash = "#k-a1-1"; });
   await page.waitForTimeout(50);
-  assert.equal(await page.evaluate(() => !!document.querySelector("#app .spin")), true);
+  assert.equal(await page.evaluate(() => !!document.querySelector("#app .cat-loader")), true);
   // A tap that needs dialogs (speaking practice sheet) is replayed once the course is there
   await page.evaluate(() => { const b = document.createElement("button"); b.dataset.act = "start"; b.dataset.mode = "lsent"; b.dataset.u = "auto"; b.id = "t-lsent"; document.body.appendChild(b); b.click(); });
   release();
-  await page.waitForFunction(() => COURSE_FULL && !document.querySelector("#app .spin"));
+  await page.waitForFunction(() => COURSE_FULL && !document.querySelector("#app .cat-loader"));
   await page.waitForFunction(() => SES && SES.mode === "lsent" && SES.items.length > 0);
   assert.equal(await page.evaluate(() => KU["a1-2"].exercises.length > 0 && COURSE.units[0] === KU["a1-1"]), true);
   assert.deepEqual(errors, []);

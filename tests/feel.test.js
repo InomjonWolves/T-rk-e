@@ -106,13 +106,65 @@ test("streak calendar and the daily goal: the flame opens a month view; reaching
 test("Pamuk in a practice: a word at the start, a hint after two misses, a cheer before the last question; a tap hides it", async () => {
   const { page, errors } = await openApp(browser, "#practice");
   await page.evaluate(() => startSession("quiz", "all"));
-  await page.waitForFunction(() => { const b = document.getElementById("s-say"); return b && b.classList.contains("show") && b.dataset.k === "start"; });
-  await page.evaluate(() => { bad(); nextStep(); bad(); });
+  // The greeting: Pamuk rises from the bottom edge with a line; it takes no taps and leaves with the first answer
+  await page.waitForSelector("#s-peek .peek-cat svg.cat");
+  assert.deepEqual(await page.evaluate(() => [getComputedStyle(document.getElementById("s-peek")).pointerEvents, PSAY.start.includes(document.querySelector("#s-peek .peek-bubble").textContent)]), ["none", true]);
+  await page.evaluate(() => { bad(); });
+  assert.equal(await page.evaluate(() => document.getElementById("s-peek").classList.contains("out")), true);
+  await page.evaluate(() => { nextStep(); bad(); });
   assert.equal(await page.evaluate(() => document.getElementById("s-say").dataset.k), "help");
   await page.evaluate(() => document.getElementById("s-say").click());
   assert.equal(await page.evaluate(() => document.getElementById("s-say").classList.contains("show")), false);
   await page.evaluate(() => { SES.i = SES.items.length - 2; nextStep(); });
   assert.equal(await page.evaluate(() => document.getElementById("s-say").dataset.k), "last");
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("Pamuk's scenes: living parts, starry eyes for a streak and an award, a dancing loader, a plea before leaving a practice", async () => {
+  const { page, errors } = await openApp(browser, "#practice", { state: { onb: 1 } });
+  // The drawing: ears and a two-part tail of their own, an open mouth, eye sparkles, welling tears, paws for the cheeks
+  const parts = await page.evaluate(() => {
+    const d = document.createElement("div");
+    const n = (html, sel) => { d.innerHTML = html; return d.querySelectorAll(sel).length; };
+    const sit = catSVG({ pose: "sit" });
+    return [n(sit, ".cat-ear-l"), n(sit, ".cat-ear-r"), n(sit, ".cat-tail .cat-tail-a .cat-tail-b"), n(sit, ".cat-open"), n(sit, ".cat-spark"), n(sit, ".cat-well"), n(sit, ".cat-wowpaws"),
+      n(catSVG({ pose: "head" }), ".cat-tail"), n(catSVG({ pose: "wave" }), ".cat-tail.left"), n(catSVG({ pose: "sit", look: "wizard" }), ".cat-tail.left"), n(catSVG({ pose: "cheer" }), ".cat-tail")];
+  });
+  assert.deepEqual(parts, [2, 2, 1, 1, 2, 2, 1, 0, 1, 1, 0]);
+  // Moods: wow and plead stay apart from happy and sad; a mood with ms = 0 stays
+  const moods = await page.evaluate(() => {
+    const d = document.createElement("div"); d.innerHTML = catSVG({ pose: "sit" }); document.body.appendChild(d);
+    const c = d.firstElementChild, out = [];
+    CatLife.mood(c, "wow", 0); out.push(c.classList.contains("wow") && c.classList.contains("hop"));
+    CatLife.mood(c, "plead", 0); out.push(c.classList.contains("plead") && !c.classList.contains("wow"));
+    CatLife.mood(c, "happy", 50); out.push(c.classList.contains("happy") && !c.classList.contains("plead"));
+    d.remove();
+    return out;
+  });
+  assert.deepEqual(moods, [true, true, true]);
+  // The loader dances and still says what is going on
+  const loader = await page.evaluate(() => { const d = document.createElement("div"); d.innerHTML = catLoader(); return [!!d.querySelector(".cat-loader svg.cat.dance"), d.querySelectorAll(".cl-note").length, /Yuklanmoqda/.test(d.textContent)]; });
+  assert.deepEqual(loader, [true, 3, true]);
+  // A streak of three: starry eyes on the practice cat
+  await page.evaluate(() => { XP_FAST_MS = 0; startSession("quiz", "all"); });
+  // Leaving before the first answer needs no question
+  await page.evaluate(() => document.querySelector("[data-act=close-session]").click());
+  assert.deepEqual(await page.evaluate(() => [!!SES, document.getElementById("sheet").hidden]), [false, true]);
+  await page.evaluate(() => startSession("quiz", "all"));
+  for (let i = 0; i < 3; i++) await page.evaluate(i => { document.querySelector('[data-act=answer][data-ok="1"]').click(); if (i < 2) document.querySelector("[data-act=next]").click(); }, i);
+  assert.equal(await page.evaluate(() => sCat().classList.contains("wow")), true);
+  // Leaving an unfinished practice: Pamuk asks to stay; «Davom etaman» keeps it, «Baribir chiqish» closes
+  await page.evaluate(() => document.querySelector("[data-act=close-session]").click());
+  await page.waitForFunction(() => { const c = document.querySelector("#sheet .quit-cat .cat"); return c && c.classList.contains("plead"); });
+  assert.match(await page.evaluate(() => document.querySelector("#sheet .quit-sheet").textContent), /Yana 7 ta savol qoldi[\s\S]*XP berilmaydi/);
+  await page.evaluate(() => document.querySelector("[data-act=quit-stay]").click());
+  assert.deepEqual(await page.evaluate(() => [!!SES, document.getElementById("sheet").hidden]), [true, true]);
+  await page.evaluate(() => { document.querySelector("[data-act=close-session]").click(); document.querySelector("[data-act=quit-go]").click(); });
+  assert.deepEqual(await page.evaluate(() => [!!SES, document.getElementById("sheet").hidden]), [false, true]);
+  // An award: starry eyes too
+  await page.evaluate(() => celebrate({ eyebrow: "Yangi daraja!", title: "5-daraja", text: "Pamuk oʻsdi", look: "student" }));
+  await page.waitForFunction(() => { const c = document.querySelector("#celebrate .cat"); return c && c.classList.contains("wow"); });
   assert.deepEqual(errors, []);
   await page.close();
 });

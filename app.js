@@ -733,7 +733,7 @@ const oqReady = () => typeof OQ !== "undefined";
 const oqBest = id => (S.oq && S.oq[id]) || null;
 let OQ_LV = "A1";
 function viewOqish() {
-  if (!oqReady()) return `${topbar()}<div class="glass empty"><div class="spin"></div>Yuklanmoqda…</div>`;
+  if (!oqReady()) return `${topbar()}${catLoader()}`;
   const lvs = ["A1", "A2", "B1", "B2", "C1"], list = OQ.filter(t => t.lv === OQ_LV);
   return `${topbar()}
   <div><a class="back" href="#practice">${ICON.back}Mashq</a></div>
@@ -749,7 +749,7 @@ function viewOqish() {
 const OQ_ORDER = {};
 function oqOrder(t) { return OQ_ORDER[t.id] || (OQ_ORDER[t.id] = t.q.map(q => shuffle(q.o.map((_, i) => i)))); }
 function viewOqText(id) {
-  if (!oqReady()) return `${topbar()}<div class="glass empty"><div class="spin"></div>Yuklanmoqda…</div>`;
+  if (!oqReady()) return `${topbar()}${catLoader()}`;
   const t = OQ.find(x => x.id === id);
   if (!t) return `${topbar()}<div class="glass empty"><b>Matn topilmadi</b><a class="link" href="#oqish">Barcha matnlar</a></div>`;
   const ans = OQ_ANS[id] || (OQ_ANS[id] = {}), done = ans.done, ord = oqOrder(t);
@@ -818,7 +818,7 @@ function recapHTML() {
 function showRecap() {
   if (!S.lgr || !S.lgr.w) return;
   openSheet(recapHTML());
-  if (S.lgr.to > S.lgr.from) setTimeout(() => CatLife.mood($("sheet").querySelector(".cat"), "happy", 2400), 300);
+  if (S.lgr.to > S.lgr.from) setTimeout(() => CatLife.mood($("sheet").querySelector(".cat"), "wow", 3200), 300);
   if (!S.lgr.seen) { S.lgr.seen = 1; save(); }
 }
 // Wait until nothing else is on screen (welcome, an exercise, another sheet)
@@ -2680,7 +2680,7 @@ function showCelebrate() {
     </div>`;
   el.hidden = false;
   CatLife.scan();
-  setTimeout(() => CatLife.mood(el.querySelector(".cat"), "happy", 2400), 300);
+  setTimeout(() => CatLife.mood(el.querySelector(".cat"), "wow", 3600), 300);
 }
 function nextCelebrate() {
   ACH_QUEUE.shift();
@@ -2902,12 +2902,22 @@ function maybeOnboard() {
   ONB_I = 0; showOnboard();
 }
 
+/* A dancing Pamuk with floating notes instead of a bare spinner (loading screens), and a tip to read meanwhile */
+const NOTE_SVG = ['<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 4.5 20 2v13.2a3.3 3.3 0 1 1-2-3V6.1L11 7.7v9.5a3.3 3.3 0 1 1-2-3z"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11 3h2c.3 2.6 2 3.6 4 5-2.2-.7-3.3-.9-4-1.5V17a3.5 3.5 0 1 1-2-3.1z"/></svg>'];
+function catLoader(text = "Yuklanmoqda…") {
+  const tip = TIPS[Math.floor(Math.random() * TIPS.length)];
+  return `<div class="glass cat-loader" role="status"><div class="cl-stage"><span class="cl-note n1">${NOTE_SVG[0]}</span><span class="cl-note n2">${NOTE_SVG[1]}</span><span class="cl-note n3">${NOTE_SVG[1]}</span>${catSVG({ pose: "sit", cls: "joy dance", look: catLook() })}</div>
+    <b>${esc(text)}</b><small class="muted">${esc(tip[0])}</small></div>`;
+}
+
 /* ---------- Router ---------- */
 function route() {
   try { routeNow(); }
   catch (err) {
     if (err !== NEED_COURSE) throw err;
-    app.innerHTML = `<div class="view"><div class="glass empty"><div class="spin"></div><b>Yuklanmoqda…</b></div></div>`;
+    app.innerHTML = `<div class="view">${catLoader()}</div>`;
+    CatLife.scan();
     loadData().then(route, () => { app.innerHTML = `<div class="view"><div class="glass empty"><b>Kurs yuklanmadi</b><span class="muted">Internetni tekshiring.</span><button class="btn btn-grad" data-act="course-retry">Qayta urinish</button></div></div>`; });
   }
 }
@@ -3033,6 +3043,7 @@ function startSession(mode, u) {
   CatLife.scan();
 }
 function closeSession() {
+  sPeekOff(true);
   ttsCancel();
   micStop(true);
   if (SES) { SES.shown = 0; tick(); save(); }
@@ -3052,7 +3063,7 @@ function renderStep() {
   delete sessionEl.dataset.r;
   if (SES.i >= SES.items.length) { const sb = $("s-say"); if (sb) sb.classList.remove("show"); return renderResult(); }
   SES.answered = false;
-  if (SES.i === 0 && !SES.saidStart) { SES.saidStart = 1; setTimeout(() => { if (SES && SES.i === 0) sSay("start"); }, 350); }
+  if (SES.i === 0 && !SES.saidStart) { SES.saidStart = 1; setTimeout(() => { if (SES && SES.i === 0 && !SES.answered) sPeek(); }, 350); }
   else if (SES.items.length >= 5 && SES.i === SES.items.length - 1 && !SES.saidLast) { SES.saidLast = 1; sSay("last"); }
   SES.shown = Date.now();
   progressBar();
@@ -3988,7 +3999,7 @@ function plStageHtml(P, st, nums) {
     : `<div class="pl-stage-head" data-stage="${st}">${head}<span class="tag violet-t">${PL_STAGES.length} bosqichdan</span></div>${body}`;
 }
 function viewPlacement() {
-  if (!plbReady()) return `<div class="glass empty"><div class="spin"></div>Yuklanmoqda…</div>`;
+  if (!plbReady()) return catLoader();
   const P = plGet(), res = P.res, nums = plNums(P);
   const last = P.stage === PL_STAGES.length - 1;
   return `<div><a class="back" href="#course">${ICON.back}Kurs</a></div>
@@ -4597,6 +4608,39 @@ function sSay(kind) {
   b.classList.remove("show"); void b.offsetWidth; b.classList.add("show");
   clearTimeout(PSAY_T); PSAY_T = setTimeout(() => b.classList.remove("show"), 3200);
 }
+/* Pamuk greets at the start of a practice: rises from the bottom edge, waves, says a line and goes back down.
+   It never takes a tap (pointer-events: none) and the first touch sends it away. No motion wanted — the plain bubble. */
+let PEEK_T = 0;
+function sPeek() {
+  if (!SES) return;
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return sSay("start");
+  sPeekOff(true);
+  const list = PSAY.start, el = document.createElement("div");
+  el.id = "s-peek"; el.className = "s-peek"; el.setAttribute("role", "status");
+  el.innerHTML = `<div class="peek-cat">${catSVG({ pose: "wave", look: catLook() })}</div><div class="peek-bubble">${esc(list[(SES.sayN = (SES.sayN || 0) + 1) % list.length])}</div>`;
+  sessionEl.appendChild(el);
+  CatLife.scan();
+  PEEK_T = setTimeout(sPeekOff, 3000);
+}
+function sPeekOff(now) {
+  const el = $("s-peek"); if (!el) return;
+  clearTimeout(PEEK_T);
+  if (now === true) return el.remove();
+  if (el.classList.contains("out")) return;
+  el.classList.add("out"); setTimeout(() => el.remove(), 420);
+}
+sessionEl.addEventListener("pointerdown", () => sPeekOff(), { passive: true });
+/* Leaving an unfinished practice: Pamuk asks to stay (the XP comes only at the end) */
+function quitAsk() {
+  if (!SES || SES.done || !(SES.i > 0 || SES.answered)) return closeSession();
+  const left = SES.items.length - SES.i - (SES.answered ? 1 : 0);
+  openSheet(`<div class="quit-sheet"><div class="quit-cat">${catSVG({ pose: "sit", cls: "mascot", look: catLook() })}</div>
+    <h2>Ketmang, ozgina qoldi!</h2>
+    <p class="muted">${left > 0 ? `Yana ${left} ta savol qoldi. ` : ""}Hozir chiqsangiz, bu mashq uchun XP berilmaydi.</p>
+    <button class="btn btn-grad btn-block" data-act="quit-stay">Davom etaman</button>
+    <button class="btn btn-ghost btn-block" data-act="quit-go">Baribir chiqish</button></div>`);
+  setTimeout(() => CatLife.mood($("sheet").querySelector(".quit-cat .cat"), "plead", 0), 150);
+}
 /* Answer streak inside one practice (combo): 3, 5, 10… right answers in a row get a badge, a brighter sound and a glowing bar */
 const COMBO_AT = n => n === 3 || n === 5 || (n >= 10 && n % 5 === 0);
 function comboShow(n) {
@@ -4629,7 +4673,9 @@ function sMood(m) {
   // The question card answers too: a little hop for right, a shake for wrong (choice buttons have their own)
   const card = stage.querySelector(".q-card");
   if (card) { card.classList.remove("hop", "shake"); void card.offsetWidth; card.classList.add(ok ? "hop" : "shake"); }
-  CatLife.mood(sCat(), m, ok ? 1000 : 1600);
+  sPeekOff();
+  // A streak milestone: starry eyes
+  CatLife.mood(sCat(), hot ? "wow" : m, hot ? 1700 : ok ? 1000 : 1600);
 }
 function good() { tick(); const w = SES.items[SES.i]; SES.right++; skillLog(SES.sk, true); grade(w, true); lsmHit(w, SES.m); sMood("happy"); }
 function bad() {
@@ -4703,7 +4749,7 @@ function renderResult() {
   </div>`;
   CatLife.scan();
   countUp(stage.querySelector("[data-count]"));
-  setTimeout(() => CatLife.mood(stage.querySelector(".cat"), r >= 0.7 ? "happy" : "sad", 1500), 250);
+  setTimeout(() => CatLife.mood(stage.querySelector(".cat"), r >= 0.9 ? "wow" : r >= 0.7 ? "happy" : "sad", r >= 0.9 ? 2600 : 1500), 250);
   setTimeout(celebrateQueued, 900);
   foot.innerHTML = `<button class="btn btn-ghost" data-act="close-session">Yopish</button>${SES.mode === "gx" ? (() => { const nx = GX_CODES[GX_CODES.indexOf(SES.u) + 1]; return nx ? `<button class="btn btn-grad" data-act="gx-start" data-c="${nx}">Keyingi: ${esc(nx)}</button>` : ""; })() : ["review", "mistakes", "gxm", "lmis", "smis"].includes(SES.mode) ? "" : `<button class="btn btn-grad" data-act="again">Yana mashq</button>`}`;
 }
@@ -4859,7 +4905,9 @@ function onAct(e) {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button class="btn btn-ghost" data-act="go" data-to="settings">Bekor qilish</button><button class="btn btn-danger" data-act="delete-yes">Ha, oʻchirish</button></div></div>`;
   }
   else if (act === "delete-yes") deleteAccount(b);
-  else if (act === "close-session") closeSession();
+  else if (act === "close-session") quitAsk();
+  else if (act === "quit-stay") closeSheet();
+  else if (act === "quit-go") { closeSheet(true); closeSession(); }
   else if (act === "again") startSession(SES.mode, SES.u);
   else if (act === "mic") micToggle();
   else if (act === "ls-play") speak(b.dataset.t, null, b.dataset.slow ? 0.55 : 0.85);

@@ -98,9 +98,11 @@ function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "", 
         <circle r="21" fill="url(#${id("ir")})"/>
         <circle r="21" fill="none" stroke="${CAT_C.irisRim}" stroke-opacity=".55" stroke-width="2"/>
         <g class="cat-pupil"><ellipse rx="10.5" ry="12" fill="#0a0614"/></g>
-        <circle cx="7.5" cy="-8.5" r="5.4" fill="#fff"/>
-        <circle cx="-7" cy="8.5" r="2.3" fill="#fff" fill-opacity=".85"/>
+        <circle class="cat-hl" cx="7.5" cy="-8.5" r="5.4" fill="#fff"/>
+        <circle class="cat-hl" cx="-7" cy="8.5" r="2.3" fill="#fff" fill-opacity=".85"/>
+        <g class="cat-spark" fill="#fff"><path d="M7 -17l2.6 6.4 6.4 2.6-6.4 2.6-2.6 6.4-2.6-6.4-6.4-2.6 6.4-2.6z"/><path d="M-8 4l1.5 3.5 3.5 1.5-3.5 1.5-1.5 3.5-1.5-3.5-3.5-1.5 3.5-1.5z"/></g>
       </g>
+      <g clip-path="url(#${id("ec")})"><g class="cat-well"><ellipse cy="30" rx="26" ry="13" fill="#8fd6ff" fill-opacity=".8"/><path d="M-15 21q15-5 30 0" stroke="#fff" stroke-opacity=".85" stroke-width="2" fill="none" stroke-linecap="round"/></g></g>
       <g clip-path="url(#${id("ec")})">
         <g class="cat-lid"><rect x="-26" y="-80" width="52" height="54" fill="${CAT_C.lid}"/><path d="M-22 -26Q0 -19 22 -26" stroke="${CAT_C.line}" stroke-width="3" fill="${CAT_C.lid}" stroke-linecap="round"/></g>
       </g>
@@ -119,9 +121,22 @@ function catSVG({ pose = "sit", acc = null, cls = "", lite = false, label = "", 
 ${pose === "cheer" ? [74, 166].map(x => `<ellipse cx="${x}" cy="220" rx="8" ry="5.5" fill="url(#${id("pd")})"/><ellipse cx="${x - 10}" cy="213" rx="3" ry="3.4" fill="url(#${id("pd")})"/><ellipse cx="${x}" cy="210.5" rx="3" ry="3.4" fill="url(#${id("pd")})"/><ellipse cx="${x + 10}" cy="213" rx="3" ry="3.4" fill="url(#${id("pd")})"/>`).join("") : `
       <path d="M60 210q4 9 0 16M72 208q4 10 0 18M160 208q-4 10 0 18M172 210q-4 9 0 16" stroke="${CAT_C.furDeep}" stroke-opacity=".35" stroke-width="2" fill="none" stroke-linecap="round"/>`}
       <path d="M44 168q10 3 18-2M40 180q10 4 20-1M196 168q-10 3-18-2M200 180q-10 4-20-1" stroke="${CAT_C.furDeep}" stroke-opacity=".3" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-      ${holds ? "" : `<g ${fur}><ellipse cx="96" cy="182" rx="18" ry="13" fill="url(#${id("fg")})"/>${pose === "wave" ? "" : `<ellipse cx="144" cy="182" rx="18" ry="13" fill="url(#${id("fg")})"/>`}</g>`}
+      ${holds ? "" : `<g class="cat-fpaws" ${fur}><ellipse cx="96" cy="182" rx="18" ry="13" fill="url(#${id("fg")})"/>${pose === "wave" ? "" : `<ellipse cx="144" cy="182" rx="18" ry="13" fill="url(#${id("fg")})"/>`}</g>`}
     </g>
     <ellipse cx="120" cy="160" rx="66" ry="13" fill="${CAT_C.furDeep}" opacity=".35" filter="url(#${id("sb")})"/>`;
+  // (the invisible rects widen the filtered groups: a filter region is measured without the stroke)
+  // The tail sits on the free side: left when the right side holds the waving arm, a wand or a diploma
+  const tailLeft = pose === "wave" || L.has("wand") || L.has("diploma");
+  const tail = head || pose === "cheer" ? "" : `
+    <g class="cat-tail${tailLeft ? " left" : ""}"${tailLeft ? ' transform="matrix(-1 0 0 1 240 0)"' : ""}>
+      <g class="cat-tail-a">
+        <g ${fur}><rect x="166" y="168" width="80" height="66" fill="none"/><path d="M184 210Q216 214 227 186" stroke="url(#${id("tg")})" stroke-width="20" fill="none" stroke-linecap="round"/></g>
+        <g class="cat-tail-b">
+          <g ${fur}><rect x="202" y="130" width="50" height="76" fill="none"/><path d="M227 186Q235 164 221 148" stroke="url(#${id("tg")})" stroke-width="19" fill="none" stroke-linecap="round"/></g>
+          <path d="M229 170Q231 158 222 149" stroke="${CAT_C.furHi}" stroke-opacity=".5" stroke-width="5" fill="none" stroke-linecap="round"/>
+        </g>
+      </g>
+    </g>`;
   const arm = pose === "wave" ? `
     <g class="cat-arm">
       <g ${fur}>
@@ -182,6 +197,7 @@ ${pose === "cheer" ? [74, 166].map(x => `<ellipse cx="${x}" cy="220" rx="8" ry="
     <radialGradient id="${id("ir")}" cx="50%" cy="64%" r="62%"><stop offset="0" stop-color="${CAT_C.irisHi}"/><stop offset=".45" stop-color="${CAT_C.iris}"/><stop offset=".85" stop-color="${CAT_C.irisLo}"/><stop offset="1" stop-color="${CAT_C.irisRim}"/></radialGradient>
     <radialGradient id="${id("pd")}" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="${CAT_C.padHi}"/><stop offset="1" stop-color="${CAT_C.pad}"/></radialGradient>
     <clipPath id="${id("ec")}"><circle r="23"/></clipPath>
+    <linearGradient id="${id("tg")}" gradientUnits="userSpaceOnUse" x1="184" y1="214" x2="226" y2="146"><stop offset="0" stop-color="${CAT_C.furLo}"/><stop offset=".55" stop-color="${CAT_C.fur}"/><stop offset="1" stop-color="${CAT_C.furHi}"/></linearGradient>
     <filter id="${id("sb")}" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
     ${L.has("crown") ? `<linearGradient id="${id("gd")}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe58a"/><stop offset="1" stop-color="#f2a90f"/></linearGradient>` : ""}
     ${L.has("aura") ? `<radialGradient id="${id("au")}"><stop offset=".35" stop-color="#ffd54a" stop-opacity=".55"/><stop offset="1" stop-color="#ffd54a" stop-opacity="0"/></radialGradient>` : ""}
@@ -190,13 +206,15 @@ ${pose === "cheer" ? [74, 166].map(x => `<ellipse cx="${x}" cy="220" rx="8" ry="
   ${part("aura")}
   ${stars}
   ${head ? "" : part("cape")}
+  ${tail}
   ${body}
   ${head || holds ? "" : part("diploma") + part("wand")}
   ${!head && L.has("cape") ? catAcc("ermine", id) : ""}
   ${part("tie")}
   <g class="cat-head">
+    ${ears === "up" ? `<g class="cat-ear cat-ear-l"><path ${fur} d="M44 92Q36 38 60 16Q86 28 110 52Z" fill="url(#${id("fg")})"/></g><g class="cat-ear cat-ear-r"><path ${fur} d="M196 92Q204 38 180 16Q154 28 130 52Z" fill="url(#${id("fg")})"/></g>` : ""}
     <g ${fur}>
-      ${ears === "up" ? `<path d="M44 92Q36 38 60 16Q86 28 110 52Z" fill="url(#${id("fg")})"/><path d="M196 92Q204 38 180 16Q154 28 130 52Z" fill="url(#${id("fg")})"/>`
+      ${ears === "up" ? ""
         : `<path d="M54 70q2-28 32-30q4 2 2 8q-10 14-28 28z" fill="url(#${id("fg")})"/>
       <path d="M186 70q-2-28-32-30q-4 2-2 8q10 14 28 28z" fill="url(#${id("fg")})"/>`}
       <ellipse cx="120" cy="104" rx="82" ry="64" fill="url(#${id("fg")})"/>
@@ -204,8 +222,8 @@ ${pose === "cheer" ? [74, 166].map(x => `<ellipse cx="${x}" cy="220" rx="8" ry="
       <ellipse cx="184" cy="124" rx="28" ry="22" fill="url(#${id("fg")})"/>
     </g>
     ${lite ? "" : furStrokes(120, 104, 78, 60, 170, 11)}
-    ${ears === "up" ? `<path d="M56 66Q54 40 64 28Q82 38 96 52Z" fill="${CAT_C.furDeep}" opacity=".55"/><path d="M184 66Q186 40 176 28Q158 38 144 52Z" fill="${CAT_C.furDeep}" opacity=".55"/>
-    <path d="M62 54l6-8M68 58l7-9M178 54l-6-8M172 58l-7-9" stroke="${CAT_C.furHi}" stroke-opacity=".8" stroke-width="2" stroke-linecap="round"/>`
+    ${ears === "up" ? `<g class="cat-ear cat-ear-l"><path d="M56 66Q54 40 64 28Q82 38 96 52Z" fill="${CAT_C.furDeep}" opacity=".55"/><path d="M62 54l6-8M68 58l7-9" stroke="${CAT_C.furHi}" stroke-opacity=".8" stroke-width="2" stroke-linecap="round"/></g>
+    <g class="cat-ear cat-ear-r"><path d="M184 66Q186 40 176 28Q158 38 144 52Z" fill="${CAT_C.furDeep}" opacity=".55"/><path d="M178 54l-6-8M172 58l-7-9" stroke="${CAT_C.furHi}" stroke-opacity=".8" stroke-width="2" stroke-linecap="round"/></g>`
       : `<path d="M62 62q10-12 24-16M178 62q-10-12-24-16" stroke="${CAT_C.furDeep}" stroke-opacity=".4" stroke-width="2.4" fill="none" stroke-linecap="round"/>`}
     <ellipse cx="120" cy="131" rx="28" ry="18" fill="${CAT_C.muzzle}" opacity=".55" filter="url(#${id("sb")})"/>
     <path class="cat-brow" d="M70 70q16-9 32-1" stroke="${CAT_C.furDeep}" stroke-opacity=".45" stroke-width="3.5" fill="none" stroke-linecap="round"/>
@@ -213,7 +231,7 @@ ${pose === "cheer" ? [74, 166].map(x => `<ellipse cx="${x}" cy="220" rx="8" ry="
     ${eye(86, "l")}${eye(154, "r")}
     <path d="M113 122q7-4 14 0q-3 7-7 8q-4-1-7-8z" fill="${CAT_C.nose}"/>
     <path class="cat-mouth" d="M120 130v4M120 134q-6 6-12 1M120 134q6 6 12 1" stroke="${CAT_C.line}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    ${pose === "cheer" ? `<path class="cat-grin" d="M107 133q13 17 26 0z" fill="${CAT_C.line}"/><path d="M112 139q8 6 16 0q-8-3-16 0z" fill="#ef7e8c"/>` : ""}
+    <g class="cat-open"><path class="cat-grin" d="M107 133q13 17 26 0z" fill="${CAT_C.line}"/><path d="M112 139q8 6 16 0q-8-3-16 0z" fill="#ef7e8c"/></g>
     <path d="M96 132l-38-6M96 138l-36 2M144 132l38-6M144 138l36 2" stroke="#dfe6ff" stroke-opacity=".55" stroke-width="1.3" stroke-linecap="round"/>
     ${part("glasses")}
     ${hat ? catAcc(hat, id) : ""}
@@ -221,6 +239,7 @@ ${pose === "cheer" ? [74, 166].map(x => `<ellipse cx="${x}" cy="220" rx="8" ry="
   </g>
   ${hands}
   ${arm}
+  ${holds ? "" : `<g class="cat-wowpaws">${paw(88, 156, 17, 14)}${pose === "wave" ? "" : paw(152, 156, 17, 14)}</g>`}
   ${pose === "wave" ? `<g class="cat-cover">
     <g ${fur}><ellipse cx="88" cy="106" rx="30" ry="24" fill="url(#${id("fg")})"/><ellipse cx="152" cy="106" rx="30" ry="24" fill="url(#${id("fg")})"/></g>
     <path d="M76 92v10M88 89v11M100 92v10M140 92v10M152 89v11M164 92v10" stroke="${CAT_C.furDeep}" stroke-opacity=".45" stroke-width="2.2" stroke-linecap="round"/>
@@ -254,7 +273,7 @@ const CatLife = (() => {
   function wander(svg) {
     if (!svg.isConnected) return;
     svg._lookT = setTimeout(() => {
-      if (Date.now() - lastMove > 2500 && !svg.classList.contains("sad")) {
+      if (Date.now() - lastMove > 2500 && !svg.classList.contains("sad") && !svg.classList.contains("plead") && !svg.classList.contains("wow")) {
         const r = Math.random();
         if (r < 0.35) look(svg, 0, 0);
         else look(svg, (Math.random() - 0.5) * 13, (Math.random() - 0.4) * 9);
@@ -265,7 +284,7 @@ const CatLife = (() => {
   function follow() {
     if (!pointer) return;
     cats.forEach(svg => {
-      if (!svg.isConnected || svg.classList.contains("sad")) return;
+      if (!svg.isConnected || svg.classList.contains("sad") || svg.classList.contains("plead") || svg.classList.contains("wow")) return;
       const b = svg.getBoundingClientRect();
       if (!b.width || b.bottom < 0 || b.top > innerHeight) return;
       const vb = svg.viewBox.baseVal, sx = b.width / vb.width;
@@ -291,24 +310,46 @@ const CatLife = (() => {
     if (svg && !svg.closest("button, a")) mood(svg, "happy", 1100);
   });
 
+  // Little habits of a calm cat: an ear twitches, the head tilts with curiosity (only cats big enough to be seen)
+  const MOODS = ["happy", "sad", "hop", "wow", "plead"];
+  const busy = svg => MOODS.some(m => svg.classList.contains(m)) || svg.classList.contains("dance") || svg.classList.contains("shy");
+  function fidget(svg) {
+    if (!svg.isConnected) return;
+    svg._fidT = setTimeout(() => {
+      if (!busy(svg) && svg.getBoundingClientRect().width >= 56) {
+        const r = Math.random(), c = r < 0.4 ? "tw-l" : r < 0.8 ? "tw-r" : "tilt";
+        svg.classList.add(c);
+        setTimeout(() => svg.classList.remove(c), c === "tilt" ? 1700 : 560);
+        if (c !== "tilt" && Math.random() < 0.3) setTimeout(() => { svg.classList.add(c === "tw-l" ? "tw-r" : "tw-l"); setTimeout(() => svg.classList.remove("tw-l", "tw-r"), 560); }, 240);
+      }
+      fidget(svg);
+    }, 2600 + Math.random() * 5200);
+  }
   function scan(root = document) {
     root.querySelectorAll("svg.cat").forEach(svg => {
       if (cats.has(svg)) return;
       cats.add(svg);
       schedule(svg);
-      if (!reduced) wander(svg);
+      // Cats on one page do not move in step
+      svg.style.setProperty("--cd", (-Math.random() * 5).toFixed(2) + "s");
+      if (!reduced) { wander(svg); fidget(svg); }
     });
-    cats.forEach(svg => { if (!svg.isConnected) { clearTimeout(svg._blinkT); clearTimeout(svg._lookT); cats.delete(svg); } });
+    cats.forEach(svg => { if (!svg.isConnected) { clearTimeout(svg._blinkT); clearTimeout(svg._lookT); clearTimeout(svg._fidT); cats.delete(svg); } });
   }
+  // happy — a joyful hop; sad — a tear; wow — starry eyes, paws to the cheeks; plead — big wet eyes, ears down.
+  // ms = 0 keeps the mood until the next one
   function mood(svg, m, ms = 1200) {
     if (!svg) return;
-    svg.classList.remove("happy", "sad", "hop");
+    svg.classList.remove(...MOODS, "tw-l", "tw-r", "tilt");
     void svg.getBoundingClientRect();
     svg.classList.add(m);
-    if (m === "happy") svg.classList.add("hop");
+    if (m === "happy" || m === "wow") svg.classList.add("hop");
     if (m === "sad") look(svg, 0, 6);
+    if (m === "plead") look(svg, 0, -3);
+    if (m === "wow") look(svg, 0, -1);
     clearTimeout(svg._moodT);
-    svg._moodT = setTimeout(() => { svg.classList.remove(m, "hop"); look(svg, 0, 0); }, ms);
+    if (m === "happy" || m === "wow") setTimeout(() => svg.classList.remove("hop"), 800);
+    if (ms) svg._moodT = setTimeout(() => { svg.classList.remove(m, "hop"); look(svg, 0, 0); }, ms);
   }
   return { scan, mood, look };
 })();
