@@ -40,6 +40,7 @@ test("vocabulary base: 3000+ words in the app, level pages, pack pages, homonyms
 test("vocabulary base: every practice mode works on a pack and learning is shared with other lessons", async () => {
   const { page, errors } = await openApp(browser, "#lugat-a1-zaman");
   await page.click("[data-act=modes]");
+  await page.evaluate(() => { document.querySelector("#sheet details.mode-more").open = true; });
   await page.click('[data-act=start][data-mode="quiz"]');
   assert.match(await answerAllRight(page), /^(\d+)\/\1$/);
   await page.evaluate(() => closeSession()); await closeCelebrate(page);

@@ -1259,12 +1259,14 @@ function wordRow(w, showUnit) {
 }
 function modeSheet(u, title) {
   openSheet(`<h3>${esc(title)}</h3>
+    <button class="mode glass mode-mix" data-act="start" data-mode="mix" data-u="${u}"><span class="ico orange-t">${ICON.spark}</span><span><b>Mashq qilish</b><span>Bitta mashqda hammasi: maʼno, yozish, tinglash, diktant va talaffuz</span></span>${ICON.chev}</button>
+    <details class="mode-more"><summary>Faqat bitta turdagi mashq</summary>
     <button class="mode glass" data-act="start" data-mode="cards" data-u="${u}"><span class="ico violet-t">${ICON.cards}</span><span><b>Kartochkalar</b><span>Koʻring, agʻdaring, eslang</span></span>${ICON.chev}</button>
     <button class="mode glass" data-act="start" data-mode="quiz" data-u="${u}"><span class="ico sky-t">${ICON.quiz}</span><span><b>Test</b><span>4 ta variantdan toʻgʻrisini tanlang</span></span>${ICON.chev}</button>
-    <button class="mode glass" data-act="start" data-mode="type" data-u="${u}"><span class="ico pink-t">${ICON.type}</span><span><b>Yozish</b><span>Turkcha yozing: ç, ş, ğ, ı tugmalari bor</span></span>${ICON.chev}</button>
+    <button class="mode glass" data-act="start" data-mode="type" data-u="${u}"><span class="ico pink-t">${ICON.type}</span><span><b>Yozish</b><span>Turkcha soʻzni harflardan yigʻing</span></span>${ICON.chev}</button>
     <button class="mode glass" data-act="start" data-mode="listen" data-u="${u}"><span class="ico violet-t">${ICON.ear}</span><span><b>Tinglab toping</b><span>Soʻzni eshitib, maʼnosini tanlang</span></span>${ICON.chev}</button>
     <button class="mode glass" data-act="start" data-mode="dict" data-u="${u}"><span class="ico pink-t">${ICON.type}</span><span><b>Diktant</b><span>Eshitganingizni yozing</span></span>${ICON.chev}</button>
-    <button class="mode glass" data-act="start" data-mode="say" data-u="${u}"><span class="ico green-t">${ICON.mic}</span><span><b>Talaffuz</b><span>${canListen() ? "Soʻzni ovoz chiqarib ayting, Pamuk tekshiradi" : "Bu brauzerda ishlamaydi: Chrome yoki Safari kerak"}</span></span>${ICON.chev}</button>`);
+    <button class="mode glass" data-act="start" data-mode="say" data-u="${u}"><span class="ico green-t">${ICON.mic}</span><span><b>Talaffuz</b><span>${canListen() ? "Soʻzni ovoz chiqarib ayting, Pamuk tekshiradi" : "Bu brauzerda ishlamaydi: Chrome yoki Safari kerak"}</span></span>${ICON.chev}</button></details>`);
 }
 
 /* ---------- Home ---------- */
@@ -1714,13 +1716,13 @@ function viewPractice() {
   const due = dueWords(), fresh = newWords(Math.min(newLeft(), NEW_PER_DAY)), items = due.slice(0, 20).concat(fresh);
   const acc = S.acc[1] ? pct(S.acc[0], S.acc[1]) : null, done = skToday();
   const stat = id => { const v = id === "s" ? S.pron : S.sk[id]; return v[1] ? `${pct(v[0], v[1])}% toʻgʻri` : "Hali boshlanmagan"; };
-  const SK_GO = { r: ['href="#oqish"', "Matnlar va savollar"], l: ['data-act="listen-modes"', "Tinglab toping · diktant · gaplar"], w: ['data-act="write-modes"', "Soʻz · diktant · erkin yozish"], s: ['data-act="speak-modes"', "Talaffuz · takrorlash · dialog"] };
+  const SK_GO = { r: ['href="#oqish"', "Matnlar va savollar"], l: ['data-act="sk-go" data-s="l"', "Soʻz · diktant · dialog gaplari"], w: ['data-act="sk-go" data-s="w"', "Harflardan yigʻish · diktant · qoidalar"], s: ['data-act="sk-go" data-s="s"', "Talaffuz · dialog gaplari"] };
   return `${topbar()}
   <div><h1 class="page-title">Mashq</h1><p class="sub">Har mashq yakunida XP beriladi. Bugun ${done.length}/4 koʻnikma mashq qilindi.</p></div>
 
   <button class="pcard ai" data-act="start" data-mode="review" ${items.length ? "" : "disabled"}>
     <div class="pcard-head"><b>${ICON.spark}Aqlli takrorlash</b><span>~${mins(items.length)} daq</span></div>
-    <p>${items.length ? "Unutilish arafasidagi soʻzlar va bugungi yangi soʻzlar. Nimani qachon takrorlashni tizim oʻzi tanlaydi." : "Bugungi reja bajarildi. Ertaga yangi soʻzlar va takrorlashlar keladi."}</p>
+    <p>${items.length ? "Unutilish arafasidagi va bugungi yangi soʻzlar — bitta mashqda 4 koʻnikma: maʼno, yozish, tinglash, talaffuz. Nimani qachon takrorlashni tizim oʻzi tanlaydi." : "Bugungi reja bajarildi. Ertaga yangi soʻzlar va takrorlashlar keladi."}</p>
     <div class="facts">
       <span>${ICON.list}${due.length} ta takrorlash · ${fresh.length} ta yangi soʻz</span>
       <span>${ICON.quiz}${acc === null ? "Hali javoblar yoʻq" : `Toʻgʻri javoblar: ${acc}%`}</span>
@@ -1733,6 +1735,7 @@ function viewPractice() {
       const inner = `<span class="ico ${sk.c}-t">${ICON[sk.ico]}</span><b>${sk.uz}</b><small lang="tr">${sk.tr}</small><span class="sk-sub">${g[1]}</span><span class="sk-stat">${off ? "Bu brauzerda ishlamaydi" : stat(sk.id)}</span>${tip ? `<span class="tag violet-t sk-tip">Tavsiya</span>` : ""}${on ? `<span class="sk-done" aria-label="Bugun bajarildi">${ICON.check}</span>` : ""}`;
       return g[0].startsWith("href") ? `<a class="sk-tile glass${tip ? " tip" : ""}" ${g[0]}>${inner}</a>` : `<button class="sk-tile glass${tip ? " tip" : ""}" ${g[0]} ${off ? "disabled" : ""}>${inner}</button>`; }).join(""); })()}</div>
     ${canListen() ? "" : `<p class="muted" style="margin-top:8px">Gapirish uchun saytni Chrome (Android, kompyuter) yoki Safari (iPhone) da oching.</p>`}
+    <button class="link sk-more" data-act="modes-all">Alohida mashq turlari</button>
   </section>
 
   <div class="pcard glass">
@@ -1744,10 +1747,7 @@ function viewPractice() {
 
   ${mistakesCard()}
 
-  <a class="pcard glass" href="#lugat" style="color:inherit;text-decoration:none">
-    <div class="pcard-head"><b>${ICON.cards}Mavzu boʻyicha soʻz mashqi</b>${ICON.chev}</div>
-    <p class="muted">Lugʻat boʻlimida darsni yoki mavzuni tanlang: kartochka, test, yozish, tinglash va talaffuz.</p>
-  </a>`;
+`;
 }
 
 /* ---------- Leaderboard ---------- */
@@ -3002,13 +3002,28 @@ function startSession(mode, u) {
     if (!canListen()) { toast("Bu brauzer nutqni tanimaydi. Chrome yoki Safari'da oching"); return; }
     items = mode === "say" ? sayItems(u) : mode === "sayline" ? lineItems(u) : mode === "oral" ? oralItems(u) : roleItems(u);
     if (!items.length) { toast("Talaffuz uchun soʻz topilmadi"); return; }
+  } else if (mode === "mix-l" || mode === "mix-w" || mode === "mix-s") {
+    const sk = mode.slice(4);
+    if (sk === "l" && !canSpeak()) { toast("Bu brauzerda ovoz yoʻq"); return; }
+    if (sk === "s" && !canListen()) { toast("Bu brauzer nutqni tanimaydi. Chrome yoki Safari'da oching"); return; }
+    if (sk === "w") needGram();
+    const words = shuffle(pickPool(u || "all").filter(w => sayable(w) && typeable(w)).sort((a, b) => known(a) - known(b)).slice(0, 30)).slice(0, 7);
+    const forms = { l: ["listen", "dict"], w: ["type", "dict"], s: ["say"] }[sk];
+    items = words.map((w, i) => Object.assign({}, w, { _m: forms[i % forms.length] }));
+    // Sentences: course dialog lines to hear or repeat, rule exercises to write
+    if (sk === "l") items = items.concat(shuffle(lsItems("auto")).slice(0, 3));
+    if (sk === "s") items = items.concat(lineItems("auto").slice(0, 3).map(x => Object.assign(x, { _m: "sayline" })));
+    if (sk === "w") { const lv = kNext().level, ex = []; GX_CODES.filter(c => c.startsWith(lv)).forEach(c => BX[c].forEach((x, i) => { if (x.t === "t") ex.push({ gx: true, code: c, i, ex: x }); })); items = items.concat(shuffle(ex).slice(0, 3)); }
+    items = shuffle(items);
+    if (!items.length) { toast("Mashq uchun material topilmadi"); return; }
   } else {
     let pool = pickPool(u);
     if (mode === "type") pool = pool.filter(typeable);
     // Least-known words first, with a little randomness
     items = shuffle(shuffle(pool).sort((a, b) => known(a) - known(b)).slice(0, 10));
+    if (mode === "mix") items = mixItems(items);
   }
-  SES = { mode, u, items, i: 0, right: 0, xp: 0, combo: 0, best: 0, t0: Date.now(), answered: false, re: new Set(), skAll: new Set(), times: [], last: Date.now(), had: ACH.filter(achDone).map(a => a.id) };
+  SES = { mode, u, items, weak: mode === "review" || mode === "mistakes" ? mixWeak() : null, mixOff: Math.floor(Math.random() * 5), i: 0, right: 0, xp: 0, combo: 0, best: 0, t0: Date.now(), answered: false, re: new Set(), skAll: new Set(), times: [], last: Date.now(), had: ACH.filter(achDone).map(a => a.id) };
   sessionEl.hidden = false;
   document.body.style.overflow = "hidden";
   delete sessionEl.dataset.combo; { const cb = $("s-combo"); if (cb) cb.remove(); const sb = $("s-say"); if (sb) sb.remove(); }
@@ -3054,13 +3069,36 @@ function renderStep() {
   else if (m === "dict") renderDict(w);
   else renderType(w);
 }
-// Review sessions mix modes: new words are shown as cards, known ones are tested
+/* One mixed practice (2026-11-14, foydalanuvchi talabi): instead of separate exercise kinds, a session gives every
+   word in another form — the meaning test (reading), writing with the letter bank, listening, dictation and saying it
+   (the four skills) — the learner's weakest skill a little more often. Modes: "mix" (a lesson, a word pack, "all"),
+   "mix-l" / "mix-w" / "mix-s" (one skill: its word forms plus course sentences or rule exercises); review and
+   mistakes sessions mix the same way (new words still start as cards). */
+const MIX_ORDER = ["quiz", "listen", "type", "say", "dict"];
+const MIX_SK = { quiz: "r", listen: "l", type: "w", say: "s", dict: "l" };
+function mixModes(w) {
+  const out = ["quiz"];
+  if (typeable(w)) out.push("type");
+  if (canSpeak() && sayable(w)) { out.push("listen"); if (typeable(w)) out.push("dict"); }
+  if (canListen() && sayable(w)) out.push("say");
+  return out;
+}
+function mixPick(w, i, weak) {
+  const ms = mixModes(w);
+  // A new word: recognise it (meaning, hearing) or build it from the letter bank — no dictation or speaking yet
+  if (!srs(w)) { const nw = ["quiz", "listen", "type"].filter(m => ms.includes(m)); return nw[i % nw.length]; }
+  const want = weak && Object.keys(MIX_SK).find(m => MIX_SK[m] === weak && ms.includes(m));
+  if (want && i % 3 === 0) return want;
+  for (let k = 0; k < MIX_ORDER.length; k++) { const m = MIX_ORDER[(i + k) % MIX_ORDER.length]; if (ms.includes(m)) return m; }
+  return "quiz";
+}
+const mixWeak = () => (recs().find(x => x.sk) || {}).sk;
+const mixItems = (words, weak = mixWeak()) => words.map((w, i) => Object.assign({}, w, { _m: mixPick(w, i, weak) }));
 function itemMode(w) {
   if (w._m) return w._m;
   if (SES.mode !== "review" && SES.mode !== "mistakes") return SES.mode;
-  const st = srs(w);
-  if (!st) return "cards";
-  return typeable(w) && (st.r >= 2 || (SES.mode === "mistakes" && Math.random() < 0.4)) && Math.random() < 0.5 ? "type" : "quiz";
+  if (!srs(w)) return "cards";
+  return mixPick(w, SES.i + (SES.mixOff || 0), SES.weak);
 }
 function renderCard(w) {
   SES.sk = ["r"];
@@ -3185,11 +3223,19 @@ function viewSkills() {
   <div class="chart-card glass"><h3>Soʻnggi 4 hafta</h3><span class="range">toʻgʻri javoblar</span>${skWeeksChart()}</div>
   <div class="tip glass">${ICON.bulb}<div><b>Muvozanat qanday hisoblanadi?</b>Soʻnggi 14 kunda eng kam toʻgʻri javob berilgan koʻnikma eng koʻp toʻgʻri javob berilganiga boʻlinadi. 80% dan yuqori — yaxshi muvozanat. Har kuni toʻrttala koʻnikmadan kamida bitta mashq qiling.</div></div>`;
 }
+// A skill tile (and a skill tip): straight into that skill's mixed practice; reading opens the texts
 function skGo(id) {
-  if (id === "r") { const u = kNext(); KTAB = u.reading ? "read" : "vocab"; go(kHash(u.id)); }
-  else if (id === "l") listenSheet();
-  else if (id === "w") writeSheet();
-  else speakSheet();
+  if (id === "r") go("oqish");
+  else if (id === "s" && !canListen()) speakSheet();
+  else if (id === "l" && !canSpeak()) listenSheet();
+  else startSession("mix-" + id, "all");
+}
+// Every separate exercise kind of the three skills, in one sheet (Mashq → «Alohida mashq turlari»)
+function modesAllSheet() {
+  openSheet(`<h3>Alohida mashq turlari</h3><p class="sub" style="margin:-4px 0 10px">Aralash mashqdan tashqari, bitta turni alohida ham mashq qilish mumkin.</p>
+    <button class="mode glass" data-act="listen-modes"><span class="ico violet-t">${ICON.ear}</span><span><b>Tinglash</b><span>Tinglab toping · diktant · dialog gaplari · xatolar</span></span>${ICON.chev}</button>
+    <button class="mode glass" data-act="write-modes"><span class="ico pink-t">${ICON.type}</span><span><b>Yozish</b><span>Soʻz yozish · diktant · erkin yozish tekshiruvi</span></span>${ICON.chev}</button>
+    <button class="mode glass" data-act="speak-modes"><span class="ico green-t">${ICON.mic}</span><span><b>Gapirish</b><span>Talaffuz · gapni takrorlash · ogʻzaki javob · rolli dialog</span></span>${ICON.chev}</button>`);
 }
 /* ---------- Listening (Dinleme) ----------
    Three exercises built on the browser's text-to-speech: hear a word and pick its meaning, dictation,
@@ -4549,8 +4595,8 @@ function bad() {
 // Which reward a practice session earns
 function sesKind(mode) {
   if (mode === "gx" || mode === "gxm") return "grammar";
-  if (["listen", "dict", "lsent", "lmis"].includes(mode)) return "listening";
-  if (["say", "sayline", "oral", "role", "smis"].includes(mode)) return "speaking";
+  if (["listen", "dict", "lsent", "lmis", "mix-l"].includes(mode)) return "listening";
+  if (["say", "sayline", "oral", "role", "smis", "mix-s"].includes(mode)) return "speaking";
   return "vocab";
 }
 function nextStep() { micStop(true); SES.i++; renderStep(); }
@@ -4771,6 +4817,7 @@ function onAct(e) {
   else if (act === "ls-check") lsCheck();
   else if (act === "ls-skip") lsCheck(true);
   else if (act === "listen-modes") listenSheet();
+  else if (act === "modes-all") modesAllSheet();
   else if (act === "speak-modes") speakSheet();
   else if (act === "write-modes") writeSheet();
   else if (act === "wr-check") wrRun(b.dataset.id, b.dataset.key);

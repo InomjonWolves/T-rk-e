@@ -1734,3 +1734,11 @@ html.native input, html.native textarea, html.native [contenteditable="true"] { 
 .bank-kbd { align-self: center; font-size: 14px; }
 .bank-box.kbd .bank { display: none; }
 #session[data-r] .bank .bk { pointer-events: none; opacity: 0.6; }
+
+/* One mixed practice (2026-11-14): the main button of a word set, the single kinds folded under it */
+.mode-mix { border: 2px solid var(--accent); }
+.mode-more { margin-top: 4px; }
+.mode-more > summary { cursor: pointer; padding: 10px 4px; font-weight: 700; color: var(--accent-ink); }
+.mode-more[open] > summary { margin-bottom: 6px; }
+.mode-more .mode + .mode { margin-top: 8px; }
+.sk-more { display: block; margin: 10px auto 0; font-size: 14px; }

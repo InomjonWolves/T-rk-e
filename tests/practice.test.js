@@ -63,7 +63,7 @@ test("speaking: words, sentences, oral answers and role play with a fake microph
 
 test("speech recognition missing: speaking buttons are disabled", async () => {
   const { page, errors } = await openApp(browser, "#practice", { noSR: true });
-  assert.equal(await page.evaluate(() => document.querySelector("[data-act=speak-modes]").disabled), true);
+  assert.equal(await page.evaluate(() => document.querySelector(".sk-tile[data-s=s]").disabled), true);
   assert.deepEqual(errors, []);
 });
 
@@ -144,6 +144,40 @@ test("letter bank: written answers are built from tiles — the answer's letters
   assert.equal(await page.getAttribute("#type-input", "inputmode"), "none", "the phone keyboard stays closed");
   await page.evaluate(() => document.querySelector("[data-act=bk-kbd]").click());
   assert.deepEqual(await page.evaluate(() => [$("type-input").getAttribute("inputmode"), $("type-form").classList.contains("kbd")]), ["text", true]);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("one mixed practice: a word set mixes the forms; review mixes the four skills; skill tiles start that skill's mix; no duplicate cards", async () => {
+  const { page, errors } = await openApp(browser, "#practice", { sr: true, state: { onb: 1, place: { applied: "C1" } } });
+  // Known words come in many forms (reading, writing, listening, speaking)
+  const kinds = await page.evaluate(() => {
+    ALL.slice(0, 60).forEach(w => { S.srs[w.tr] = { i: 3, e: 2.5, d: dayNum() - 1, r: 2, m: 0, w: 0 }; });
+    startSession("mix", "all"); const a = new Set(SES.items.map(x => x._m)); closeSession();
+    startSession("review"); const r = new Set(SES.items.map(() => 0).map((_, i) => { SES.i = i; return itemMode(SES.items[i]); })); SES.i = 0; closeSession();
+    return [a.size, r.size, [...r].every(m => ["quiz", "type", "listen", "dict", "say", "cards"].includes(m))];
+  });
+  assert.ok(kinds[0] >= 3, `mix forms: ${kinds[0]}`);
+  assert.ok(kinds[1] >= 3, `review forms: ${kinds[1]}`);
+  assert.equal(kinds[2], true);
+  for (const m of ["mix", "mix-l", "mix-w", "mix-s"]) {
+    await page.evaluate(() => { XP_FAST_MS = 0; });
+    await run(page, m, "all");
+    const n = await page.evaluate(() => SES.items.length);
+    assert.equal(await answerAllRight(page), `${n}/${n}`, m);
+  }
+  await page.evaluate(() => { closeSession(); ACH_QUEUE.length = 0; document.getElementById("celebrate").hidden = true; });
+  // Practice page: skill tiles start the mixed skill practice; the separate kinds sit in one sheet; no "by topic" card
+  await page.evaluate(() => { location.hash = "#practice"; route(); });
+  assert.equal(await page.evaluate(() => /Mavzu boʻyicha soʻz mashqi/.test(document.getElementById("app").textContent)), false);
+  await page.evaluate(() => document.querySelector('.sk-tile[data-s="w"]').click());
+  assert.equal(await page.evaluate(() => SES && SES.mode), "mix-w");
+  await page.evaluate(() => { closeSession(); document.querySelector('[data-act="modes-all"]').click(); });
+  assert.equal(await page.locator("#sheet .mode").count(), 3);
+  // A word set: the mixed practice first, the single kinds folded
+  await page.evaluate(() => { closeSheet(true); modeSheet("all", "Hammasi"); });
+  assert.equal(await page.getAttribute("#sheet .mode >> nth=0", "data-mode"), "mix");
+  assert.equal(await page.locator("#sheet details.mode-more .mode").count(), 6);
   assert.deepEqual(errors, []);
   await page.close();
 });

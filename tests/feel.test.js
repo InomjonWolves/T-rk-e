@@ -146,10 +146,10 @@ test("personal advice: the weakest skill, a hardly practised one, the fullest mi
   assert.match(r[0][1], /yozishda aniqlik 58%/);
   assert.match(r[1][1], /gapirish kam mashq qilindi/);
   assert.equal(await page.locator(".recs .rec-row").count(), 2);
-  // The tip opens the writing practice sheet
+  // The tip starts the mixed writing practice
   await page.evaluate(() => document.querySelector('.rec-row[data-id="sk-w"]').click());
-  await page.waitForSelector("#sheet:not([hidden])");
-  await page.evaluate(() => { closeSheet(true); location.hash = "#practice"; });
+  await page.waitForFunction(() => SES && SES.mode === "mix-w");
+  await page.evaluate(() => { closeSession(); ACH_QUEUE.length = 0; document.getElementById("celebrate").hidden = true; location.hash = "#practice"; });
   await page.waitForSelector(".sk-tile.tip");
   assert.match(await page.textContent(".sk-tile.tip"), /Yozish[\s\S]*Tavsiya/);
   // A full mistake book comes first when it is the biggest need; the result screen offers the next step
@@ -159,7 +159,7 @@ test("personal advice: the weakest skill, a hardly practised one, the fullest mi
   await answerAllRight(page);
   await page.waitForSelector(".rec-next");
   await page.evaluate(() => document.querySelector(".rec-next").click());
-  await page.waitForFunction(() => document.getElementById("session").hidden && !document.getElementById("sheet").hidden);
+  await page.waitForFunction(() => !document.getElementById("session").hidden && SES && SES.mode !== "quiz" || (document.getElementById("session").hidden && !document.getElementById("sheet").hidden));
   assert.deepEqual(errors, []);
   await page.close();
 });

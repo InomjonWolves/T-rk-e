@@ -67,7 +67,9 @@ test("practice: 4 skill tiles, one mistakes notebook with every kind of mistake"
   const { page, errors } = await openApp(browser, "#practice");
   assert.equal(await page.locator(".sk-tile").count(), 4);
   assert.ok(await page.locator('.sk-tile[href="#oqish"]').count());
-  for (const a of ["listen-modes", "write-modes", "speak-modes"]) assert.ok(await page.locator(`.sk-tile[data-act=${a}]`).count(), a);
+  // Listening, writing and speaking tiles start that skill's mixed practice (2026-11-14); the separate kinds are one sheet away
+  for (const k of ["l", "w", "s"]) assert.ok(await page.locator(`.sk-tile[data-act=sk-go][data-s=${k}]`).count(), k);
+  assert.ok(await page.locator('[data-act="modes-all"]').count());
   assert.match(await text(page), /Xatolar daftari[\s\S]*Hozircha boʻsh/);
   assert.doesNotMatch(await text(page), /Mavzular boʻyicha/, "topic list lives in Lugʻat now");
   await page.evaluate(() => {
