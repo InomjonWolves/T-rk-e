@@ -60,7 +60,7 @@ function page({ file, title, desc, crumbs, body, ld }) {
 ${body}
 </main>
 <footer><p>Türkçe Yoʻl — oʻzbek tilida turk tilini oʻrganish. 100% bepul, reklamasiz.</p>
-<p><a href="${up}kurs/">Kurs A1–C1</a> · <a href="${up}qoida/">Grammatika qoʻllanmasi</a> · <a href="${up}lugat/">Lugʻat A1–C1</a> · <a href="${up}oqish/">Oʻqish matnlari</a> · <a href="${up}maqola/">Maqolalar</a> · <a href="https://t.me/turkceyoluz">Telegram kanal</a> · <a href="${up}privacy.html">Maxfiylik siyosati</a></p></footer>
+<p><a href="${up}kurs/">Kurs A1–C1</a> · <a href="${up}qoida/">Grammatika qoʻllanmasi</a> · <a href="${up}lugat/">Lugʻat A1–C1</a> · <a href="${up}oqish/">Oʻqish matnlari</a> · <a href="${up}maqola/">Maqolalar</a> · <a href="https://t.me/turkceyoluz">Telegram kanal</a> · <a href="${up}biz-haqimizda.html">Biz haqimizda</a> · <a href="${up}shartlar.html">Foydalanish shartlari</a> · <a href="${up}privacy.html">Maxfiylik siyosati</a></p></footer>
 </body>
 </html>
 `;
@@ -252,7 +252,7 @@ ${a.blocks.map(b => block(b, "../")).join("\n")}
   });
 
   // ---- Sitemap
-  const urls = ["", "kurs/", "qoida/", "lugat/", "oqish/", "maqola/", ...arts.map(a => `maqola/${a.id}.html`), ...order.map(id => `kurs/${id}.html`), ...all.map(i => `qoida/${slug(i.code)}.html`), ...LUGAT.map(p => `lugat/${p.id}.html`), ...OQ.map(t => `oqish/${t.id}.html`), "privacy.html", "hisob-ochirish.html"];
+  const urls = ["", "kurs/", "qoida/", "lugat/", "oqish/", "maqola/", ...arts.map(a => `maqola/${a.id}.html`), ...order.map(id => `kurs/${id}.html`), ...all.map(i => `qoida/${slug(i.code)}.html`), ...LUGAT.map(p => `lugat/${p.id}.html`), ...OQ.map(t => `oqish/${t.id}.html`), "biz-haqimizda.html", "shartlar.html", "privacy.html", "hisob-ochirish.html"];
   out["sitemap.xml"] = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map(u => `  <url><loc>${SITE}${u}</loc></url>`).join("\n")}

@@ -53,3 +53,30 @@ test("pages Play asks for: the privacy policy covers the app, account deletion h
   assert.match(read("sitemap.xml"), /turkceyol\.web\.app\/hisob-ochirish\.html/);
   assert.match(read(".github/workflows/native.yml"), /gh release create ilova-latest out\/turkce-yol-ilova\.apk out\/turkce-yol-ilova\.aab/);
 });
+
+test("documents: a full privacy policy, terms of use and an about page — one template, linked from the app, the static pages and the sitemap", () => {
+  const p = read("privacy.html");
+  // What the policy has to answer: who, what, why, who sees it, where, how long, security, age, rights, changes and contact
+  for (const x of ["Kim javobgar", "Qanday maʼlumot saqlanadi", "Nima uchun kerak", "Kimga koʻrinadi", "Qayerda saqlanadi", "Qancha vaqt saqlanadi", "Xavfsizlik", "Yosh chegarasi", "Sizning huquqlaringiz", "Oʻzgarishlar va bogʻlanish", "MyMemory", "Haftalik liga natijasi"]) assert.ok(p.includes(x), x);
+  const docs = ["privacy.html", "shartlar.html", "biz-haqimizda.html", "hisob-ochirish.html"];
+  for (const f of docs) {
+    const d = read(f);
+    assert.match(d, /<script>\/\* Yagona manzil/, f);
+    assert.match(d, /<main class="doc">/, f);
+    assert.match(d, /theme-color" content="#0d1124"/, f);
+    assert.ok(!/<style>/.test(d), `${f}: styles live in pages.css`);
+    for (const g of docs) assert.ok(d.includes(`href="${g}"`), `${f} → ${g}`);
+    // A public issue tracker is no place for an e-mail address: the pages say so
+    assert.ok(!/pochtasini yozib murojaat/.test(d), f);
+  }
+  for (const x of ["Foydalanish qoidalari", "Kontent va mualliflik huquqi", "Kafolatlar va javobgarlik", "Amaldagi qonunchilik"]) assert.ok(read("shartlar.html").includes(x), x);
+  for (const x of ["Tamoyillarimiz", "Pamuk", "Bogʻlanish"]) assert.ok(read("biz-haqimizda.html").includes(x), x);
+  const app = read("app.js"), seo = read("kurs/a1-1.html"), map = read("sitemap.xml"), { FILES } = require("../tools/native-www.js");
+  for (const f of ["shartlar.html", "biz-haqimizda.html"]) {
+    assert.ok(app.includes(`href="${f}"`), `settings → ${f}`);
+    assert.ok(seo.includes(`${f}"`), `static footer → ${f}`);
+    assert.ok(map.includes("turkceyol.web.app/" + f), `sitemap → ${f}`);
+  }
+  for (const f of docs) assert.ok(FILES.includes(f), `${f} is packed into the app`);
+  assert.match(read("index.html"), /href="shartlar.html">foydalanish shartlari<\/a> va <a href="privacy.html">/);
+});

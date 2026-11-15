@@ -87,7 +87,7 @@ test("one address: the old GitHub Pages copy sends every page to the same page o
   // On the real address nothing happens
   assert.equal(run("index.html", "/", "#home", "turkceyol.web.app"), null);
   // No other address is offered anywhere on the site
-  for (const f of ["index.html", "app.js", "privacy.html", "sitemap.xml", "robots.txt", "manifest.webmanifest"]) {
+  for (const f of ["index.html", "app.js", "privacy.html", "shartlar.html", "biz-haqimizda.html", "hisob-ochirish.html", "sitemap.xml", "robots.txt", "manifest.webmanifest"]) {
     // (the verification e-mail really comes from noreply@t-rk-e.firebaseapp.com — that sender is not a site address)
     const t = read(f).replace(/<script>\/\* Yagona manzil[\s\S]*?<\/script>/, "").replace(/noreply@t-rk-e\.firebaseapp\.com/g, "");
     assert.ok(!/github\.io|firebaseapp\.com|t-rk-e\.web\.app/.test(t), `${f} mentions another address`);

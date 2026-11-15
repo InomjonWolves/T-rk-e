@@ -3,9 +3,9 @@
 // ASSETS in the background and waits; the page shows «Yangi versiya tayyor — Yangilash» (message "skip"), or the new
 // version starts the next time the app is opened. Other pages of the site (kurs/, qoida/…): network first.
 // The site's own font files and the Firebase SDK: cache first.
-const CACHE = "turkce-yol-v98";
+const CACHE = "turkce-yol-v99";
 const META = "ty-meta";
-const ASSETS = ["./", "./index.html", "./firebase-config.js", "./content.js", "./lugat.js", "./grammar.js", "./grammar-ex.js", "./course-core.js", "./course.js", "./app.js", "./cat.js", "./guide.js", "./oqish.js", "./placement.js", "./styles.css", "./fonts/onest-v1.woff2", "./privacy.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
+const ASSETS = ["./", "./index.html", "./firebase-config.js", "./content.js", "./lugat.js", "./grammar.js", "./grammar-ex.js", "./course-core.js", "./course.js", "./app.js", "./cat.js", "./guide.js", "./oqish.js", "./placement.js", "./styles.css", "./fonts/onest-v1.woff2", "./privacy.html", "./shartlar.html", "./biz-haqimizda.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", e => {
   // cache: "reload" skips the browser's HTTP cache, so the new cache really gets the new files

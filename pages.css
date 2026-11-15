@@ -67,3 +67,14 @@ th { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spa
 footer { max-width: 720px; margin: 0 auto; padding: 0 16px 36px; font-size: 14px; color: var(--muted); text-align: center; }
 footer a { color: var(--muted); }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+/* Documents: privacy policy, terms of use, about, account deletion */
+main.doc h2 { margin: 18px 0 0; }
+main.doc p, main.doc ul, main.doc ol { margin: 0; }
+main.doc ul, main.doc ol { padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+main.doc a { font-weight: 600; }
+.doc-toc { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; }
+.doc-toc ol { columns: 2; column-gap: 24px; display: block; }
+.doc-toc li { margin-bottom: 4px; break-inside: avoid; }
+@media (max-width: 480px) { .doc-toc ol { columns: 1; } }
+.doc-sum { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; }
+.doc-nav { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }

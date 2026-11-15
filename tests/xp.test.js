@@ -253,7 +253,9 @@ test("old Firestore rules (not yet republished): the league row falls back to th
 
 /* Server league results (tools/league.js → lgres/{uid}): the same rule over the whole table; the app takes them */
 test("server leagues: the weekly job settles every league with the app's rule", () => {
-  const { settle, lastWeek } = require("../tools/league.js");
+  const { settle, lastWeek, orphans } = require("../tools/league.js");
+  // Results of deleted accounts are cleaned up: only lgres documents without a league row go
+  assert.deepEqual(orphans(["u1", "u2"], ["u1", "u3", "u2", "u4"]), ["u3", "u4"]);
   assert.equal(lastWeek(new Date("2026-11-16T02:17:00Z")), "2026-11-09");
   const W = "2026-11-09";
   const rows = [

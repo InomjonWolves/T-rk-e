@@ -1962,6 +1962,8 @@ function viewSettings() {
       <a class="set-row" href="${TG_CHANNEL}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none"><span><b>Telegram kanalimiz</b><small>@turkceyoluz · har kuni yangi soʻz</small></span>${ICON.chat}</a>
       <a class="set-row" href="#help" style="color:inherit;text-decoration:none"><span><b>Yordam va qoʻllanma</b><small>Ilovani oʻrnatish, saytdan foydalanish, savollar</small></span>${ICON.chev}</a>
       <a class="set-row" href="kurs/" style="color:inherit;text-decoration:none"><span><b>Kurs va grammatika — veb sahifalar</b><small>Mavzuni havola bilan ulashish uchun</small></span>${ICON.chev}</a>
+      <a class="set-row" href="biz-haqimizda.html" style="color:inherit;text-decoration:none"><span><b>Biz haqimizda</b><small>Maqsadimiz, tamoyillarimiz va bogʻlanish</small></span>${ICON.chev}</a>
+      <a class="set-row" href="shartlar.html" style="color:inherit;text-decoration:none"><span><b>Foydalanish shartlari</b></span>${ICON.chev}</a>
       <a class="set-row" href="privacy.html" style="color:inherit;text-decoration:none"><span><b>Maxfiylik siyosati</b></span>${ICON.chev}</a>
     </div>
   </section>

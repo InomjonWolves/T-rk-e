@@ -35,6 +35,19 @@ function settle(rows, w) {
 }
 const toFs = o => ({ fields: Object.fromEntries(Object.entries(o).map(([k, v]) => [k, typeof v === "number" ? { integerValue: String(v) } : { stringValue: String(v) }])) });
 
+// Results left behind by deleted accounts: an lgres document whose owner has no league row any more
+const orphans = (leagueIds, resIds) => { const have = new Set(leagueIds); return resIds.filter(id => !have.has(id)); };
+async function listIds(base, auth, coll) {
+  const ids = []; let page = "";
+  do {
+    const r = await fetch(`${base}/${coll}?pageSize=300&mask.fieldPaths=at${page ? "&pageToken=" + encodeURIComponent(page) : ""}`, { headers: auth });
+    const j = await r.json();
+    if (!r.ok) throw new Error(`list ${coll}: ` + JSON.stringify(j).slice(0, 300));
+    (j.documents || []).forEach(d => ids.push(d.name.split("/").pop()));
+    page = j.nextPageToken || "";
+  } while (page);
+  return ids;
+}
 async function run(now = new Date()) {
   const sa = JSON.parse(process.env.SA || "null");
   if (!sa) { console.log("SA yoʻq — liga hisoblanmadi"); return; }
@@ -57,8 +70,14 @@ async function run(now = new Date()) {
     const r = await fetch(`${base}:commit`, { method: "POST", headers: auth, body: JSON.stringify({ writes }) });
     if (!r.ok) throw new Error("commit: " + (await r.text()).slice(0, 300));
   }
-  console.log(`${w}: ${ids.length} ta oʻquvchi, ${moved} ta liga oʻzgardi`);
+  // Accounts deleted since: their results go too (the app cannot delete lgres — nobody but this job writes there)
+  const gone = orphans(await listIds(base, auth, "league"), await listIds(base, auth, "lgres"));
+  for (let i = 0; i < gone.length; i += 400) {
+    const r = await fetch(`${base}:commit`, { method: "POST", headers: auth, body: JSON.stringify({ writes: gone.slice(i, i + 400).map(id => ({ delete: `${root}/lgres/${id}` })) }) });
+    if (!r.ok) throw new Error("commit (delete): " + (await r.text()).slice(0, 300));
+  }
+  console.log(`${w}: ${ids.length} ta oʻquvchi, ${moved} ta liga oʻzgardi${gone.length ? `, ${gone.length} ta oʻchirilgan hisob natijasi tozalandi` : ""}`);
   return res;
 }
-module.exports = { settle, lastWeek, LG_UP, LG_MIN, LG_SOLO, LG_DOWN };
+module.exports = { settle, lastWeek, orphans, LG_UP, LG_MIN, LG_SOLO, LG_DOWN };
 if (require.main === module) run().catch(e => { console.error(e.message); process.exit(1); });
