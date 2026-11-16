@@ -3,8 +3,9 @@
 //  • window.TY_NATIVE = 1 — the app switches to the app mode (no service worker, no "install the app" card, Google sign-in
 //    through the phone later — see CLAUDE.md, Android 2-bosqich);
 //  • Firebase SDK comes from the app itself (vendor/firebase/, copied from the "firebase" npm package), not from a CDN;
-//  • every audio recording is packed too (audio/index.txt and the mp3 files it lists, ~80 MB): Turkish sounds the same
-//    offline and without the site (decision of 2026-11-14, Android 5-bosqich). the app reads them from audio/ (AUDIO_BASE "").
+//  • the audio recordings are NOT packed (2026-11-16: they made the app ~80 MB bigger): the app plays each one from the
+//    site when it is needed and keeps it (js/ui.js audioSrc — the "ty-audio" cache); only the list audio/index.txt is
+//    packed, for the first start without internet. The site lets the app read them (firebase.json: CORS on audio/).
 // Run: cd native && npm install && node ../tools/native-www.js && npx cap sync android
 const fs = require("fs");
 const path = require("path");
@@ -44,17 +45,11 @@ function copyDir(src, dst) {
     if (e.isDirectory()) copyDir(s, d); else fs.copyFileSync(s, d);
   }
 }
-// The recordings listed in audio/index.txt (the app's audioIndex() reads the same list); a listed file must exist
-function audioFiles() {
-  const keys = fs.readFileSync(path.join(ROOT, "audio", "index.txt"), "utf8").split("\n").filter(Boolean);
-  return keys.map(k => `audio/${k.slice(0, 2)}/${k}.mp3`);
-}
+// Only the list of recordings goes into the app (the files stay on the site)
 function copyAudio() {
-  const files = audioFiles(), miss = files.filter(f => !fs.existsSync(path.join(ROOT, f)));
-  if (miss.length) throw new Error(`audio: ${miss.length} ta fayl yoʻq, masalan ${miss[0]}`);
-  for (const f of files) { fs.mkdirSync(path.dirname(path.join(OUT, f)), { recursive: true }); fs.copyFileSync(path.join(ROOT, f), path.join(OUT, f)); }
+  fs.mkdirSync(path.join(OUT, "audio"), { recursive: true });
   fs.copyFileSync(path.join(ROOT, "audio", "index.txt"), path.join(OUT, "audio", "index.txt"));
-  return files.length;
+  return fs.readFileSync(path.join(ROOT, "audio", "index.txt"), "utf8").split("\n").filter(Boolean).length;
 }
 function build() {
   fs.rmSync(OUT, { recursive: true, force: true });
@@ -75,7 +70,7 @@ function build() {
   const st = path.join(OUT, "js", "state.js"), run = process.env.GITHUB_RUN_NUMBER, a = fs.readFileSync(st, "utf8");
   fs.writeFileSync(st, a.replace(/const APP_V\s*=\s*"[^"]*"/, `const APP_V="app-${run ? 1000 + +run : "dev"}"`));
   const n = copyAudio();
-  return `${OUT} (audio: ${n} ta fayl)`;
+  return `${OUT} (audio roʻyxati: ${n} ta yozuv, fayllar saytda)`;
 }
-module.exports = { build, patchIndex, audioFiles, FILES, APP_JS, SITE };
+module.exports = { build, patchIndex, FILES, APP_JS, SITE };
 if (require.main === module) console.log(build());

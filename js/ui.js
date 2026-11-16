@@ -167,9 +167,12 @@ const weekDays = () => { const s = weekStart(dayNum()); return WD.map((l, i) => 
 const last7 = () => Array.from({ length: 7 }, (_, i) => { const d = dayNum() - 6 + i; return { k: keyOf(d), l: WD[(new Date(d * DAY).getUTCDay() + 6) % 7] }; });
 
 /* ---------- Recorded audio ----------
-   Pre-made MP3s (tools/audio-gen.js, Google TTS): audio/<2 chars>/<key>.mp3, key = audioKey(text, voice).
+   Pre-made MP3s (tools/audio-gen.js, Azure AI Speech): audio/<2 chars>/<key>.mp3, key = audioKey(text, voice).
    audio/index.txt lists the keys that exist, so the choice "recording or device voice" is made at once (no 404 wait).
-   Played through one shared <audio> element (unlocked on the first tap — iPhone allows it to play later on). */
+   Played through one shared <audio> element (unlocked on the first tap — iPhone allows it to play later on).
+   The Android app carries no recordings (they would add ~80 MB): it loads one from the site when it is played and
+   keeps it in the cache "ty-audio" (audioSrc), so a word heard once plays again at once and without internet;
+   the coming words of a practice are fetched ahead (audioWarm). A kept file is checked again after 30 days. */
 const audioNorm = s => String(s).replace(/…/g, "").replace(/\s+/g, " ").trim();
 function audioKey(text, v = "a") {
   const str = v + "|" + audioNorm(text);
@@ -183,7 +186,37 @@ const audioPath = k => `${AUDIO_BASE}audio/${k.slice(0, 2)}/${k}.mp3`;
 let AUDIO_SET = null, AEL = null, AUDIO_DONE = null, AUDIO_N = 0;
 function audioIndex() {
   if (AUDIO_SET || !window.fetch) return;
-  fetch(AUDIO_BASE + "audio/index.txt").then(r => r.ok ? r.text() : "").then(t => { const ks = t.split("\n").filter(Boolean); if (ks.length) AUDIO_SET = new Set(ks); }).catch(() => {});
+  const load = u => fetch(u).then(r => r.ok ? r.text() : "").then(t => { const ks = t.split("\n").filter(Boolean); if (ks.length) AUDIO_SET = new Set(ks); return ks.length; });
+  // The app: the site's list (new recordings too); offline — the list packed into the app
+  load(AUDIO_BASE + "audio/index.txt").catch(() => 0).then(n => { if (!n && AUDIO_BASE) return load("audio/index.txt"); }).catch(() => {});
+}
+const AUDIO_CACHE = "ty-audio", AUDIO_TTL = 30 * DAY;
+let AUDIO_URL = "";
+// The app: the recording from the cache, or from the site (then kept); the plain address when the cache cannot help
+async function audioCached(k, fresh) {
+  const url = audioPath(k), c = await caches.open(AUDIO_CACHE);
+  const hit = await c.match(url), at = hit ? +hit.headers.get("x-at") || 0 : 0;
+  if (hit && (Date.now() - at < AUDIO_TTL || navigator.onLine === false)) return hit;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(r.status);
+    const blob = await r.blob(), keep = new Response(blob, { headers: { "Content-Type": "audio/mpeg", "x-at": String(Date.now()) } });
+    await c.put(url, keep.clone());
+    return keep;
+  } catch (e) { if (hit) return hit; throw e; }
+}
+async function audioSrc(k) {
+  const url = audioPath(k);
+  if (!IS_NATIVE || !window.caches) return url;
+  try { return URL.createObjectURL(await (await audioCached(k)).blob()); } catch (e) { return url; }
+}
+// The app: the next recordings of a practice are fetched while the learner answers (a few at a time)
+function audioWarm(texts) {
+  if (!IS_NATIVE || !window.caches || !AUDIO_SET || navigator.onLine === false) return;
+  const ks = [...new Set(texts.filter(t => typeof t === "string" && hasRec(t)).map(t => audioKey(t)))].slice(0, 12);
+  let i = 0;
+  const next = () => { if (i < ks.length) audioCached(ks[i++]).catch(() => {}).then(next); };
+  next(); next();
 }
 const hasRec = (text, v = "a") => !!AUDIO_SET && AUDIO_SET.has(audioKey(text, v));
 function audioEl() {
@@ -231,10 +264,16 @@ function playRec(text, v, rate, done, fallback) {
   a.onended = end;
   const fail = () => { if (n !== AUDIO_N) return; AUDIO_SET.delete(k); if (fallback) { AUDIO_DONE = null; fallback(); } else end(); };
   a.onerror = fail;
-  a.src = audioPath(k);
-  a.playbackRate = Math.min(2, Math.max(0.5, rate)); a.defaultPlaybackRate = a.playbackRate;
-  try { a.preservesPitch = true; } catch (e) {}
-  const p = a.play(); if (p && p.catch) p.catch(fail);
+  const go = src => {
+    if (n !== AUDIO_N) { if (src.startsWith("blob:")) URL.revokeObjectURL(src); return; }
+    if (AUDIO_URL) URL.revokeObjectURL(AUDIO_URL);
+    AUDIO_URL = src.startsWith("blob:") ? src : "";
+    a.src = src;
+    a.playbackRate = Math.min(2, Math.max(0.5, rate)); a.defaultPlaybackRate = a.playbackRate;
+    try { a.preservesPitch = true; } catch (e) {}
+    const p = a.play(); if (p && p.catch) p.catch(fail);
+  };
+  if (IS_NATIVE && window.caches) audioSrc(k).then(go); else go(audioPath(k));
   return true;
 }
 

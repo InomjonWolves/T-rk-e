@@ -1,19 +1,21 @@
-// Recorded audio for the site (.github/workflows/audio.yml). Provider from tools/audio-voice.json:
-//   "provider": "edge"  — Microsoft Edge neural voices through the edge-tts Python package (no key, free; tools/audio-edge.py)
-//   otherwise           — Google Cloud Text-to-Speech (needs GOOGLE_TTS_KEY)
-//   node tools/audio-gen.js --samples   every tr-TR voice reads the same words/sentences → ./samples (to choose a voice)
-//   node tools/audio-gen.js             writes the missing audio/<k2>/<key>.mp3 for tools/audio-texts.js, removes
-//                                       files no text needs any more, and rewrites audio/index.txt
-// Needs GOOGLE_TTS_KEY (service account JSON of a Google Cloud project with the Text-to-Speech API and billing).
-// Voices come from tools/audio-voice.json: { "a": { "name": … }, "b": { "name": … }, "rate": 0.9 }.
-// Keys: audioKey() in app.js (copied below; tests/audio.test.js checks both give the same key).
+// Recorded audio for the site and the app (.github/workflows/audio.yml): Azure AI Speech — the official
+// text-to-speech REST API with a key. Free tier (F0): 500 000 characters a month; the whole site is ~100 000.
+//   node tools/audio-gen.js   records audio/<k2>/<key>.mp3 for every text of tools/audio-texts.js that has no Azure
+//                             recording yet (audio/azure.txt lists the ones that have: older files made another way are
+//                             recorded again), removes files no text needs any more and rewrites audio/index.txt
+// Secrets: AZURE_SPEECH_KEY and AZURE_SPEECH_REGION (the region of the Speech resource, e.g. westeurope).
+// Without them nothing changes. The free tier answers 20 requests a minute: one request every 3.1 s, and a run stops
+// after AUDIO_MINUTES (40); "left=<n>" goes to $GITHUB_OUTPUT and the workflow starts the next run while texts remain.
+// Voices: tools/audio-voice.json { "provider": "azure", "a": { "name": … }, "b": { "name": … }, "rate": 0.9 }.
+// Format: 24 kHz, 48 kbit/s mono MP3 (~15 KB a word). Keys: audioKey() of js/ui.js (copied below; tests/audio.test.js
+// checks both give the same key).
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
 
 const ROOT = path.resolve(__dirname, "..");
 const DIR = path.join(ROOT, "audio");
-const API = "https://texttospeech.googleapis.com/v1";
+const FORMAT = "audio-24khz-48kbitrate-mono-mp3";
+const GAP_MS = 3100, sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const audioNorm = s => String(s).replace(/…/g, "").replace(/\s+/g, " ").trim();
 function audioKey(text, v = "a") {
@@ -26,113 +28,66 @@ function audioKey(text, v = "a") {
 }
 const fileOf = k => path.join(DIR, k.slice(0, 2), k + ".mp3");
 
-const b64 = s => Buffer.from(s).toString("base64url");
-async function accessToken(sa) {
-  const now = Math.floor(Date.now() / 1000);
-  const head = b64(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const body = b64(JSON.stringify({ iss: sa.client_email, scope: "https://www.googleapis.com/auth/cloud-platform", aud: "https://oauth2.googleapis.com/token", iat: now, exp: now + 3600 }));
-  const sig = crypto.createSign("RSA-SHA256").update(`${head}.${body}`).sign(sa.private_key).toString("base64url");
-  const r = await fetch("https://oauth2.googleapis.com/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${head}.${body}.${sig}` });
-  const j = await r.json();
-  if (!j.access_token) throw new Error("token: " + JSON.stringify(j));
-  return j.access_token;
+const xml = s => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[c]));
+// SSML: the voice and its speed (0.9 → -10%)
+function ssml(voice, text, rate) {
+  const pct = Math.round((rate - 1) * 100);
+  return `<speak version="1.0" xml:lang="tr-TR"><voice name="${voice}"><prosody rate="${pct < 0 ? "" : "+"}${pct}%">${xml(text)}</prosody></voice></speak>`;
 }
-async function gapi(tok, sa, method, url, body) {
-  for (let t = 0; t < 5; t++) {
-    const r = await fetch(API + url, { method, headers: { Authorization: "Bearer " + tok, "Content-Type": "application/json", "x-goog-user-project": sa.project_id }, body: body ? JSON.stringify(body) : undefined });
-    const j = await r.json().catch(() => ({}));
-    if (r.ok) return j;
-    if (r.status === 429 || r.status >= 500) { await new Promise(res => setTimeout(res, 2000 * (t + 1))); continue; }
-    throw new Error(`${url}: ${r.status} ${JSON.stringify(j.error || j).slice(0, 400)}`);
+async function synth(key, region, voice, text, rate) {
+  for (let i = 0; ; i++) {
+    const r = await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+      method: "POST",
+      headers: { "Ocp-Apim-Subscription-Key": key, "Content-Type": "application/ssml+xml", "X-Microsoft-OutputFormat": FORMAT, "User-Agent": "turkce-yol-audio" },
+      body: ssml(voice, text, rate)
+    });
+    if (r.ok) { const b = Buffer.from(await r.arrayBuffer()); if (b.length < 500) throw new Error("Azure: bo'sh audio"); return b; }
+    // Too many requests or a passing server error: wait and try again
+    if ((r.status === 429 || r.status >= 500) && i < 5) { await sleep((+r.headers.get("retry-after") || 20 * (i + 1)) * 1000); continue; }
+    const err = new Error(`Azure ${r.status}: ${(await r.text()).slice(0, 200)}`); err.status = r.status; throw err;
   }
-  throw new Error(url + ": too many retries");
 }
-// One MP3 (mono, 24 kHz). Chirp voices take no speakingRate/pitch in some regions: retried without them.
-async function synth(tok, sa, voice, text, rate) {
-  const req = { input: { text }, voice: { languageCode: "tr-TR", name: voice }, audioConfig: { audioEncoding: "MP3", sampleRateHertz: 24000, speakingRate: rate } };
-  try { return Buffer.from((await gapi(tok, sa, "POST", "/text:synthesize", req)).audioContent, "base64"); }
-  catch (e) { if (!/speaking|rate|INVALID_ARGUMENT/i.test(e.message)) throw e; delete req.audioConfig.speakingRate; return Buffer.from((await gapi(tok, sa, "POST", "/text:synthesize", req)).audioContent, "base64"); }
-}
-const SAMPLE_TEXTS = [
-  ["w1", "Merhaba"], ["w2", "Teşekkür ederim"], ["w3", "öğretmen"], ["w4", "ağaç"], ["w5", "ışık"], ["w6", "çiçek"], ["w7", "güzel"], ["w8", "Nasılsın?"],
-  ["s1", "Benim adım Ali. Ben bir öğretmenim."], ["s2", "Bugün hava çok güzel, parka gidelim mi?"],
-  ["s3", "Dün akşam arkadaşlarımla lokantada yemek yedik."], ["s4", "Türkçe öğrenmek sandığınız kadar zor değil."]
-];
-async function samples(sa, tok) {
-  const out = path.join(ROOT, "samples");
-  fs.mkdirSync(out, { recursive: true });
-  const { voices } = await gapi(tok, sa, "GET", "/voices?languageCode=tr-TR");
-  const tr = voices.filter(v => v.languageCodes.includes("tr-TR")).sort((a, b) => a.name.localeCompare(b.name));
-  console.log(tr.length + " ta tr-TR ovoz:\n" + tr.map(v => `${v.name}\t${v.ssmlGender}`).join("\n"));
-  const index = [];
-  let chars = 0;
-  for (const v of tr) {
-    try {
-      for (const [k, t] of SAMPLE_TEXTS) { fs.writeFileSync(path.join(out, `${v.name}-${k}.mp3`), await synth(tok, sa, v.name, t, 0.9)); chars += t.length; }
-      index.push({ name: v.name, gender: v.ssmlGender });
-    } catch (e) { console.log(v.name, "o'tkazildi:", e.message.slice(0, 200)); }
-  }
-  fs.writeFileSync(path.join(out, "index.json"), JSON.stringify({ voices: index, texts: SAMPLE_TEXTS }, null, 1));
-  console.log(`${index.length} ta ovoz, ${chars} belgi`);
-}
-async function full(sa, tok) {
-  // sa/tok — faqat Google uchun
+const readList = f => fs.existsSync(f) ? fs.readFileSync(f, "utf8").split("\n").filter(Boolean) : [];
+async function full(key, region) {
   const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, "audio-voice.json"), "utf8"));
-  if (!cfg.a || !cfg.a.name) { console.log("tools/audio-voice.json da ovoz tanlanmagan — avval namunalar (--samples)"); return; }
   const list = await require("./audio-texts.js").collect();
   const want = new Map(list.map(([v, t]) => [audioKey(t, v), [v, t]]));
-  let made = 0, chars = 0, removed = 0;
-  const todo = [...want].filter(([k]) => !fs.existsSync(fileOf(k)));
-  const limit = +(process.env.AUDIO_MAX_CHARS || 400000);
-  console.log(`${want.size} ta matn, ${todo.length} tasi yangi, ${todo.reduce((a, [, x]) => a + x[1].length, 0)} belgi`);
-  if (cfg.provider === "edge") {
-    const jobs = [];
+  const azure = new Set(readList(path.join(DIR, "azure.txt")).filter(k => want.has(k)));
+  // New texts first, then the older recordings
+  const todo = [...want].filter(([k]) => !azure.has(k)).sort(([a], [b]) => fs.existsSync(fileOf(a)) - fs.existsSync(fileOf(b)));
+  const limit = +(process.env.AUDIO_MAX_CHARS || 400000), until = Date.now() + (+(process.env.AUDIO_MINUTES || 40)) * 60000;
+  console.log(`${want.size} ta matn, Azure yozuvi yoʻq: ${todo.length} (${todo.reduce((a, [, x]) => a + x[1].length, 0)} belgi)`);
+  let made = 0, chars = 0, removed = 0, stop = "";
+  try {
     for (const [k, [v, t]] of todo) {
-      if (chars + t.length > limit) continue;
-      chars += t.length;
-      jobs.push({ out: fileOf(k), voice: (cfg[v] && cfg[v].name) || cfg.a.name, text: t, rate: (cfg[v] && cfg[v].rate) || cfg.rate || 0.9 });
-    }
-    if (jobs.length) {
-      const tmp = path.join(require("os").tmpdir(), "audio-jobs.json");
-      fs.writeFileSync(tmp, JSON.stringify(jobs));
-      const r = require("child_process").spawnSync("python3", [path.join(__dirname, "audio-edge.py"), tmp], { stdio: "inherit" });
-      if (r.status !== 0) throw new Error("audio-edge.py: " + r.status);
-      made = jobs.filter(j => fs.existsSync(j.out)).length;
-    }
-  } else {
-  let i = 0;
-  const worker = async () => {
-    while (i < todo.length) {
-      const [k, [v, t]] = todo[i++];
-      if (chars + t.length > limit) continue;
-      const voice = (cfg[v] && cfg[v].name) || cfg.a.name;
-      const mp3 = await synth(tok, sa, voice, t, (cfg[v] && cfg[v].rate) || cfg.rate || 0.9);
+      if (Date.now() > until) { stop = "vaqt"; break; }
+      if (chars + t.length > limit) { stop = "belgi chegarasi"; break; }
+      const t0 = Date.now(), voice = (cfg[v] && cfg[v].name) || cfg.a.name;
+      const mp3 = await synth(key, region, voice, t, (cfg[v] && cfg[v].rate) || cfg.rate || 0.9);
       fs.mkdirSync(path.dirname(fileOf(k)), { recursive: true });
       fs.writeFileSync(fileOf(k), mp3);
-      made++; chars += t.length;
-      if (made % 250 === 0) console.log(`… ${made}/${todo.length}`);
+      azure.add(k); made++; chars += t.length;
+      if (made % 100 === 0) console.log(`… ${made}/${todo.length}`);
+      await sleep(Math.max(0, GAP_MS - (Date.now() - t0)));
     }
-  };
-  await Promise.all(Array.from({ length: 6 }, worker));
-  }
+  } catch (e) { stop = e.message; if (e.status === 401 || e.status === 403) process.exitCode = 1; }
   // Files no text needs any more (text changed or removed)
   if (fs.existsSync(DIR)) for (const d of fs.readdirSync(DIR)) {
     const p = path.join(DIR, d);
     if (!fs.statSync(p).isDirectory()) continue;
     for (const f of fs.readdirSync(p)) if (f.endsWith(".mp3") && !want.has(f.slice(0, -4))) { fs.unlinkSync(path.join(p, f)); removed++; }
   }
-  const have = [...want.keys()].filter(k => fs.existsSync(fileOf(k))).sort();
+  const have = [...want.keys()].filter(k => fs.existsSync(fileOf(k))).sort(), left = todo.length - made;
   fs.mkdirSync(DIR, { recursive: true });
   fs.writeFileSync(path.join(DIR, "index.txt"), have.join("\n") + "\n");
-  console.log(`Yaratildi: ${made} (${chars} belgi), o'chirildi: ${removed}, jami audio: ${have.length}/${want.size}`);
+  fs.writeFileSync(path.join(DIR, "azure.txt"), [...azure].sort().join("\n") + "\n");
+  console.log(`Yozildi: ${made} (${chars} belgi), oʻchirildi: ${removed}, jami audio: ${have.length}/${want.size}, Azure: ${azure.size}, qoldi: ${left}${stop ? ` (toʻxtadi: ${stop})` : ""}`);
+  if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `left=${process.exitCode ? 0 : left}\n`);
 }
 async function main() {
-  const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, "audio-voice.json"), "utf8"));
-  if (cfg.provider === "edge" && !process.argv.includes("--samples")) return full(null, null);
-  const sa = JSON.parse(process.env.GOOGLE_TTS_KEY || "null");
-  if (!sa) { console.log("GOOGLE_TTS_KEY yo'q — o'tkazib yuborildi"); return; }
-  const tok = await accessToken(sa);
-  if (process.argv.includes("--samples")) await samples(sa, tok); else await full(sa, tok);
+  const key = process.env.AZURE_SPEECH_KEY, region = process.env.AZURE_SPEECH_REGION;
+  if (!key || !region) { console.log("AZURE_SPEECH_KEY yoki AZURE_SPEECH_REGION yoʻq — audio oʻzgarmadi"); return; }
+  await full(key, region.trim().toLowerCase());
 }
-module.exports = { audioKey, audioNorm, fileOf };
+module.exports = { audioKey, audioNorm, fileOf, ssml };
 if (require.main === module) main().catch(e => { console.error(e.message); process.exit(1); });

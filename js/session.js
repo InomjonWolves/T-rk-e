@@ -130,6 +130,7 @@ function startSession(mode, u) {
     items = shuffle(shuffle(pool).sort((a, b) => known(a) - known(b)).slice(0, 10));
     if (mode === "mix") items = mixItems(items);
   }
+  audioWarm(items.map(w => w && w.tr));
   SES = { mode, u, items, weak: mode === "review" || mode === "mistakes" ? mixWeak() : null, mixOff: Math.floor(Math.random() * 5), i: 0, right: 0, xp: 0, combo: 0, best: 0, t0: Date.now(), answered: false, re: new Set(), skAll: new Set(), times: [], last: Date.now(), had: ACH.filter(achDone).map(a => a.id) };
   sessionEl.hidden = false;
   document.body.style.overflow = "hidden";

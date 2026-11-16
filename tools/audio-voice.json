@@ -1,5 +1,5 @@
 {
-  "provider": "edge",
+  "provider": "azure",
   "a": { "name": "tr-TR-EmelNeural" },
   "b": { "name": "tr-TR-AhmetNeural" },
   "rate": 0.9

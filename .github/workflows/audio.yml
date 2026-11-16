@@ -1,15 +1,15 @@
 name: Audio
 
-# Saytdagi barcha turkcha so'z va gaplarning audiosi (Microsoft Edge neyron ovozlari — edge-tts, kalitsiz; yoki Google Cloud TTS) — tools/audio-gen.js.
-# Faqat yangi yoki o'zgargan matnlar ovozlanadi; natija audio/ papkasiga commit qilinadi va sayt qayta joylanadi.
-# Ovoz va provayder: tools/audio-voice.json ("provider": "edge" — kalit kerak emas; aks holda secret GOOGLE_TTS_KEY).
+# Saytdagi barcha turkcha so'z va gaplarning audiosi — Azure AI Speech, rasmiy REST API kalit bilan (tools/audio-gen.js).
+# Secret'lar: AZURE_SPEECH_KEY va AZURE_SPEECH_REGION (bo'lmasa audio o'zgarmaydi). Bepul tarif daqiqasiga 20 so'rov
+# qabul qiladi: bitta ishga tushirish ~40 daqiqa ishlaydi, natijani commit qiladi va matn qolgan bo'lsa o'zini yana
+# ishga tushiradi. Fayllar saytda turadi (Firebase Hosting); Android ilova ularni saytdan bosilganda yuklaydi.
 on:
   push:
     branches: [main]
     paths:
       - "tools/audio-voice.json"
       - "tools/audio-gen.js"
-      - "tools/audio-edge.py"
       - "tools/audio-texts.js"
       - "content.js"
       - "lugat.js"
@@ -33,25 +33,34 @@ permissions:
 jobs:
   audio:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
     env:
-      GOOGLE_TTS_KEY: ${{ secrets.GOOGLE_TTS_KEY }}
+      AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY }}
+      AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
     steps:
+      - name: Kalit yo'q
+        if: env.AZURE_SPEECH_KEY == '' || env.AZURE_SPEECH_REGION == ''
+        run: echo "AZURE_SPEECH_KEY / AZURE_SPEECH_REGION sozlanmagan — audio o'zgarmadi."
       - uses: actions/checkout@v5
+        if: env.AZURE_SPEECH_KEY != '' && env.AZURE_SPEECH_REGION != ''
         with:
           ref: main
       - uses: actions/setup-node@v5
+        if: env.AZURE_SPEECH_KEY != '' && env.AZURE_SPEECH_REGION != ''
         with:
           node-version: 22
       - name: Playwright (matnlar ro'yxati ilovadan olinadi)
+        if: env.AZURE_SPEECH_KEY != '' && env.AZURE_SPEECH_REGION != ''
         run: |
           npm install --no-audit --no-fund
           npx playwright install --with-deps chromium
-      - name: edge-tts
-        run: pip install -q edge-tts
-      - name: Audio yaratish
+      - name: Audio yozish (Azure)
+        id: gen
+        if: env.AZURE_SPEECH_KEY != '' && env.AZURE_SPEECH_REGION != ''
         run: node tools/audio-gen.js
+      # Progress is kept even when Azure stopped the run (quota, a wrong key)
       - name: Commit va saytni qayta joylash
+        if: always() && env.AZURE_SPEECH_KEY != '' && env.AZURE_SPEECH_REGION != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -60,5 +69,8 @@ jobs:
           git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "Audio yangilandi ($(git diff --cached --name-only | wc -l) fayl)"
           for i in 1 2 3; do git pull -q --rebase origin main && git push -q origin HEAD:main && break; sleep 5; done
           gh workflow run firebase-hosting.yml --ref main
-          # The Android app carries every recording inside (tools/native-www.js): build it again with the new audio
-          gh workflow run native.yml --ref main
+      - name: Davomi (matn qolgan bo'lsa)
+        if: steps.gen.outputs.left != '' && steps.gen.outputs.left != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run audio.yml --ref main

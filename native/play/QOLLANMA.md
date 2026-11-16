@@ -110,7 +110,7 @@ GRAMMATIKA VA LUGʻAT
 
 TOʻRT KOʻNIKMA
 • Oʻqish — 15 ta oʻqish matni va savollar
-• Tinglash — barcha matnlar tabiiy turkcha ovozda, internetsiz ham ishlaydi
+• Tinglash — barcha matnlar tabiiy turkcha ovozda; bir marta eshitilgani keyin internetsiz ham ijro etiladi
 • Yozish — yozganingizni ilova oʻzi tekshiradi: notoʻgʻri qoʻshimchani qoida nomi bilan koʻrsatadi va shu qoidaga mashq tuzadi
 • Gapirish — talaffuz mashqi: gapiring, telefon tanib, xatoli harflarni koʻrsatadi
 
@@ -139,7 +139,7 @@ Türkçe Yoʻl — 100% bepul. Saytimiz: turkceyol.web.app, Telegram kanalimiz: 
 3. **Create new release** → AAB ni yuklang → Release name avtomatik → Release notes:
    ```
    <uz>
-   Yangi: matndagi istalgan soʻzni bosing — tarjimasi va har bir qoʻshimchasi oʻzbekcha tushuntiriladi. Yozganingizdagi qoʻshimcha xatolarini ilova qoida nomi bilan koʻrsatadi, «Qoʻshimchalar mashqi» esa aynan shu qoidani mashq qildiradi. Ikki qurilmada oʻrgansangiz, natijalar endi yoʻqolmaydi — birlashadi. Yangi ramkalar va yutuq nishonlari. Xato yoki taklif boʻlsa, sinovchilar guruhiga yozing.
+   Yangi: interaktiv hikoyalar — gaplar ovoz bilan birma-bir chiqadi, oraliqda savollar. Kirill yozuvi: Sozlamalar → Yozuv. Ilova ancha yengil: turkcha audio kerak boʻlganda yuklanadi va telefonda saqlanadi. Matndagi istalgan soʻzni bosing — tarjimasi va qoʻshimchalari tushuntiriladi. Ikki qurilmadagi natijalar birlashadi. Xato yoki taklif boʻlsa, sinovchilar guruhiga yozing.
    </uz>
    ```
 4. **Review release** → **Start rollout to Closed testing**. Google tekshiruvi odatda 1–3 kun.

@@ -1,4 +1,5 @@
-// Recorded audio (Google TTS files in audio/): the app plays them first and falls back to the device voice.
+// Recorded audio (Azure AI Speech files in audio/): the app plays them first and falls back to the device voice;
+// the Android app plays them from the site and keeps the ones it played.
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("fs");
@@ -83,9 +84,45 @@ test("audio: the text list covers every word, dialogs and readings; site config 
   const sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
   assert.match(sw, /\\\/audio\\\//, "the service worker leaves audio ranges to the network");
   const fb = JSON.parse(fs.readFileSync(path.join(ROOT, "firebase.json"), "utf8"));
-  assert.ok(fb.hosting.headers.some(h => h.source === "audio/**/*.mp3" && /immutable/.test(h.headers[0].value)));
+  // A month in the cache (a file recorded again reaches everyone), readable by the app (CORS)
+  assert.ok(fb.hosting.headers.some(h => h.source === "audio/**/*.mp3" && /max-age=2592000/.test(h.headers[0].value)));
   const wf = fs.readFileSync(path.join(ROOT, ".github/workflows/audio.yml"), "utf8");
-  assert.match(wf, /GOOGLE_TTS_KEY/); assert.match(wf, /node tools\/audio-gen\.js/); assert.match(wf, /gh workflow run firebase-hosting\.yml/);
+  for (const re of [/AZURE_SPEECH_KEY/, /AZURE_SPEECH_REGION/, /node tools\/audio-gen\.js/, /gh workflow run firebase-hosting\.yml/, /gh workflow run audio\.yml/]) assert.match(wf, re);
+  assert.doesNotMatch(wf, /edge-tts|GOOGLE_TTS_KEY/, "only the official key-based service");
   const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, "tools/audio-voice.json"), "utf8"));
-  assert.ok("a" in cfg && "b" in cfg);
+  assert.ok(cfg.provider === "azure" && "a" in cfg && "b" in cfg);
+  // SSML: the text is escaped, the speed becomes a percentage
+  assert.equal(gen.ssml("tr-TR-EmelNeural", "Ali & Ayşe", 0.9), '<speak version="1.0" xml:lang="tr-TR"><voice name="tr-TR-EmelNeural"><prosody rate="-10%">Ali &amp; Ayşe</prosody></voice></speak>');
+});
+
+test("app audio: a recording comes from the site when played, is kept, plays again without the network; next words fetched ahead", async () => {
+  const { page, errors } = await openApp(browser, "#home", { native: true });
+  let hits = [];
+  await page.route(/^https:\/\/turkceyol\.web\.app\/audio\//, r => {
+    hits.push(r.request().url().split("/").pop());
+    if (/offline/.test(r.request().url()) || r.request().url().includes(globalThis.__deny || "-")) return r.abort();
+    r.fulfill({ status: 200, contentType: "audio/mpeg", body: Buffer.alloc(800, 1) });
+  });
+  await page.evaluate(stubs);
+  const k = await page.evaluate(() => { AUDIO_SET = new Set(["kitap", "defter", "kalem"].map(t => audioKey(t))); speak("kitap"); return audioKey("kitap"); });
+  await page.waitForFunction(() => __played.length === 1);
+  assert.match(await page.evaluate(() => __played[0].src), /^blob:/);
+  assert.deepEqual(hits, [k + ".mp3"]);
+  assert.ok(await page.evaluate(async key => !!(await (await caches.open("ty-audio")).match(audioPath(key))), k));
+  // Again: from the phone, no request
+  await page.evaluate(() => { speak("kitap"); });
+  await page.waitForFunction(() => __played.length === 2);
+  assert.equal(hits.length, 1);
+  // The coming words of a practice are fetched ahead
+  await page.evaluate(() => audioWarm(["defter", "kalem", "kitap", "yok"]));
+  const kept = () => page.evaluate(async () => { const c = await caches.open("ty-audio"); return !!(await c.match(audioPath(audioKey("kalem")))) && !!(await c.match(audioPath(audioKey("defter")))); });
+  for (let i = 0; i < 50 && !(await kept()); i++) await page.waitForTimeout(50);
+  assert.ok(await kept());
+  assert.equal(hits.length, 3);
+  // Not kept and no internet: the device voice speaks
+  const s = await page.evaluate(() => { AUDIO_SET.add(audioKey("Selam")); __audioFail = true; __tts = []; speak("Selam"); return audioKey("Selam"); });
+  globalThis.__deny = s;
+  await page.waitForFunction(() => __tts.length === 1);
+  assert.deepEqual(await page.evaluate(() => __tts), ["Selam"]);
+  assert.deepEqual(errors, []);
 });

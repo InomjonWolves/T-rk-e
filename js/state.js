@@ -399,7 +399,8 @@ async function remSet(v) {
 // window.TY_NATIVE, the local Firebase SDK folder and the site address for the audio recordings
 const IS_NATIVE = window.TY_NATIVE === 1 || !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const FB_BASE = window.FB_SDK_BASE || "https://www.gstatic.com/firebasejs/10.12.2/";
-const AUDIO_BASE = window.AUDIO_BASE || "";
+// Recordings: the website reads its own audio/; the app plays them from the site (they are not packed into the app)
+const AUDIO_BASE = window.AUDIO_BASE || (IS_NATIVE ? "https://turkceyol.web.app/" : "");
 // Capacitor plugins without a bundler: the native bridge gives a proxy (null on the website or when the plugin is missing)
 const nativePlugin = name => {
   try { const C = window.Capacitor; if (!IS_NATIVE || !C) return null; if (C.isPluginAvailable && !C.isPluginAvailable(name)) return null; return (C.Plugins && C.Plugins[name]) || (C.registerPlugin ? C.registerPlugin(name) : null); } catch (e) { return null; }
