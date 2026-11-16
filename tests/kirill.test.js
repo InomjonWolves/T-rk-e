@@ -81,6 +81,34 @@ test("cyrillic page: menu and pages in Cyrillic, Turkish lines and table columns
   assert.deepEqual(errors, []);
 });
 
+test("cyrillic articles: Uzbek in Cyrillic, Turkish in Latin, linked to the Latin page, open the app in Cyrillic", async () => {
+  const dir = path.join(ROOT, "kirill/maqola"), lat = fs.readdirSync(path.join(ROOT, "maqola")).sort();
+  assert.deepEqual(fs.readdirSync(dir).sort(), lat);
+  for (const f of lat) {
+    const c = fs.readFileSync(path.join(dir, f), "utf8"), l = fs.readFileSync(path.join(ROOT, "maqola", f), "utf8");
+    assert.match(c, /<html lang="uz-Cyrl">/, f);
+    const u = f === "index.html" ? "" : f;
+    for (const html of [c, l]) {
+      assert.ok(html.includes(`hreflang="uz-Latn" href="https://turkceyol.web.app/maqola/${u}"`), f);
+      assert.ok(html.includes(`hreflang="uz-Cyrl" href="https://turkceyol.web.app/kirill/maqola/${u}"`), f);
+    }
+    // Text outside Turkish and outside the brand: no Uzbek word left in Latin
+    const text = c.replace(/<script[\s\S]*?<\/script>/g, "").replace(/<(\w+)[^>]*(lang="tr|data-lat)[^>]*>[\s\S]*?<\/\1>/g, "").replace(/<[^>]+>/g, " ").replace(/Türkçe Yoʻl|https?:\/\/\S+|@\w+|&[a-z#0-9]+;/g, "");
+    assert.deepEqual((text.match(/[A-Za-z]*(?:[ʻʼqx]|sh|ch|o')[A-Za-z]*/gi) || []).filter(w => !/^(XP|Telegram)$/.test(w)), [], f);
+    assert.ok(!/href="(\.\.\/)+"/.test(c), `${f}: the app opens in Cyrillic`);
+  }
+  const alpha = fs.readFileSync(path.join(dir, "100-soz.html"), "utf8");
+  assert.match(alpha, /<dt lang="tr">Merhaba<\/dt><dd>Салом<\/dd>/);
+  assert.match(fs.readFileSync(path.join(ROOT, "sitemap.xml"), "utf8"), /kirill\/maqola\/turk-alifbosi\.html/);
+  // #kirill-<route> from such a page: the app switches to Cyrillic and opens the route
+  const { page, errors } = await openApp(browser, "#kirill-alphabet");
+  await page.waitForSelector(".nav");
+  assert.equal(await page.evaluate(() => location.hash), "#alphabet");
+  assert.equal(await page.evaluate(() => localStorage.getItem("ty-abc")), "cyr");
+  assert.match(await page.textContent(".nav"), /Асосий/);
+  assert.deepEqual(errors, []);
+});
+
 test("cyrillic lexicon is up to date (npm run build)", async () => {
   const { build } = require("../tools/kirill-lex.js");
   assert.equal(fs.readFileSync(path.join(ROOT, "kirill-lex.js"), "utf8"), await build(), "kirill-lex.js eskirgan: npm run build");

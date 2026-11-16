@@ -25,19 +25,56 @@ const table = t => `<div class="tw"><table><thead><tr>${t.h.map(h => `<th scope=
 <tbody>${t.r.map(r => `<tr>${r.map(c => `<td lang="tr">${sfx(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 const pairs = (rows, cls = "") => `<dl class="pairs ${cls}">${rows.map(([a, b]) => `<div><dt lang="tr">${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join("")}</dl>`;
 
-function page({ file, title, desc, crumbs, body, ld }) {
+/* Cyrillic copies (kirill/maqola/): the app's own converter (js/kirill.js with kirill-lex.js) turns the Uzbek text into
+   Cyrillic; Turkish (lang="tr") keeps its Latin, data-lat is left as it is, links to the app open it in Cyrillic (#kirill). */
+let KR = null;
+function kr() {
+  if (KR) return KR;
+  const ctx = { localStorage: { getItem: () => null }, document: { readyState: "complete" }, location: { hash: "" } };
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, "kirill-lex.js"), "utf8"), ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, "js/kirill.js"), "utf8") + ";this.krText = krText; krLex();", ctx);
+  return (KR = ctx);
+}
+// The pages are typed with a plain apostrophe (o'rganish, ma'no); the converter reads oʻ gʻ and ʼ
+const uzApo = s => s.replace(/([oOgG])'(?=[a-zA-Z])/g, "$1ʻ").replace(/([a-zA-Z])'(?=[a-zA-Z])/g, "$1ʼ");
+const krT = s => kr().krText(uzApo(String(s)), false);
+function krHtml(html) {
+  const parts = html.split(/(<[^>]+>)/), stack = [], VOID = /^(br|img|input|meta|link|hr|source|wbr)$/i;
+  let raw = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i];
+    if (!p) continue;
+    if (p[0] === "<") {
+      const m = p.match(/^<(\/?)([a-zA-Z0-9]+)/); if (!m) continue;
+      const name = m[2].toLowerCase();
+      if (name === "script" || name === "style") { raw += m[1] ? -1 : 1; continue; }
+      if (m[1]) stack.pop();
+      else if (!VOID.test(name) && !p.endsWith("/>")) stack.push(/\sdata-lat/.test(p) ? "skip" : /\slang="tr/.test(p) ? "mix" : /\slang="/.test(p) ? "lat" : stack[stack.length - 1] || "lat");
+      continue;
+    }
+    const mode = stack[stack.length - 1] || "lat";
+    if (raw || mode === "skip" || !/[A-Za-z]/.test(p)) continue;
+    const ent = [];
+    const t = (mode === "mix" ? p : uzApo(p)).replace(/&[a-z#0-9]+;/gi, e => "\u0003" + (ent.push(e) - 1) + "\u0004");
+    parts[i] = kr().krText(t, mode === "mix" ? "mix" : false).replace(/\u0003(\d+)\u0004/g, (x, n) => ent[+n]);
+  }
+  return parts.join("");
+}
+
+function page({ file, title, desc, crumbs, body, ld, lang, alt }) {
   const depth = file.split("/").length - 1, up = "../".repeat(depth);
   const url = SITE + file.replace(/(^|\/)index\.html$/, "$1");
   const bc = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: crumbs.map((c, i) => ({ "@type": "ListItem", position: i + 1, name: c[0], item: SITE + c[1] })) };
   return `<!DOCTYPE html>
-<html lang="uz">
+<html lang="${lang || "uz"}">
 <head>
 <meta charset="utf-8">
 <script>/* Yagona manzil: turkceyol.web.app — eski GitHub Pages manzilidan oʻsha sahifaga oʻtkaziladi */if(location.hostname==="inomjonwolves.github.io")location.replace("https://turkceyol.web.app/"+location.pathname.replace(/^\\/T-rk-e\\/?/,"").replace(/^index\\.html$/,"")+location.hash)</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
-<link rel="canonical" href="${url}">
+<link rel="canonical" href="${url}">${alt ? `\n<link rel="alternate" hreflang="uz-Latn" href="${SITE}${alt[0]}">\n<link rel="alternate" hreflang="uz-Cyrl" href="${SITE}${alt[1]}">` : ""}
 <meta name="theme-color" content="#f7f4ee" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0d1124" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="${up}icon.svg" type="image/svg+xml">
@@ -60,7 +97,7 @@ function page({ file, title, desc, crumbs, body, ld }) {
 ${body}
 </main>
 <footer><p>Türkçe Yoʻl — oʻzbek tilida turk tilini oʻrganish. 100% bepul, reklamasiz.</p>
-<p><a href="${up}kurs/">Kurs A1–C1</a> · <a href="${up}qoida/">Grammatika qoʻllanmasi</a> · <a href="${up}lugat/">Lugʻat A1–C1</a> · <a href="${up}oqish/">Oʻqish matnlari</a> · <a href="${up}maqola/">Maqolalar</a> · <a href="https://t.me/turkceyoluz">Telegram kanal</a> · <a href="${up}biz-haqimizda.html">Biz haqimizda</a> · <a href="${up}shartlar.html">Foydalanish shartlari</a> · <a href="${up}privacy.html">Maxfiylik siyosati</a></p></footer>
+<p><a href="${up}kurs/">Kurs A1–C1</a> · <a href="${up}qoida/">Grammatika qoʻllanmasi</a> · <a href="${up}lugat/">Lugʻat A1–C1</a> · <a href="${up}oqish/">Oʻqish matnlari</a> · <a href="${up}maqola/">Maqolalar</a> · <a href="https://t.me/turkceyoluz">Telegram kanal</a> · <a href="${up}biz-haqimizda.html">Biz haqimizda</a> · <a href="${up}shartlar.html">Foydalanish shartlari</a> · <a href="${up}privacy.html">Maxfiylik siyosati</a> · <a href="${up}kirill/maqola/" lang="uz-Cyrl" data-lat="">Кирилл ёзувида</a></p></footer>
 </body>
 </html>
 `;
@@ -227,32 +264,49 @@ ${["A1", "A2", "B1", "B2", "C1"].map(lv => `<section class="card"><h2>${lv}</h2>
     }
   ]);
   const block = (b, up) => `<section class="card">${b.h ? `<h2>${esc(b.h)}</h2>` : ""}${(b.p || []).map(p => `<p>${esc(p)}</p>`).join("")}${b.list ? `<ul>${b.list.map(i => `<li>${esc(i)}</li>`).join("")}</ul>` : ""}${b.pairs ? pairs(b.pairs) : ""}${b.cta ? `<p><a href="${up}${b.cta[1]}">${esc(b.cta[0])} →</a></p>` : ""}</section>`;
-  arts.forEach(a => {
-    out[`maqola/${a.id}.html`] = page({
-      file: `maqola/${a.id}.html`,
-      title: `${a.title} | Türkçe Yoʻl`,
-      desc: a.desc,
-      crumbs: [home, maqC, [a.title, `maqola/${a.id}.html`]],
+  // Every article and the list in Latin (maqola/) and in Cyrillic (kirill/maqola/), linked to each other
+  const artPage = (a, cyr) => {
+    const dir = cyr ? "kirill/maqola/" : "maqola/", up = cyr ? "../../" : "../", T = cyr ? krT : x => x;
+    const lat = `maqola/${a.id}.html`, cy = `kirill/maqola/${a.id}.html`;
+    const html = page({
+      file: dir + a.id + ".html",
+      title: `${T(a.title)} | Türkçe Yoʻl`,
+      desc: T(a.desc),
+      crumbs: cyr ? [[home[0], "kirill/maqola/"], [T(a.title), cy]] : [home, maqC, [a.title, lat]],
+      lang: cyr ? "uz-Cyrl" : "uz", alt: [lat, cy],
       body: `<h1>${esc(a.title)}</h1>
 <p class="lead">${esc(a.lead)}</p>
-${a.blocks.map(b => block(b, "../")).join("\n")}
-<a class="cta" href="../">Turk tilini bepul o'rganishni boshlash</a>
-<p class="muted center">Boshqa maqolalar: ${arts.filter(x => x !== a).map(x => `<a href="${x.id}.html">${esc(x.title)}</a>`).join(" · ")}</p>`,
-      ld: { "@context": "https://schema.org", "@type": "Article", headline: a.title, description: a.desc, inLanguage: "uz", publisher: { "@type": "Organization", name: "Türkçe Yoʻl", url: SITE }, mainEntityOfPage: SITE + `maqola/${a.id}.html` }
+${a.blocks.map(b => block(b, up)).join("\n")}
+<a class="cta" href="${up}">Turk tilini bepul o'rganishni boshlash</a>
+<p class="muted center">Boshqa maqolalar: ${arts.filter(x => x !== a).map(x => `<a href="${x.id}.html">${esc(x.title)}</a>`).join(" · ")}</p>
+<p class="muted center">${cyr ? `<a href="../../${lat}" lang="uz-Latn" data-lat="">Lotin yozuvida o'qish</a>` : `<a href="../${cy}" lang="uz-Cyrl" data-lat="">Кирилл ёзувида ўқиш</a>`}</p>`,
+      ld: { "@context": "https://schema.org", "@type": "Article", headline: T(a.title), description: T(a.desc), inLanguage: cyr ? "uz-Cyrl" : "uz", publisher: { "@type": "Organization", name: "Türkçe Yoʻl", url: SITE }, mainEntityOfPage: SITE + (cyr ? cy : lat) }
     });
-  });
-  out["maqola/index.html"] = page({
-    file: "maqola/index.html",
-    title: "Turk tilini o'rganish bo'yicha maqolalar | Türkçe Yoʻl",
-    desc: "Turk tilini o'zbek tilida o'rganish bo'yicha maqolalar: alifbo, eng kerakli so'zlar, salomlashish, darajalar va turk-o'zbek tillari farqlari.",
-    crumbs: [home, maqC],
-    body: `<h1>Maqolalar</h1>
+    return cyr ? krApp(krHtml(html)) : html;
+  };
+  // A Cyrillic page opens the app in Cyrillic: #kirill, #kirill-<route> (js/kirill.js)
+  const krApp = html => html.replace(/href="((?:\.\.\/)+)(#?)([^"]*)"/g, (m, up, hash, rest) => hash ? `href="${up}#kirill-${rest}"` : rest ? m : `href="${up}#kirill"`);
+  arts.forEach(a => { out[`maqola/${a.id}.html`] = artPage(a, false); out[`kirill/maqola/${a.id}.html`] = artPage(a, true); });
+  const listPage = cyr => {
+    const T = cyr ? krT : x => x;
+    const html = page({
+      file: cyr ? "kirill/maqola/index.html" : "maqola/index.html",
+      title: T("Turk tilini o'rganish bo'yicha maqolalar") + " | Türkçe Yoʻl",
+      desc: T("Turk tilini o'zbek tilida o'rganish bo'yicha maqolalar: alifbo, eng kerakli so'zlar, salomlashish, darajalar va turk-o'zbek tillari farqlari."),
+      crumbs: cyr ? [[home[0], "kirill/maqola/"]] : [home, maqC],
+      lang: cyr ? "uz-Cyrl" : "uz", alt: ["maqola/", "kirill/maqola/"],
+      body: `<h1>Maqolalar</h1>
 <p class="lead">Turk tilini o'rganishni boshlayotganlar uchun foydali qo'llanmalar.</p>
-<section class="card"><ol class="toc">${arts.map(a => `<li><a href="${a.id}.html"><span><b>${esc(a.title)}</b><small>${esc(cut(a.desc, 110))}</small></span></a></li>`).join("")}</ol></section>`
-  });
+<section class="card"><ol class="toc">${arts.map(a => `<li><a href="${a.id}.html"><span><b>${esc(a.title)}</b><small>${esc(cut(a.desc, 110))}</small></span></a></li>`).join("")}</ol></section>
+<p class="muted center">${cyr ? `<a href="../../maqola/" lang="uz-Latn" data-lat="">Lotin yozuvida</a>` : `<a href="../kirill/maqola/" lang="uz-Cyrl" data-lat="">Кирилл ёзувида</a>`}</p>`
+    });
+    return cyr ? krApp(krHtml(html)) : html;
+  };
+  out["maqola/index.html"] = listPage(false);
+  out["kirill/maqola/index.html"] = listPage(true);
 
   // ---- Sitemap
-  const urls = ["", "kurs/", "qoida/", "lugat/", "oqish/", "maqola/", ...arts.map(a => `maqola/${a.id}.html`), ...order.map(id => `kurs/${id}.html`), ...all.map(i => `qoida/${slug(i.code)}.html`), ...LUGAT.map(p => `lugat/${p.id}.html`), ...OQ.map(t => `oqish/${t.id}.html`), "biz-haqimizda.html", "shartlar.html", "privacy.html", "hisob-ochirish.html"];
+  const urls = ["", "kurs/", "qoida/", "lugat/", "oqish/", "maqola/", ...arts.map(a => `maqola/${a.id}.html`), "kirill/maqola/", ...arts.map(a => `kirill/maqola/${a.id}.html`), ...order.map(id => `kurs/${id}.html`), ...all.map(i => `qoida/${slug(i.code)}.html`), ...LUGAT.map(p => `lugat/${p.id}.html`), ...OQ.map(t => `oqish/${t.id}.html`), "biz-haqimizda.html", "shartlar.html", "privacy.html", "hisob-ochirish.html"];
   out["sitemap.xml"] = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map(u => `  <url><loc>${SITE}${u}</loc></url>`).join("\n")}
@@ -265,7 +319,7 @@ module.exports = { build, SITE };
 
 if (require.main === module) {
   const out = build();
-  for (const dir of ["kurs", "qoida", "lugat", "oqish", "maqola"]) {
+  for (const dir of ["kurs", "qoida", "lugat", "oqish", "maqola", "kirill/maqola"]) {
     fs.mkdirSync(path.join(ROOT, dir), { recursive: true });
     // Remove pages that no longer exist in the content
     for (const f of fs.readdirSync(path.join(ROOT, dir))) if (!out[`${dir}/${f}`]) fs.unlinkSync(path.join(ROOT, dir, f));

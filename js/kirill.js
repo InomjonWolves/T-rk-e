@@ -14,18 +14,26 @@
 const ABC_KEY = "ty-abc";
 let ABC = "lat";
 try { ABC = localStorage.getItem(ABC_KEY) === "cyr" ? "cyr" : "lat"; } catch (e) {}
+// A link from a Cyrillic page (kirill/maqola/): #kirill or #kirill-<route> opens the app in Cyrillic on that route
+if (/^#kirill(-|$)/.test(location.hash)) {
+  ABC = "cyr";
+  try { localStorage.setItem(ABC_KEY, "cyr"); } catch (e) {}
+  const to = "#" + (location.hash.slice(8) || "home");
+  try { history.replaceState(null, "", location.pathname + location.search + to); } catch (e) { location.hash = to; }
+}
 
 // Latin → Cyrillic, letter by letter (oʻ gʻ sh ch, yo yu ya ye, e → э at the start of a word and after a vowel, ʼ → ъ)
 const KR_ONE = { a: "а", b: "б", d: "д", f: "ф", g: "г", h: "ҳ", i: "и", j: "ж", k: "к", l: "л", m: "м", n: "н", o: "о", p: "п", q: "қ", r: "р", s: "с", t: "т", u: "у", v: "в", x: "х", y: "й", z: "з", c: "с", w: "в", "ʼ": "ъ" };
 const KR_Y = { o: "ё", u: "ю", a: "я", e: "е" };
-const KR_VOW = /[aeiouаеиоуэюяёў]/;
+const KR_VOW = /[aeiouаеиоуэюяёў]/, KR_APO = /^[ʻ'’‘]$/;
 function latCyrLow(w) {
   let out = "";
   for (let i = 0; i < w.length; i++) {
     const c = w[i], n = w[i + 1], prev = out[out.length - 1];
-    if ((c === "o" || c === "g") && n === "ʻ") { out += c === "o" ? "ў" : "ғ"; i++; continue; }
+    if ((c === "o" || c === "g") && KR_APO.test(n || "")) { out += c === "o" ? "ў" : "ғ"; i++; continue; }   // also o'z, g'oya (pages typed with ')
     if ((c === "s" || c === "c") && n === "h") { out += c === "s" ? "ш" : "ч"; i++; continue; }
-    if (c === "y" && KR_Y[n] && !(n === "o" && w[i + 2] === "ʻ")) { out += KR_Y[n]; i++; continue; }
+    if (c === "y" && KR_Y[n] && !(n === "o" && KR_APO.test(w[i + 2] || ""))) { out += KR_Y[n]; i++; continue; }
+    if (c === "'" || c === "’") { out += "ъ"; continue; }
     if (c === "e") { out += !prev || KR_VOW.test(prev) ? "э" : "е"; continue; }
     out += KR_ONE[c] || c;
   }
@@ -94,6 +102,8 @@ function krText(s, uz) {
     return w;
   });
   if (!uz) {
+    // ev-ler, kitap-lar: an unknown piece hyphenated to a Turkish word is its suffix
+    toks.forEach((t, i) => { const p = toks[i - 1]; if (p && (t.k === "us" || t.k === "a") && p.k[0] === "t" && p.at + p.w.length === t.at - 1 && /[-‑]/.test(s[t.at - 1])) t.k = "ts"; });
     // A comma list (a, ı, o, u · kitap, kız) is one language: a sure Turkish member makes the whole list Turkish
     for (let i = 0; i < toks.length; i++) {
       let j = i; while (j + 1 < toks.length && /^[\s\])]*[,/][\s[(\-‑]*$/.test(s.slice(toks[j].at + toks[j].w.length, toks[j + 1].at))) j++;

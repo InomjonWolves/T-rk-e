@@ -23,9 +23,12 @@ function uzWords() {
     for (const m of src.matchAll(/"((?:[^"\\\n]|\\.)*)"|`((?:[^`\\]|\\.)*)`|>([^<>]{3,})</g)) {
       const ws = ((m[1] ?? m[2] ?? m[3]).replace(/<[^>]+>|\$\{[^}]*\}/g, " ").match(WORD) || []).map(low);
       const s = (m[1] ?? m[2] ?? m[3]).trim();
-      // An Uzbek string: an Uzbek mark and no Turkish letter; in the app's own code also a plain label ("Kanal", "Bot")
+      // A word counts as Uzbek when an Uzbek string uses it next to a surely Uzbek word (bu qoida, Defne oshxonada) —
+      // not a Turkish example inside an Uzbek sentence (Ben kitap okuyorum — Men kitob oʻqiyapman)
+      if (ws.some(w => TRL.test(w))) continue;
       const label = f.startsWith("js/") && /^[A-Z][a-z]+(?: [a-z]+)*$/.test(s);
-      if ((ws.some(w => UZL.test(w)) || label) && !ws.some(w => TRL.test(w))) ws.forEach(w => { if (plainWord(w)) U.add(w); });
+      if (label) { ws.forEach(w => { if (plainWord(w)) U.add(w); }); continue; }
+      ws.forEach((w, i) => { if (plainWord(w) && [ws[i - 1], ws[i + 1]].some(n => n && UZL.test(n))) U.add(w); });
     }
   }
   return U;
