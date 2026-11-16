@@ -2010,3 +2010,9 @@ input[data-bk]:not([data-kbd]) { caret-color: transparent; }
 .hk-link { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; }
 .hk-link svg { width: 18px; height: 18px; flex: none; }
 @media (prefers-reduced-motion: reduce) { .hk-in { animation: none; } }
+
+/* ---------- Cyrillic interface (js/kirill.js): texts that live in CSS ---------- */
+html.cyr .ord-ans:empty::before { content: "Сўзларни тартиб билан босинг"; }
+html.cyr .heard:not(:empty)::before { content: "Эшитилди: "; }
+.abc-flip { position: absolute; top: 12px; right: 12px; z-index: 2; min-height: 36px; padding: 6px 14px; border-radius: 99px; font-size: 14px; font-weight: 700; color: #fff; background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.35); }
+.abc-flip:active { transform: scale(0.96); }

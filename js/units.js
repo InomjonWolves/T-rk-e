@@ -129,7 +129,7 @@ function renderBlocks(blocks) {
     if (b.sub) return `<h3 class="k-sub">${nb(b.sub)}</h3>`;
     if (b.p) return `<p class="k-p">${esc(b.p)}</p>`;
     if (b.note) return `<div class="tip glass">${ICON.bulb}<div>${esc(b.note)}</div></div>`;
-    if (b.table) return `<div class="table-wrap glass" tabindex="0" role="region" aria-label="Jadval"><table class="gtable k-table"><thead><tr>${b.table.h.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead><tbody>${b.table.r.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    if (b.table) { const tc = trCols(b.table.h, b.table.r); return `<div class="table-wrap glass" tabindex="0" role="region" aria-label="Jadval"><table class="gtable k-table"><thead><tr>${b.table.h.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead><tbody>${b.table.r.map(r => `<tr>${r.map((c, j) => tdTr(tc[j], esc(c))).join("")}</tr>`).join("")}</tbody></table></div>`; }
     if (b.gloss) return `<div class="k-gloss">${b.gloss.map(([a, c]) => `<span><b lang="tr">${esc(a)}</b> — ${esc(c)}</span>`).join("")}</div>`;
     if (b.dlg) {
       const sides = {};

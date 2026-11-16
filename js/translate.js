@@ -53,6 +53,8 @@ function viewSettings() {
       ${USER ? `<button class="set-row" data-act="profile-edit"><span><b>Shaxsiy maʼlumotlar</b><small>${PROFILE.gender ? (PROFILE.gender === "f" ? "Ayol" : "Erkak") : "Jins koʻrsatilmagan"} · ${PROFILE.birth ? esc(birthText(PROFILE.birth)) : "tugʻilgan sana yoʻq"}</small></span>${ICON.chev}</button>` : ""}
       <div class="set-row"><span><b>Mavzu</b><small>Yorugʻ yoki qorongʻi koʻrinish</small></span>
         <span class="mini-seg">${[["auto", "Avto"], ["light", "Yorugʻ"], ["dark", "Tun"]].map(([v, l]) => `<button data-act="theme" data-v="${v}" aria-pressed="${th === v}">${l}</button>`).join("")}</span></div>
+      <div class="set-row"><span><b>Yozuv</b><small>Oʻzbekcha matnlar lotin yoki kirill yozuvida</small></span>
+        <span class="mini-seg">${[["lat", "Lotin"], ["cyr", "Кирилл"]].map(([v, l]) => `<button data-act="abc" data-v="${v}" aria-pressed="${ABC === v}"${v === "cyr" ? ' data-lat=""' : ""}>${l}</button>`).join("")}</span></div>
       <div class="set-row"><span><b>Kunlik maqsad</b><small>Har kuni toʻplanadigan XP</small></span>
         <span class="mini-seg">${[30, 50, 100].map(v => `<button data-act="goal" data-v="${v}" aria-pressed="${S.goal === v}">${v}</button>`).join("")}</span></div>
       <div class="set-row"><span><b>Ovoz tezligi</b><small>Turkcha talaffuz${trVoices().length > 1 ? ` · ${trVoices().length} ta ovoz` : ""}</small></span>

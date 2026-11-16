@@ -318,7 +318,7 @@ function viewGrammar(gi) {
   <ul class="rules">${g.points.map(p => `<li><span>${esc(p)}</span></li>`).join("")}</ul>
   <div class="table-wrap glass" tabindex="0" role="region" aria-label="Jadval"><table class="gtable">
     <thead><tr>${t.head.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead>
-    <tbody>${t.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody>
+    <tbody>${(tc => t.rows.map(r => `<tr>${r.map((c, j) => tdTr(tc[j], esc(c))).join("")}</tr>`).join(""))(trCols(t.head, t.rows))}</tbody>
   </table></div>
   <div class="tip glass">${ICON.bulb}<div><b>Oʻzbekcha bilan solishtiring</b>${esc(g.compare)}</div></div>
   <section class="section">
@@ -372,7 +372,7 @@ function viewGuide() {
 function guideTable(t) {
   return `<div class="table-wrap glass" tabindex="0" role="region" aria-label="Jadval"><table class="gtable g-forms">
     <thead><tr>${t.h.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead>
-    <tbody>${t.r.map(r => `<tr>${r.map(c => `<td lang="tr">${sfx(c)}</td>`).join("")}</tr>`).join("")}</tbody>
+    <tbody>${(tc => t.r.map(r => `<tr>${r.map((c, j) => tdTr(tc[j], sfx(c))).join("")}</tr>`).join(""))(trCols(t.h, t.r))}</tbody>
   </table></div>`;
 }
 function viewGuideTopic(i) {
@@ -386,7 +386,7 @@ function viewGuideTopic(i) {
     <p class="sub" lang="tr">${esc(i.tr)}</p>
   </div>
   ${i.f ? `<div class="g-formula"><div class="g-f-tr" lang="tr">${esc(i.f[0])}</div><div class="g-f-uz">${esc(i.f[1])}</div></div>` : ""}
-  ${i.forms ? `<section class="section"><div class="section-head"><h2>Shakllar</h2></div>${typeof i.forms === "string" ? `<div class="glass pad g-forms-text" lang="tr">${sfx(i.forms)}</div>` : guideTable(i.forms)}</section>` : ""}
+  ${i.forms ? `<section class="section"><div class="section-head"><h2>Shakllar</h2></div>${typeof i.forms === "string" ? `<div class="glass pad g-forms-text"${/[ʻʼqx]|sh|ch/i.test(i.forms) ? "" : ' lang="tr"'}>${sfx(i.forms)}</div>` : guideTable(i.forms)}</section>` : ""}
   <div class="tip glass">${ICON.bulb}<div><b>Qoida</b>${esc(i.rule)}${i.note ? `<div style="margin-top:6px">${esc(i.note)}</div>` : ""}</div></div>
   <section class="section"><div class="section-head"><h2>Misol</h2></div>
     <div class="glass g-ex"><div style="min-width:0"><div class="g-tr big" lang="tr">${sfx(i.ex[0])}</div><div class="word-uz">${esc(i.ex[1])}</div></div>

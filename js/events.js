@@ -38,6 +38,11 @@ function onAct(e) {
     const y = window.scrollY; route(); window.scrollTo(0, y);
     speak(LETTERS[letterSel][1]);
   }
+  else if (act === "abc" || act === "abc-flip") {
+    abcSet(act === "abc" ? b.dataset.v : ABC === "cyr" ? "lat" : "cyr");
+    const y = window.scrollY; route(); window.scrollTo(0, y);
+    toast(ABC === "cyr" ? "Кирилл ёзуви ёқилди" : "Lotin yozuvi yoqildi");
+  }
   else if (act === "theme") {
     const v = b.dataset.v;
     try { if (v === "auto") localStorage.removeItem("ty-theme"); else localStorage.setItem("ty-theme", v); } catch (err) {}

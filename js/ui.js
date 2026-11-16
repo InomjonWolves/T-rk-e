@@ -7,7 +7,26 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 // Keep suffixes like "-ga" from breaking after the hyphen
 const nb = s => esc(s).replace(/(^|\s)-(\S)/g, "$1‑$2");
 const pad = n => String(n).padStart(2, "0");
-const fold = s => s.toLocaleLowerCase("tr").replace(/[?!.,;:…]/g, "").replace(/\s+/g, " ").trim();
+/* Which columns of a grammar table hold Turkish (their cells get lang="tr": the right voice for screen readers, and the
+   Cyrillic interface leaves them in Latin). The header decides when it names the language; otherwise the cells vote:
+   a Turkish letter or a word of the vocabulary against an Uzbek mark (oʻ gʻ ʼ q x sh ch). */
+const TCOL_UZ = /oʻzbek|maʼno|vazifa|ishlatil|qachon|izoh|nima|qoida|tarjima|xususiyat|strategiya|mezon|odatda|qanday|belgi|ohang|murojaat|turi$|daraja/i;
+const TCOL_TR = /^(turkcha|misol|misollar|shakl|qoʻshimcha|qoʻsh\.|ibora|iboralar|turkcha iboralar|birikma|toʻgʻri turkchasi|gap)$/i;
+let TCOL_VOC = null;
+function trCols(head, rows) {
+  if (!TCOL_VOC) { TCOL_VOC = new Set(); ALL.forEach(w => TCOL_VOC.add(fold(w.tr))); }
+  const trCell = c => /[çşğıöüâîûÇŞĞİÖÜ]/.test(c) || TCOL_VOC.has(fold(String(c).replace(/[\[\]]/g, "").split(/[\s,(/]/)[0] || ""));
+  const uzCell = c => /[ʻʼqxQX]|sh|ch/i.test(c);
+  return head.map((h, i) => {
+    if (TCOL_UZ.test(h)) return false;
+    if (TCOL_TR.test(h) || /[çşğıöüÇŞĞİÖÜ]/.test(h) || /^[a-zçşğıöü]+$/.test(h)) return true;
+    let t = 0, u = 0;
+    rows.forEach(r => { const c = String(r[i] == null ? "" : r[i]).trim(); if (uzCell(c)) u++; else if (trCell(c) || /^-|^\S$/.test(c)) t++; });
+    return t > u;
+  });
+}
+const tdTr = (on, html) => `<td${on ? ' lang="tr"' : ""}>${html}</td>`;
+const fold = s => cyrLat(String(s)).toLocaleLowerCase("tr").replace(/[?!.,;:…]/g, "").replace(/\s+/g, " ").trim();
 const plain = s => fold(s).replace(/ç/g, "c").replace(/ş/g, "s").replace(/ğ/g, "g").replace(/ı/g, "i").replace(/ö/g, "o").replace(/ü/g, "u").replace(/â/g, "a");
 const $ = id => document.getElementById(id);
 let uid = 0;
