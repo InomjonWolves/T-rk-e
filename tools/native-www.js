@@ -17,7 +17,7 @@ const FB_VERSION = "10.12.2";
 const FILES = [
   "index.html", "privacy.html", "shartlar.html", "biz-haqimizda.html", "hisob-ochirish.html", "styles.css", "pages.css", "firebase-config.js",
   "app.js", "cat.js", "content.js", "lugat.js", "grammar.js", "grammar-ex.js", "guide.js",
-  "course-core.js", "course.js", "oqish.js", "placement.js",
+  "course-core.js", "course.js", "oqish.js", "placement.js", "morph.js",
   "icon.svg", "icon-192.png", "icon-512.png", "icon-maskable-512.png"
 ];
 const DIRS = ["fonts"];

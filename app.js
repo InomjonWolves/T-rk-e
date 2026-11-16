@@ -764,6 +764,128 @@ async function friendInviteLoad(uid) {
   CatLife.scan();
 }
 
+/* ---------- Word analysis (morph.js, loaded on demand): tap a word → root + suffixes; smarter spelling; suffix practice ---------- */
+let MORPH_P = null, MORPH_OK = false;
+function loadMorph() {
+  if (MORPH_OK) return Promise.resolve();
+  return MORPH_P || (MORPH_P = loadScript("morph.js").then(() => { Morph.load(ALL.map(w => [w.tr, w.uz])); MORPH_OK = true; }, e => { MORPH_P = null; throw e; }));
+}
+// Turkish text with every word tappable
+const MW_RE = /[A-Za-zÇĞİÖŞÜçğıöşüÂÎÛâîû][A-Za-zÇĞİÖŞÜçğıöşüÂÎÛâîû'’]*/g;
+function mw(text) {
+  text = String(text); let out = "", last = 0;
+  text.replace(MW_RE, (m, i) => { out += esc(text.slice(last, i)) + `<i class="mw" data-act="mw">${esc(m)}</i>`; last = i + m.length; return m; });
+  return out + esc(text.slice(last));
+}
+const mwHint = () => `<p class="mw-hint">${ICON.spark}Istalgan soʻzni bosing — tarjimasi va tuzilishi chiqadi</p>`;
+function mwOpen(el) {
+  const box = el.closest("[lang]") || el.parentElement, all = [...box.querySelectorAll(".mw")], i = all.indexOf(el), words = all.map(x => x.textContent);
+  document.querySelectorAll(".mw.on").forEach(x => x.classList.remove("on")); el.classList.add("on");
+  loadMorph().then(() => openSheet(mwSheet(words, i)), () => toast("Internet aloqasini tekshiring"));
+}
+const MW_FIN = new Set(["PROG", "FUT", "EVID", "AOR", "NAOR", "NEC", "PAST", "COND"]);
+function mwRows(r) {
+  const tag = t => Morph.TAGS[t] || [t, ""], bare = r.lem.replace(/m[ae]k$/, "");
+  const rows = [`<div class="mw-row root"><b lang="tr">${esc(r.root)}</b><span>${r.pos === "p" ? "atoqli ot (ism, joy nomi)" : `${r.pos === "v" || (r.root !== r.lem && r.root !== bare) ? `<i lang="tr">${esc(r.lem)}</i> — ` : ""}${esc(r.uz)}`}<small>oʻzak</small></span></div>`];
+  r.parts.forEach(p => rows.push(`<div class="mw-row"><b lang="tr">${p.s ? "-" + esc(p.s) : "•"}</b><span>${esc(tag(p.t)[0])}<small>oʻzbekchada: ${esc(tag(p.t)[1])}</small></span></div>`));
+  const last = r.parts.length ? r.parts[r.parts.length - 1].t : "";
+  if (r.pos === "v" && !r.parts.length) rows.push(`<div class="mw-row"><b>•</b><span>buyruq: sen<small>qoʻshimchasiz shakl</small></span></div>`);
+  else if (MW_FIN.has(last)) rows.push(`<div class="mw-row"><b>•</b><span>shaxs: u<small>qoʻshimchasiz</small></span></div>`);
+  return rows.join("");
+}
+function mwSheet(words, i) {
+  const word = words[i], clean = Morph.strip(word), res = Morph.parse(word), ph = Morph.phrase(words, i), best = res[0];
+  const alts = best ? res.slice(1).filter(r => r.cost <= best.cost + 1.6).slice(0, 2) : [];
+  return `<div class="mw-sheet">
+    <div class="mw-head"><b lang="tr">${esc(clean)}</b><button class="say" data-act="say" data-t="${esc(clean)}" aria-label="Tinglash">${ICON.speak}</button></div>
+    ${ph ? `<div class="mw-phrase"><span class="tag violet-t">Ibora</span><span><b lang="tr">${esc(ph.tr)}</b> — ${esc(ph.uz)}</span></div>` : ""}
+    ${best ? `<div class="mw-rows">${mwRows(best)}</div>${alts.length ? `<details class="mw-alt"><summary>Boshqacha ham tushunish mumkin</summary>${alts.map(a => `<div class="mw-rows">${mwRows(a)}</div>`).join("")}</details>` : ""}`
+      : `<p class="muted">Bu soʻz lugʻatimizda hali yoʻq.${/^[A-ZÇĞİÖŞÜ]/.test(word) ? " Bosh harf bilan yozilgan — ehtimol, ism yoki joy nomi." : ""}</p><a class="btn btn-soft btn-block" href="#translate">Tarjimonda koʻrish</a>`}
+    <button class="btn btn-grad btn-block" data-act="sheet-x">Tushunarli</button></div>`;
+}
+/* Suffix slips: every wrong written answer is compared with the right one — which rule was broken (S.mor) */
+const MOR_WHY = {
+  h: ["unli uygʻunligi", "Qoʻshimchadagi unli oʻzakning oxirgi unlisiga moslashadi: ev-ler, okul-lar; göz-ü, kol-u."],
+  c: ["jarangsiz undoshdan keyin t, ç", "f, s, t, k, ç, ş, h, p dan keyin qoʻshimcha d emas t, c emas ç bilan boshlanadi: kitap-ta, sınıf-tan."],
+  s: ["undosh yumshashi", "Unli bilan boshlanadigan qoʻshimcha oldida p, ç, t, k → b, c, d, ğ: kitap — kitabı, çocuk — çocuğu, git — gidiyor."],
+  y: ["oraliq harf (y, n, s)", "Ikki unli yonma-yon kelmaydi, orasiga harf qoʻyiladi: araba-y-a, oda-s-ı, kapı-n-ın."],
+  d: ["unli tushishi", "Baʼzi soʻzlarda unli bilan boshlanadigan qoʻshimcha oldida oxirgi unli tushadi: şehir — şehri, burun — burnu."]
+};
+const morName = k => MOR_WHY[k] ? MOR_WHY[k][0] : MORPH_OK && Morph.TAGS[k.slice(2)] ? `«${Morph.TAGS[k.slice(2)][0]}» qoʻshimchasi` : "qoʻshimchalar";
+function morBump(k, n = 1) { S.mor = S.mor || {}; const v = Math.round(((S.mor[k] || 0) + n) * 100) / 100; if (v > 0) S.mor[k] = Math.min(v, 12); else delete S.mor[k]; }
+function morLog(exp, got, ok) {
+  if (!MORPH_OK) { loadMorph().catch(() => {}); return; }
+  const a = String(exp).trim().split(/\s+/), b = String(got).trim().split(/\s+/);
+  if (ok) {
+    if (!S.mor) return;
+    a.forEach(w => { const r = Morph.parse(w)[0]; if (!r || !r.parts.length) return; r.parts.forEach(p => { if (S.mor["t:" + p.t]) morBump("t:" + p.t, -1); }); Object.keys(MOR_WHY).forEach(k => { if (S.mor[k]) morBump(k, -0.34); }); });
+    return;
+  }
+  if (a.length !== b.length) return;
+  a.forEach((w, i) => {
+    const x = Morph.strip(w), y = Morph.strip(b[i]); if (!y || x === y) return;
+    const e = Morph.parse(x)[0]; if (!e || !e.parts.length) return;
+    const tags = e.parts.map(p => p.t).join("+");
+    if (Morph.parse(y, { lax: true }).some(r => r.lem === e.lem && r.parts.map(p => p.t).join("+") === tags)) { const k = Morph.errKind(y, x, e.root.length); if (k !== "o") { morBump(k); return; } }
+    const g = Morph.parse(y).find(r => r.lem === e.lem);
+    const miss = e.parts.find((p, j) => !g || !g.parts[j] || g.parts[j].t !== p.t);
+    if (miss && (g || y.startsWith(e.root.slice(0, Math.max(2, e.root.length - 1))))) morBump("t:" + miss.t);
+  });
+}
+/* Suffix practice: a root and the suffixes to add; built by the generator, aimed at the learner's weak rule (focus) */
+const MOR_N = "ev okul kitap kalem masa araba anne baba kardeş arkadaş öğrenci öğretmen doktor şehir köy sokak oda kapı pencere bahçe çocuk kedi köpek kuş balık ekmek su çay süt elma mutfak park otobüs tren uçak yol deniz göl dağ ağaç çiçek gün hafta yıl para iş telefon bilgisayar defter çanta sınıf ders soru cevap isim göz el burun ağız kulak ayak renk şarkı film oyun resim mektup haber ülke dil kelime cümle otel hastane banka lokanta pazar bilet anahtar yatak dolap sandalye tabak bardak kaşık bıçak ayakkabı gömlek ceket şapka gözlük yağmur güneş misafir komşu aile hediye tatil müzik".split(" ");
+const MOR_V = "gelmek gitmek yapmak almak vermek okumak yazmak görmek bilmek istemek sevmek konuşmak anlamak çalışmak oturmak kalkmak içmek uyumak beklemek bakmak başlamak bitirmek açmak kapatmak dinlemek söylemek sormak bulmak kalmak yaşamak öğrenmek oynamak yürümek koşmak gezmek dönmek girmek çıkmak aramak satmak kullanmak unutmak düşünmek izlemek pişirmek yıkamak giymek taşımak".split(" ");
+const MOR_T = {
+  n: [[["PL"], 1], [["LOC"], 1], [["DAT"], 1], [["ABL"], 1], [["ACC"], 1], [["GEN"], 1], [["P1s"], 1], [["P3s"], 1], [["INS"], 1], [["PL", "LOC"], 1], [["P1s", "DAT"], 2], [["P3s", "LOC"], 2], [["P1p", "ABL"], 2], [["PL", "P1s"], 2], [["P2p", "ACC"], 2], [["LI"], 2], [["SIZ"], 2], [["PL", "P3s", "GEN"], 3], [["LOC", "KI"], 3], [["P1s", "INS"], 3]],
+  v: [[["PROG", "S1s"], 1], [["PROG", "S2s"], 1], [["NEG", "PROG", "S1s"], 1], [["PAST", "S1s"], 1], [["PAST", "S1p"], 1], [["IMP2p"], 1], [["NEG", "PAST", "S2s"], 2], [["FUT", "S1s"], 2], [["FUT", "S1p"], 2], [["AOR", "S1s"], 2], [["NEG", "NAOR"], 2], [["ABIL", "AOR", "S1s"], 2], [["NEC", "S1p"], 2], [["OPT1p"], 2], [["EVID"], 3], [["COND", "S2s"], 3], [["INAB", "PAST", "S1s"], 3], [["PASS", "PAST"], 3], [["DIK", "P1s", "ACC"], 3], [["IP"], 3], [["INCA"], 3]]
+};
+function morItems(focus, n = 8) {
+  const lvN = Math.min(3, LVS.indexOf(kNext().level) + 1) || 1, tag = String(focus || "").startsWith("t:") ? focus.slice(2) : "";
+  const vowelStart = new Set(["ACC", "DAT", "GEN", "P1s", "P2s", "P3s", "P1p", "P2p", "PROG", "FUT", "AOR", "ABIL", "INAB", "OPT1p", "IMP2p", "IP", "INCA", "PASS"]);
+  const hard = new Set(["LOC", "ABL", "PAST", "DIK"]);
+  const roots = pos => (pos === "n" ? MOR_N : MOR_V).filter(w => Morph.parse(pos === "v" ? w.slice(0, -3) : w).some(r => r.lem === w && r.pos === pos && !r.parts.length));
+  const pick = { n: roots("n"), v: roots("v") };
+  const fits = (w, pos) => { const st = pos === "v" ? w.slice(0, -3) : w, l = st[st.length - 1];
+    return focus === "s" ? (pos === "n" ? /[kpç]$/.test(w) && /[aeıioöuü].*[aeıioöuü]/.test(w) : ["git", "et", "tat"].includes(st)) : focus === "c" ? "fstkçşhp".includes(l) : focus === "y" ? /[aeıioöuü]$/.test(st) : focus === "d" ? Morph.DROPS.includes(w) : true; };
+  const tfits = t => focus === "s" || focus === "y" || focus === "d" ? vowelStart.has(t[0]) : focus === "c" ? hard.has(t[0]) : tag ? t.includes(tag) : true;
+  const out = [], seen = new Set();
+  for (let guard = 0; guard < 400 && out.length < n; guard++) {
+    const pos = focus === "d" ? "n" : Math.random() < 0.5 ? "n" : "v";
+    let ts = MOR_T[pos].filter(([t, l]) => l <= lvN && tfits(t)); if (!ts.length) ts = MOR_T[pos].filter(([t]) => tfits(t)); if (!ts.length) continue;
+    let rs = pick[pos].filter(w => fits(w, pos)); if (!rs.length) { if (guard < 200) continue; rs = pick[pos]; }
+    const w = rs[Math.floor(Math.random() * rs.length)], [tags] = ts[Math.floor(Math.random() * ts.length)], tr = Morph.build(w, tags, pos);
+    if (!tr || seen.has(tr)) continue; seen.add(tr);
+    const an = Morph.parse(tr).find(r => r.lem === w && r.parts.map(p => p.t).join("+") === tags.join("+")); if (!an) continue;
+    out.push({ mor: true, tr, uz: an.uz, lem: w, pos, tags, an });
+  }
+  return out;
+}
+function renderMor(w) {
+  SES.sk = ["w"];
+  stage.innerHTML = `<div class="q-card"><div class="q-label">Qoʻshimchalarni qoʻshib yozing</div>
+    <div class="q-word mor-root"><span lang="tr">${esc(w.lem)}</span><small>${esc(w.uz)}</small></div>
+    <div class="mor-need">${w.tags.map(t => `<span class="tag sky-t">${esc(Morph.TAGS[t][0])}<i>${esc(Morph.TAGS[t][1])}</i></span>`).join('<b aria-hidden="true">+</b>')}</div></div>
+    ${bankBox(w.tr)}
+    <div class="feedback" id="fb" aria-live="polite"></div>`;
+  foot.innerHTML = `<button class="btn btn-ghost" data-act="mor-skip">Bilmayman</button><button class="btn btn-grad" data-act="mor-check">Tekshirish</button>`;
+  $("type-form").addEventListener("submit", e => { e.preventDefault(); if (SES.answered) nextStep(); else checkMor(); });
+}
+function checkMor(skip) {
+  if (SES.answered) return;
+  const w = SES.items[SES.i], inp = $("type-input"), v = inp.value, fb = $("fb");
+  if (!skip && !v.trim()) { inp.focus(); return; }
+  SES.answered = true;
+  const split = `<b lang="tr">${esc(w.an.root)}${w.an.parts.map(p => p.s ? `<i>·</i>${esc(p.s)}` : "").join("")}</b>`;
+  if (!skip && fold(v) === fold(w.tr)) { good(); morLog(w.tr, v, true); inp.classList.add("right"); fb.className = "feedback ok"; fb.innerHTML = `Barakalla! ${split}`; }
+  else {
+    const k = skip ? "o" : Morph.errKind(Morph.strip(v), w.tr, w.an.root.length);
+    bad(); if (!skip) morLog(w.tr, v, false); inp.classList.add("wrong"); fb.className = "feedback no";
+    fb.innerHTML = `Toʻgʻri javob: ${split}${MOR_WHY[k] ? `<small class="mor-why">${esc(MOR_WHY[k][1])}</small>` : ""}`;
+  }
+  speak(w.tr);
+  foot.innerHTML = `<button class="btn btn-grad btn-block" data-act="next">Keyingi</button>`;
+}
+
 /* ---------- Reading texts (oqish.js, loaded on demand): text, glossary, listening, 4 questions → reading XP ---------- */
 let OQ_P = null, OQ_ANS = {};
 function loadOq() {
@@ -800,7 +922,7 @@ function viewOqText(id) {
   <div class="lesson-head"><div class="tags"><span class="tag ${LV_COLOR[t.lv]}-t">${t.lv}</span><span class="tag sky-t">${ICON.book}Okuma</span></div>
     <h1 lang="tr">${esc(t.tr)}</h1><p class="sub">${esc(t.uz)}</p></div>
   <button class="btn btn-soft" data-act="say-seq" data-lines="${esc(JSON.stringify(paras))}">${ICON.speak}Matnni tinglash</button>
-  <div class="glass pad oq-text" lang="tr">${paras.map(p => `<p>${esc(p).replace(/\n/g, "<br>")}</p>`).join("")}</div>
+  <div class="glass pad oq-text" lang="tr">${paras.map(p => `<p>${mw(p).replace(/\n/g, "<br>")}</p>`).join("")}</div>${mwHint()}
   <details class="glass pad"><summary><b>Lugʻat (${t.gloss.length})</b></summary><div class="oq-gloss">${t.gloss.map(([a, b]) => `<div><b lang="tr">${esc(a)}</b><span>${esc(b)}</span></div>`).join("")}</div></details>
   <section class="section"><div class="section-head"><h2>Savollar</h2>${done ? `<span class="tag green-t">${done.right}/${t.q.length}</span>` : ""}</div>
   ${t.q.map((q, qi) => `<div class="glass pad gq oq-q">
@@ -1350,6 +1472,8 @@ function recs() {
   }
   const books = [["mistakes", mistakeWords().length, "soʻz"], ["gxm", GRAM_FULL ? gxMistakes().length : 0, "qoida"], ["lmis", lsmList("l").length, "tinglash"], ["smis", canListen() ? lsmList("s").length : 0, "gapirish"]].sort((a, b) => b[1] - a[1])[0];
   if (books[1] >= 5) out.push({ id: "mis", ico: "target", c: "pink", t: "Xatolar ustida ishlang", why: `Xatolar daftarida ${books[1]} ta ${books[2]} xatosi turibdi`, mode: books[0], go: () => startSession(books[0], "all"), w: 55 + Math.min(books[1], 30) });
+  const mor = Object.entries(S.mor || {}).sort((a, b) => b[1] - a[1])[0];
+  if (mor && mor[1] >= 3) { if (!MORPH_OK) loadMorph().catch(() => {}); out.push({ id: "mor", ico: "cap", c: "teal", t: "Qoʻshimchalar mashqi", why: `Yozganda ${morName(mor[0])} boʻyicha ${Math.round(mor[1])} marta adashdingiz — mashq shunga moslab tuzildi`, go: () => startSession("morf", mor[0]), w: 72 + Math.min(18, mor[1] * 2) }); }
   const lvDone = COURSE.levels.find(l => l.units.every(kDone) && kTestBest(l.id) < l.test.pass);
   if (lvDone) out.push({ id: "test", ico: "trophy", c: "orange", t: `${lvDone.id} daraja testi`, why: `${lvDone.id} ning barcha boʻlimlari tugallandi — endi test bilan mustahkamlang`, go: () => go("ktest-" + lvDone.id.toLowerCase()), w: 90 });
   return (REC_LAST = out.sort((a, b) => b.w - a.w).slice(0, 3));
@@ -1795,6 +1919,7 @@ function viewPractice() {
     <div class="pcard-head"><b>${ICON.cap}Qoidalar mashqi</b><span>${gxDoneCount()}/${GX_CODES.length}</span></div>
     <div class="tags"><span class="tag sky-t">${esc(gxNext())}</span><span class="tag violet-t">${esc((gxTopic(gxNext()) || {}).uz || "")}</span></div>
     <div class="facts"><span>${ICON.list}Variant tanlash, yozish va gap tuzish</span><a class="link" href="#gx">Barcha mavzular</a></div>
+    <button class="link mor-go" data-act="start" data-mode="morf">${ICON.spark}Qoʻshimchalar mashqi</button>
     <button class="plus" data-act="gx-start" data-c="${gxNext()}" aria-label="Keyingi qoida mashqi">${ICON.play}</button>
   </div>
 
@@ -2331,7 +2456,7 @@ function renderBlocks(blocks) {
       b.dlg.forEach(([who]) => { if (!(who in sides)) sides[who] = n++ % 2 ? "r" : "l"; });
       return `<div class="dlg">
         <button class="btn btn-soft" data-act="say-seq" data-lines="${esc(JSON.stringify(b.dlg.map(x => [x[0], x[1]])))}">${ICON.speak}Dialogni tinglash</button>
-        ${b.dlg.map(([who, t]) => `<div class="bubble ${sides[who]}"><small>${esc(who)}</small><span lang="tr">${esc(t)}</span><button class="say mini" data-act="say" data-t="${esc(t)}" aria-label="Tinglash">${ICON.speak}</button></div>`).join("")}
+        ${b.dlg.map(([who, t]) => `<div class="bubble ${sides[who]}"><small>${esc(who)}</small><span lang="tr">${mw(t)}</span><button class="say mini" data-act="say" data-t="${esc(t)}" aria-label="Tinglash">${ICON.speak}</button></div>`).join("")}
       </div>`;
     }
     return "";
@@ -2458,7 +2583,7 @@ function viewCourseUnit(id) {
   } else if (KTAB === "read") {
     const r = u.reading;
     body = `<section class="section"><div class="section-head"><h2 lang="tr">${esc(r.title || "Oʻqish matni")}</h2><button class="say" data-act="say" data-t="${esc(r.text)}" aria-label="Matnni tinglash">${ICON.speak}</button></div>
-      <div class="glass pad k-read" lang="tr">${esc(r.text)}</div>
+      <div class="glass pad k-read" lang="tr">${mw(r.text)}</div>${mwHint()}
       ${r.gloss && r.gloss.length ? `<div class="k-gloss">${r.gloss.map(([a, c]) => `<span><b lang="tr">${esc(a)}</b> — ${esc(c)}</span>`).join("")}</div>` : ""}</section>
       ${canListen() && r.ans && Object.values(r.ans).some(x => !/^[DY]$/.test(x)) ? `<button class="btn btn-soft btn-block" data-act="start" data-mode="oral" data-u="${u.id}">${ICON.mic}Savollarga ogʻzaki javob berish</button>` : ""}
       ${r.qs.length ? `<section class="section"><div class="section-head"><h2>${esc(r.qtitle || "Savollar")}</h2></div>
@@ -2532,6 +2657,7 @@ function kSubmit(id, key, value) {
     right = e.match ? e.ans[k] : e.ans[k];
   }
   const m = ansMatch(value, right);
+  if (!key.startsWith("r-") && value.trim()) morLog(ansVariants(right)[0], value, !!m);
   const was = st.e[key];
   const isMatch = !key.startsWith("r-") && (u.exercises.find(x => String(x.n) === key.split("-")[0]) || {}).match;
   skillLog(key.startsWith("r-") || isMatch ? "r" : "w", !!m);
@@ -2578,7 +2704,7 @@ function viewCourseTest(lv) {
     <p class="sub">Test 4 qismdan iborat: Okuma, Dinleme, Yazma va Konuşma. Har qism alohida baholanadi va koʻnikma boʻyicha darajangizni koʻrsatadi. Oxirida «Natijani koʻrish» ni bosing. Test bepul, istalgancha qayta topshirish mumkin.</p></div>
   ${res ? ktResultHtml(res, t.pass) : ""}
   ${t.parts.map(p => `<section class="section">${ktPartHead("r", "Okuma · " + p.name)}
-    ${p.text ? `<div class="glass pad k-read" lang="tr">${esc(p.text)}</div>` : ""}
+    ${p.text ? `<div class="glass pad k-read" lang="tr">${mw(p.text)}</div>` : ""}
     ${p.qs.map(q => { const i = qn++, chosen = KTEST_ANS[i]; return `<div class="k-item glass">
       <div class="k-q"><b>${i + 1}.</b> <span lang="tr">${esc(q.q)}</span></div>
       <div class="k-opts">${q.o.map((o, oi) => { let cls = chosen === oi ? " picked" : ""; if (res) cls = oi === q.a ? " right" : chosen === oi ? " wrong" : ""; return `<button class="opt${cls}" data-act="k-tq" data-i="${i}" data-o="${oi}" lang="tr" ${res ? "disabled" : ""}>${esc(o)}</button>`; }).join("")}</div></div>`; }).join("")}
@@ -3031,6 +3157,7 @@ function pickPool(u) {
 const typeable = w => !w.tr.includes("…") && w.tr.length <= 20;
 function startSession(mode, u) {
   if (mode === "gx" || mode === "gxm") needGram();
+  if (mode === "morf" && !MORPH_OK) { loadMorph().then(() => startSession(mode, u), () => toast("Internet aloqasini tekshiring")); return; }
   closeSheet();
   let items;
   if (mode === "review") {
@@ -3040,6 +3167,9 @@ function startSession(mode, u) {
   } else if (mode === "mistakes") {
     items = shuffle(mistakeWords().slice(0, 15));
     if (!items.length) { toast("Xatolar daftari boʻsh"); return; }
+  } else if (mode === "morf") {
+    items = morItems(u === "all" ? "" : u);
+    if (!items.length) { toast("Mashq uchun material topilmadi"); return; }
   } else if (mode === "gx") {
     if (!BX[u]) u = gxNext();
     items = BX[u].map((ex, i) => ({ gx: true, code: u, i, ex }));
@@ -3115,6 +3245,7 @@ function renderStep() {
   const w = SES.items[SES.i];
   if (w.gx) { SES.m = "gx"; return renderGx(w); }
   if (w.ls) { SES.m = "ls"; return renderLs(w); }
+  if (w.mor) { SES.m = "mor"; return renderMor(w); }
   const m = itemMode(w);
   SES.m = m;
   if (m === "cards") renderCard(w);
@@ -3780,6 +3911,9 @@ function wrCheck(text, task) {
     if (!w || spell.some(s => s.w === w)) return;
     if (/[qxw]|[ʻʼ]/.test(w)) spell.push({ w, fix: null, why: "turk alifbosida q, x, w harflari yoʻq" });
     else if (!C.forms.has(w) && C.byPlain[w]) spell.push({ w, fix: C.byPlain[w][0], why: "turkcha harflar" });
+    // A known root with a suffix against the rules: «evlar» → «evler» (names and unknown words are left alone)
+    // (the site's own texts are no shield here: exercise options hold wrong forms on purpose)
+    else if (MORPH_OK && !/^[A-ZÇĞİÖŞÜ]/.test(raw)) { const f = Morph.fix(w); if (f) spell.push({ w, fix: f.fix, why: MOR_WHY[f.kind][0], kind: f.kind }); }
   });
   const sScore = 1 - Math.min(1, spell.length / Math.max(3, wc / 15));
   // Punctuation: sentences should start with a capital letter and the text should end with . ! or ?
@@ -3799,7 +3933,7 @@ function wrResultHtml(r) {
     ${row(r.have >= r.tgt.min, "Hajm", `${r.have} ${r.tgt.unit} (talab: ${r.tgt.min}–${r.tgt.max} ${r.tgt.unit})${r.have > r.tgt.max * 1.5 ? " — juda uzun, qisqartiring" : ""}`)}
     ${r.goals.length ? row(r.goals.every(g => g.ok), "Mavzu grammatikasi", r.goals.map(g => `${g.ok ? "✔" : "✘"} ${esc(g.label)}`).join("<br>")) : ""}
     ${row(r.conns.length >= r.needC, "Bogʻlovchilar", r.conns.length ? `Ishlatilgan: <span lang="tr">${r.conns.map(esc).join(", ")}</span>${r.conns.length < r.needC ? `. Yana qoʻshing: ayrıca, örneğin, bu yüzden, sonuç olarak…` : ""}` : "Gaplarni bogʻlang: ve, ama, çünkü, sonra, bu yüzden…")}
-    ${row(!r.spell.length, "Imlo va turkcha harflar", r.spell.length ? r.spell.slice(0, 8).map(s => s.fix ? `<span lang="tr">${esc(s.w)} → <b>${esc(s.fix)}</b></span>` : `<span lang="tr">${esc(s.w)}</span> — ${esc(s.why)}`).join("<br>") : "Xato topilmadi")}
+    ${row(!r.spell.length, "Imlo va turkcha harflar", r.spell.length ? r.spell.slice(0, 8).map(s => s.fix ? `<span lang="tr">${esc(s.w)} → <b>${esc(s.fix)}</b></span>${s.kind ? ` <small class="muted">(${esc(s.why)})</small>` : ""}` : `<span lang="tr">${esc(s.w)}</span> — ${esc(s.why)}`).join("<br>") : "Xato topilmadi")}
     ${row(!r.lowerStart && !r.noEnd, "Tinish belgilari", !r.lowerStart && !r.noEnd ? "Gaplar katta harf bilan boshlanib, nuqta bilan tugagan" : [r.lowerStart ? `${r.lowerStart} ta gap kichik harf bilan boshlangan` : "", r.noEnd ? "matn oxirida nuqta yoʻq" : ""].filter(Boolean).join(", "))}
     ${r.reps.length ? row(false, "Takrorlar", r.reps.map(([w, n]) => `<span lang="tr">«${esc(w)}»</span> ${n} marta`).join(", ") + " — boshqa soʻz bilan almashtirib koʻring") : ""}
     <p class="muted" style="font-size:13px">Avtomatik tekshiruv taxminiy: u grammatika va shaklni koʻradi, mazmunni emas. Imkoni boʻlsa, matnni turkcha biladigan odamga ham koʻrsating.</p>`;
@@ -3807,7 +3941,10 @@ function wrResultHtml(r) {
 function wrRun(id, key) {
   const u = KU[id], e = u.exercises.find(x => `${x.n}-w` === key), st = kState(id), text = st.v[key] || "";
   if (text.trim().split(/\s+/).length < 5) { toast("Avval kamida bir necha gap yozing"); return; }
+  // The word analyser makes the spelling check see wrong suffixes; without it (offline) the check still works
+  if (!MORPH_OK && !wrRun.tried) { wrRun.tried = 1; loadMorph().then(() => wrRun(id, key), () => wrRun(id, key)); return; }
   const r = wrCheck(text, { u, e });
+  r.spell.forEach(x => { if (x.kind) morBump(x.kind); });
   WR_RES[id + "|" + key] = r;
   st.wb = st.wb || {}; st.wl = st.wl || {};
   // Count each different text once; XP the first time the task reaches 70
@@ -4549,6 +4686,7 @@ function gxCheckType(skip) {
   const exact = !skip && ex.ans.some(a => gxNorm(a) === gxNorm(v));
   const near = !skip && !exact && ex.ans.some(a => gxPlain(a) === gxPlain(v));
   inp.classList.add(exact || near ? "right" : "wrong");
+  if (!skip) morLog(ex.ans[0], v, exact || near);
   gxFinish(exact || near, ex.ans[0], near);
 }
 function gxCheckOrder(skip) {
@@ -4725,20 +4863,20 @@ function sMood(m) {
   // A streak milestone: starry eyes
   CatLife.mood(sCat(), hot ? "wow" : m, hot ? 1700 : ok ? 1000 : 1600);
 }
-function good() { tick(); const w = SES.items[SES.i]; SES.right++; skillLog(SES.sk, true); grade(w, true); lsmHit(w, SES.m); sMood("happy"); }
+function good() { tick(); const w = SES.items[SES.i]; SES.right++; skillLog(SES.sk, true); if (!w.mor) { grade(w, true); lsmHit(w, SES.m); } sMood("happy"); }
 function bad() {
   tick();
   const w = SES.items[SES.i];
-  grade(w, false);
+  if (!w.mor) grade(w, false);
   skillLog(SES.sk, false);
-  lsmMiss(w, SES.m);
+  if (!w.mor) lsmMiss(w, SES.m);
   sMood("sad");
   // Show a missed word once more at the end of the session
   if (!SES.re.has(w.tr) && SES.items.length < 40) { SES.re.add(w.tr); SES.items.push(w); }
 }
 // Which reward a practice session earns
 function sesKind(mode) {
-  if (mode === "gx" || mode === "gxm") return "grammar";
+  if (mode === "gx" || mode === "gxm" || mode === "morf") return "grammar";
   if (["listen", "dict", "lsent", "lmis", "mix-l"].includes(mode)) return "listening";
   if (["say", "sayline", "oral", "role", "smis", "mix-s"].includes(mode)) return "speaking";
   return "vocab";
@@ -4819,6 +4957,8 @@ function onAct(e) {
   const act = b.dataset.act;
   if (act === "sheet-close") { if (e.target === b && !$("sheet").dataset.locked) closeSheet(); return; }
   if (act === "welcome-close") { hideWelcome(); return; }
+  if (act === "mw") { mwOpen(b); return; }
+  if (act === "mor-check" || act === "mor-skip") { checkMor(act === "mor-skip"); return; }
   if (act === "course-retry") { route(); return; }
   if (act === "grp-join") { grpJoin(b.dataset.c); return; }
   if (act === "grp-share") { shareLink(grpLink(b.dataset.c), "Turk tili guruhimizga qoʻshiling:"); return; }
