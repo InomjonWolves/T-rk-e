@@ -532,7 +532,7 @@ button.tag { cursor: pointer; }
 .pod.first .ped { height: 66px; background: var(--orange-soft); color: var(--orange-ink); }
 .pod:last-child .ped { height: 34px; }
 .crown { width: 28px; height: 22px; margin-bottom: -2px; }
-.rank-row { display: grid; grid-template-columns: 28px 40px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 14px; }
+.rank-row { display: grid; grid-template-columns: 28px 48px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 14px; }
 .rank-row + .rank-row { border-top: 1px solid var(--hair); }
 .rank-row .n { font-weight: 800; color: var(--muted); text-align: center; }
 .rank-row .avatar { width: 40px; height: 40px; font-size: 16px; box-shadow: none; }
@@ -588,9 +588,10 @@ button.tag { cursor: pointer; }
 .ach .ach-date { color: var(--muted); font-size: 11px; font-weight: 600; }
 /* An earned achievement: an enamel disc in a metal rim — bronze, silver, gold or the rainbow rim by rarity (t1…t4).
    Light falls from above (gloss), the lower half is a little darker, a thin engraved line parts rim and enamel. */
-.ach-st {
-  --c1: #c3b0ff; --c2: #7652de; --rim: var(--fr1); position: relative; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; color: #fff; flex: none;
-  border: 4px solid transparent;
+.ach-st { --c1: #c3b0ff; --c2: #7652de; --rim: var(--fr1); --frc: var(--fr1c); --rw: 4px; position: relative; isolation: isolate; width: 56px; height: 56px; display: inline-grid; place-items: center; color: #fff; flex: none; }
+.ach-disk {
+  width: 100%; height: 100%; border-radius: 50%; display: grid; place-items: center; font-style: normal;
+  border: var(--rw) solid transparent;
   background:
     radial-gradient(120% 72% at 50% -10%, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0) 62%) padding-box,
     radial-gradient(circle at 50% 125%, rgba(0, 0, 0, 0.3), transparent 62%) padding-box,
@@ -598,11 +599,17 @@ button.tag { cursor: pointer; }
     var(--rim) border-box;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), inset 0 2px 3px rgba(0, 0, 0, 0.22), 0 1px 1px rgba(22, 27, 61, 0.28), 0 9px 14px -9px var(--c2);
 }
-.ach-st.t2 { --rim: var(--fr2); }
-.ach-st.t3 { --rim: var(--fr3); }
-.ach-st.t4 { --rim: var(--fr7); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), inset 0 2px 3px rgba(0, 0, 0, 0.22), 0 0 14px -2px color-mix(in srgb, var(--fr7c) 70%, transparent); }
-.ach-st.ach-lock { border: 2px dashed var(--line-2); background: var(--bg-2); color: var(--muted); box-shadow: none; }
-.ach-st svg { width: 26px; height: 26px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2)); }
+.ach-st.t2 { --rim: var(--fr2); --frc: var(--fr2c); }
+.ach-st.t3 { --rim: var(--fr3); --frc: var(--fr3c); }
+.ach-st.t4 { --rim: var(--fr7); --frc: var(--fr3c); }
+.ach-st.t4 .ach-disk { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), inset 0 2px 3px rgba(0, 0, 0, 0.22), 0 0 14px -2px color-mix(in srgb, var(--fr7c) 70%, transparent); }
+.ach-st.ach-lock { border-radius: 50%; border: 2px dashed var(--line-2); background: var(--bg-2); color: var(--muted); }
+.ach-disk > svg, .ach-lock > svg { width: 46%; height: 46%; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2)); }
+/* The medal's ornaments reuse the frame drawings; the ribbon takes the medal's own colour */
+.ach-st .ach-orn { --we: color-mix(in srgb, var(--fr3c) 52%, #000); }
+.ach-st .ach-orn .fr-wl, .ach-st .ach-orn .fr-wr { animation-duration: 4.2s; }
+.ach .ach-st { margin: 8px 0 10px; }
+.ach .ach-st.t4 { margin-top: 18px; }
 .st-violet { --c1: #c3b0ff; --c2: #7652de; }
 .st-sky { --c1: #9db4ff; --c2: #3b5bdb; }
 .st-orange { --c1: #ffd88a; --c2: #f08c0a; }
@@ -625,12 +632,12 @@ button.tag { cursor: pointer; }
 .ach.tier4.on { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--gold) 70%, transparent), 0 8px 22px -12px var(--gold); }
 .ach.tier3.on { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--violet) 45%, transparent); }
 /* Epik va afsonaviy stikerlar: yaltiraydi; afsonaviy — kamalak halqa bilan */
-.ach-st.ach-r3, .ach-st.ach-r4, .cel-medal.ach-r3, .cel-medal.ach-r4 { position: relative; overflow: hidden; isolation: isolate; }
-.ach-st.ach-r3::after, .ach-st.ach-r4::after, .cel-medal.ach-r3::after, .cel-medal.ach-r4::after { content: ""; position: absolute; inset: -20%; background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, .7) 50%, transparent 60%); transform: translateX(-100%); animation: ach-shine 3.2s ease-in-out infinite; pointer-events: none; }
+.ach-disk.ach-r3, .ach-disk.ach-r4, .cel-medal.ach-r3, .cel-medal.ach-r4 { position: relative; overflow: hidden; isolation: isolate; }
+.ach-disk.ach-r3::after, .ach-disk.ach-r4::after, .cel-medal.ach-r3::after, .cel-medal.ach-r4::after { content: ""; position: absolute; inset: -20%; background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, .7) 50%, transparent 60%); transform: translateX(-100%); animation: ach-shine 3.2s ease-in-out infinite; pointer-events: none; }
 .cel-medal.ach-r4 { box-shadow: 0 0 0 4px var(--surface), 0 0 0 7px var(--fr7c), 0 0 26px var(--fr7c); }
-.ach-st.ach-r4::after, .cel-medal.ach-r4::after { animation-duration: 2.4s; }
+.ach-disk.ach-r4::after, .cel-medal.ach-r4::after { animation-duration: 2.4s; }
 @keyframes ach-shine { 0%, 50% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-@media (prefers-reduced-motion: reduce) { .ach-st::after, .cel-medal::after { animation: none !important; display: none; } }
+@media (prefers-reduced-motion: reduce) { .ach-disk::after, .cel-medal::after { animation: none !important; display: none; } }
 .ach-hero { padding: 14px 16px 14px 10px; display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 10px; align-items: center; }
 .ach-hero .mascot { width: 104px; height: 96px; }
 
@@ -1544,21 +1551,56 @@ details.fold > .list .unit:active { box-shadow: 0 1px 0 var(--line-2); }
 .fr-sm .fr-orn { left: 0; top: 0; width: 100%; height: 100%; }
 .fr-orn { position: absolute; left: -30%; top: -30%; width: 160%; height: 160%; pointer-events: none; overflow: visible; z-index: 1; }
 .fr-orn.fr-back { z-index: -2; }
-.fr-orn .fr-gem { fill: var(--fr-gem); stroke: var(--frc); stroke-width: 2.2; stroke-linejoin: round; }
-.fr-orn .fr-metal { fill: var(--frc); stroke: var(--surface); stroke-width: 1.2; stroke-linejoin: round; }
-.fr-orn .fr-crown { fill: var(--fr3c); stroke: var(--surface); stroke-width: 2; stroke-linejoin: round; }
-.fr-orn .fr-pearl { fill: var(--fr-gem); stroke: var(--fr3c); stroke-width: 1.4; }
-.fr-orn .fr-ruby { fill: var(--fr-ruby); stroke: var(--fr-gem); stroke-width: 1.6; }
-.fr-orn .fr-leaf { fill: var(--frc); }
-.fr-orn .fr-fo { fill: var(--fr6f); stroke: var(--frc); stroke-width: 1.4; stroke-linejoin: round; }
-.fr-orn .fr-fi { fill: var(--frc); stroke: var(--fr6f); stroke-width: .9; }
-.fr7 .fr-orn .fr-fo { fill: var(--fr7f); stroke: var(--fr-flame); }
-.fr7 .fr-orn .fr-fi { fill: var(--fr-flame); stroke: var(--fr7f); }
+/* Ornament gradients (ORN_DEFS in app.js): the metal of each frame, gems, feathers */
+.orn-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+.og-m1 { --c: var(--fr1c); } .og-m2 { --c: var(--fr2c); } .og-m3 { --c: var(--fr3c); } .og-m4 { --c: var(--fr4c); } .og-m5 { --c: var(--fr5c); } .og-m6 { --c: var(--fr6c); } .og-m7 { --c: var(--fr7c); }
+.og-m .s-hi { stop-color: var(--c); stop-color: color-mix(in srgb, var(--c) 30%, #fff); }
+.og-m .s-md { stop-color: var(--c); }
+.og-m .s-lo { stop-color: var(--c); stop-color: color-mix(in srgb, var(--c) 62%, #000); }
+.og-2 .s-a { stop-color: var(--a); } .og-2 .s-b { stop-color: var(--b); }
+.og-gem { --a: #fff; --b: color-mix(in srgb, var(--fr5c) 60%, #fff); }
+.og-ruby { --a: color-mix(in srgb, var(--fr-ruby) 50%, #fff); --b: color-mix(in srgb, var(--fr-ruby) 80%, #000); }
+.og-ice { --a: color-mix(in srgb, var(--fr5c) 55%, #fff); --b: color-mix(in srgb, var(--fr5c) 74%, #000); }
+.og-w6a { --a: var(--fr6f); --b: color-mix(in srgb, var(--fr6c) 78%, #fff); } .og-w6b { --a: color-mix(in srgb, var(--fr6c) 60%, #fff); --b: var(--fr6c); } .og-w6c { --a: var(--fr6c); --b: color-mix(in srgb, var(--fr6c) 58%, #000); }
+.og-w7a { --a: color-mix(in srgb, var(--fr7f) 40%, #fff); --b: var(--fr7c); } .og-w7b { --a: var(--fr7f); --b: var(--fr-flame); } .og-w7c { --a: var(--fr-flame); --b: var(--fr-ruby); }
+.og-wga { --a: color-mix(in srgb, var(--fr3c) 26%, #fff); --b: var(--fr3c); } .og-wgb { --a: var(--fr3c); --b: color-mix(in srgb, var(--fr3c) 66%, #000); } .og-wgc { --a: color-mix(in srgb, var(--fr3c) 78%, #000); --b: color-mix(in srgb, var(--fr3c) 48%, #000); }
+/* Ornaments: every piece has a darker edge of its own metal (--oe), feathers of their own colour (--we) */
+.fr-orn { --oe: color-mix(in srgb, var(--frc) 50%, #000); --we: var(--oe); }
+.fr6 .fr-orn { --we: color-mix(in srgb, var(--fr6c) 60%, #000); }
+.fr7 .fr-orn { --we: color-mix(in srgb, var(--fr-ruby) 80%, #000); }
+.fr-orn .fr-gem { stroke: var(--frc); stroke-width: 2.2; stroke-linejoin: round; }
+.fr-orn circle.fr-gem { stroke-width: 1; }
+.fr-orn .fr-facet { fill: #fff; opacity: 0.8; }
+.fr-orn .fr-glint { fill: #fff; opacity: 0; transform-box: fill-box; transform-origin: center; animation: fr-glint 3.4s ease-in-out infinite; }
+@keyframes fr-glint { 0%, 60%, 100% { opacity: 0; transform: scale(0.3); } 76% { opacity: 1; transform: scale(1.3) rotate(45deg); } }
+.fr-orn .fr-metal { stroke: var(--oe); stroke-width: 1.1; stroke-linejoin: round; }
+.fr-orn .fr-crown { stroke: color-mix(in srgb, var(--fr3c) 48%, #000); stroke-width: 1.2; stroke-linejoin: round; }
+.fr-orn .fr-band { fill: color-mix(in srgb, var(--fr3c) 74%, #000); stroke: color-mix(in srgb, var(--fr3c) 45%, #000); stroke-width: 0.8; stroke-linejoin: round; }
+.fr-orn .fr-pearl { fill: var(--fr-gem); stroke: var(--fr3c); stroke-width: 1.2; }
+.fr-orn .fr-ruby { stroke: var(--fr3c); stroke-width: 1.5; stroke-linejoin: round; }
+.fr-orn .fr-crown-g { animation: fr-crown 3.2s ease-in-out infinite; }
+@keyframes fr-crown { 50% { transform: translateY(-1.8px); } }
+.fr-orn .fr-leaf { stroke: var(--oe); stroke-width: 0.7; stroke-linejoin: round; }
+.fr-orn .fr-stem { fill: none; stroke: var(--oe); stroke-width: 1.7; stroke-linecap: round; }
+.fr-orn .fr-ll, .fr-orn .fr-lr { transform-box: fill-box; transform-origin: 100% 100%; animation: fr-sway 4.6s ease-in-out infinite; }
+.fr-orn .fr-lr { transform-origin: 0 100%; animation-name: fr-sway-r; }
+@keyframes fr-sway { 50% { transform: rotate(-2.2deg); } }
+@keyframes fr-sway-r { 50% { transform: rotate(2.2deg); } }
+.fr-orn .fr-fo, .fr-orn .fr-fi, .fr-orn .fr-fc { stroke: var(--we); stroke-width: 0.9; stroke-linejoin: round; }
+.fr-orn .fr-hl { fill: none; stroke: #fff; stroke-width: 0.8; stroke-linecap: round; opacity: 0.6; }
+.fr-orn .fr-ice { stroke: color-mix(in srgb, var(--fr5c) 52%, #000); stroke-width: 0.8; stroke-linejoin: round; }
+.fr-orn .fr-ice-lit { fill: var(--fr-gem); animation: fr-ice 3s ease-in-out infinite; }
+@keyframes fr-ice { 50% { fill: color-mix(in srgb, var(--fr5c) 45%, #fff); } }
+.fr-orn .fr-ember { fill: var(--fr7f); opacity: 0; animation: fr-ember 3.8s ease-in infinite; }
+@keyframes fr-ember { 0% { opacity: 0; transform: translateY(8px); } 22% { opacity: 1; } 100% { opacity: 0; transform: translateY(-18px); } }
+.fr-orn .fr-rib { fill: var(--c2); stroke: color-mix(in srgb, var(--c2) 58%, #000); stroke-width: 0.9; stroke-linejoin: round; }
+.fr-orn .fr-rib-d { fill: color-mix(in srgb, var(--c2) 66%, #000); }
+.fr-orn .fr-rib-hl { fill: none; stroke: #fff; stroke-width: 1.5; stroke-linecap: round; opacity: 0.42; }
 .fr-orn .fr-spark { fill: var(--fr-gem); transform-box: fill-box; transform-origin: center; animation: fr-twinkle 2.8s ease-in-out infinite; }
 @keyframes fr-twinkle { 0%, 100% { opacity: .2; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
 .fr7 { animation: fr-glow 2.6s ease-in-out infinite; }
 @keyframes fr-glow { 0%, 100% { box-shadow: 0 0 10px color-mix(in srgb, var(--fr-flame) 45%, transparent); } 50% { box-shadow: 0 0 22px color-mix(in srgb, var(--fr-flame) 80%, transparent); } }
-@media (prefers-reduced-motion: reduce) { .fr-orn .fr-spark, .fr7 { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .fr-orn *, .fr7 { animation: none !important; } .fr-orn .fr-glint, .fr-orn .fr-ember { display: none; } }
 /* Daraja nishoni: metall/qimmatbaho tosh koʻrinishi; Platinadan yaltirash oʻtadi, Usta va Afsona — porlaydi */
 .fr > b.fr-lv { --lvb: var(--lv1b); --lvt: var(--lv1t); --lve: var(--lv1e); position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); z-index: 3; display: block; min-width: 24px; padding: 2px 7px 1px; border-radius: 999px; overflow: hidden; isolation: isolate;
   background: var(--lvb); color: var(--lvt); border: 1.5px solid var(--lve); font-size: 11px; font-weight: 800; line-height: 1.25; letter-spacing: 0; text-align: center; white-space: nowrap;
@@ -1596,13 +1638,18 @@ details.fold > .list .unit:active { box-shadow: 0 1px 0 var(--line-2); }
 .fr7 .fr-orn .fr-wl, .fr7 .fr-orn .fr-wr { animation-duration: 2.6s; }
 @keyframes fr-flap { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-7deg); } }
 @keyframes fr-flap-r { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(7deg); } }
+.fr-orn .fr-fo { transform-box: fill-box; transform-origin: 100% 100%; animation: fr-fan 3.4s ease-in-out 0.25s infinite; }
+@keyframes fr-fan { 50% { transform: rotate(-3.5deg) scale(1.035); } }
 .fr-orn .fr-ruby { animation: fr-ruby 2.2s ease-in-out infinite; }
-@keyframes fr-ruby { 0%, 100% { fill: var(--fr-ruby); } 50% { fill: color-mix(in srgb, var(--fr-ruby) 55%, #fff); } }
+@keyframes fr-ruby { 50% { filter: brightness(1.45); } }
 @media (prefers-reduced-motion: reduce) {
   .fr::before, .fr::after, .fr6, .fr7, .fr > b.fr-lv, .fr > b.fr-lv::after, .fr-orn .fr-wl, .fr-orn .fr-wr, .fr-orn .fr-ruby { animation: none !important; }
   .fr > b.fr-lv::after { display: none; }
 }
 .pod .fr { margin-bottom: 6px; }
+/* In a row the name stands right beside the avatar: wings and crystals stay a little shorter there */
+.rank-row .fr { justify-self: center; }
+.rank-row .fr-orn.fr-back { transform: scale(0.84); }
 /* Profil: katta ramka; jins belgisi chap-tepada, kamera oʻng-pastda — ikkalasi ramkadan tashqarida */
 .profile-card .avatar-edit { margin: 16px 12px 16px 14px; }
 .profile-card .avatar.lg { width: 76px; height: 76px; }
@@ -1610,33 +1657,36 @@ details.fold > .list .unit:active { box-shadow: 0 1px 0 var(--line-2); }
 .profile-card .avatar-edit .sticker { left: -18px; top: -20px; z-index: 4; }
 .profile-card .avatar-edit .cam { right: -22px; bottom: -18px; z-index: 4; width: 30px; height: 30px; }
 @media (max-width: 360px) { .profile-card .avatar.lg { width: 64px; height: 64px; } .profile-card .avatar-edit { margin: 14px 10px 14px 12px; } }
+.cel-medal.cel-ach { width: auto; height: auto; background: none; box-shadow: none; margin-top: -8px; margin-bottom: 10px; }
+.cel-ach .ach-st { --rw: 5px; width: 76px; height: 76px; }
+.cel-ach .fr-orn { width: 160%; height: 160%; }
+.cel-ach .ach-disk > svg { width: 46%; height: 46%; }
 .cel-medal.cel-frame { width: auto; height: auto; background: none; box-shadow: none; margin-top: -30px; }
 .cel-medal.cel-frame .avatar { width: 64px; height: 64px; }
 /* Profil: ramkalar galereyasi */
 .fr-lock { position: absolute; top: 34px; left: calc(50% + 16px); z-index: 3; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); color: var(--muted); box-shadow: 0 0 0 1px var(--line); font-style: normal; font-size: 11px; }
 .fr-lock svg { width: 12px; height: 12px; }
 .fr-next { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
-/* ---- Profile hero: the big Pamuk inside the current frame, two medals on each side, the next frame as the goal ---- */
+/* ---- Profile hero: the big Pamuk inside the current frame, a shelf of five medals under it, the next frame as the goal ---- */
 .ph-card { position: relative; overflow: hidden; isolation: isolate; padding-top: 14px; --frh: var(--fr1c); }
 .ph-fr2 { --frh: var(--fr2c); } .ph-fr3 { --frh: var(--fr3c); } .ph-fr4 { --frh: var(--fr4c); } .ph-fr5 { --frh: var(--fr5c); } .ph-fr6 { --frh: var(--fr6c); } .ph-fr7 { --frh: var(--fr7c); }
 .ph-card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 290px; z-index: -1; pointer-events: none; background: radial-gradient(62% 70% at 50% 46%, color-mix(in srgb, var(--frh) 24%, transparent), transparent 74%); }
-.ph-stage { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 2px; padding: 34px 0 26px; }
+.ph-stage { width: 100%; display: grid; place-items: center; padding: 26px 0 22px; }
+.ph-fr3 .ph-stage, .ph-fr4 .ph-stage, .ph-fr5 .ph-stage { padding: 44px 0 32px; }
 .ph-cat { position: relative; display: grid; place-items: center; }
 .ph-cat::before { content: ""; position: absolute; inset: -12%; border-radius: 50%; z-index: -1; background: radial-gradient(circle, color-mix(in srgb, var(--frh) 38%, transparent) 52%, transparent 72%); animation: ph-halo 3.6s ease-in-out infinite; }
 @keyframes ph-halo { 50% { transform: scale(1.07); opacity: 0.72; } }
 .fr.fr-hero { --frw: 6px; }
 .fr.fr-hero::before { animation: fr-spin 14s linear infinite; }
-.fr.fr-hero > .avatar.ph-av { width: clamp(124px, 39vw, 168px); height: clamp(124px, 39vw, 168px); align-items: end; background: radial-gradient(circle at 50% 30%, var(--surface), var(--accent-soft) 78%); box-shadow: 0 0 0 3px var(--surface), inset 0 -22px 30px -20px color-mix(in srgb, var(--frc) 55%, transparent); }
+.fr.fr-hero > .avatar.ph-av { width: clamp(132px, 42vw, 176px); height: clamp(132px, 42vw, 176px); align-items: end; background: radial-gradient(circle at 50% 30%, var(--surface), var(--accent-soft) 78%); box-shadow: 0 0 0 3px var(--surface), inset 0 -22px 30px -20px color-mix(in srgb, var(--frc) 55%, transparent); }
 .ph-av .cat { width: 86%; height: auto; margin-bottom: 5%; }
-/* Wings (Usta, Afsona) spread wide and the crown stands tall: a smaller ring leaves them room beside the medals */
-.ph-fr6 .fr.fr-hero > .avatar.ph-av, .ph-fr7 .fr.fr-hero > .avatar.ph-av { width: clamp(108px, 33vw, 146px); height: clamp(108px, 33vw, 146px); }
-.ph-fr6 .ph-stage, .ph-fr7 .ph-stage { padding-top: 48px; padding-bottom: 32px; }
-.ph-side { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; }
+/* Wings (Usta, Afsona) spread wide and the crown stands tall: nothing stands beside them, the stage gives them room */
+.ph-fr6 .ph-stage, .ph-fr7 .ph-stage { padding: 62px 0 46px; }
+.ph-shelf { width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; margin-bottom: 6px; }
 .ph-medal { width: 100%; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; color: inherit; text-decoration: none; -webkit-tap-highlight-color: transparent; }
-.ph-medal .ach-st { width: 50px; height: 50px; transition: transform 0.14s ease; }
-.ph-medal .ach-st svg { width: 22px; height: 22px; }
+.ph-medal .ach-st { --rw: 3px; width: clamp(34px, 10.6vw, 44px); height: clamp(34px, 10.6vw, 44px); margin: 12px 0 7px; transition: transform 0.14s ease; }
 .ph-medal:active .ach-st { transform: scale(0.93); }
-.ph-medal small { max-width: 100%; font-size: 10.5px; font-weight: 700; line-height: 1.15; color: var(--ink-2); text-align: center; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ph-medal small { max-width: 100%; font-size: 10px; font-weight: 700; line-height: 1.15; color: var(--ink-2); text-align: center; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ph-medal.locked small { color: var(--muted); }
 .ph-tags { justify-content: center; }
 .ph-next { width: 100%; display: flex; align-items: center; gap: 12px; margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--hair); text-align: left; }

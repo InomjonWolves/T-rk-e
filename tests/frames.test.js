@@ -14,9 +14,9 @@ test("frames: the level or the league opens a frame, whichever is higher; seven 
   const r = await page.evaluate(() => [frameOf(0, 1), frameOf(999, 1), frameOf(1000, 1), frameOf(4500, 1), frameOf(19000, 1), frameOf(200, 4), frameOf(4500, 6), frameOf(122500, 1), frameOf(9e6, 9), frameOf(undefined, undefined)]);
   assert.deepEqual(r, [1, 1, 2, 3, 4, 4, 6, 7, 7, 1]);
   assert.deepEqual(await page.evaluate(() => FRAMES.map(f => f.uz)), ["Bronza", "Kumush", "Oltin", "Platina", "Olmos", "Usta", "Afsona"]);
-  // Ornaments grow with the frame: gem from Oltin, laurel from Platina, side gems from Olmos, wings (behind) from Usta, crown for Afsona
+  // Ornaments grow with the frame: gem from Oltin, laurel for Platina, ice crystals and side gems for Olmos, wings (behind) from Usta, crown for Afsona
   const o = await page.evaluate(() => [1, 3, 4, 5, 6, 7].map(n => { const d = document.createElement("div"); d.innerHTML = framed("<span class='avatar'></span>", n); return [!!d.querySelector(".fr-gem"), !!d.querySelector(".fr-leaf"), d.querySelectorAll(".fr-gem").length >= 3, !!d.querySelector(".fr-back .fr-wing"), !!d.querySelector(".fr-crown")]; }));
-  assert.deepEqual(o, [[false, false, false, false, false], [true, false, false, false, false], [true, true, false, false, false], [true, true, true, false, false], [true, false, true, true, false], [true, false, true, true, true]]);
+  assert.deepEqual(o, [[false, false, false, false, false], [true, false, false, false, false], [true, true, false, false, false], [true, false, true, false, false], [true, false, true, true, false], [true, false, true, true, true]]);
   assert.deepEqual(errors, []);
 });
 
@@ -103,5 +103,46 @@ test("frames on the profile: the gender sticker and the camera sit outside the r
   // Higher frames move: the ring turns from Platina, the chip shines; wings flap on Usta and Afsona
   const m = await page.evaluate(() => [3, 4, 6].map(n => { const d = document.createElement("div"); d.innerHTML = framed("<span class='avatar'></span>", n, { lv: 1 }); document.body.appendChild(d); const f = d.querySelector(".fr"); const o = [getComputedStyle(f, "::before").animationName, getComputedStyle(f.querySelector(".fr-lv"), "::after").animationName, !!f.querySelector(".fr-wl")]; d.remove(); return o; }));
   assert.deepEqual(m, [["none", "none", false], ["fr-spin", "lv-shine", false], ["fr-spin", "lv-shine", true]]);
+  assert.deepEqual(errors, []);
+});
+
+test("frames and medals: ornaments drawn with shared gradients, each piece moves, all still with reduced motion", async () => {
+  const { page, errors } = await openApp(browser, "#home", { state: { xp: 500, place: { skipped: 1 } } });
+  const r = await page.evaluate(() => {
+    const box = document.createElement("div"); document.body.appendChild(box);
+    const A = [1, 2, 3, 4].map(t => ACH.find(a => achTier(a) === t));
+    box.innerHTML = [4, 5, 6, 7].map(n => framed("<span class='avatar'></span>", n)).join("") + A.map(a => achSticker(a)).join("");
+    const anim = s => { const e = box.querySelector(s); return e ? getComputedStyle(e).animationName : null; };
+    // Every gradient an ornament asks for is defined once in the page and has a real colour
+    const ids = [...new Set([...box.querySelectorAll("[fill^='url(#']")].map(e => e.getAttribute("fill").slice(5, -1)))];
+    const stop = id => { const g = document.getElementById(id); return g && document.querySelectorAll("#" + id).length === 1 ? getComputedStyle(g.querySelector("stop")).stopColor : ""; };
+    const st = [...box.querySelectorAll(".ach-st")];
+    const out = {
+      defs: document.querySelectorAll("svg.orn-defs").length, ids: ids.length, bad: ids.filter(id => !/^(rgb|color)\(/.test(stop(id)) || stop(id) === "rgb(0, 0, 0)"),
+      ice: [!!box.querySelector(".fr5 .fr-back .fr-ice"), !!box.querySelector(".fr4 .fr-ice")],
+      rows: ["fr-fo", "fr-fi", "fr-fc"].map(c => box.querySelectorAll(".fr6 .fr-back ." + c).length), shield: [!!box.querySelector(".fr6 .fr-shield"), !!box.querySelector(".fr7 .fr-shield"), !!box.querySelector(".fr5 .fr-shield")],
+      anim: [anim(".fr4 .fr-ll"), anim(".fr6 .fr-wl"), anim(".fr6 .fr-wr"), anim(".fr6 .fr-fo"), anim(".fr7 .fr-crown-g"), anim(".fr7 .fr-ember"), anim(".fr5 .fr-glint"), anim(".fr5 .fr-ice-lit")],
+      medals: st.map(s => [!!s.querySelector(".fr-rib"), !!s.querySelector(".fr-leaf"), !!s.querySelector(".fr-back .fr-wing"), !!s.querySelector(".fr-crown"), !!s.querySelector(".ach-disk > svg")]),
+      rib: getComputedStyle(st[0].querySelector(".fr-rib")).fill === getComputedStyle(st[0]).getPropertyValue("--c2").trim() || getComputedStyle(st[0].querySelector(".fr-rib")).fill.startsWith("rgb")
+    };
+    window.__box = box; return out;
+  });
+  assert.equal(r.defs, 1); assert.ok(r.ids >= 8, "gradients in use: " + r.ids); assert.deepEqual(r.bad, []);
+  assert.deepEqual(r.ice, [true, false]); assert.deepEqual(r.rows, [2, 2, 2]); assert.deepEqual(r.shield, [true, true, false]);
+  assert.deepEqual(r.anim, ["fr-sway", "fr-flap", "fr-flap-r", "fr-fan", "fr-crown", "fr-ember", "fr-glint", "fr-ice"]);
+  // Medals grow with rarity: a ribbon always; laurel for Nodir; wings for Epik; wings and a crown for Afsonaviy
+  assert.deepEqual(r.medals, [[true, false, false, false, true], [true, true, false, false, true], [true, false, true, false, true], [true, false, true, true, true]]);
+  assert.equal(r.rib, true);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const still = await page.evaluate(() => [".fr4 .fr-ll", ".fr6 .fr-wl", ".fr6 .fr-fo", ".fr7 .fr-crown-g", ".fr5 .fr-ice-lit", ".ach-st.t4 .fr-wl"].map(s => getComputedStyle(window.__box.querySelector(s)).animationName).concat(getComputedStyle(window.__box.querySelector(".fr7 .fr-ember")).display));
+  assert.deepEqual(still, ["none", "none", "none", "none", "none", "none", "none"]);
+  // The pop-up for a new achievement shows the same medal; the topbar frame keeps its wings shorter than the profile's
+  const c = await page.evaluate(() => {
+    ACH_QUEUE.length = 0; const a = ACH.find(x => achTier(x) === 4); celebrate({ title: a.t, ico: a.ico, c: a.c, r: 4, ach: 1 });
+    const av = "<span class='avatar' style='width:40px;height:40px'></span>";
+    const w = h => { const d = document.createElement("div"); d.innerHTML = h; window.__box.appendChild(d); const b = d.querySelector(".fr-wl").getBBox(); return b.width; };
+    return [!!document.querySelector("#celebrate .cel-ach .ach-st.t4 .fr-crown"), !!document.querySelector("#celebrate .cel-ach .fr-rib"), w(framed(av, 7, { sm: 1 })) < w(framed(av, 7)) * 0.9];
+  });
+  assert.deepEqual(c, [true, true, true]);
   assert.deepEqual(errors, []);
 });

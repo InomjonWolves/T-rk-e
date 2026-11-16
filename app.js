@@ -535,54 +535,95 @@ const frameByLv = lv => FRAMES.filter(f => lv >= f.lv).pop().n;
 const frameOf = (xp, lg) => Math.max(frameByLv(lvlOf(+xp || 0)), Math.min(7, Math.max(1, +lg || 1)));
 const myFrame = () => frameOf(S.xp, S.lg);
 // Ornaments, drawn by us (the reference pictures were only ideas): viewBox -30…130, the ring is the 0…100 circle.
+// Metal, gem and feather fills are gradients kept once in the page (ORN_DEFS); their colours come from styles.css.
+const ORN_DEFS = (() => {
+  const g3 = id => `<linearGradient id="${id}" class="og-m ${id}" x1="0" y1="0" x2="0" y2="1"><stop class="s-hi" offset="0"/><stop class="s-md" offset=".52"/><stop class="s-lo" offset="1"/></linearGradient>`;
+  const g2 = id => `<linearGradient id="${id}" class="og-2 ${id}" x1="0" y1="0" x2="0" y2="1"><stop class="s-a" offset="0"/><stop class="s-b" offset="1"/></linearGradient>`;
+  return `<svg class="orn-defs" aria-hidden="true" focusable="false"><defs>${[1, 2, 3, 4, 5, 6, 7].map(n => g3("og-m" + n)).join("")}${["og-gem", "og-ruby", "og-ice", "og-w6a", "og-w6b", "og-w6c", "og-w7a", "og-w7b", "og-w7c", "og-wga", "og-wgb", "og-wgc"].map(g2).join("")}</defs></svg>`;
+})();
 const FR_ORN = (() => {
-  const f = v => v.toFixed(1);
-  // One feather: a pointed leaf from the base (bx, by) along angle a (degrees, y down), length l, half-width w
-  const feather = (bx, by, a, l, w) => {
-    const t = a * Math.PI / 180, cx = Math.cos(t), cy = Math.sin(t), tx = bx + l * cx, ty = by + l * cy;
-    const mx = bx + l * 0.45 * cx, my = by + l * 0.45 * cy, nx = -cy * w, ny = cx * w;
-    return `M${f(bx)} ${f(by)}Q${f(mx + nx)} ${f(my + ny)} ${f(tx)} ${f(ty)}Q${f(mx - nx)} ${f(my - ny)} ${f(bx)} ${f(by)}Z`;
+  const f = v => +v.toFixed(1), rad = d => d * Math.PI / 180;
+  const P = (r, d) => [50 + r * Math.cos(rad(d)), 50 + r * Math.sin(rad(d))];
+  // One feather: a full blade from the base (bx, by) along angle a (degrees, y down), length l, half-width w; its tip leans by `bend`
+  const feather = (bx, by, a, l, w, bend = 0.5) => {
+    const cx = Math.cos(rad(a)), cy = Math.sin(rad(a)), nx = -cy, ny = cx, at = (u, v) => `${f(bx + l * u * cx + w * v * nx)} ${f(by + l * u * cy + w * v * ny)}`;
+    return `M${f(bx)} ${f(by)}C${at(0.2, -1)} ${at(0.72, -1.05)} ${at(1, bend)}C${at(0.8, 0.75)} ${at(0.3, 0.7)} ${f(bx)} ${f(by)}Z`;
   };
-  // A wing that rises from behind the ring, low on the left, up to its top: a long pale outer row, a short darker inner row
-  const wingL = big => {
-    const k = big ? 1.1 : 1, out = [], inn = [];
-    [[196, 30], [208, 40], [220, 50], [232, 58], [244, 66], [256, 72], [268, 74]].forEach(([a, l]) => out.push(feather(10, 88, a, l * k, 8.6 * k)));
-    [[204, 24], [220, 34], [236, 42], [252, 50], [266, 54]].forEach(([a, l]) => inn.push(feather(13, 90, a, l * k, 6.4 * k)));
-    return `<path class="fr-fo" d="${out.join("")}"/><path class="fr-fi" d="${inn.join("")}"/>`;
+  const rib = (bx, by, a, l) => `M${f(bx)} ${f(by)}L${f(bx + l * Math.cos(rad(a)))} ${f(by + l * Math.sin(rad(a)))}`;
+  // The left wing: three rows of feathers fanning from the ring's left side — long primaries, coverts, and a short fluffy row
+  const wingL = (k, w) => {
+    const a = [], b = [], c = [], hl = [];
+    [23, 31, 38, 44, 48, 49, 44].forEach((n, i) => { const ph = 136 + i * 12.5, [x, y] = P(45, ph), t = ph + 32 + i * 3.6, l = n * k; a.push(feather(x, y, t, l, (5.6 + i * 0.2) * k)); hl.push(rib(x, y, t, l * 0.8)); });
+    [15, 19, 23, 26, 28, 27].forEach((n, i) => { const ph = 142 + i * 12.5, [x, y] = P(46, ph); b.push(feather(x, y, ph + 28 + i * 3, n * k, 5 * k)); });
+    [9, 11, 13, 14, 14].forEach((n, i) => { const ph = 150 + i * 12.5, [x, y] = P(47, ph); c.push(feather(x, y, ph + 22 + i * 2, n * k, 4.4 * k, 0.3)); });
+    return `<path class="fr-fo" fill="url(#og-${w}a)" d="${a.join("")}"/><path class="fr-hl" d="${hl.join("")}"/><path class="fr-fi" fill="url(#og-${w}b)" d="${b.join("")}"/><path class="fr-fc" fill="url(#og-${w}c)" d="${c.join("")}"/>`;
   };
   const mirror = x => `<g transform="matrix(-1 0 0 1 100 0)">${x}</g>`;
-  const wings = big => `<g class="fr-wing"><g class="fr-wl">${wingL(big)}</g><g class="fr-wr">${mirror(wingL(big))}</g></g>`;
-  const leaf = d => { const t = d * Math.PI / 180, x = 50 + 58 * Math.cos(t), y = 50 + 58 * Math.sin(t); return `<ellipse cx="${f(x)}" cy="${f(y)}" rx="7.5" ry="3.2" transform="rotate(${d + 90} ${f(x)} ${f(y)})"/>`; };
-  const gem = (x, y, r) => `<path class="fr-gem" d="M${x} ${y - r}L${x + r * 0.72} ${y}L${x} ${y + r}L${x - r * 0.72} ${y}Z"/>`;
-  const spark = (x, y, r, d) => `<path class="fr-spark" style="animation-delay:${d}s" d="M${x} ${y - r}Q${x} ${y} ${x + r} ${y}Q${x} ${y} ${x} ${y + r}Q${x} ${y} ${x - r} ${y}Q${x} ${y} ${x} ${y - r}Z"/>`;
+  const wings = (k, w) => `<g class="fr-wing"><g class="fr-wl">${wingL(k, w)}</g><g class="fr-wr">${mirror(wingL(k, w))}</g></g>`;
+  // A laurel branch up the left side: a stem with leaves in pairs, the outer ones longer
+  const laurelL = m => {
+    const out = [], inn = [];
+    for (let ph = 114; ph <= 212; ph += 14) { const [x, y] = P(56, ph); out.push(feather(x, y, ph + 46, 15.5, 4, 0.3)); inn.push(feather(x, y, ph + 120, 9, 3, -0.3)); }
+    const [sx, sy] = P(56, 106), [ex, ey] = P(56, 222), [tx, ty] = P(56, 222);
+    return `<path class="fr-stem" d="M${f(sx)} ${f(sy)}A56 56 0 0 1 ${f(ex)} ${f(ey)}"/><path class="fr-leaf" fill="url(#og-m${m})" d="${out.join("")}${feather(tx, ty, 302, 14, 3.6, 0)}"/><path class="fr-leaf fr-leaf-in" fill="url(#og-m${m})" d="${inn.join("")}"/>`;
+  };
+  const laurel = m => `<g class="fr-laurel"><g class="fr-ll">${laurelL(m)}</g><g class="fr-lr">${mirror(laurelL(m))}</g></g>`;
+  // A cut gem: the stone, a lit facet, a glint that twinkles
+  const gem = (x, y, r, cls = "fr-gem", fill = "og-gem", d = 0) => `<path class="${cls}" fill="url(#${fill})" d="M${x} ${f(y - r)}L${f(x + r * 0.74)} ${y}L${x} ${f(y + r)}L${f(x - r * 0.74)} ${y}Z"/><path class="fr-facet" d="M${x} ${f(y - r)}L${f(x - r * 0.74)} ${y}L${x} ${f(y - r * 0.12)}Z"/>${glint(x + r * 0.2, y - r * 0.28, r * 0.42, d)}`;
+  const star = (x, y, r) => `M${f(x)} ${f(y - r)}Q${f(x)} ${f(y)} ${f(x + r)} ${f(y)}Q${f(x)} ${f(y)} ${f(x)} ${f(y + r)}Q${f(x)} ${f(y)} ${f(x - r)} ${f(y)}Q${f(x)} ${f(y)} ${f(x)} ${f(y - r)}Z`;
+  const glint = (x, y, r, d) => `<path class="fr-glint" style="animation-delay:${d}s" d="${star(x, y, r)}"/>`;
+  const spark = (x, y, r, d) => `<path class="fr-spark" style="animation-delay:${d}s" d="${star(x, y, r)}"/>`;
+  const ember = (x, y, r, d) => `<circle class="fr-ember" style="animation-delay:${d}s" cx="${x}" cy="${y}" r="${r}"/>`;
   // Top crest: a gem between two swept spikes (from Oltin); bottom crest: a smaller gem with short spikes
-  const spikes = (y, s) => `<path class="fr-metal" d="M${50 - 6 * s} ${y}Q${50 - 17 * s} ${y - 9 * s} ${50 - 25 * s} ${y - 2 * s}Q${50 - 16 * s} ${y - 2 * s} ${50 - 6 * s} ${y + 5 * s}ZM${50 + 6 * s} ${y}Q${50 + 17 * s} ${y - 9 * s} ${50 + 25 * s} ${y - 2 * s}Q${50 + 16 * s} ${y - 2 * s} ${50 + 6 * s} ${y + 5 * s}Z"/>`;
+  const spikes = (y, s, m) => `<path class="fr-metal" fill="url(#og-m${m})" d="M${f(50 - 5 * s)} ${f(y + 1)}Q${f(50 - 15 * s)} ${f(y - 12 * s)} ${f(50 - 27 * s)} ${f(y - 5 * s)}Q${f(50 - 17 * s)} ${f(y - 3 * s)} ${f(50 - 9 * s)} ${f(y + 6 * s)}ZM${f(50 + 5 * s)} ${f(y + 1)}Q${f(50 + 15 * s)} ${f(y - 12 * s)} ${f(50 + 27 * s)} ${f(y - 5 * s)}Q${f(50 + 17 * s)} ${f(y - 3 * s)} ${f(50 + 9 * s)} ${f(y + 6 * s)}Z"/>`;
+  // Ice crystals (Olmos): a fan of long cut stones low on each side, each with a pale and a deep half
+  const crystalL = () => {
+    const lit = [], deep = [];
+    [[142, 172, 20], [156, 194, 29], [170, 214, 36], [184, 232, 30], [198, 250, 22]].forEach(([ph, a, l]) => {
+      const [x, y] = P(47, ph), cx = Math.cos(rad(a)), cy = Math.sin(rad(a)), nx = -cy, ny = cx, w = 5.4;
+      const m = [x + l * 0.32 * cx, y + l * 0.32 * cy], t = [x + l * cx, y + l * cy];
+      lit.push(`M${f(x)} ${f(y)}L${f(m[0] - w * nx)} ${f(m[1] - w * ny)}L${f(t[0])} ${f(t[1])}Z`);
+      deep.push(`M${f(x)} ${f(y)}L${f(m[0] + w * nx)} ${f(m[1] + w * ny)}L${f(t[0])} ${f(t[1])}Z`);
+    });
+    return `<path class="fr-ice" fill="url(#og-ice)" d="${deep.join("")}"/><path class="fr-ice fr-ice-lit" d="${lit.join("")}"/>`;
+  };
+  const crystals = `<g class="fr-crystals">${crystalL()}${mirror(crystalL())}</g>`;
+  const shield = ruby => `<g transform="matrix(1 0 0 -1 0 100)">${spikes(-2, 0.95, 3)}</g><path class="fr-metal fr-shield" fill="url(#og-m3)" d="M38 96Q50 100 62 96L61.5 107Q60 115 50 121Q40 115 38.5 107Z"/>${gem(50, 107.5, 6.5, ruby ? "fr-ruby" : "fr-gem", ruby ? "og-ruby" : "og-gem", 0.6)}`;
+  const crown = `<g class="fr-crown-g"><path class="fr-crown" fill="url(#og-m3)" d="M28-2L22-17L31-10L36.5-23L43-12L50-28L57-12L63.5-23L69-10L78-17L72-2Q50-10 28-2Z"/><path class="fr-band" d="M27 4Q50-4 73 4L72-3Q50-11 28-3Z"/><circle class="fr-pearl" cx="22" cy="-18" r="2.5"/><circle class="fr-pearl" cx="36.5" cy="-24" r="2.5"/><circle class="fr-pearl" cx="50" cy="-29" r="3"/><circle class="fr-pearl" cx="63.5" cy="-24" r="2.5"/><circle class="fr-pearl" cx="78" cy="-18" r="2.5"/><circle class="fr-ruby" fill="url(#og-ruby)" cx="50" cy="-3.6" r="3.6"/><circle class="fr-gem" fill="url(#og-gem)" cx="38" cy="-1.4" r="2.2"/><circle class="fr-gem" fill="url(#og-gem)" cx="62" cy="-1.4" r="2.2"/>${glint(50, -16, 4, 0.3)}</g>`;
+  // A medal's ribbon: two folded tails behind a banner that crosses the foot of the disc
+  const ribbon = `<path class="fr-rib-d" d="M10 86L-13 81L-7 90L-14 99L12 101ZM90 86L113 81L107 90L114 99L88 101Z"/><path class="fr-rib" d="M4 83Q50 101 96 83L96 97Q50 116 4 97Z"/><path class="fr-rib-hl" d="M8 87.5Q50 104.5 92 87.5"/>`;
+  const sprig = m => `<path class="fr-leaf" fill="url(#og-m${m})" d="${feather(45, 101, 196, 15, 4, 0.4)}${feather(55, 101, -16, 15, 4, -0.4)}"/>`;
   return {
-    top: `${spikes(-1, 1)}${gem(50, -5, 10)}`,
-    bottom: `<g transform="matrix(1 0 0 -1 0 100)">${spikes(-1, 0.7)}</g>${gem(50, 103, 7)}`,
-    bottomGem: gem(50, 101, 6),
-    sides: `${gem(-1, 50, 7)}${gem(101, 50, 7)}`,
-    laurel: `<g class="fr-leaf">${[104, 121, 138, 155].map(leaf).join("")}${[76, 59, 42, 25].map(leaf).join("")}</g>`,
-    wings,
-    crown: `<path class="fr-crown" d="M28 2L29-17L39-8L50-25L61-8L71-17L72 2Q50-4 28 2Z"/><circle class="fr-pearl" cx="29" cy="-18" r="2.6"/><circle class="fr-pearl" cx="50" cy="-26" r="3"/><circle class="fr-pearl" cx="71" cy="-18" r="2.6"/><circle class="fr-ruby" cx="50" cy="-7" r="4.4"/>`,
-    sparks: `${spark(-17, 28, 5, 0)}${spark(113, 14, 4, 0.7)}${spark(118, 76, 5, 1.4)}${spark(-6, 98, 3.5, 2.1)}`
+    top: m => `${spikes(-1, 1, m)}${gem(50, -6, 10.5)}`,
+    bottom: m => `<g transform="matrix(1 0 0 -1 0 100)">${spikes(-1, 0.7, m)}</g>${gem(50, 103, 7, "fr-gem", "og-gem", 0.9)}`,
+    bottomGem: m => `${sprig(m)}${gem(50, 101, 6.5, "fr-gem", "og-gem", 0.9)}`,
+    sides: `${gem(-1, 50, 7, "fr-gem", "og-gem", 1.3)}${gem(101, 50, 7, "fr-gem", "og-gem", 1.9)}`,
+    laurel, wings, crystals, shield, crown, ribbon,
+    star: m => `<path class="fr-metal" fill="url(#og-m${m})" d="${star(50, -4, 11)}"/>${glint(50, -4, 4.5, 0)}`,
+    sparks: `${spark(-17, 26, 5, 0)}${spark(114, 12, 4, 0.7)}${spark(119, 74, 5, 1.4)}${spark(-8, 100, 3.5, 2.1)}`,
+    embers: `${ember(8, 20, 1.8, 0)}${ember(92, 26, 1.5, 0.9)}${ember(-12, 58, 1.6, 1.7)}${ember(112, 50, 1.9, 2.4)}${ember(30, -18, 1.4, 3.1)}${ember(74, -14, 1.6, 0.5)}`
   };
 })();
-// The avatar inside its frame; o.lv adds the level chip, o.sm is the topbar version, o.cls extra classes
+document.body.insertAdjacentHTML("afterbegin", ORN_DEFS);
+// The avatar inside its frame; o.lv adds the level chip, o.sm is the topbar version, o.cls extra classes.
+// Bronza — a plain ring; Kumush — a gem on a sprig; Oltin — a gem crest; Platina — laurel; Olmos — ice crystals;
+// Usta — feathered wings and a shield; Afsona — wings of flame, a jewelled crown, embers.
 function framed(av, n, o = {}) {
   n = Math.min(7, Math.max(1, n || 1));
   // With the level chip at the bottom, the bottom crest would hide under it
-  const O = FR_ORN, bot = o.lv ? "" : n >= 4 ? O.bottom : O.bottomGem, parts = n === 2 ? bot
-    : n === 3 ? O.top + bot
-    : n === 4 ? O.laurel + O.top + bot
-    : n === 5 ? O.laurel + O.top + bot + O.sides + O.sparks
-    : n === 6 ? O.top + bot + O.sides + O.sparks
-    : n === 7 ? O.crown + bot + O.sides + O.sparks : "";
-  // Wings sit behind the ring and the avatar, everything else in front
+  const O = FR_ORN, lv = o.lv, bot = lv ? "" : O.bottom(n), parts = n === 2 ? (lv ? "" : O.bottomGem(2))
+    : n === 3 ? O.top(3) + bot
+    : n === 4 ? O.laurel(4) + O.top(4) + bot
+    : n === 5 ? O.top(5) + bot + O.sides + O.sparks
+    : n === 6 ? O.top(6) + (lv ? "" : O.shield()) + O.sides + O.sparks
+    : n === 7 ? O.crown + (lv ? "" : O.shield(1)) + O.sides + O.sparks + O.embers : "";
+  // Wings and crystals sit behind the ring and the avatar, everything else in front.
   // The topbar avatar shows the same ornaments and the level chip;
   // there the drawing box is the ring itself (viewBox 0…100, painted outside it) so it never widens a narrow page
   const vb = o.sm ? "0 0 100 100" : "-30 -30 160 160";
-  const back = n >= 6 ? `<svg class="fr-orn fr-back" viewBox="${vb}" aria-hidden="true">${O.wings(n === 7)}</svg>` : "";
+  // (the small topbar frame keeps its wings short: its neighbours are a few pixels away)
+  const wk = o.sm ? 0.74 : 1, behind = n === 5 ? O.crystals : n === 6 ? O.wings(wk, "w6") : n === 7 ? O.wings(wk * 1.08, "w7") : "";
+  const back = behind ? `<svg class="fr-orn fr-back" viewBox="${vb}" aria-hidden="true">${behind}</svg>` : "";
   const orn = back + (parts ? `<svg class="fr-orn" viewBox="${vb}" aria-hidden="true">${parts}</svg>` : "");
   return `<span class="fr fr${n}${o.sm ? " fr-sm" : ""}${o.cls ? " " + o.cls : ""}" title="${FRAMES[n - 1].uz} ramka">${av}${orn}${o.lv ? `<b class="fr-lv">${o.lv}</b>` : ""}</span>`;
 }
@@ -1426,7 +1467,7 @@ function comebackCard() {
 /* Profile hero: the big Pamuk stands inside the current frame (the same ring and ornaments as on the avatar, large),
    two main achievements on each side, the level under it and the next frame as the goal. */
 // The four achievements to show off: the rarest first, then the newest; empty places go to the closest ones still locked
-function achTop(n = 4) {
+function achTop(n = 5) {
   const when = a => (S.achv || {})[a.id] || "";
   const got = ACH.filter(achDone).sort((x, y) => achTier(y) - achTier(x) || when(y).localeCompare(when(x))).slice(0, n);
   const next = ACH.filter(a => !achDone(a)).sort((x, y) => y.v() / y.n - x.v() / x.n).slice(0, n - got.length);
@@ -1446,12 +1487,10 @@ function frameNextRow() {
 function pamukHero() {
   const L = lvlInfo(), fr = myFrame(), top = achTop(), done = ACH.filter(achDone).length;
   const medal = ([a, on], i) => `<a class="ph-medal${on ? "" : " locked"}" href="#achievements" title="${esc(a.d)}">${on ? achSticker(a, i) : `<span class="ach-st ach-lock">${ICON.lock}</span>`}<small>${esc(a.t)}</small></a>`;
-  const side = k => `<div class="ph-side${k ? " right" : ""}">${top.slice(k * 2, k * 2 + 2).map((x, i) => medal(x, k * 2 + i)).join("")}</div>`;
   return `<section class="section">
     <div class="glass pad grow-card ph-card ph-fr${fr}">
-      <div class="ph-stage">${side(0)}
-        <div class="ph-cat">${framed(`<span class="avatar ph-av">${catSVG({ pose: "sit", look: L.st.id, cls: "mascot" })}</span>`, fr, { cls: "fr-hero" })}</div>
-      ${side(1)}</div>
+      <div class="ph-stage"><div class="ph-cat">${framed(`<span class="avatar ph-av">${catSVG({ pose: "sit", look: L.st.id, cls: "mascot" })}</span>`, fr, { cls: "fr-hero" })}</div></div>
+      <div class="ph-shelf" role="group" aria-label="Asosiy yutuqlar">${top.map(medal).join("")}</div>
       <div class="tags ph-tags"><span class="tag violet-t">${L.lv}-daraja</span><span class="tag orange-t">${FRAMES[fr - 1].uz} ramka</span></div>
       <b>${esc(L.st.uz)}</b><p class="muted">${esc(L.st.d)}</p>
       <div class="bar"><i style="width:${Math.round(L.p * 100)}%"></i></div>
@@ -2667,7 +2706,7 @@ function checkAch() {
   lvlCheck();
   try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {}
   cloudSave();
-  fresh.forEach(a => { const T = ACH_TIERS[achTier(a)]; celebrate({ eyebrow: achTier(a) > 1 ? `${T.uz} yutuq!` : "Yangi yutuq!", title: a.t, text: `${a.d}. Pamuk sizdan faxrlanadi! +${T.xp} XP`, ico: a.ico, c: a.c, r: achTier(a), share: true }); });
+  fresh.forEach(a => { const T = ACH_TIERS[achTier(a)]; celebrate({ eyebrow: achTier(a) > 1 ? `${T.uz} yutuq!` : "Yangi yutuq!", title: a.t, text: `${a.d}. Pamuk sizdan faxrlanadi! +${T.xp} XP`, ico: a.ico, c: a.c, r: achTier(a), ach: 1, share: true }); });
 }
 // During an exercise the pop-up waits for the result screen, so it never covers the answer buttons
 const celebrateLater = () => !!(SES && !SES.done);
@@ -2685,7 +2724,7 @@ function showCelebrate() {
   el.innerHTML = `<div class="confetti" aria-hidden="true">${Array.from({ length: 36 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 0.6).toFixed(2)}s;animation-duration:${(2 + Math.random() * 1.5).toFixed(2)}s;transform:rotate(${Math.random() * 360}deg)"></i>`).join("")}</div>
     <div class="cel-card" role="dialog" aria-modal="true" aria-label="${esc(c.eyebrow || "Yangi yutuq")}">
       <div class="cel-cat">${c.look ? catSVG({ pose: "sit", acc: "stars", look: c.look, cls: "mascot" }) : mascot("trophy")}</div>
-      ${c.frame ? `<span class="cel-medal cel-frame">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "", { n: c.frame })}</span>` : c.league ? `<span class="cel-medal">${lgBadge(c.league, "lg-cel")}</span>` : `<span class="medal art ${c.c} cel-medal${c.r > 2 ? ` ach-r${c.r}` : ""}">${c.badge !== undefined ? `<b class="cel-num">${esc(c.badge)}</b>` : ICON[c.ico] || ICON.star}</span>`}
+      ${c.frame ? `<span class="cel-medal cel-frame">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "", { n: c.frame })}</span>` : c.league ? `<span class="cel-medal">${lgBadge(c.league, "lg-cel")}</span>` : c.ach ? `<span class="cel-medal cel-ach">${achBadge(ACH_COL(c.c), c.r, c.ico)}</span>` : `<span class="medal art ${c.c} cel-medal${c.r > 2 ? ` ach-r${c.r}` : ""}">${c.badge !== undefined ? `<b class="cel-num">${esc(c.badge)}</b>` : ICON[c.ico] || ICON.star}</span>`}
       <small class="eyebrow">${esc(c.eyebrow || "Yangi yutuq!")}</small>
       <h2>${esc(c.title)}</h2>
       <p>${esc(c.text)}</p>
@@ -2716,10 +2755,14 @@ function viewAchievements() {
 // Achievement colours: the sticker's gradient (stars/cap are special colours used by a few achievements)
 const ACH_COL = c => ["violet", "sky", "orange", "pink", "green", "teal"].includes(c) ? c : c === "stars" ? "orange" : "violet";
 const achDate = a => { const w = S.achv && S.achv[a.id]; return w ? `${w.slice(8, 10)}.${w.slice(5, 7)}.${w.slice(0, 4)}` : ""; };
-// Earned: an enamel medal in a metal rim — bronze, silver, gold or the rainbow rim by rarity; not yet: a grey lock with progress
-function achSticker(a) {
-  const r = achTier(a);
-  return `<span class="ach-st st-${ACH_COL(a.c)} t${r}${r > 2 ? ` ach-r${r}` : ""}">${ICON[a.ico] || ICON.star}</span>`;
+// Earned: an enamel disc in a metal rim on a ribbon, richer with rarity — bronze; silver with laurel; gold with wings
+// and a star; the rainbow rim with wings, a crown and sparks. Not yet earned: a grey lock with progress
+const achSticker = a => achBadge(ACH_COL(a.c), achTier(a), a.ico);
+function achBadge(col, r, ico) {
+  const O = FR_ORN;
+  const back = r > 2 ? `<svg class="fr-orn fr-back ach-orn" viewBox="-30 -30 160 160" aria-hidden="true">${O.wings(r > 3 ? 0.8 : 0.66, "wg")}</svg>` : "";
+  const front = (r === 2 ? O.laurel(2) : "") + O.ribbon + (r === 3 ? O.star(3) : r > 3 ? O.crown + O.sparks : "");
+  return `<span class="ach-st st-${col} t${r}">${back}<i class="ach-disk${r > 2 ? ` ach-r${r}` : ""}">${ICON[ico] || ICON.star}</i><svg class="fr-orn ach-orn" viewBox="-30 -30 160 160" aria-hidden="true">${front}</svg></span>`;
 }
 function achCard(a, i) {
   const on = achDone(a), v = Math.min(a.v(), a.n);

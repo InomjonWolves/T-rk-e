@@ -88,15 +88,16 @@ test("profile: ⚙ opens one settings page with every setting and link; four mai
   assert.equal(await page.locator("#app .settings, #app [data-act=remind], #app [data-act=theme]").count(), 0, "no settings on the profile page");
   const got = await page.evaluate(() => ACH.filter(achDone).length);
   assert.ok(got >= 1);
-  // Two medals on each side of Pamuk: the earned ones first, the closest locked ones fill the rest; no wall, no stage row
+  // A shelf of five medals under Pamuk (beside him they hid the frame's wings): the earned ones first, the closest locked ones fill the rest
   const hero = await page.evaluate(() => ({
-    sides: [...document.querySelectorAll(".ph-stage .ph-side")].map(s => s.querySelectorAll(".ph-medal").length), earned: document.querySelectorAll(".ph-medal:not(.locked) .ach-st").length,
+    sides: document.querySelectorAll(".ph-stage .ph-medal, .ph-side").length, shelf: document.querySelectorAll(".ph-shelf > .ph-medal").length, cols: getComputedStyle(document.querySelector(".ph-shelf")).gridTemplateColumns.split(" ").length,
+    below: document.querySelector(".ph-shelf").getBoundingClientRect().top >= document.querySelector(".ph-stage .fr-hero").getBoundingClientRect().bottom, ribbon: document.querySelectorAll(".ph-medal:not(.locked) .ach-st .fr-rib").length, earned: document.querySelectorAll(".ph-medal:not(.locked) .ach-st").length,
     locked: document.querySelectorAll(".ph-medal.locked .ach-lock").length, old: document.querySelectorAll(".sticker-wall, .grow-path, .fr-gallery, #app .achv").length,
     all: document.querySelector(".ph-all").textContent, href: document.querySelector(".ph-all").getAttribute("href"),
-    bg: getComputedStyle(document.querySelector(".ph-medal:not(.locked) .ach-st")).backgroundImage, tilt: getComputedStyle(document.querySelector(".ph-medal .ach-st")).transform
+    bg: getComputedStyle(document.querySelector(".ph-medal:not(.locked) .ach-st .ach-disk")).backgroundImage, tilt: getComputedStyle(document.querySelector(".ph-medal .ach-st")).transform
   }));
-  assert.deepEqual(hero.sides, [2, 2]);
-  assert.equal(hero.earned, Math.min(4, got)); assert.equal(hero.locked, 4 - Math.min(4, got)); assert.equal(hero.old, 0);
+  assert.deepEqual([hero.sides, hero.shelf, hero.cols, hero.below], [0, 5, 5, true]);
+  assert.equal(hero.earned, Math.min(5, got)); assert.equal(hero.ribbon, hero.earned, "every earned medal hangs on its ribbon"); assert.equal(hero.locked, 5 - Math.min(5, got)); assert.equal(hero.old, 0);
   assert.match(hero.all, new RegExp(`Yutuqlar\\s*${got}/81`)); assert.equal(hero.href, "#achievements");
   // The medal: enamel (a gradient) in a metal rim (a conic gradient), upright
   assert.match(hero.bg, /linear-gradient/); assert.match(hero.bg, /conic-gradient/); assert.equal(hero.tilt, "none");

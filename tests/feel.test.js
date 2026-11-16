@@ -64,7 +64,8 @@ const DAY = 864e5, dn = () => Math.floor((Date.now() - new Date().getTimezoneOff
 test("streak freeze: a missed day is kept when a freeze is there, shown in the week row; earned every 7 days, 2 at most", async () => {
   const { page, errors } = await openApp(browser, "#home", { state: { lastDay: key(dn() - 2), streak: 9, frz: 1, xp: 500 } });
   const r = await page.evaluate(() => [S.frz, S.lastDay === keyOf(dayNum() - 1), S.frzD.length, streakNow(), !!document.querySelector(".day.frz"), document.querySelector(".frz-badge")]);
-  assert.deepEqual(r, [0, true, 1, 9, true, null]);
+  // The week row starts on Monday: on a Monday the kept day (yesterday) belongs to last week and is not in the row
+  assert.deepEqual(r, [0, true, 1, 9, new Date().getDay() !== 1, null]);
   await page.waitForFunction(() => /Muzlatgich seriyangizni saqlab qoldi/.test(document.getElementById("pamuk-say").textContent));
   // A practice today continues the run
   await page.evaluate(() => touchDay());

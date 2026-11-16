@@ -50,7 +50,7 @@ test("achievements page: tier summary, tier tag and reward on every card, rare s
   const r = await page.evaluate(() => ({
     tiers: [...document.querySelectorAll(".ach-tier")].map(t => t.textContent.replace(/\s+/g, " ").trim().split(" ")[0]),
     cards: document.querySelectorAll(".ach").length, tags: document.querySelectorAll(".ach .ach-r-tag").length,
-    legend: !!document.querySelector(".ach.on.tier4 .ach-st.ach-r4"), heads: [...document.querySelectorAll(".section-head h2")].map(h => h.textContent)
+    legend: !!document.querySelector(".ach.on.tier4 .ach-st.t4 .ach-disk.ach-r4"), heads: [...document.querySelectorAll(".section-head h2")].map(h => h.textContent)
   }));
   assert.deepEqual(r.tiers, ["Oddiy", "Nodir", "Epik", "Afsonaviy"]);
   assert.equal(r.tags, r.cards);
