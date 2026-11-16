@@ -183,8 +183,8 @@ test("flash card: the word reads the right way round, the back face after a tap;
   assert.deepEqual(await page.evaluate(() => [getComputedStyle(document.getElementById("flip")).transform, getComputedStyle(document.querySelector(".flip-inner")).transform]), ["none", "none"]);
   await page.evaluate(() => document.querySelector(".face[data-act=flip]").click());
   await page.waitForFunction(() => document.getElementById("flip").classList.contains("on"));
-  await page.waitForTimeout(700);
-  // Back: the inner turns 180°, the back face is turned 180° too → reads normally
+  // Back: the inner turns 180°, the back face is turned 180° too → reads normally (waits for the turn to end: slow CI)
+  await page.waitForFunction(() => Math.abs(new DOMMatrix(getComputedStyle(document.querySelector(".flip-inner")).transform).multiply(new DOMMatrix(getComputedStyle(document.querySelector(".back-face")).transform)).a - 1) < 1e-6, null, { timeout: 5000 }).catch(() => {});
   const m = await page.evaluate(() => [getComputedStyle(document.getElementById("flip")).transform, new DOMMatrix(getComputedStyle(document.querySelector(".flip-inner")).transform).multiply(new DOMMatrix(getComputedStyle(document.querySelector(".back-face")).transform)).m11]);
   assert.equal(m[0], "none");
   assert.ok(Math.abs(m[1] - 1) < 1e-6, `back face reads normally (${m[1]})`);
