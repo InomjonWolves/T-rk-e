@@ -22,6 +22,9 @@ test("native bundle: every file the app page loads is packed; the app index has 
   assert.doesNotMatch(out, /AUDIO_BASE/, "recordings are inside the app");
   assert.doesNotMatch(out, /gstatic\.com|Yagona manzil|rel="manifest"/);
   assert.ok(out.indexOf("TY_NATIVE") < out.indexOf('src="js/state.js"'), "flags before the app");
+  // A change to the app's code (js/) or a document page rebuilds the app
+  const wf = read(".github/workflows/native.yml");
+  for (const p of ['"js/**"', '"*.js"', '"*.html"']) assert.ok(wf.includes(p), `native.yml paths: ${p}`);
 });
 
 test("native project: same package and upload key as the first app, portrait, Pamuk icons, the app's own Firebase SDK", () => {

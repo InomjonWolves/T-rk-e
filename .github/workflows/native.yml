@@ -13,9 +13,9 @@ on:
       - "tools/native-www.js"
       - ".github/workflows/native.yml"
       - "*.js"
+      - "js/**"
       - "*.css"
-      - "index.html"
-      - "privacy.html"
+      - "*.html"
       - "fonts/**"
       - "audio/**"
 
