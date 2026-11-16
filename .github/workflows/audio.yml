@@ -19,6 +19,7 @@ on:
       - "guide.js"
       - "oqish.js"
       - "placement.js"
+      - "hikoya.js"
   workflow_dispatch:
 
 concurrency:

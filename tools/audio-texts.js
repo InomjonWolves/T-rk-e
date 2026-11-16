@@ -9,7 +9,7 @@ async function collect() {
   const browser = await launch();
   try {
     const { page } = await openApp(browser, "#home");
-    await page.evaluate(() => Promise.all([loadCourse(), loadOq(), loadPlb()]));
+    await page.evaluate(() => Promise.all([loadCourse(), loadOq(), loadPlb(), loadHk()]));
     return await page.evaluate(() => {
       const out = [], seen = new Set();
       const add = (t, v = "a") => {
@@ -33,6 +33,8 @@ async function collect() {
         if (u.reading && u.reading.text) add(u.reading.text);
       });
       OQ.forEach(t => { t.text.split("\n\n").forEach(p => add(p)); (t.gloss || []).forEach(g => add(g[0])); });
+      // Stories: every line in its speaker's voice (men "b", women and the narrator "a"), the lines questions leave too
+      HK.forEach(h => h.s.forEach(x => { const ln = Array.isArray(x) ? x : hkLineOf(x); if (ln) add(ln[1], hkVoice(h, ln[0])); }));
       // Placement test: listening comprehension sentences from its own bank
       Object.values(PLB).forEach(b => (b.l || []).forEach(x => add(x.t)));
       // Listening/speaking items built at run time from the course (dialog lines, oral answers)

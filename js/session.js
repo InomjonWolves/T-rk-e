@@ -43,6 +43,8 @@ function routeNow() {
   else if (h === "practice") html = viewPractice();
   else if (h === "rank") { html = viewRank(); after = loadRank; }
   else if (h === "oqish") { html = viewOqish(); tab = "practice"; if (!oqReady()) after = () => loadOq().then(route, () => toast("Matnlar yuklanmadi. Internetni tekshiring")); }
+  else if (h === "hikoya") { html = viewHikoyalar(); tab = "practice"; if (!hkReady()) after = () => loadHk().then(route, () => toast("Hikoyalar yuklanmadi. Internetni tekshiring")); }
+  else if (/^hikoya-[a-z0-9]+$/.test(h)) { html = viewHikoya(h.slice(7)); tab = "practice"; if (!hkReady()) after = () => loadHk().then(route, () => toast("Hikoyalar yuklanmadi. Internetni tekshiring")); }
   else if (/^oqish-[a-z0-9]+$/.test(h)) { html = viewOqText(h.slice(6)); tab = "practice"; if (!oqReady()) after = () => loadOq().then(route, () => toast("Matnlar yuklanmadi. Internetni tekshiring")); }
   else if (h === "rank-fr") { RANK_TAB = "fr"; html = viewRank(); tab = "rank"; after = loadRank; }
   else if (/^do-[A-Za-z0-9]{6,40}$/.test(h)) { const u = h.slice(3); html = viewFriendInvite(u); tab = "rank"; after = () => friendInviteLoad(u); }

@@ -9,6 +9,7 @@ function onAct(e) {
   if (act === "sheet-close") { if (e.target === b && !$("sheet").dataset.locked) closeSheet(); return; }
   if (act === "welcome-close") { hideWelcome(); return; }
   if (act === "mw") { mwOpen(b); return; }
+  if (act.startsWith("hk-")) { hkAct(act, b); return; }
   if (act === "mor-check" || act === "mor-skip") { checkMor(act === "mor-skip"); return; }
   if (act === "course-retry") { route(); return; }
   if (act === "grp-join") { grpJoin(b.dataset.c); return; }

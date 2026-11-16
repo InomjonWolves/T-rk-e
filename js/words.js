@@ -138,7 +138,8 @@ function viewOqish() {
   return `${topbar()}
   <div><a class="back" href="#practice">${ICON.back}Mashq</a></div>
   <div class="lesson-head"><div class="tags"><span class="tag sky-t">${ICON.book}Okuma</span><span class="tag green-t">${OQ.filter(t => oqBest(t.id) !== null).length}/${OQ.length} oʻqilgan</span></div>
-    <h1>Oʻqish matnlari</h1><p class="sub">Matnni oʻqing (yoki tinglang), notanish soʻzlarni lugʻatdan koʻring va savollarga javob bering. Har matn uchun +${XP_VAL.reading} XP.</p></div>
+    <h1>Oʻqish matnlari</h1><p class="sub">Matnni oʻqing (yoki tinglang), notanish soʻzlarni lugʻatdan koʻring va savollarga javob bering. Har matn uchun +${XP_VAL.reading} XP.</p>
+    <a class="link hk-link" href="#hikoya">${ICON.book}Interaktiv hikoyalar ham bor</a></div>
   <div class="seg glass" role="tablist">${lvs.map(l => `<button role="tab" data-act="oq-lv" data-l="${l}" aria-selected="${OQ_LV === l}">${l}</button>`).join("")}</div>
   <div class="list">${list.map(t => { const b = oqBest(t.id); return `<a class="unit glass" href="#oqish-${t.id}">
     <span class="art ${b === 100 ? "green" : LV_COLOR[t.lv]}"><span style="font-size:14px">${t.lv}</span></span>

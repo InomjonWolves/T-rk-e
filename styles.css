@@ -1967,3 +1967,46 @@ input[data-bk]:not([data-kbd]) { caret-color: transparent; }
 .mode-more[open] > summary { margin-bottom: 6px; }
 .mode-more .mode + .mode { margin-top: 8px; }
 .sk-more { display: block; margin: 10px auto 0; font-size: 14px; }
+
+/* ---------- Stories (#hikoya, js/stories.js) ---------- */
+.hk-list .unit { grid-template-columns: 66px minmax(0, 1fr) auto; }
+.hk-cast { display: flex; align-items: center; }
+.hk-face { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; font-weight: 800; font-size: 17px; line-height: 1; overflow: hidden; }
+.hk-cast .hk-face { width: 34px; height: 34px; font-size: 15px; box-shadow: 0 0 0 2px var(--surface); }
+.hk-cast .hk-face + .hk-face { margin-left: -6px; }
+.hk-face.pamuk { background: var(--sky-soft); }
+.hk-face.pamuk svg { width: 112%; height: 112%; margin-top: 16%; }
+.hk-face.narr { background: var(--bg-2); color: var(--muted); }
+.hk-face.narr svg { width: 19px; height: 19px; }
+.hk-bar { height: 10px; }
+.hk-story { display: flex; flex-direction: column; gap: 12px; }
+.hk-line { display: flex; align-items: flex-end; gap: 10px; }
+.hk-in { animation: hk-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes hk-in { from { transform: translateY(18px); opacity: 0; } to { transform: none; opacity: 1; } }
+.hk-bubble { position: relative; min-width: 0; flex: 1; background: var(--surface); border: 1px solid var(--line); border-radius: 20px 20px 20px 6px; padding: 10px 14px 6px; box-shadow: var(--shadow); }
+.hk-bubble p { font-size: 18px; line-height: 1.45; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.hk-bubble p.hk-uz { font-size: 15px; font-weight: 500; color: var(--muted); margin-top: 4px; }
+.hk-who { display: block; font-size: 13px; font-weight: 800; color: var(--accent-ink); margin-bottom: 2px; }
+.hk-line.narr .hk-bubble { background: var(--bg-2); border-style: dashed; box-shadow: none; border-radius: 20px; }
+.hk-line.narr .hk-bubble p:not(.hk-uz) { font-weight: 500; font-style: italic; }
+.hk-tools { display: flex; align-items: center; gap: 4px; margin-top: 2px; margin-left: -6px; }
+.hk-tools .say { width: 40px; height: 40px; }
+.hk-tools .say svg { width: 17px; height: 17px; }
+.hk-trb { min-height: 40px; padding: 8px 6px; font-size: 13px; color: var(--muted); }
+.hk-q { display: flex; flex-direction: column; gap: 12px; border-color: var(--violet); box-shadow: 0 3px 0 var(--violet-soft), var(--shadow); }
+.hk-q > b { font-size: 17px; line-height: 1.35; }
+.hk-opts { display: flex; flex-direction: column; gap: 8px; }
+.hk-opts .opt { min-height: 48px; padding: 10px 14px 12px; font-size: 16px; text-align: left; }
+.hk-play { align-self: flex-start; }
+.hk-built { min-height: 58px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 16px; border: 2px dashed var(--line-2); background: var(--bg-2); }
+.hk-built .muted { font-size: 14px; padding: 0 6px; }
+.hk-built .bk, .hk-pool .bk { min-width: 0; height: 44px; font-size: 17px; font-weight: 700; }
+.hk-pool { justify-content: flex-start; }
+.hk-end { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; margin-top: 4px; }
+.hk-end .mascot { width: 120px; height: 120px; }
+.hk-end > b { font-size: 19px; }
+.hk-end .fr-actions { width: 100%; }
+.hk-card .pcard-head .tag { margin-left: auto; }
+.hk-link { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; }
+.hk-link svg { width: 18px; height: 18px; flex: none; }
+@media (prefers-reduced-motion: reduce) { .hk-in { animation: none; } }

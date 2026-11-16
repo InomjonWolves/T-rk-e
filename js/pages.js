@@ -484,6 +484,12 @@ function viewPractice() {
     <button class="link sk-more" data-act="modes-all">Alohida mashq turlari</button>
   </section>
 
+  <a class="pcard glass hk-card" href="#hikoya">
+    <div class="pcard-head"><b>${ICON.book}Hikoyalar</b>${Object.keys(S.hk || {}).length ? `<span>${Object.keys(S.hk).length} ta oʻqilgan</span>` : `<span class="tag violet-t">Yangi</span>`}</div>
+    <p>Dilnoza, Jasur va Pamuk bilan qisqa voqealar: har gapni tinglaysiz, soʻzlarni bosasiz, savollarga javob berasiz.</p>
+    <div class="facts"><span>${ICON.ear}Tinglash</span><span>${ICON.book}Oʻqish</span><span>${ICON.type}Gap yigʻish</span></div>
+  </a>
+
   <div class="pcard glass">
     <div class="pcard-head"><b>${ICON.cap}Qoidalar mashqi</b><span>${gxDoneCount()}/${GX_CODES.length}</span></div>
     <div class="tags"><span class="tag sky-t">${esc(gxNext())}</span><span class="tag violet-t">${esc((gxTopic(gxNext()) || {}).uz || "")}</span></div>
