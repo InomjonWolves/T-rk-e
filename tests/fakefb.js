@@ -21,7 +21,10 @@ const FAKE_FIREBASE = `
     return {
       id: path.split("/").pop(), path,
       get: () => Promise.resolve(snap(path)),
-      set: (data, opt) => { (window.__log = window.__log || []).push("set " + path); if (deny("set", path, data, user)) return err("permission-denied"); db[path] = Object.assign(opt && opt.merge ? (db[path] || {}) : {}, clone(data)); return Promise.resolve(); },
+      set: (data, opt) => { (window.__log = window.__log || []).push("set " + path); if (deny("set", path, data, user)) return err("permission-denied");
+        const old = opt && opt.merge ? (db[path] || {}) : {}, d = clone(data);
+        Object.keys(d).forEach(k => { if (d[k] && typeof d[k] === "object" && "__inc" in d[k]) d[k] = (old[k] || 0) + d[k].__inc; });
+        db[path] = Object.assign(old, d); return Promise.resolve(); },
       update: data => { (window.__log = window.__log || []).push("update " + path + (db[path] === undefined ? " MISSING" : "")); if (db[path] === undefined) return err("not-found"); if (deny("update", path, data, user)) return err("permission-denied"); Object.assign(db[path], clone(data)); return Promise.resolve(); },
       delete: () => { (window.__log = window.__log || []).push("delete " + path); if (deny("delete", path, null, user)) return err("permission-denied"); delete db[path]; return Promise.resolve(); },
       collection: name => colRef(path + "/" + name)
@@ -41,7 +44,7 @@ const FAKE_FIREBASE = `
     return Promise.resolve(f(tx)).then(r => ops.reduce((p, op) => p.then(op), Promise.resolve()).then(() => r));
   });
   const fs = () => ({ collection: name => colRef(name), runTransaction });
-  fs.FieldValue = { serverTimestamp: () => "TS" };
+  fs.FieldValue = { serverTimestamp: () => "TS", increment: n => ({ __inc: n }) };
   const auth = () => ({
     languageCode: "", get currentUser() { return user; },
     getRedirectResult: () => Promise.resolve(null),

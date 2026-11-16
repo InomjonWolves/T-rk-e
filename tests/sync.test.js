@@ -32,6 +32,9 @@ test("merge: counters add up, words keep the later review, achievements and list
   // An earlier achievement date wins; settings changed on both sides: the copy saved last
   const s1 = Sync.merge(st({ goal: 50 }), st({ goal: 30, savedAt: 9, achv: { a: "2026-11-10" } }), st({ goal: 100, savedAt: 3, achv: { a: "2026-11-08" } }));
   assert.equal(s1.goal, 30); assert.equal(s1.achv.a, "2026-11-08");
+  // A fresh install (nothing saved yet) does not override the account's settings with its defaults
+  const fresh = Sync.merge(null, st({ anon: true, goal: 50, savedAt: undefined }), st({ anon: false, goal: 30, savedAt: 7 }));
+  assert.deepEqual([fresh.anon, fresh.goal], [false, 30]);
 });
 
 test("merge: periods, streak, freezes, leagues, bonuses paid twice; without a common base nothing is added twice", () => {

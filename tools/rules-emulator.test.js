@@ -8,6 +8,7 @@ const fs = require("fs");
 const path = require("path");
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require("@firebase/rules-unit-testing");
 const { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, query, where, serverTimestamp } = require("firebase/firestore");
+const assert = require("node:assert/strict");
 
 let env;
 before(async () => {
@@ -174,4 +175,32 @@ test("Telegram sign-in: a tg<id> account with the tg claim is confirmed; a forge
   await assertFails(setDoc(doc(as("tg999", "custom"), "users/tg999"), { progress: { xp: 1 } }), "no tg claim");
   await assertFails(setDoc(doc(as("tg555", "googleNo"), "users/tg555"), { progress: { xp: 1 } }));
   await assertSucceeds(setDoc(doc(as("tg12345", "telegram"), "league/tg12345"), { name: "A", week: "2026-11-02", wxp: 1, xp: 1, streak: 0 }));
+});
+
+test("error log: a confirmed account adds a kind of error or raises its count; only an admin reads and clears", async () => {
+  const { increment, orderBy, limit } = require("firebase/firestore");
+  const e = (n, x = {}) => Object.assign({ m: "TypeError: x is undefined", f: "js/units.js:1:2", s: "at kPath (js/units.js:1:2)", r: "#course", v: "abc12345", p: "web", ua: "Android 14 · Chrome 131", n, at: serverTimestamp() }, x);
+  const me = as("u1", "google");
+  await assertSucceeds(setDoc(doc(me, "errs/eabc1"), e(1)));
+  await assertSucceeds(setDoc(doc(as("u2", "emailOk"), "errs/eabc1"), e(increment(3)), { merge: true }));
+  await assertSucceeds(setDoc(doc(as("tg42", "telegram"), "errs/eabc1"), e(increment(1)), { merge: true }));
+  // The message stays, the count only grows (1–50 at a time), the shape is fixed, the id is ours
+  await assertFails(setDoc(doc(me, "errs/eabc1"), e(increment(1), { m: "something else" }), { merge: true }));
+  await assertFails(setDoc(doc(me, "errs/eabc1"), e(increment(51)), { merge: true }));
+  await assertFails(setDoc(doc(me, "errs/eabc1"), e(increment(-2)), { merge: true }));
+  await assertFails(setDoc(doc(me, "errs/eabc2"), e(1, { uid: "u1" })));
+  await assertFails(setDoc(doc(me, "errs/eabc3"), e(1, { m: "x".repeat(301) })));
+  await assertFails(setDoc(doc(me, "errs/eabc4"), e(0)));
+  await assertFails(setDoc(doc(me, "errs/notours"), e(1)));
+  // An unconfirmed account and a visitor without an account write nothing; learners do not read others' errors
+  await assertFails(setDoc(doc(as("u3", "emailNo"), "errs/eabc5"), e(1)));
+  await assertFails(setDoc(doc(env.unauthenticatedContext().firestore(), "errs/eabc6"), e(1)));
+  await assertFails(getDoc(doc(me, "errs/eabc1")));
+  await assertFails(deleteDoc(doc(me, "errs/eabc1")));
+  // The admin reads the newest first and clears one
+  await env.withSecurityRulesDisabled(async c => { await setDoc(doc(c.firestore(), "admins/adm"), { on: true }); });
+  const adm = as("adm", "google");
+  const snap = await assertSucceeds(getDocs(query(collection(adm, "errs"), orderBy("at", "desc"), limit(40))));
+  assert.equal(snap.docs.find(d => d.id === "eabc1").data().n, 5);
+  await assertSucceeds(deleteDoc(doc(adm, "errs/eabc1")));
 });

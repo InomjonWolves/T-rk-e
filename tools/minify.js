@@ -5,7 +5,8 @@
 const fs = require("fs");
 const path = require("path");
 
-const JS = ["app.js", "cat.js", "content.js", "lugat.js", "grammar.js", "grammar-ex.js", "guide.js", "course-core.js", "course.js", "oqish.js", "placement.js", "morph.js", "sync.js"];
+const APP = fs.readdirSync(path.join(__dirname, "..", "js")).filter(f => f.endsWith(".js")).map(f => "js/" + f);
+const JS = [...APP, "cat.js", "content.js", "lugat.js", "grammar.js", "grammar-ex.js", "guide.js", "course-core.js", "course.js", "oqish.js", "placement.js", "morph.js", "sync.js"];
 const CSS = ["styles.css", "pages.css"];
 
 function esbuild() {
@@ -32,6 +33,9 @@ function stampCache(dir, id) {
   const out = s.replace(/const CACHE = "turkce-yol-[^"]*"/, `const CACHE = "turkce-yol-${id}"`);
   if (out === s) throw new Error("sw.js: CACHE topilmadi");
   fs.writeFileSync(p, out);
+  // The app's version in the error log (js/state.js APP_V), the same id
+  const st = path.join(dir, "js", "state.js");
+  if (fs.existsSync(st)) { const a = fs.readFileSync(st, "utf8"), b = a.replace(/const APP_V\s*=\s*"[^"]*"/, `const APP_V="${id}"`); if (a === b) throw new Error("js/state.js: APP_V topilmadi"); fs.writeFileSync(st, b); }
 }
 module.exports = { minifyDir, stampCache, JS, CSS };
 if (require.main === module) {

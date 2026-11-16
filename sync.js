@@ -97,7 +97,8 @@ var Sync = (function () {
   function merge(base, local, cloud) {
     const B = base || null, L = local || {}, C = cloud || {};
     if (same(L, C)) return copy(L);
-    const x = { nobase: !B, lNew: num(L.savedAt) >= num(C.savedAt) };
+    // Settings changed on both sides: the copy saved last; a tie (or a device that never saved, a fresh install) — the server
+    const x = { nobase: !B, lNew: num(L.savedAt) > num(C.savedAt) };
     const out = walk(B, L, C, [], x);
     const cnt = (b, l, c) => x.nobase ? Math.max(num(l), num(c)) : Math.max(0, num(c) + num(l) - num(b));
     // Today's and this week's XP

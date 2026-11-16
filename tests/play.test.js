@@ -71,7 +71,7 @@ test("documents: a full privacy policy, terms of use and an about page — one t
   }
   for (const x of ["Foydalanish qoidalari", "Kontent va mualliflik huquqi", "Kafolatlar va javobgarlik", "Amaldagi qonunchilik"]) assert.ok(read("shartlar.html").includes(x), x);
   for (const x of ["Tamoyillarimiz", "Pamuk", "Bogʻlanish"]) assert.ok(read("biz-haqimizda.html").includes(x), x);
-  const app = read("app.js"), seo = read("kurs/a1-1.html"), map = read("sitemap.xml"), { FILES } = require("../tools/native-www.js");
+  const app = require("../tools/app-order.js").appScripts().map(read).join("\n"), seo = read("kurs/a1-1.html"), map = read("sitemap.xml"), { FILES } = require("../tools/native-www.js");
   for (const f of ["shartlar.html", "biz-haqimizda.html"]) {
     assert.ok(app.includes(`href="${f}"`), `settings → ${f}`);
     assert.ok(seo.includes(`${f}"`), `static footer → ${f}`);

@@ -1,10 +1,10 @@
 // Builds native/www — the site files packed inside the standalone Android app (Capacitor).
 // The app opens from these local files (works offline, no browser needed). Differences from the site:
-//  • window.TY_NATIVE = 1 — app.js switches to the app mode (no service worker, no "install the app" card, Google sign-in
+//  • window.TY_NATIVE = 1 — the app switches to the app mode (no service worker, no "install the app" card, Google sign-in
 //    through the phone later — see CLAUDE.md, Android 2-bosqich);
 //  • Firebase SDK comes from the app itself (vendor/firebase/, copied from the "firebase" npm package), not from a CDN;
 //  • every audio recording is packed too (audio/index.txt and the mp3 files it lists, ~80 MB): Turkish sounds the same
-//    offline and without the site (decision of 2026-11-14, Android 5-bosqich). app.js reads them from audio/ (AUDIO_BASE "").
+//    offline and without the site (decision of 2026-11-14, Android 5-bosqich). the app reads them from audio/ (AUDIO_BASE "").
 // Run: cd native && npm install && node ../tools/native-www.js && npx cap sync android
 const fs = require("fs");
 const path = require("path");
@@ -16,11 +16,13 @@ const FB_VERSION = "10.12.2";
 // Everything the app page loads (index.html, scripts loaded on demand, styles, fonts, icons, the document pages)
 const FILES = [
   "index.html", "privacy.html", "shartlar.html", "biz-haqimizda.html", "hisob-ochirish.html", "styles.css", "pages.css", "firebase-config.js",
-  "app.js", "cat.js", "content.js", "lugat.js", "grammar.js", "grammar-ex.js", "guide.js",
+  "cat.js", "content.js", "lugat.js", "grammar.js", "grammar-ex.js", "guide.js",
   "course-core.js", "course.js", "oqish.js", "placement.js", "morph.js", "sync.js",
   "icon.svg", "icon-192.png", "icon-512.png", "icon-maskable-512.png"
 ];
-const DIRS = ["fonts"];
+const DIRS = ["fonts", "js"];
+// The app's own scripts (js/, as index.html loads them)
+const APP_JS = fs.readdirSync(path.join(ROOT, "js")).filter(f => f.endsWith(".js")).map(f => "js/" + f);
 const FB_FILES = ["app", "auth", "firestore", "messaging"].map(n => `firebase-${n}-compat.js`);
 
 function nativeHead() {
@@ -64,13 +66,16 @@ function build() {
   fs.writeFileSync(idx, out);
   const fb = path.join(ROOT, "native", "node_modules", "firebase");
   const ver = JSON.parse(fs.readFileSync(path.join(fb, "package.json"), "utf8")).version;
-  if (ver !== FB_VERSION) throw new Error(`firebase ${ver} — app.js ${FB_VERSION} ni kutadi`);
+  if (ver !== FB_VERSION) throw new Error(`firebase ${ver} — ilova ${FB_VERSION} ni kutadi`);
   fs.mkdirSync(path.join(OUT, "vendor", "firebase"), { recursive: true });
   for (const f of FB_FILES) fs.copyFileSync(path.join(fb, f), path.join(OUT, "vendor", "firebase", f));
   // The phone parses less: the same minified code as the website (tools/minify.js)
   require("./minify.js").minifyDir(OUT);
+  // The app's version in the error log: its build number (the same as versionCode)
+  const st = path.join(OUT, "js", "state.js"), run = process.env.GITHUB_RUN_NUMBER, a = fs.readFileSync(st, "utf8");
+  fs.writeFileSync(st, a.replace(/const APP_V\s*=\s*"[^"]*"/, `const APP_V="app-${run ? 1000 + +run : "dev"}"`));
   const n = copyAudio();
   return `${OUT} (audio: ${n} ta fayl)`;
 }
-module.exports = { build, patchIndex, audioFiles, FILES, SITE };
+module.exports = { build, patchIndex, audioFiles, FILES, APP_JS, SITE };
 if (require.main === module) console.log(build());

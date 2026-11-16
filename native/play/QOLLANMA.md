@@ -75,8 +75,9 @@ Busiz Play'dan oʻrnatilgan ilovada «Google bilan kirish» xato beradi (APK dan
 | Photos and videos → **Photos** (profil rasmi) | Ha | Yoʻq | Ha | App functionality |
 | App activity → **App interactions** (natijalar, XP, mashqlar) | Ha | Yoʻq | Ha | App functionality, Analytics |
 | App activity → **Other user-generated content** (tarjimonga yozilgan matn) | Yoʻq | **Ha** — tarjima xizmati MyMemory, vaqtincha | Ha | App functionality |
+| App info and performance → **Crash logs** (anonim xato hisoboti: xato matni, fayl, versiya — hisob identifikatorisiz) | Ha | Yoʻq | Ha (anonim statistika bilan oʻchadi) | App functionality, Analytics |
 
-Audio va mikrofon: **belgilamang** — nutqni telefonning oʻz xizmati matnga aylantiradi, ilova ovozni yigʻmaydi va yubormaydi. Joylashuv, kontaktlar, qurilma identifikatori, xatolik jurnallari — yigʻilmaydi.
+Audio va mikrofon: **belgilamang** — nutqni telefonning oʻz xizmati matnga aylantiradi, ilova ovozni yigʻmaydi va yubormaydi. Joylashuv, kontaktlar, qurilma identifikatori — yigʻilmaydi. (Xato hisobotlari — yuqoridagi «Crash logs» qatori.)
 
 ## 5. Doʻkon sahifasi (Grow → Store presence → Main store listing)
 

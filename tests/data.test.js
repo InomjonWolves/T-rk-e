@@ -7,6 +7,7 @@ const { ROOT, loadContent } = require("./helpers");
 
 const C = loadContent();
 const read = f => fs.readFileSync(path.join(ROOT, f), "utf8");
+const APP = require("../tools/app-order.js").appScripts();
 
 // TDK writes these compounds apart (Güncel Türkçe Sözlük); checked once with a Turkish spell checker (2026-11-14)
 test("Turkish spelling: TDK compounds written apart, no misspelled loanwords", () => {
@@ -87,7 +88,7 @@ test("one address: the old GitHub Pages copy sends every page to the same page o
   // On the real address nothing happens
   assert.equal(run("index.html", "/", "#home", "turkceyol.web.app"), null);
   // No other address is offered anywhere on the site
-  for (const f of ["index.html", "app.js", "privacy.html", "shartlar.html", "biz-haqimizda.html", "hisob-ochirish.html", "sitemap.xml", "robots.txt", "manifest.webmanifest"]) {
+  for (const f of ["index.html", ...APP, "privacy.html", "shartlar.html", "biz-haqimizda.html", "hisob-ochirish.html", "sitemap.xml", "robots.txt", "manifest.webmanifest"]) {
     // (the verification e-mail really comes from noreply@t-rk-e.firebaseapp.com — that sender is not a site address)
     const t = read(f).replace(/<script>\/\* Yagona manzil[\s\S]*?<\/script>/, "").replace(/noreply@t-rk-e\.firebaseapp\.com/g, "");
     assert.ok(!/github\.io|firebaseapp\.com|t-rk-e\.web\.app/.test(t), `${f} mentions another address`);
@@ -108,14 +109,34 @@ test("course: 40 units, tests answerable, reading answers match questions", () =
 
 test("project rule: no exam brand names or military vocabulary in the content", () => {
   const bad = /\bTYS\b|\b(asker|askeri|komutan|kışla|nöbet|tatbikat)\b/i;
-  for (const f of ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js", "oqish.js", "placement.js", "app.js", "index.html"]) {
+  for (const f of ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js", "oqish.js", "placement.js", "morph.js", ...APP, "index.html"]) {
     const m = read(f).match(bad);
     assert.equal(m, null, `${f} contains "${m && m[0]}"`);
   }
 });
 
-test("older Safari: no regex lookbehind in app.js", () => {
-  assert.equal(/\(\?<[=!]/.test(read("app.js")), false, "lookbehind breaks Safari before 16.4");
+test("older Safari: no regex lookbehind in the app's scripts", () => {
+  for (const f of [...APP, "morph.js", "sync.js"]) assert.equal(/\(\?<[=!]/.test(read(f)), false, `${f}: lookbehind breaks Safari before 16.4`);
+});
+
+// The app is split by topic into js/*.js (2026-11-16): index.html loads them in order, the service worker and the app
+// bundle carry every one of them, and no script needs while it loads a name that a later script declares
+test("app scripts: one list everywhere, and the load order holds", () => {
+  const { check } = require("../tools/app-order.js");
+  const onDisk = fs.readdirSync(path.join(__dirname, "..", "js")).filter(f => f.endsWith(".js")).map(f => "js/" + f).sort();
+  assert.deepEqual([...APP].sort(), onDisk, "index.html loads every script in js/");
+  assert.equal(APP[0], "js/state.js"); assert.equal(APP[APP.length - 1], "js/account.js");
+  const sw = read("sw.js"); for (const f of APP) assert.ok(sw.includes(`"./${f}"`), `sw.js ASSETS: ${f}`);
+  assert.ok(!fs.existsSync(path.join(__dirname, "..", "app.js")), "the old single app.js is gone");
+  const r = check();
+  assert.deepEqual(r.problems, []);
+  assert.ok(r.names > 700, "names found: " + r.names);
+  // The check itself finds a call made while loading to a function of a later script (and not one inside a function)
+  const tmp = fs.mkdtempSync(path.join(require("os").tmpdir(), "ty-ord-"));
+  fs.writeFileSync(path.join(tmp, "a.js"), "const X = later();\nfunction ok() { return later(); }\ndocument.addEventListener(\"x\", () => later());\n");
+  fs.writeFileSync(path.join(tmp, "b.js"), "function later() { return 1; }\n");
+  const bad = check([path.join(tmp, "a.js"), path.join(tmp, "b.js")]).problems;
+  assert.equal(bad.length, 1); assert.match(bad[0], /a\.js:1 .*«later»/);
 });
 
 test("service worker: every cached file exists", () => {

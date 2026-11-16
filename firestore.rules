@@ -124,6 +124,23 @@ service cloud.firestore {
         allow delete: if okUser() && (request.auth.uid == uid || g().owner == request.auth.uid);
       }
     }
+    // Ilovadagi xatolar (2026-11-16): xato turi (matn, fayl, stek boʻlagi) va necha marta — kimligisiz (uid, ism, pochta yoʻq).
+    // Tasdiqlangan hisob yozadi: yangisini 1–50 bilan, borini faqat sonini 1–50 ga oshirib (matn oʻzgarmaydi). Oʻqiydi va oʻchiradi — admin
+    match /errs/{sig} {
+      function errOk(d) {
+        return d.keys().hasOnly(['m', 'f', 's', 'r', 'v', 'p', 'ua', 'n', 'at'])
+          && d.m is string && d.m.size() > 0 && d.m.size() <= 300
+          && d.f is string && d.f.size() <= 120 && d.s is string && d.s.size() <= 800
+          && d.r is string && d.r.size() <= 30 && d.v is string && d.v.size() <= 40
+          && d.p is string && d.p.size() <= 8 && d.ua is string && d.ua.size() <= 80
+          && d.n is int && d.at == request.time;
+      }
+      allow read, delete: if isAdmin();
+      allow create: if okUser() && sig.matches('e[a-z0-9]{1,14}') && errOk(request.resource.data)
+        && request.resource.data.n >= 1 && request.resource.data.n <= 50;
+      allow update: if okUser() && errOk(request.resource.data) && request.resource.data.m == resource.data.m
+        && request.resource.data.n > resource.data.n && request.resource.data.n <= resource.data.n + 50;
+    }
     // Haftalik liga natijasi: server (tools/league.js, service account — qoidalarsiz) yozadi; egasi faqat oʻqiydi
     match /lgres/{uid} {
       allow read: if okUser() && request.auth.uid == uid;

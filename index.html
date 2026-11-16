@@ -33,8 +33,8 @@
   // Apply the saved theme before first paint, and the colour of the browser bar with it
   try { const t = localStorage.getItem("ty-theme"); if (t === "light" || t === "dark") { document.documentElement.dataset.theme = t; document.querySelectorAll('meta[name="theme-color"]').forEach(m => { m.media = ""; m.content = t === "dark" ? "#0d1124" : "#f7f4ee"; }); } } catch (e) {}
 </script>
-<!-- Firebase SDK is loaded by app.js after the first paint; preload only starts the download early -->
-<!-- Firebase SDK: app.js loads it after the first screen (it must not share the bandwidth with the app's own files) -->
+<!-- Firebase SDK is loaded by the app (js/account.js) after the first paint; preload only starts the download early -->
+<!-- Firebase SDK: the app (js/account.js) loads it after the first screen (it must not share the bandwidth with the app's own files) -->
 <link rel="preconnect" href="https://www.gstatic.com">
 </head>
 <body>
@@ -127,6 +127,20 @@
 <script src="course-core.js"></script>
 <script src="cat.js"></script>
 <script src="sync.js"></script>
-<script src="app.js"></script>
+<!-- The app, split by topic (js/): loaded in this order, one shared global scope — tools/app-order.js checks the order -->
+<script src="js/state.js"></script>
+<script src="js/social.js"></script>
+<script src="js/words.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/pages.js"></script>
+<script src="js/translate.js"></script>
+<script src="js/units.js"></script>
+<script src="js/achieve.js"></script>
+<script src="js/session.js"></script>
+<script src="js/skills.js"></script>
+<script src="js/drills.js"></script>
+<script src="js/events.js"></script>
+<script src="js/groups.js"></script>
+<script src="js/account.js"></script>
 </body>
 </html>

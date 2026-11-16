@@ -194,13 +194,16 @@ test("speed: a new version waits; the bar's «Yangilash» tells the service work
   await page.close();
   // Minify: every top-level name stays (the scripts share them), comments go; CACHE gets the commit
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ty-min-"));
-  for (const f of ["app.js", "sw.js", "styles.css"]) fs.copyFileSync(path.join(__dirname, "..", f), path.join(dir, f));
+  const { appScripts } = require("../tools/app-order.js"), APP = appScripts();
+  fs.mkdirSync(path.join(dir, "js"));
+  for (const f of [...APP, "sw.js", "styles.css"]) fs.copyFileSync(path.join(__dirname, "..", f), path.join(dir, f));
   const { minifyDir, stampCache } = require("../tools/minify.js");
   const res = minifyDir(dir); stampCache(dir, "abc1234");
-  const min = fs.readFileSync(path.join(dir, "app.js"), "utf8");
+  const min = APP.map(f => fs.readFileSync(path.join(dir, f), "utf8")).join("\n");
   assert.ok(res.after < res.before * 0.9);
   for (const name of ["function routeNow(", "function startSession(", "const IS_NATIVE=", "function beep(", "GRAM_FULL=!1", "function nativeBack("]) assert.ok(min.includes(name), name);
   assert.match(fs.readFileSync(path.join(dir, "sw.js"), "utf8"), /const CACHE = "turkce-yol-abc1234"/);
+  assert.ok(min.includes('const APP_V="abc1234"'), "the error log carries the deployed version");
   const wf = fs.readFileSync(path.join(__dirname, "..", ".github/workflows/firebase-hosting.yml"), "utf8");
   assert.match(wf, /node tools\/minify\.js \. --version/);
 });

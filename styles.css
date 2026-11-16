@@ -1421,6 +1421,15 @@ details.glass.pad[open] > summary::after, details.k-goals[open] > summary::after
 .fr-x[data-sure] { color: var(--pink-ink); background: var(--pink-soft); }
 
 /* ---------- Reading texts ---------- */
+/* ---- #admin: the error log ---- */
+.err-row { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.err-top { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.err-top b { flex: none; color: var(--pink-ink); }
+.err-top code { font-size: 13px; overflow-wrap: anywhere; }
+.err-row small { overflow-wrap: anywhere; }
+.err-row pre { margin: 6px 0 0; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink-2); }
+.err-row details > summary { min-height: 44px; display: flex; align-items: center; font-size: 13px; font-weight: 700; color: var(--accent-ink); cursor: pointer; }
+.err-row .err-fix { align-self: flex-start; }
 /* ---- Tappable words (morph.js): a word in a text opens its root and suffixes ---- */
 .mw { font-style: normal; cursor: pointer; border-radius: 5px; -webkit-tap-highlight-color: transparent; text-decoration: underline dotted transparent; text-underline-offset: 4px; transition: background 0.15s ease; }
 @media (hover: hover) { .mw:hover { text-decoration-color: var(--accent); } }

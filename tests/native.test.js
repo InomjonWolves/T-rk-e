@@ -5,21 +5,23 @@ const fs = require("fs");
 const path = require("path");
 const { launch, openApp } = require("./helpers");
 const { openFb } = require("./fakefb");
-const { patchIndex, FILES } = require("../tools/native-www.js");
+const { patchIndex, FILES, APP_JS } = require("../tools/native-www.js");
 const ROOT = path.resolve(__dirname, "..");
 const read = f => fs.readFileSync(path.join(ROOT, f), "utf8");
+const app = () => require("../tools/app-order.js").appScripts().map(read).join("\n");
 
 test("native bundle: every file the app page loads is packed; the app index has the native flags and no CDN or redirect", () => {
   for (const f of FILES) assert.ok(fs.existsSync(path.join(ROOT, f)), f);
   const html = read("index.html");
   const local = [...html.matchAll(/(?:src|href)="([^"#:]+\.(?:js|css|png|svg))"/g)].map(m => m[1]);
-  const lazy = [...read("app.js").matchAll(/\.src = "([a-z-]+\.js)"/g)].map(m => m[1]);
-  for (const f of [...local, ...lazy]) assert.ok(FILES.includes(f), `${f} is not packed into the app`);
+  const lazy = [...app().matchAll(/(?:\.src = |loadScript\()"([a-z-]+\.js)"/g)].map(m => m[1]);
+  assert.ok(lazy.includes("morph.js") && lazy.includes("oqish.js"), "scripts loaded on demand are found");
+  for (const f of [...local, ...lazy]) assert.ok(FILES.includes(f) || APP_JS.includes(f), `${f} is not packed into the app`);
   const out = patchIndex(html);
   assert.match(out, /<meta charset="utf-8">\n<script>\/\* Ilova \(Capacitor\) \*\/window\.TY_NATIVE=1;window\.FB_SDK_BASE="vendor\/firebase\/";<\/script>/);
   assert.doesNotMatch(out, /AUDIO_BASE/, "recordings are inside the app");
   assert.doesNotMatch(out, /gstatic\.com|Yagona manzil|rel="manifest"/);
-  assert.ok(out.indexOf("TY_NATIVE") < out.indexOf('src="app.js"'), "flags before the app");
+  assert.ok(out.indexOf("TY_NATIVE") < out.indexOf('src="js/state.js"'), "flags before the app");
 });
 
 test("native project: same package and upload key as the first app, portrait, Pamuk icons, the app's own Firebase SDK", () => {
@@ -48,7 +50,7 @@ test("native project: same package and upload key as the first app, portrait, Pa
   assert.match(read("native/android/app/src/main/res/drawable/ic_stat_pamuk.xml"), /<vector/);
   assert.equal(cfg.plugins.LocalNotifications.smallIcon, "ic_stat_pamuk");
   for (const d of ["capacitor-community-speech-recognition", "capacitor-community-text-to-speech", "capacitor-haptics", "capacitor-share"]) assert.match(read("native/android/capacitor.settings.gradle"), new RegExp(d), "cap sync android was run");
-  assert.match(read("app.js"), /firebasejs\/10\.12\.2\//, "the site and the app use one Firebase version");
+  assert.match(app(), /firebasejs\/10\.12\.2\//, "the site and the app use one Firebase version");
   const w = read(".github/workflows/native.yml");
   assert.match(w, /android\/upload-key\.jks\.enc/, "signed with the same upload key");
   assert.match(w, /-pass env:ANDROID_KEY_PASS/);
