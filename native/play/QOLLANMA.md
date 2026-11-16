@@ -105,11 +105,12 @@ GRAMMATIKA VA LUGʻAT
 • 795 ta qoida mashqi
 • 3000 dan ortiq soʻz, 75 ta mavzuli toʻplam (uy, ish, sayohat, sogʻliq…)
 • aqlli takrorlash: soʻzlar unutilay deganda yana qaytadi
+• soʻz tahlili: matndagi istalgan soʻzni bosing — oʻzagi, tarjimasi va har bir qoʻshimchasi oʻzbekcha muqobili bilan chiqadi
 
 TOʻRT KOʻNIKMA
 • Oʻqish — 15 ta oʻqish matni va savollar
 • Tinglash — barcha matnlar tabiiy turkcha ovozda, internetsiz ham ishlaydi
-• Yozish — yozganingizni ilova oʻzi tekshiradi va maslahat beradi
+• Yozish — yozganingizni ilova oʻzi tekshiradi: notoʻgʻri qoʻshimchani qoida nomi bilan koʻrsatadi va shu qoidaga mashq tuzadi
 • Gapirish — talaffuz mashqi: gapiring, telefon tanib, xatoli harflarni koʻrsatadi
 
 MOTIVATSIYA
@@ -137,7 +138,7 @@ Türkçe Yoʻl — 100% bepul. Saytimiz: turkceyol.web.app, Telegram kanalimiz: 
 3. **Create new release** → AAB ni yuklang → Release name avtomatik → Release notes:
    ```
    <uz>
-   Birinchi sinov versiyasi: toʻliq A1–C1 kurs, oʻrganish yoʻli, talaffuz mashqi, internetsiz audio, kunlik eslatma, seriya muzlatgichi va bosh ekran vidjeti. Xato yoki taklif boʻlsa, sinovchilar guruhiga yozing.
+   Yangi: matndagi istalgan soʻzni bosing — tarjimasi va har bir qoʻshimchasi oʻzbekcha tushuntiriladi. Yozganingizdagi qoʻshimcha xatolarini ilova qoida nomi bilan koʻrsatadi, «Qoʻshimchalar mashqi» esa aynan shu qoidani mashq qildiradi. Ikki qurilmada oʻrgansangiz, natijalar endi yoʻqolmaydi — birlashadi. Yangi ramkalar va yutuq nishonlari. Xato yoki taklif boʻlsa, sinovchilar guruhiga yozing.
    </uz>
    ```
 4. **Review release** → **Start rollout to Closed testing**. Google tekshiruvi odatda 1–3 kun.

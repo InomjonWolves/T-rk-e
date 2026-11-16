@@ -16,6 +16,7 @@ window.__fbCalls = [];
   const doc = id => ({
     get: () => Promise.resolve({ exists: !!window.__cloud, data: () => window.__cloud }),
     set: d => { window.__fbCalls.push(["set", id]); return Promise.resolve(); },
+    update: d => { window.__fbCalls.push(["update", id]); return Promise.resolve(); },
     delete: () => Promise.resolve()
   });
   const col = () => ({ doc, get: () => Promise.resolve({ docs: [], forEach() {} }), where() { return this; }, orderBy() { return this; }, limit() { return this; } });
@@ -61,7 +62,7 @@ test("returning user: the local copy opens before Firebase answers, then syncs q
   await page.evaluate(() => { S.xp += 5; save(); window.__cloud = { name: "Malika", gender: "f", birth: "2000-01-01", progress: { xp: 100 } }; __fbResolve({ uid: "u1", email: "m@x.uz", providerData: [] }); });
   await page.waitForFunction(() => USER && !EARLY);
   await page.waitForTimeout(100);
-  const later = await page.evaluate(() => ({ auth: document.getElementById("auth").hidden, xp: S.xp, saved: __fbCalls.some(c => c[0] === "set" && c[1] === "u1") }));
+  const later = await page.evaluate(() => ({ auth: document.getElementById("auth").hidden, xp: S.xp, saved: __fbCalls.some(c => (c[0] === "set" || c[0] === "update") && c[1] === "u1") }));
   assert.deepEqual(later, { auth: true, xp: 350, saved: true });
   // Signing out forgets the last user and shows the sign-in screen
   await page.evaluate(() => document.querySelector("[data-act=logout]") ? null : (location.hash = "#settings"));

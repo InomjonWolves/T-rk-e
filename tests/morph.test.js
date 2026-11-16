@@ -112,7 +112,7 @@ test("suffix practice: a root and the suffixes to add, checked by the generator;
   assert.equal(it.length, 8); assert.ok(it.every(x => x.ok)); assert.ok(it.every(x => x.soft), "every item practises the softening: " + it.map(x => x.tr).join(" "));
   const srs = await page.evaluate(() => JSON.stringify(S.srs || {}));
   // A wrong answer names the rule and is logged; the tiles write the right one
-  const wrong = await page.evaluate(() => { const w = SES.items[0], bad = w.lem.replace(/m[ae]k$/, "") + w.an.parts.map(p => p.s).join(""); document.getElementById("type-input").value = bad; checkMor(); return { fb: document.getElementById("fb").textContent, cls: document.getElementById("fb").className, mor: S.mor.s, n: SES.items.length }; });
+  const wrong = await page.evaluate(() => { const w = SES.items[0], bad = (w.pos === "v" ? w.lem.slice(0, -3) : w.lem) + w.an.parts.map(p => p.s).join(""); document.getElementById("type-input").value = bad; checkMor(); return { fb: document.getElementById("fb").textContent, cls: document.getElementById("fb").className, mor: S.mor.s, n: SES.items.length }; });
   assert.match(wrong.fb, /Toʻgʻri javob:.*p, ç, t, k → b, c, d, ğ/); assert.match(wrong.cls, /no/); assert.equal(wrong.mor, 5); assert.equal(wrong.n, 9, "asked once more at the end");
   for (let i = 1; i < 9; i++) {
     await page.evaluate(() => document.querySelector("[data-act=next]").click());

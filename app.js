@@ -96,6 +96,7 @@ function grade(w, ok) {
     st.w++; st.m = 2; st.r = 0; st.i = 0; st.d = t;
     st.e = Math.max(1.3, +(st.e - 0.2).toFixed(2));
   }
+  st.t = Math.floor(Date.now() / 60000);   // when it was last reviewed: two devices keep the later review (sync.js)
   record(w, ok);
   save();
 }
@@ -3942,7 +3943,8 @@ function wrRun(id, key) {
   const u = KU[id], e = u.exercises.find(x => `${x.n}-w` === key), st = kState(id), text = st.v[key] || "";
   if (text.trim().split(/\s+/).length < 5) { toast("Avval kamida bir necha gap yozing"); return; }
   // The word analyser makes the spelling check see wrong suffixes; without it (offline) the check still works
-  if (!MORPH_OK && !wrRun.tried) { wrRun.tried = 1; loadMorph().then(() => wrRun(id, key), () => wrRun(id, key)); return; }
+  // (it is loaded while the learner types — see the textarea listener; here the check never waits)
+  if (!MORPH_OK) loadMorph().catch(() => {});
   const r = wrCheck(text, { u, e });
   r.spell.forEach(x => { if (x.kind) morBump(x.kind); });
   WR_RES[id + "|" + key] = r;
@@ -5217,6 +5219,8 @@ document.addEventListener("change", e => {
   if (e.target.dataset && e.target.dataset.act === "tts-voice") { S.tts = Object.assign({}, S.tts, { v: e.target.value }); save(); speak("Merhaba! Türkçe öğreniyorum."); }
 });
 let kWriteT;
+// Free writing: get the word analyser ready while the learner types, so the check sees wrong suffixes at once
+document.addEventListener("input", e => { if (!MORPH_OK && e.target.tagName === "TEXTAREA") loadMorph().catch(() => {}); });
 document.addEventListener("input", e => {
   if (!e.target.dataset || e.target.dataset.act !== "k-write") return;
   const st = kState(e.target.dataset.id), key = e.target.dataset.key; st.v[key] = e.target.value;
@@ -5594,7 +5598,7 @@ function cloudSave(now) {
     cloudTimer = null;
     if (!USER || !db) return;
     const ts = firebase.firestore.FieldValue.serverTimestamp();
-    db.collection("users").doc(USER.uid).set({ progress: S, updatedAt: ts }, { merge: true }).catch(() => {});
+    cloudPush();
     if (S.pub) {
       const name = ((USERNAME || "").trim().split(/\s+/)[0] || "Oʻquvchi").slice(0, 20);
       const row = lgDoc(name, ts), ref = db.collection("league").doc(USER.uid);
@@ -5616,10 +5620,78 @@ function lgDoc(name, ts) {
 }
 // Write a pending save at once (before signing out)
 function cloudFlush() {
-  if (!USER || !db || !cloudTimer) return Promise.resolve();
+  if (!USER || !db) return Promise.resolve();
+  if (!cloudTimer) return PUSHING || Promise.resolve();
   clearTimeout(cloudTimer); cloudTimer = null;
-  return db.collection("users").doc(USER.uid).set({ progress: S, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(() => {});
+  return cloudPush();
 }
+/* ---------- Sync: this device's progress and the server's are merged, never overwritten (sync.js) ----------
+   BASE — the state this device and the server last agreed on (kept in localStorage next to the progress). */
+let BASE = null, PUSHING = null, PUSH_AGAIN = false, SYNC_AT = 0, SYNC_LOCK = false;
+const baseKey = () => KEYU + ":base";
+function baseLoad() { try { const r = localStorage.getItem(baseKey()); BASE = r ? JSON.parse(r) : null; } catch (e) { BASE = null; } }
+function baseSave(st) { BASE = Sync.copy(st); try { localStorage.setItem(baseKey(), JSON.stringify(BASE)); localStorage.removeItem(baseKey() + ":p"); } catch (e) {} }
+// Before a write: what it will store and its id. If the answer is lost but the write landed, the next sync finds the id
+// on the server and takes that state as the base — so nothing is counted twice
+function pendSave(id, st) { try { localStorage.setItem(baseKey() + ":p", JSON.stringify({ id, st })); } catch (e) {} }
+function pendCheck(sid) { try { const p = JSON.parse(localStorage.getItem(baseKey() + ":p") || "null"); if (p && sid && p.id === sid) baseSave(p.st); } catch (e) {} }
+function mergeStates(base, local, cloud) {
+  const m = Sync.merge(base, local, cloud);
+  // A bonus earned on both devices since they last agreed was paid twice: an achievement, all daily quests, the weekly challenge
+  let extra = 0;
+  Sync.twice(base, local, cloud).forEach(id => { const a = ACH.find(x => x.id === id); if (a) extra += ACH_TIERS[achTier(a)].xp; });
+  if (Sync.paidTwice(base, local, cloud, "dq", "d")) extra += XP_VAL.daily;
+  if (Sync.paidTwice(base, local, cloud, "wc", "w")) extra += XP_VAL.weekly;
+  if (extra) { m.xp = Math.max(0, m.xp - extra); m.wxp = Math.max(0, Math.min(m.wxp - extra, m.xp)); }
+  return m;
+}
+// Read the server's copy, merge this device's state into it and write the result back — in one transaction where the SDK
+// has it. mine() is asked after the server answered; extra(doc) adds profile fields. → { merged, got, brought }
+function cloudWrite(ref, mine, extra) {
+  const ts = firebase.firestore.FieldValue.serverTimestamp();
+  let merged, got = null, brought = false, local;
+  const body = (get, upd, set) => get().then(snap => {
+    got = snap.exists ? snap.data() : null; local = mine();
+    if (got) pendCheck(got.sid);
+    // The server's copy is brought to today and this week first, as this device's copy is (last week's XP → pw)
+    const cloud = got && got.progress ? migrate(Object.assign(blank(), Sync.copy(got.progress))) : null;
+    merged = cloud ? mergeStates(BASE, local, cloud) : local;
+    brought = !!cloud && !Sync.same(merged, local);
+    if (cloud && !extra && Sync.same(merged, cloud)) return;   // this device has nothing new for the server
+    const sid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    pendSave(sid, merged);
+    const data = Object.assign({ progress: merged, sid, updatedAt: ts }, extra ? extra(got) : null);
+    return snap.exists ? upd(data) : set(data);
+  });
+  const run = db.runTransaction ? db.runTransaction(tx => body(() => tx.get(ref), d => { tx.update(ref, d); }, d => { tx.set(ref, d); }))
+    : body(() => ref.get(), d => ref.update(d), d => ref.set(d));
+  return run.then(() => ({ merged, got, brought, local }));
+}
+function cloudPush() {
+  if (!USER || !db) return Promise.resolve();
+  // One sync at a time: two at once would both add this device's new results onto the server's copy
+  if (PUSHING || SYNC_LOCK) { PUSH_AGAIN = true; return PUSHING || Promise.resolve(); }
+  const uid = USER.uid;
+  PUSHING = cloudWrite(db.collection("users").doc(uid), () => Sync.copy(S)).then(({ merged, brought, local }) => {
+    if (!USER || USER.uid !== uid) return;
+    baseSave(merged); SYNC_AT = Date.now();
+    if (!brought) return;
+    // The other device's progress arrived. What was done here while the request was on its way goes on top of it
+    S = migrate(Object.assign(blank(), Sync.same(S, local) ? merged : mergeStates(local, Sync.copy(S), merged)));
+    try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {}
+    syncShown();
+  }, () => {}).then(() => { PUSHING = null; if (PUSH_AGAIN) { PUSH_AGAIN = false; cloudSave(); } });
+  return PUSHING;
+}
+// Show what arrived — but never under the learner's hands (an exercise, an open sheet, a field being typed in)
+function syncShown() {
+  const a = document.activeElement;
+  if ((SES && !SES.done) || !$("sheet").hidden || !$("celebrate").hidden || (a && /INPUT|TEXTAREA/.test(a.tagName))) return;
+  const y = window.scrollY; route(); window.scrollTo(0, y);
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden && USER && db && Date.now() - SYNC_AT > 60000) cloudPush(); });
+// Back online: what was done offline goes to the server (and the other device's progress comes here)
+window.addEventListener("online", () => { if (USER && db) cloudPush(); });
 const authEl = $("auth");
 let authMode = "login";
 // Shown on the sign-in form when a redirect sign-in came back empty (kept when the form is redrawn)
@@ -5860,7 +5932,7 @@ async function deleteAccount(btn) {
     try { localStorage.removeItem("ty-photo:" + u.uid); } catch (e) {}
     await db.collection("users").doc(u.uid).delete();
     await u.delete();
-    try { localStorage.removeItem(KEY + ":" + u.uid); } catch (e) {}
+    try { localStorage.removeItem(KEY + ":" + u.uid); localStorage.removeItem(KEY + ":" + u.uid + ":base"); BASE = null; } catch (e) {}
     toast("Hisobingiz oʻchirildi");
   } catch (e) {
     btn.disabled = false; btn.textContent = "Ha, oʻchirish";
@@ -5872,33 +5944,39 @@ async function deleteAccount(btn) {
 async function loadCloud(u) {
   KEYU = KEY + ":" + u.uid;
   let local = loadLocal(KEYU);
-  // Coming from guest mode: the progress made without an account moves into the account
-  if (isGuest()) {
-    const g = loadLocal(KEY);
-    if ((g.xp || 0) > (local.xp || 0)) { local = g; try { localStorage.setItem(KEYU, JSON.stringify(g)); } catch (e) {} }
-    guestEnd();
-  }
+  baseLoad();
+  // Coming from guest mode: the progress made without an account is added to the account (below)
+  const guest = isGuest() ? loadLocal(KEY) : null;
   USERNAME = u.displayName || PENDING_NAME || "";
   const ref = db.collection("users").doc(u.uid);
+  SYNC_LOCK = true;
   try {
-    const snap = await ref.get();
-    // The app may have been used while waiting for the server: take the newest local copy
-    local = loadLocal(KEYU);
-    const d = snap.exists ? snap.data() : null;
-    if (d && d.name) USERNAME = d.name;
-    PROFILE = { gender: (d && d.gender) || "", birth: (d && d.birth) || "" };
-    const cloud = d && d.progress ? Object.assign(blank(), d.progress) : null;
-    // More XP wins; with equal XP the copy saved last wins (e.g. a group joined just before signing out)
-    const newer = cloud && (cloud.xp > local.xp || (cloud.xp === local.xp && (cloud.savedAt || 0) >= (local.savedAt || 0)));
-    S = migrate(newer ? cloud : local);
-    const base = { name: USERNAME, email: u.email || "", progress: S, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-    if (PROFILE.gender) { base.gender = PROFILE.gender; base.birth = PROFILE.birth; }
-    if (!d) base.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-    await ref.set(base, { merge: true });
+    // The server's copy and this device's are merged (sync.js) — neither overwrites the other.
+    // The app may have been used while waiting for the server: the local copy is read when the answer comes
+    const r = await cloudWrite(ref, () => Sync.copy(loadLocal(KEYU)), d => {
+      if (d && d.name) USERNAME = d.name;
+      PROFILE = { gender: (d && d.gender) || "", birth: (d && d.birth) || "" };
+      const x = { name: USERNAME, email: u.email || "" };
+      if (PROFILE.gender) { x.gender = PROFILE.gender; x.birth = PROFILE.birth; }
+      if (!d) x.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      return x;
+    });
+    baseSave(r.merged); SYNC_AT = Date.now();
+    // Answers given while the server was answering are kept on top of the merged state
+    const cur = loadLocal(KEYU);
+    S = migrate(Object.assign(blank(), Sync.same(cur, r.local) ? Sync.copy(r.merged) : mergeStates(r.local, cur, r.merged)));
   } catch (e) {
-    S = local;
+    S = loadLocal(KEYU);
     toast("Natijalarni serverdan yuklab boʻlmadi. Internetni tekshiring");
   }
+  SYNC_LOCK = false;
+  // Progress made without an account is added to it (counts add up, words and units join)
+  const fromGuest = guest && ((guest.xp || 0) > 0 || Object.keys(guest.srs || {}).length);
+  if (fromGuest) S = migrate(Object.assign(blank(), mergeStates(blank(), Sync.copy(guest), Sync.copy(S))));
+  try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {}
+  if (guest) guestEnd();
+  // The guest's results reach the server before the app opens
+  if (fromGuest) await cloudPush();
   try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {}
   setLastUser({ uid: u.uid, name: USERNAME });
   cloudSave();

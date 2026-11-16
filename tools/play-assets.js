@@ -29,7 +29,13 @@ const SHOTS = [
     for (let i = 0; i < 40 && SES && SES.i < SES.items.length; i++) { document.querySelector('[data-act=answer][data-ok="1"]').click(); document.querySelector("[data-act=next]").click(); }
   }, 3000],
   ["06-seriya", "Seriya kalendari va muzlatgich", "#home", () => document.querySelector('[data-act="streak"]').click(), 500],
-  ["07-grammatika", "134 grammatika mavzusi oʻzbekcha tushuntirilgan", "#g-a2-04", null],
+  ["07-soz", "Soʻzni bosing — tarjima va har bir qoʻshimcha", "#oqish", async () => {
+    await loadOq(); await loadMorph(); location.hash = "#oqish-" + OQ[3].id;
+    for (let i = 0; i < 40 && !document.querySelector(".oq-text .mw"); i++) await new Promise(r => setTimeout(r, 100));
+    const ws = [...document.querySelectorAll(".oq-text .mw")], deep = n => ws.find(x => { const r = Morph.parse(x.textContent)[0]; return r && r.parts.length >= n; });
+    const w = deep(3) || deep(2) || ws[4];
+    window.scrollTo(0, w.getBoundingClientRect().top + scrollY - 160); mwOpen(w);
+  }, 700],
   ["08-lugat", "3000+ soʻz, mavzuli lugʻat va internetsiz audio", "#lugat", null]
 ];
 

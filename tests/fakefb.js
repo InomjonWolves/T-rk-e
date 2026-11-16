@@ -35,7 +35,12 @@ const FAKE_FIREBASE = `
     };
     return { doc: id => docRef(path + "/" + id), where: (f, op, v) => colRef(path, filters.concat([[f, v]]), lim), orderBy() { return this; }, limit: n => colRef(path, filters, n), get: run };
   }
-  const fs = () => ({ collection: name => colRef(name) });
+  // A transaction: reads first, then the queued writes (one at a time here, so there is nothing to retry)
+  const runTransaction = f => Promise.resolve().then(() => {
+    const ops = [], tx = { get: ref => ref.get(), update: (ref, d) => { ops.push(() => ref.update(d)); }, set: (ref, d, o) => { ops.push(() => ref.set(d, o)); } };
+    return Promise.resolve(f(tx)).then(r => ops.reduce((p, op) => p.then(op), Promise.resolve()).then(() => r));
+  });
+  const fs = () => ({ collection: name => colRef(name), runTransaction });
   fs.FieldValue = { serverTimestamp: () => "TS" };
   const auth = () => ({
     languageCode: "", get currentUser() { return user; },
