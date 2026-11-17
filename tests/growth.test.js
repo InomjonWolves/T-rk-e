@@ -229,3 +229,28 @@ test("advertising banners: pictures and post texts are ready for Telegram and go
   assert.match(wf, /node tools\/telegram-promo\.js/);
   assert.ok(JSON.parse(fs.readFileSync(path.join(ROOT, "firebase.json"), "utf8")).hosting.ignore.includes("promo/**"), "not on the site");
 });
+
+test("autonomous week: the daily report and failure alerts go to the admin's chat", () => {
+  const { learners, jobs, reportText, alertText, tkDay } = require("../tools/telegram-report.js");
+  const t = "2026-11-17", a = n => "0".repeat(30 - n.length) + n;
+  const u = learners([{ d: t, a: a("1"), f: "2026-11-15", ses: 5 }, { d: "2026-11-14", a: a("11"), f: "2026-10-01", ses: 20 }, { d: "2026-11-01", a: a("1"), f: "2026-10-01" }], t);
+  assert.deepEqual(u, { all: 3, day: 1, week: 2, fresh: 1, ses: 25 });
+  const by = jobs([{ name: "Audio", conclusion: "success", head_branch: "main" }, { name: "Testlar", conclusion: "failure", head_branch: "main", html_url: "https://x/1" },
+    { name: "Testlar", conclusion: "failure", head_branch: "claude/x", html_url: "https://x/2" }]);
+  assert.deepEqual([by.Audio.ok, by.Testlar.bad], [1, 1], "other branches do not count");
+  const txt = reportText({ today: t, users: u, errs: [{ m: "<b>x</b>", n: 4 }], audio: { made: 40, left: 80 }, by, app: { code: 1032, ok: true } });
+  assert.match(txt, /17\.11\.2026/); assert.match(txt, /Jami: <b>3<\/b>/); assert.match(txt, /&lt;b&gt;x/); assert.match(txt, /≈2 kun/); assert.match(txt, /❌ Testlar/); assert.match(txt, /1032/);
+  assert.ok((txt.match(/<\/?[a-z]+>/g) || []).every(x => /^<\/?b>$/.test(x)));
+  assert.match(reportText({ today: t, audio: { made: 3, left: 0 } }), /hammasi yozildi/);
+  assert.match(alertText({ name: "Audio", html_url: "https://x/3" }), /«Audio» ishlamay qoldi[\s\S]*https:\/\/x\/3/);
+  assert.equal(tkDay(Date.UTC(2026, 10, 17, 20)), "2026-11-18", "Tashkent day");
+  const rep = fs.readFileSync(path.join(ROOT, ".github/workflows/report.yml"), "utf8"), watch = fs.readFileSync(path.join(ROOT, ".github/workflows/watch.yml"), "utf8");
+  assert.match(rep, /schedule:/); assert.match(rep, /telegram-report\.js report/); assert.match(rep, /SA: \$\{\{ secrets\.PUSH_SERVICE_ACCOUNT \}\}/);
+  assert.match(watch, /workflow_run:/); assert.match(watch, /conclusion == 'failure'/); assert.match(watch, /telegram-report\.js alert/);
+  assert.doesNotMatch(watch, /"Eslatmalar"/, "the hourly job would repeat every hour");
+  // Every watched name is a real workflow
+  const names = fs.readdirSync(path.join(ROOT, ".github/workflows")).map(f => (/^name: (.+)$/m.exec(fs.readFileSync(path.join(ROOT, ".github/workflows", f), "utf8")) || [])[1]);
+  for (const n of JSON.parse(/workflows: (\[.*\])/.exec(watch)[1])) assert.ok(names.includes(n), n);
+  // The audio run leaves its progress for the report
+  assert.match(fs.readFileSync(path.join(ROOT, "tools/audio-gen.js"), "utf8"), /progress\.json/);
+});

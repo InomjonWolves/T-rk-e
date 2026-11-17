@@ -1,0 +1,27 @@
+# An automatic job on main has failed → a message to the admin's private chat with @TurkceYolBot at once
+# (tools/telegram-report.js alert). The hourly reminders job is left out (it would repeat every hour).
+name: Xato ogohlantirishi (Telegram)
+
+on:
+  workflow_run:
+    workflows: ["Testlar", "Firebase Hosting", "Audio", "Ilova (Capacitor)", "Telegram", "Telegram bot (Vercel)", "Liga natijalari", "Kunlik hisobot (Telegram)"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  alert:
+    if: github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Ogohlantirish
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_ID: ${{ secrets.TELEGRAM_ADMIN_ID }}
+        run: node tools/telegram-report.js alert

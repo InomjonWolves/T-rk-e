@@ -1,0 +1,29 @@
+# The daily report to the admin's private chat with @TurkceYolBot (tools/telegram-report.js): learners, app errors,
+# the audio recording, yesterday's automatic jobs, the app build. After the day's audio run and app build.
+name: Kunlik hisobot (Telegram)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "47 10 * * *"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Hisobotni botga yuborish
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_ID: ${{ secrets.TELEGRAM_ADMIN_ID }}
+          SA: ${{ secrets.PUSH_SERVICE_ACCOUNT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/telegram-report.js report
