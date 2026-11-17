@@ -34,7 +34,9 @@ test("lenta: a full-screen feed from the open levels; it starts with a word, swi
   const c = await page.evaluate(() => ({ ws: LN.cards.filter(c => c.w).map(c => c.w.tr), x: LN.cards.map((c, i) => c.k === "x" ? i : -1).filter(i => i >= 0), kinds: [...new Set(LN.cards.map(c => c.k))].sort().join("") }));
   assert.equal(new Set(c.ws).size, c.ws.length, "no word twice");
   assert.deepEqual(c.x.slice(0, 2), [8, 17]);
-  assert.match(c.kinds, /f/); assert.match(c.kinds, /g/); assert.match(c.kinds, /q/); assert.match(c.kinds, /w/);
+  // Every kind of card comes (checked on many cards: a few dozen may miss a rare one)
+  const kinds = await page.evaluate(() => { const ks = new Set(); for (let i = 0; i < 300; i++) { const x = lnMake(); LN.cards.push(x); ks.add(x.k); } return [...ks].sort().join(""); });
+  for (const k of ["f", "g", "q", "r", "s", "w", "x"]) assert.ok(kinds.includes(k), `${k} in ${kinds}`);
   assert.ok(await page.evaluate(() => S.ln.n >= 2), "today's count");
   // The menu takes you away
   await page.click(".nav a[href='#home']");
