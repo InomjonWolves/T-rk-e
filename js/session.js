@@ -43,6 +43,7 @@ function routeNow() {
   else if (h === "practice") html = viewPractice();
   else if (h === "rank") { html = viewRank(); after = loadRank; }
   else if (h === "oqish") { html = viewOqish(); tab = "practice"; if (!oqReady()) after = () => loadOq().then(route, () => toast("Matnlar yuklanmadi. Internetni tekshiring")); }
+  else if (h === "lenta") { html = viewLenta(); tab = "practice"; after = GRAM_FULL && typeof HK !== "undefined" ? lnMount : () => Promise.all([loadGram(), loadHk()]).then(route, () => toast("Lenta yuklanmadi. Internetni tekshiring")); }
   else if (h === "hikoya") { html = viewHikoyalar(); tab = "practice"; if (!hkReady()) after = () => loadHk().then(route, () => toast("Hikoyalar yuklanmadi. Internetni tekshiring")); }
   else if (/^hikoya-[a-z0-9]+$/.test(h)) { html = viewHikoya(h.slice(7)); tab = "practice"; if (!hkReady()) after = () => loadHk().then(route, () => toast("Hikoyalar yuklanmadi. Internetni tekshiring")); }
   else if (/^oqish-[a-z0-9]+$/.test(h)) { html = viewOqText(h.slice(6)); tab = "practice"; if (!oqReady()) after = () => loadOq().then(route, () => toast("Matnlar yuklanmadi. Internetni tekshiring")); }
@@ -51,6 +52,7 @@ function routeNow() {
   else if (h === "profile") html = viewProfile();
   else if (h === "settings") { html = viewSettings(); tab = "profile"; }
   else { html = viewHome(); tab = "home"; }
+  document.documentElement.classList.toggle("ln-open", h === "lenta");
   app.innerHTML = `<div class="view" data-v="${esc(h.replace(/[^a-z].*$/, "") || "home")}">${html}</div>`;
   document.querySelectorAll(".nav a").forEach(a => { if (a.dataset.tab === tab) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
   // A row of chips that scrolls sideways shows its chosen chip

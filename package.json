@@ -3,7 +3,7 @@
   "private": true,
   "description": "Türkçe Yoʻl — testlar. Sayt statik; course.js yoki guide.js oʻzgarsa: npm run build.",
   "scripts": {
-    "build": "node tools/course-core.js && node tools/seo.js && node tools/kirill-lex.js",
+    "build": "node tools/course-core.js && node tools/kirill-lex.js && node tools/seo.js",
     "test": "node --test --test-concurrency=2 \"tests/*.test.js\""
   },
   "devDependencies": {

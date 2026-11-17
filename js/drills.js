@@ -645,7 +645,7 @@ function countUp(el) {
   if (!to || matchMedia("(prefers-reduced-motion: reduce)").matches) { el.textContent = fmt(to); return; }
   const t0 = performance.now(), dur = 900;
   el.textContent = fmt(0);
-  const step = t => { const k = Math.min(1, (t - t0) / dur), v = Math.round(to * (1 - Math.pow(1 - k, 3))); el.textContent = fmt(v); if (k < 1 && el.isConnected) requestAnimationFrame(step); };
+  const step = t => { const k = Math.max(0, Math.min(1, (t - t0) / dur)), v = Math.round(to * (1 - Math.pow(1 - k, 3))); el.textContent = fmt(v); if (k < 1 && el.isConnected) requestAnimationFrame(step); };
   requestAnimationFrame(step);
 }
 function renderResult() {

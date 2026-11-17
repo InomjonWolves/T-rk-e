@@ -84,6 +84,7 @@ function viewHome() {
     <div class="hero-cat">${catSVG({ pose: "cheer", ears: "up", look: catLook(), cls: "mascot" })}</div>
   </section>`}
 
+  ${lnHomeCard()}
   ${recsCard()}
   ${plHomeCard()}
   ${(() => { const u = kNext(), p = kProgress(u.id), gate = kGate(); if (gate) { const g = KLEVEL(gate); return `<section class="section">
@@ -465,6 +466,8 @@ function viewPractice() {
   const SK_GO = { r: ['href="#oqish"', "Matnlar va savollar"], l: ['data-act="sk-go" data-s="l"', "Soʻz · diktant · dialog gaplari"], w: ['data-act="sk-go" data-s="w"', "Harflardan yigʻish · diktant · qoidalar"], s: ['data-act="sk-go" data-s="s"', "Talaffuz · dialog gaplari"] };
   return `${topbar()}
   <div><h1 class="page-title">Mashq</h1><p class="sub">Har mashq yakunida XP beriladi. Bugun ${done.length}/4 koʻnikma mashq qilindi.</p></div>
+
+  ${lnHomeCard()}
 
   <button class="pcard ai" data-act="start" data-mode="review" ${items.length ? "" : "disabled"}>
     <div class="pcard-head"><b>${ICON.spark}Aqlli takrorlash</b><span>~${mins(items.length)} daq</span></div>

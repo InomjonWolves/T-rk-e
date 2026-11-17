@@ -21,7 +21,8 @@ function uzWords() {
   for (const f of files) {
     const src = fs.readFileSync(path.join(ROOT, f), "utf8");
     for (const m of src.matchAll(/"((?:[^"\\\n]|\\.)*)"|`((?:[^`\\]|\\.)*)`|>([^<>]{3,})</g)) {
-      const ws = ((m[1] ?? m[2] ?? m[3]).replace(/<[^>]+>|\$\{[^}]*\}/g, " ").match(WORD) || []).map(low);
+      // «…» holds examples and quotes (often Turkish inside an Uzbek sentence): not counted as Uzbek
+      const ws = ((m[1] ?? m[2] ?? m[3]).replace(/<[^>]+>|\$\{[^}]*\}|«[^»]*»/g, " ").match(WORD) || []).map(low);
       const s = (m[1] ?? m[2] ?? m[3]).trim();
       // A word counts as Uzbek when an Uzbek string uses it next to a surely Uzbek word (bu qoida, Defne oshxonada) —
       // not a Turkish example inside an Uzbek sentence (Ben kitap okuyorum — Men kitob oʻqiyapman)
