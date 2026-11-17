@@ -5,6 +5,7 @@
 08heduggnsd Kore
 08qyl89oltt Zephyr
 09mpp20ujyv Leda
+0b389dwhfzj Leda
 0ed7ll2zi6s Sadaltager
 0fp2mez9sn2 Leda
 0j4ryzmsxcr Erinome
@@ -16,12 +17,15 @@
 0vphax1rvey Autonoe
 0z3ccybfwg2 Erinome
 101i3156iar Sadaltager
+12i8mykxx6w Laomedeia
 13mptpxk8z0 Sadaltager
 13r75lq05ij Leda
 17w7kktg74k Kore
+1ahtolvvh2i Kore
 1ejprpfffh7 Leda
 1hdul1ufnku Erinome
 1j32luuw5zv Kore
+1jhi78z4jq1 Laomedeia
 1mxyx7obzpz Erinome
 1qgyqjs6bo4 Puck
 1qq6rkf1c6p Zephyr
@@ -38,4 +42,5 @@
 29uj7r5hz77 Leda
 2dq6tl51bgo Zephyr
 2dqrpt74y8o Leda
+2e1b6vgp9nw Laomedeia
 2f1btc6reya Sadaltager
