@@ -25,7 +25,7 @@ function onAct(e) {
   if (act === "grp-del-ask") { $("grp-del").innerHTML = `<div class="notice"><div><b>Guruh oʻchirilsinmi?</b> Oʻquvchilar roʻyxati va natijalari guruhdan oʻchadi (ularning oʻz natijalari saqlanib qoladi).</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button class="btn btn-ghost" data-act="grp-reload" data-c="${esc(b.dataset.c)}">Bekor qilish</button><button class="btn btn-danger" data-act="grp-del-yes" data-c="${esc(b.dataset.c)}">Ha, oʻchirish</button></div></div>`; return; }
   if (act === "grp-del-yes") { b.disabled = true; grpDelete(b.dataset.c); return; }
-  if (act === "say") speak(b.dataset.t, b.classList.contains("say") ? b : null);
+  if (act === "say") { if (b.dataset.w) sayWho(b.dataset.w, b.dataset.t, b); else speak(b.dataset.t, b.classList.contains("say") ? b : null); }
   else if (act === "go") { go(b.dataset.to); if (b.dataset.focus) setTimeout(() => $("q") && $("q").focus(), 50); }
   else if (act === "start") startSession(b.dataset.mode, b.dataset.u || "all");
   else if (act === "modes") modeSheet(b.dataset.u, b.dataset.title);

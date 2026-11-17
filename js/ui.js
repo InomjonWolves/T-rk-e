@@ -261,6 +261,7 @@ function nttsSay(text, rate, done, pitch) {
 function ttsCancel() { audioStop(); nttsStop(); try { speechSynthesis.cancel(); } catch (e) {} }
 // Plays the recording of text; false if there is none (then the caller uses the device voice).
 // If the file cannot load (offline, not cached), fallback() runs instead — the device voice.
+// v: a voice ("a", "b", "p:<speaker>") or a list of them — the first one recorded plays
 function playRec(text, v, rate, done, fallback) {
   const a = audioEl();
   // Played before the list of recordings came (the first moments after opening): wait for it, up to 2.5 s, rather
@@ -277,6 +278,7 @@ function playRec(text, v, rate, done, fallback) {
     });
     return true;
   }
+  if (Array.isArray(v)) v = v.find(x => hasRec(text, x)) || v[v.length - 1];
   if (!a || !hasRec(text, v)) return false;
   audioStop(); nttsStop();
   try { speechSynthesis.cancel(); } catch (e) {}
@@ -311,6 +313,15 @@ function ttsVoice(alt) {
   if (!vs.length) return null;
   const i = Math.max(0, vs.findIndex(v => S.tts && v.name === S.tts.v));
   return alt && vs.length > 1 ? vs[(i + 1) % vs.length] : vs[i];
+}
+// A character's own voice (Gemini, "p:<speaker>"; "_" — a story's narrator), else the given plain voices
+const whoVoices = (who, alt) => ["p:" + (who || "_")].concat(alt ? ["b", "a"] : ["a"]);
+// One line of a dialog in its speaker's voice (the bubble's own play button)
+function sayWho(who, text, btn) {
+  const t = audioNorm(text), off = () => btn && btn.classList.remove("playing");
+  if (btn) btn.classList.add("playing");
+  if (playRec(t, whoVoices(who), ttsRate(), off, () => speak(t, btn))) return;
+  speak(t, btn);
 }
 function speak(text, btn, rate) {
   SEQ_N++;

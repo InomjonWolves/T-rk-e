@@ -137,7 +137,7 @@ function renderBlocks(blocks) {
       b.dlg.forEach(([who]) => { if (!(who in sides)) sides[who] = n++ % 2 ? "r" : "l"; });
       return `<div class="dlg">
         <button class="btn btn-soft" data-act="say-seq" data-lines="${esc(JSON.stringify(b.dlg.map(x => [x[0], x[1]])))}">${ICON.speak}Dialogni tinglash</button>
-        ${b.dlg.map(([who, t]) => `<div class="bubble ${sides[who]}"><small>${esc(who)}</small><span lang="tr">${mw(t)}</span><button class="say mini" data-act="say" data-t="${esc(t)}" aria-label="Tinglash">${ICON.speak}</button></div>`).join("")}
+        ${b.dlg.map(([who, t]) => `<div class="bubble ${sides[who]}"><small>${esc(who)}</small><span lang="tr">${mw(t)}</span><button class="say mini" data-act="say" data-t="${esc(t)}" data-w="${esc(who)}" aria-label="Tinglash">${ICON.speak}</button></div>`).join("")}
       </div>`;
     }
     return "";
@@ -166,8 +166,8 @@ function speakSeq(lines) {
         speechSynthesis.speak(u);
       } catch (e) {}
     };
-    // Recordings: the second speaker has its own voice ("b") when it was recorded
-    if (!playRec(text, alt && hasRec(text, "b") ? "b" : "a", ttsRate() * 0.9 / 0.85, () => { if (run === SEQ_N) later(); }, tts)) tts();
+    // Recordings: the character's own voice, else the second speaker's "b", else "a"
+    if (!playRec(text, spk ? whoVoices(spk, alt) : "a", ttsRate() * 0.9 / 0.85, () => { if (run === SEQ_N) later(); }, tts)) tts();
   };
   next();
 }

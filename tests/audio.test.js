@@ -1,4 +1,4 @@
-// Recorded audio (Google Cloud Text-to-Speech files in audio/): the app plays them first and falls back to the device voice;
+// Recorded audio (Gemini TTS files in audio/, each story and dialog character in a voice of their own): the app plays them first and falls back to the device voice;
 // the Android app plays them from the site and keeps the ones it played.
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
@@ -60,6 +60,17 @@ test("audio: the same key in the app and in the generator; recordings first, dev
   await page.waitForFunction(() => __played.length + __tts.length >= 3, null, { timeout: 4000 });
   const d = await page.evaluate(() => ({ played: __played.map(x => x.src.split("/").pop()), tts: __tts, a: audioKey("Selam") + ".mp3", b: audioKey("Merhaba", "b") + ".mp3" }));
   assert.deepEqual(d.played, [d.a, d.b]);
+  // A character recorded in their own voice (Gemini, "p:<speaker>"): the dialog, a bubble's button and a story use it
+  await page.evaluate(() => { __played = []; __tts = []; ["Selam", "Merhaba"].forEach(t => AUDIO_SET.add(audioKey(t, "p:Ali"))); AUDIO_SET.add(audioKey("Günaydın", "p:_")); speakSeq([["Ali", "Selam"], ["Ayşe", "Merhaba"]]); });
+  await page.waitForFunction(() => __played.length + __tts.length >= 2, null, { timeout: 4000 });
+  const cv = await page.evaluate(() => {
+    const out = { seq: __played.map(x => x.src.split("/").pop()), ali: audioKey("Selam", "p:Ali") + ".mp3", ayseB: audioKey("Merhaba", "b") + ".mp3" };
+    __played = []; sayWho("Ali", "Merhaba"); out.bubble = __played.map(x => x.src.split("/").pop()); out.aliM = audioKey("Merhaba", "p:Ali") + ".mp3";
+    __played = []; hkSay({ cast: {} }, "", "Günaydın"); out.narr = __played.map(x => x.src.split("/").pop()); out.n = audioKey("Günaydın", "p:_") + ".mp3";
+    return out;
+  });
+  assert.deepEqual(cv.seq, [cv.ali, cv.ayseB], "Ali in his own voice; Ayşe (not recorded as a character) falls back to b");
+  assert.deepEqual(cv.bubble, [cv.aliM]); assert.deepEqual(cv.narr, [cv.n]);
   assert.deepEqual(d.tts, ["Nasılsın?"]);
   // With recordings the listening exercises work even without a device voice (Telegram's browser)
   assert.equal(await page.evaluate(() => { const s = window.speechSynthesis; delete window.speechSynthesis; const r = canSpeak(); window.speechSynthesis = s; return r; }), true);
@@ -69,9 +80,12 @@ test("audio: the same key in the app and in the generator; recordings first, dev
 
 test("audio: the text list covers every word, dialogs and readings; site config serves files right", async () => {
   const list = await require("../tools/audio-texts.js").collect();
-  const a = list.filter(x => x[0] === "a"), b = list.filter(x => x[0] === "b");
+  const a = list.filter(x => x[0] === "a"), b = list.filter(x => x[0] === "b"), p = list.filter(x => x[0].startsWith("p:"));
   assert.ok(a.length > 3500, `${a.length} texts`);
   assert.ok(b.length > 50, "second dialog voice");
+  // Every dialog and story line in its character's voice, and the conversations in order (stories first) for one request each
+  assert.ok(p.length > 500 && p.some(x => x[0] === "p:Dilnoza") && p.some(x => x[0] === "p:_"), `${p.length} character lines`);
+  assert.ok(list.groups.length > 40 && list.groups[0].id.startsWith("hk:") && list.groups.every(g => g.lines.length && g.lines.every(([w, t]) => p.some(x => x[0] === "p:" + w && x[1] === t))));
   const keys = new Set(list.map(([v, t]) => gen.audioKey(t, v)));
   assert.equal(keys.size, list.length, "no key collisions");
   assert.ok(list.some(x => x[1] === "Ben de memnun oldum."), "course dialog line");
@@ -88,16 +102,29 @@ test("audio: the text list covers every word, dialogs and readings; site config 
   // A month in the cache (a file recorded again reaches everyone), readable by the app (CORS)
   assert.ok(fb.hosting.headers.some(h => h.source === "audio/**/*.mp3" && /max-age=2592000/.test(h.headers[0].value)));
   const wf = fs.readFileSync(path.join(ROOT, ".github/workflows/audio.yml"), "utf8");
-  for (const re of [/GOOGLE_TTS_API_KEY/, /node tools\/audio-gen\.js/, /gh workflow run firebase-hosting\.yml/, /gh workflow run audio\.yml/]) assert.match(wf, re);
-  assert.doesNotMatch(wf, /edge-tts|AZURE_|GOOGLE_TTS_KEY\b/, "only the official key-based service");
+  for (const re of [/GEMINI_API_KEY/, /node tools\/audio-gen\.js/, /gh workflow run firebase-hosting\.yml/, /gh workflow run audio\.yml/, /schedule:\s*\n\s*- cron:/, /ffmpeg/]) assert.match(wf, re);
+  assert.doesNotMatch(wf, /edge-tts|AZURE_|GOOGLE_TTS/, "only the official key-based service");
   const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, "tools/audio-voice.json"), "utf8"));
-  assert.ok(cfg.provider === "google" && /^tr-TR-Chirp3-HD-/.test(cfg.a.name) && /^tr-TR-Chirp3-HD-/.test(cfg.b.name) && cfg.a.name !== cfg.b.name);
-  // The request: Turkish, the chosen voice, MP3 24 kHz at the learners' speed; the text as the app keys it
-  assert.deepEqual(gen.ttsBody("tr-TR-Chirp3-HD-Kore", "Merhaba…  dünya", 0.9), { input: { text: "Merhaba dünya" }, voice: { languageCode: "tr-TR", name: "tr-TR-Chirp3-HD-Kore" }, audioConfig: { audioEncoding: "MP3", sampleRateHertz: 24000, speakingRate: 0.9 } });
-  // A refusal is explained in plain words in the run's log
-  assert.match(gen.why(403, "Cloud Text-to-Speech API has not been used in project 123 before or it is disabled."), /API yoqilmagan/);
-  assert.match(gen.why(400, "API key not valid. Please pass a valid API key."), /kalit notoʻgʻri/);
-  assert.match(gen.why(403, "This API method requires billing to be enabled."), /billing/);
+  assert.equal(cfg.provider, "gemini");
+  const voices = new Set(cfg.female.concat(cfg.male));
+  assert.ok([cfg.a, cfg.b].concat(Object.values(cfg.cast)).every(v => voices.has(v)), "every voice is a known Gemini voice");
+  assert.ok(cfg.female.includes(cfg.cast.Dilnoza) && cfg.male.includes(cfg.cast.Jasur) && cfg.female.includes(cfg.cast["Elif Hoca"]) && cfg.male.includes(cfg.cast["Murat Bey"]));
+  // Two speakers of one conversation never share a voice; a new name gets one by its title (Bey — a man's voice)
+  const gv = gen.groupVoices(cfg, { lines: [["Pamuk", "x"], ["Rehber", "y"], ["Ali Bey", "z"]] });
+  assert.equal(new Set(gv.values()).size, 3); assert.ok(cfg.male.includes(gv.get("Ali Bey")));
+  // Requests: one voice, or a conversation of two speakers
+  assert.deepEqual(gen.gBody("Merhaba", "Kore").generationConfig, { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } });
+  assert.deepEqual(gen.gBody("x", [["Defne", "Zephyr"], ["Kerem", "Achird"]]).generationConfig.speechConfig.multiSpeakerVoiceConfig.speakerVoiceConfigs.map(c => [c.speaker, c.voiceConfig.prebuiltVoiceConfig.voiceName]), [["Defne", "Zephyr"], ["Kerem", "Achird"]]);
+  assert.equal(gen.label("Elif Hoca"), "ElifHoca"); assert.equal(gen.label("_"), "Anlatici");
+  // One recording of many lines is cut at its long pauses into one piece a line; pauses that do not match → null
+  const rate = 24000, tone = sec => { const b = Buffer.alloc(Math.floor(rate * sec) * 2); for (let i = 0; i < b.length / 2; i++) { const t = i / rate; b.writeInt16LE(Math.round((Math.floor(t / 0.25) % 4 === 3 ? 0 : 1) * 6000 * Math.sin(2 * Math.PI * 220 * t)), i * 2); } return b; };
+  const sil = sec => Buffer.alloc(Math.floor(rate * sec) * 2), lens = [20, 45, 12];
+  const pcm = Buffer.concat([sil(0.4), tone(0.3 + 0.075 * 20), sil(1.5), tone(0.3 + 0.075 * 45), sil(1.4), tone(0.3 + 0.075 * 12), sil(0.5)]);
+  const parts = gen.splitPcm(pcm, rate, 3, lens);
+  assert.equal(parts && parts.length, 3);
+  assert.ok(parts.every((x, i) => gen.okLen(x.length / 2 / rate, lens[i])));
+  assert.equal(gen.splitPcm(pcm, rate, 4, [10, 10, 10, 10]), null);
+  assert.equal(gen.splitPcm(pcm, rate, 3, [200, 3, 3]), null, "pieces far from the lines' lengths");
 });
 
 test("app audio: a recording comes from the site when played, is kept, plays again without the network; next words fetched ahead", async () => {

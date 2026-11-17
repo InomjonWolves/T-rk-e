@@ -71,7 +71,7 @@ test("stories: every word can be tapped and is analysed; voices follow the cast"
   assert.ok(r.n > 500, "words: " + r.n);
   assert.deepEqual(r.bad, []);
   assert.deepEqual(r.voices, ["b", "a", "a", "a"]);
-  // A man's line plays the male recording when there is one, else the main voice
+  // A line asks for the character's own voice first, then (a man) the male recording, then the main voice
   const played = await page.evaluate(() => {
     const out = [], h = HK.find(x => x.id === "kahvalti"), t = "Günaydın! Saat kaç?";
     window.playRec = (text, v) => { out.push(v); return true; };
@@ -79,7 +79,7 @@ test("stories: every word can be tapped and is analysed; voices follow the cast"
     AUDIO_SET = new Set(); hkSay(h, "Kerem", t); hkSay(h, "Defne", t);
     return out;
   });
-  assert.deepEqual(played, ["b", "a", "a"]);
+  assert.deepEqual(played, [["p:Kerem", "b", "a"], ["p:Kerem", "b", "a"], ["p:Defne", "a"]]);
   assert.deepEqual(errors, []);
 });
 

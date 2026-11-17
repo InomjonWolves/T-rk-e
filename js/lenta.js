@@ -78,9 +78,10 @@ const LN_KINDS = [["w", 22], ["q", 22], ["r", 12], ["l", 12], ["g", 10], ["s", 1
 function lnSayItem() {
   const P = LN.pool;
   if (Math.random() < 0.35) { const ls = P.lines.filter(x => x.h && x.tr.length <= 30 && !LN.used.has("p:" + x.tr)); if (ls.length) { const x = lnPickOne(ls); LN.used.add("p:" + x.tr); return { say: x.tr, uz: x.uz, lv: x.h.lv }; } }
-  const ws = P.words.filter(w => !LN.used.has("p:" + w.tr) && w.tr.split(" ").length <= 3 && w.tr.length <= 22 && !/[\d()]/.test(w.tr));
+  // A word not shown on another card of this feed (one word, one card)
+  const ws = P.words.filter(w => !LN.used.has("p:" + w.tr) && !LN.used.has("w:" + w.tr) && w.tr.split(" ").length <= 3 && w.tr.length <= 22 && !/[\d()]/.test(w.tr));
   if (!ws.length) return null;
-  const w = lnPickOne(ws.filter(w => srs(w)).length > 8 && Math.random() < 0.6 ? ws.filter(w => srs(w)) : ws); LN.used.add("p:" + w.tr);
+  const w = lnPickOne(ws.filter(w => srs(w)).length > 8 && Math.random() < 0.6 ? ws.filter(w => srs(w)) : ws); LN.used.add("p:" + w.tr); LN.used.add("w:" + w.tr);
   return { say: w.tr, uz: w.uz, w };
 }
 function lnMake() {

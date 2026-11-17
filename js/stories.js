@@ -22,7 +22,7 @@ function hkSay(h, who, text, btn) {
   const t = audioNorm(text), v = hkVoice(h, who);
   if (btn) btn.classList.add("playing");
   const off = () => btn && btn.classList.remove("playing");
-  if (playRec(t, v === "b" && hasRec(t, "b") ? "b" : "a", ttsRate(), off, () => speak(t, btn))) return;
+  if (playRec(t, whoVoices(who, v === "b"), ttsRate(), off, () => speak(t, btn))) return;
   speak(t, btn);
 }
 // The line a question leaves in the story once it is answered (next, order, hear); null for mc and word
