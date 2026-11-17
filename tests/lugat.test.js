@@ -9,10 +9,10 @@ after(async () => { await browser.close(); });
 
 test("vocabulary base: 3000+ words in the app, level pages, pack pages, homonyms keep their meaning", async () => {
   const { page, errors } = await openApp(browser, "#lessons");
-  const r = await page.evaluate(() => ({ all: ALL.length, packs: LPACKS.length, card: !!document.querySelector('a[href="#lugat"]') }));
+  const r = await page.evaluate(() => ({ all: ALL.length, packs: LPACKS.length, card: !!document.querySelector('.back[href="#library"]') }));
   assert.ok(r.all >= 3000, `only ${r.all} words`);
   assert.equal(r.card, true);
-  await page.click('a[href="#lugat"]');
+  await page.evaluate(() => { location.hash = "#lugat"; });
   await page.waitForTimeout(100);
   for (const lv of ["A1", "A2", "B1", "B2", "C1"]) {
     await page.click(`[data-act=lug-lv][data-l="${lv}"]`);

@@ -84,7 +84,6 @@ function viewHome() {
     <div class="hero-cat">${catSVG({ pose: "cheer", ears: "up", look: catLook(), cls: "mascot" })}</div>
   </section>`}
 
-  ${lnHomeCard()}
   ${recsCard()}
   ${plHomeCard()}
   ${(() => { const u = kNext(), p = kProgress(u.id), gate = kGate(); if (gate) { const g = KLEVEL(gate); return `<section class="section">
@@ -197,11 +196,28 @@ function pamukHero() {
 
 /* ---------- Lessons ---------- */
 let CAT = "all", Q = "";
-function lessonTabs(active) {
-  const t = (href, id, name) => `<a href="#${href}" ${active === id ? 'aria-current="page"' : ""}>${name}</a>`;
-  return `<nav class="seg glass" aria-label="Darslar boʻlimlari">
-    ${t("course", "course", "Kurs")}${t("grammar", "grammar", "Grammatika")}${t("lugat", "lugat", "Lugʻat")}${t("alphabet", "alphabet", "Alifbo")}
-  </nav>`;
+/* Oʻrganish (one tab for what used to be Darslar and Mashq): Kurs · Mashq · Kutubxona at the top; the library's
+   pages (grammar, vocabulary, alphabet, reading, stories) open from Kutubxona with a way back to it. The menu's
+   «Oʻrganish» opens the part seen last (LEARN_SEG). */
+let LEARN_SEG = "course";
+function learnTabs(active) {
+  LEARN_SEG = active;
+  const t = (id, name) => `<a href="#${id}"${active === id ? ' aria-current="page"' : ""}>${name}</a>`;
+  return `<h1 class="page-title">Oʻrganish</h1>
+  <nav class="seg glass learn-seg" aria-label="Oʻrganish boʻlimlari">${t("course", "Kurs")}${t("practice", "Mashq")}${t("library", "Kutubxona")}</nav>`;
+}
+function libHead(name) { LEARN_SEG = "library"; return `<div><a class="back" href="#library">${ICON.back}Kutubxona</a></div><h1 class="page-title">${name}</h1>`; }
+const lrow = (attrs, ico, c, t, sub, end) => `<${attrs.startsWith("href") ? "a" : "button"} class="lrow" ${attrs}><span class="lrow-ico ${c}-t">${ICON[ico]}</span><span class="lrow-txt"><b>${t}</b><small>${sub}</small></span>${end || ICON.chev}</${attrs.startsWith("href") ? "a" : "button"}>`;
+function viewLibrary() {
+  return `${topbar()}${learnTabs("library")}
+  <div class="lrows glass">
+    ${lrow('href="#grammar"', "cap", "violet", "Grammatika", "Qoidalar, misollar va mashqlar · A1–C1")}
+    ${lrow('href="#lugat"', "cards", "sky", "Lugʻat", `${ALL.length} ta soʻz · mavzuli toʻplamlar`)}
+    ${lrow('href="#oqish"', "book", "teal", "Oʻqish matnlari", "Qisqa matnlar va savollar")}
+    ${lrow('href="#hikoya"', "chat", "orange", "Hikoyalar", "Tinglab, oʻqib, javob berib")}
+    ${lrow('href="#alphabet"', "type", "green", "Alifbo", "29 harf va ularning talaffuzi")}
+    ${lrow('href="#translate"', "translate", "pink", "Tarjimon", "Soʻz va gaplarni tarjima qilish")}
+  </div>`;
 }
 function searchResults() {
   const q = plain(Q);
@@ -221,7 +237,7 @@ function unitsList() {
       <div class="list">${rows.map(ui => unitRow(UNITS[ui], ui)).join("")}</div></details>`;
   }).join("");
 }
-// Darslar → Lugʻat: search over every word, levels A1–C1; A1 starts with the step-by-step lessons, then topic packs and the course vocabulary
+// Kutubxona → Lugʻat: search over every word, levels A1–C1; A1 starts with the step-by-step lessons, then topic packs and the course vocabulary
 function viewLessons() { return viewLugat(); }
 function viewUnit(ui) {
   const u = UNITS[ui], c = catOf(ui), ws = unitWords(ui), k = ws.filter(w => known(w) >= 2).length;
@@ -254,8 +270,7 @@ function viewLugat() {
   const total = ALL.length, learned = learnedCount(), kc = CATS.find(c => c.id === "k" + LUG_LV);
   const kw = kc ? ALL.filter(w => kc.ids.includes(UNITS[w.unit].id)) : [];
   return `${topbar()}
-  <h1 class="page-title">Darslar</h1>
-  ${lessonTabs("lugat")}
+  ${libHead("Lugʻat")}
   <label class="search glass" for="q">${ICON.search}<span class="sr">Soʻz qidirish</span><input id="q" type="search" placeholder="${total} ta soʻz ichidan qidiring" value="${esc(Q)}" autocomplete="off" lang="tr"></label>
   <div id="search-results">${searchResults()}</div>
   <div id="units-block" class="stack" ${Q ? "hidden" : ""}>
@@ -297,7 +312,7 @@ function gramRow(g, gi) {
     ${pctRing(n / g.quiz.length)}
   </button>`;
 }
-// Darslar → Grammatika: the handbook by level (topics with their exercises), search, the exercise progress, and for A1 the 10 short lessons
+// Kutubxona → Grammatika: the handbook by level (topics with their exercises), search, the exercise progress, and for A1 the 10 short lessons
 function viewGrammarList() { return viewGuide(); }
 function gqHtml(g, qi) {
   const q = g.quiz[qi];
@@ -353,8 +368,7 @@ function guideHits() {
 function viewGuide() {
   const lv = GUIDE.find(l => l.id === GUIDE_LV) || GUIDE[1], nx = gxNext(), ms = gxMistakes().length;
   return `${topbar()}
-  <h1 class="page-title">Darslar</h1>
-  ${lessonTabs("grammar")}
+  ${libHead("Grammatika")}
   <label class="search glass" for="gq">${ICON.search}<span class="sr">Grammatikadan qidirish</span><input id="gq" type="search" placeholder="Qidirish: iyor, kelishik, -lar…" value="${esc(GUIDE_Q)}" autocomplete="off" lang="tr"></label>
   <div id="guide-hits">${guideHits()}</div>
   <a class="pcard glass" href="#gx" style="color:inherit;text-decoration:none">
@@ -433,8 +447,7 @@ let letterSel = 2;
 function viewAlphabet() {
   const L = LETTERS[letterSel];
   return `${topbar()}
-  <h1 class="page-title">Darslar</h1>
-  ${lessonTabs("alphabet")}
+  ${libHead("Alifbo")}
   <p class="sub">Turk alifbosida 29 harf bor, Q, X va W yoʻq. Harfni bosing va misolni tinglang.</p>
   <div class="letter-detail glass">
     <span class="big" lang="tr">${esc(L[0])}</span>
@@ -461,49 +474,30 @@ function mistakesCard() {
 }
 function viewPractice() {
   const due = dueWords(), fresh = newWords(Math.min(newLeft(), NEW_PER_DAY)), items = due.slice(0, 20).concat(fresh);
-  const acc = S.acc[1] ? pct(S.acc[0], S.acc[1]) : null, done = skToday();
-  const stat = id => { const v = id === "s" ? S.pron : S.sk[id]; return v[1] ? `${pct(v[0], v[1])}% toʻgʻri` : "Hali boshlanmagan"; };
-  const SK_GO = { r: ['href="#oqish"', "Matnlar va savollar"], l: ['data-act="sk-go" data-s="l"', "Soʻz · diktant · dialog gaplari"], w: ['data-act="sk-go" data-s="w"', "Harflardan yigʻish · diktant · qoidalar"], s: ['data-act="sk-go" data-s="s"', "Talaffuz · dialog gaplari"] };
-  return `${topbar()}
-  <div><h1 class="page-title">Mashq</h1><p class="sub">Har mashq yakunida XP beriladi. Bugun ${done.length}/4 koʻnikma mashq qilindi.</p></div>
-
-  ${lnHomeCard()}
-
+  const done = skToday(), adv = (recs().find(x => x.sk) || {}).sk;
+  const mis = mistakeWords().length + lsmList("l").length + lsmList("s").length + gxMistakes().length;
+  const stat = id => { const v = id === "s" ? S.pron : S.sk[id]; return v[1] ? `${pct(v[0], v[1])}% toʻgʻri` : "Boshlanmagan"; };
+  const SK_GO = { r: 'href="#oqish"', l: 'data-act="sk-go" data-s="l"', w: 'data-act="sk-go" data-s="w"', s: 'data-act="sk-go" data-s="s"' };
+  return `${topbar()}${learnTabs("practice")}
   <button class="pcard ai" data-act="start" data-mode="review" ${items.length ? "" : "disabled"}>
     <div class="pcard-head"><b>${ICON.spark}Aqlli takrorlash</b><span>~${mins(items.length)} daq</span></div>
-    <p>${items.length ? "Unutilish arafasidagi va bugungi yangi soʻzlar — bitta mashqda 4 koʻnikma: maʼno, yozish, tinglash, talaffuz. Nimani qachon takrorlashni tizim oʻzi tanlaydi." : "Bugungi reja bajarildi. Ertaga yangi soʻzlar va takrorlashlar keladi."}</p>
-    <div class="facts">
-      <span>${ICON.list}${due.length} ta takrorlash · ${fresh.length} ta yangi soʻz</span>
-      <span>${ICON.quiz}${acc === null ? "Hali javoblar yoʻq" : `Toʻgʻri javoblar: ${acc}%`}</span>
-    </div>
+    <p>${items.length ? `${due.length} ta takrorlash va ${fresh.length} ta yangi soʻz — maʼno, yozish, tinglash va talaffuz bitta mashqda.` : "Bugungi takrorlash bajarildi. Ertaga yangi soʻzlar keladi."}</p>
   </button>
 
   <section class="section">
-    <div class="section-head"><h2>4 koʻnikma</h2><a class="link" href="#skills">Natijalar</a></div>
-    <div class="sk-grid">${(() => { const adv = (recs().find(x => x.sk) || {}).sk; return SKILLS.map(sk => { const g = SK_GO[sk.id], off = sk.id === "s" && !canListen(), on = done.includes(sk), tip = adv === sk.id;
-      const inner = `<span class="ico ${sk.c}-t">${ICON[sk.ico]}</span><b>${sk.uz}</b><small lang="tr">${sk.tr}</small><span class="sk-sub">${g[1]}</span><span class="sk-stat">${off ? "Bu brauzerda ishlamaydi" : stat(sk.id)}</span>${tip ? `<span class="tag violet-t sk-tip">Tavsiya</span>` : ""}${on ? `<span class="sk-done" aria-label="Bugun bajarildi">${ICON.check}</span>` : ""}`;
-      return g[0].startsWith("href") ? `<a class="sk-tile glass${tip ? " tip" : ""}" ${g[0]}>${inner}</a>` : `<button class="sk-tile glass${tip ? " tip" : ""}" ${g[0]} ${off ? "disabled" : ""}>${inner}</button>`; }).join(""); })()}</div>
-    ${canListen() ? "" : `<p class="muted" style="margin-top:8px">Gapirish uchun saytni Chrome (Android, kompyuter) yoki Safari (iPhone) da oching.</p>`}
-    <button class="link sk-more" data-act="modes-all">Alohida mashq turlari</button>
+    <div class="section-head"><h2>Koʻnikmalar</h2><a class="link" href="#skills">Natijalar</a></div>
+    <div class="sk-grid">${SKILLS.map(sk => { const g = SK_GO[sk.id], off = sk.id === "s" && !canListen(), on = done.includes(sk), tip = adv === sk.id;
+      const inner = `<span class="ico ${sk.c}-t">${ICON[sk.ico]}</span><b>${sk.uz}</b><span class="sk-stat">${off ? "Bu brauzerda ishlamaydi" : stat(sk.id)}</span>${tip ? `<span class="tag violet-t sk-tip">Tavsiya</span>` : ""}${on ? `<span class="sk-done" aria-label="Bugun bajarildi">${ICON.check}</span>` : ""}`;
+      return g.startsWith("href") ? `<a class="sk-tile glass${tip ? " tip" : ""}" ${g}>${inner}</a>` : `<button class="sk-tile glass${tip ? " tip" : ""}" ${g} ${off ? "disabled" : ""}>${inner}</button>`; }).join("")}</div>
   </section>
 
-  <a class="pcard glass hk-card" href="#hikoya">
-    <div class="pcard-head"><b>${ICON.book}Hikoyalar</b>${Object.keys(S.hk || {}).length ? `<span>${Object.keys(S.hk).length} ta oʻqilgan</span>` : `<span class="tag violet-t">Yangi</span>`}</div>
-    <p>Dilnoza, Jasur va Pamuk bilan qisqa voqealar: har gapni tinglaysiz, soʻzlarni bosasiz, savollarga javob berasiz.</p>
-    <div class="facts"><span>${ICON.ear}Tinglash</span><span>${ICON.book}Oʻqish</span><span>${ICON.type}Gap yigʻish</span></div>
-  </a>
-
-  <div class="pcard glass">
-    <div class="pcard-head"><b>${ICON.cap}Qoidalar mashqi</b><span>${gxDoneCount()}/${GX_CODES.length}</span></div>
-    <div class="tags"><span class="tag sky-t">${esc(gxNext())}</span><span class="tag violet-t">${esc((gxTopic(gxNext()) || {}).uz || "")}</span></div>
-    <div class="facts"><span>${ICON.list}Variant tanlash, yozish va gap tuzish</span><a class="link" href="#gx">Barcha mavzular</a></div>
-    <button class="link mor-go" data-act="start" data-mode="morf">${ICON.spark}Qoʻshimchalar mashqi</button>
-    <button class="plus" data-act="gx-start" data-c="${gxNext()}" aria-label="Keyingi qoida mashqi">${ICON.play}</button>
+  <div class="lrows glass">
+    ${lrow('href="#gx"', "cap", "violet", "Qoidalar mashqi", `${gxDoneCount()}/${GX_CODES.length} mavzu · keyingisi: ${esc((gxTopic(gxNext()) || {}).uz || gxNext())}`)}
+    ${lrow('data-act="start" data-mode="morf"', "spark", "teal", "Qoʻshimchalar mashqi", "Soʻzga toʻgʻri qoʻshimcha qoʻshish")}
+    ${lrow('data-act="modes-all"', "list", "sky", "Boshqa mashq turlari", "Kartochka, test, diktant, talaffuz…")}
   </div>
 
-  ${mistakesCard()}
-
-`;
+  ${mis ? mistakesCard() : ""}`;
 }
 
 /* ---------- Leaderboard ---------- */

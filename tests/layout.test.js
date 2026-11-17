@@ -1,5 +1,5 @@
-// Unified sections: one place for each thing (home status card, Darslar tabs in learning order, one grammar page,
-// one vocabulary page, practice by the 4 skills with a single mistakes notebook).
+// Unified sections: one place for each thing (home status card, one «Oʻrganish» tab with Kurs · Mashq · Kutubxona,
+// one grammar page, one vocabulary page, practice by the 4 skills with a single mistakes notebook).
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
 const { launch, openApp } = require("./helpers");
@@ -29,16 +29,29 @@ test("home: one status card, no duplicated stats or old lesson lists", async () 
   await page.close();
 });
 
-test("Darslar: tabs Kurs · Grammatika · Lugʻat · Alifbo on every section page", async () => {
+test("Oʻrganish: one tab for the course, practice and the library; library pages open from Kutubxona and lead back", async () => {
   const { page, errors } = await openApp(browser, "#course");
-  for (const h of ["#course", "#grammar", "#guide", "#lugat", "#lessons", "#alphabet"]) {
+  for (const h of ["#course", "#practice", "#library"]) {
     await page.evaluate(h => { location.hash = h; }, h);
     await page.waitForTimeout(80);
-    const tabs = await page.evaluate(() => [...document.querySelectorAll(".seg a")].map(a => a.textContent + "=" + a.getAttribute("href")));
-    assert.deepEqual(tabs, ["Kurs=#course", "Grammatika=#grammar", "Lugʻat=#lugat", "Alifbo=#alphabet"], h);
-    const cur = await page.evaluate(() => (document.querySelector('.seg a[aria-current="page"]') || {}).textContent);
-    assert.equal(cur, { "#course": "Kurs", "#grammar": "Grammatika", "#guide": "Grammatika", "#lugat": "Lugʻat", "#lessons": "Lugʻat", "#alphabet": "Alifbo" }[h], h);
+    const r = await page.evaluate(() => ({ tabs: [...document.querySelectorAll(".learn-seg a")].map(a => a.textContent + "=" + a.getAttribute("href")),
+      cur: (document.querySelector('.learn-seg a[aria-current="page"]') || {}).textContent, nav: document.querySelector(".nav a[aria-current]").dataset.tab, title: document.querySelector(".page-title").textContent }));
+    assert.deepEqual(r, { tabs: ["Kurs=#course", "Mashq=#practice", "Kutubxona=#library"], cur: { "#course": "Kurs", "#practice": "Mashq", "#library": "Kutubxona" }[h], nav: "learn", title: "Oʻrganish" }, h);
   }
+  // The library: one list of rows
+  await page.evaluate(() => { location.hash = "#library"; }); await page.waitForTimeout(80);
+  assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".lrows .lrow")].map(a => a.getAttribute("href"))), ["#grammar", "#lugat", "#oqish", "#hikoya", "#alphabet", "#translate"]);
+  for (const [h, name] of [["#grammar", "Grammatika"], ["#guide", "Grammatika"], ["#lugat", "Lugʻat"], ["#lessons", "Lugʻat"], ["#alphabet", "Alifbo"]]) {
+    await page.evaluate(h => { location.hash = h; }, h);
+    await page.waitForTimeout(80);
+    const r = await page.evaluate(() => [document.querySelector(".back").getAttribute("href"), document.querySelector(".page-title").textContent, document.querySelector(".nav a[aria-current]").dataset.tab, document.querySelectorAll(".learn-seg").length]);
+    assert.deepEqual(r, ["#library", name, "learn", 0], h);
+  }
+  // The menu's «Oʻrganish» opens the part seen last
+  await page.evaluate(() => { location.hash = "#practice"; }); await page.waitForTimeout(60);
+  await page.evaluate(() => { location.hash = "#home"; }); await page.waitForTimeout(60);
+  await page.click(".nav a[data-tab=learn]"); await page.waitForTimeout(80);
+  assert.equal(await page.evaluate(() => document.querySelector('.learn-seg a[aria-current="page"]').textContent), "Mashq");
   // Grammar: one page with the handbook, exercise progress and (A1) the 10 short lessons folded
   await page.evaluate(() => { GUIDE_LV = "A1"; location.hash = "#grammar"; });
   await page.waitForTimeout(80);
@@ -70,7 +83,10 @@ test("practice: 4 skill tiles, one mistakes notebook with every kind of mistake"
   // Listening, writing and speaking tiles start that skill's mixed practice (2026-11-14); the separate kinds are one sheet away
   for (const k of ["l", "w", "s"]) assert.ok(await page.locator(`.sk-tile[data-act=sk-go][data-s=${k}]`).count(), k);
   assert.ok(await page.locator('[data-act="modes-all"]').count());
-  assert.match(await text(page), /Xatolar daftari[\s\S]*Hozircha boʻsh/);
+  // No lenta card, no stories card (the library has them), the mistakes notebook only when there are mistakes
+  assert.equal(await page.locator(".ln-home, .hk-card").count(), 0);
+  assert.doesNotMatch(await text(page), /Xatolar daftari/);
+  assert.ok(await page.locator('.lrow[href="#gx"]').count() && await page.locator('.lrow[data-mode=morf]').count());
   assert.doesNotMatch(await text(page), /Mavzular boʻyicha/, "topic list lives in Lugʻat now");
   await page.evaluate(() => {
     const w = ALL[0]; S.srs[w.tr] = Object.assign(S.srs[w.tr] || {}, { miss: 2 });
@@ -143,7 +159,7 @@ test("phone layout: no page wider than the screen, no oversized icons, every men
     await check(`#k-${u}/${t}`);
   }
   const nav = await page.evaluate(() => [...document.querySelectorAll("nav.nav a")].map(a => a.getAttribute("aria-label")));
-  assert.deepEqual(nav, ["Asosiy", "Lenta", "Darslar", "Mashq", "Reyting", "Profil"]);
+  assert.deepEqual(nav, ["Asosiy", "Lenta", "Oʻrganish", "Reyting", "Profil"]);
   assert.deepEqual(errors, []);
   await page.close();
 });

@@ -705,7 +705,7 @@ a.set-row:active, button.set-row:active { background: var(--surface-2); }
   position: fixed; left: 50%; transform: translateX(-50%); z-index: 40;
   bottom: calc(var(--safe-area-inset-bottom, env(safe-area-inset-bottom)) + 10px);
   width: min(calc(100% - 20px), 500px); padding: 6px;
-  display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; align-items: stretch;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; align-items: stretch;
   border-radius: 24px; border: 1px solid var(--line);
   background: color-mix(in srgb, var(--surface) 90%, transparent);
   -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
@@ -1298,8 +1298,6 @@ details.glass.pad[open] > summary::after, details.k-goals[open] > summary::after
 .sk-tile .ico { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; margin-bottom: 8px; }
 .sk-tile .ico svg { width: 23px; height: 23px; }
 .sk-tile b { font-size: 17px; font-weight: 800; letter-spacing: -0.015em; }
-.sk-tile small { font-size: 12px; color: var(--muted); font-weight: 600; }
-.sk-tile .sk-sub { font-size: 12.5px; color: var(--ink-2); line-height: 1.35; margin-top: 5px; }
 .sk-tile .sk-stat { font-size: 12px; color: var(--muted); font-weight: 600; margin-top: 6px; }
 .sk-done { position: absolute; top: 12px; right: 12px; width: 24px; height: 24px; border-radius: 50%; background: var(--tile-green); color: #fff; display: grid; place-items: center; }
 .sk-done svg { width: 13px; height: 13px; }
@@ -1462,8 +1460,6 @@ details.glass.pad[open] > summary::after, details.k-goals[open] > summary::after
 .mor-need .tag i { font-style: normal; font-weight: 600; font-size: 11.5px; opacity: 0.85; }
 .feedback b i { font-style: normal; opacity: 0.55; margin: 0 1px; }
 .mor-why { display: block; margin-top: 4px; font-size: 13.5px; font-weight: 500; line-height: 1.4; }
-.mor-go { display: flex; align-items: center; gap: 6px; margin-top: 6px; min-height: 44px; padding-right: 64px; font-size: 14px; text-align: left; }
-.mor-go svg { width: 16px; height: 16px; flex: none; color: var(--gold); }
 .oq-text { display: flex; flex-direction: column; gap: 12px; font-size: 17px; line-height: 1.7; font-weight: 400; }
 .oq-gloss { display: grid; gap: 0; margin-top: 10px; }
 .oq-gloss > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--hair); font-size: 14px; }
@@ -1914,6 +1910,18 @@ html.native input, html.native textarea, html.native [contenteditable="true"] { 
 .rec-next { max-width: 380px; margin: 4px 0; }
 .rec-next .rec-txt small { text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
 .sk-tile.tip { box-shadow: 0 0 0 2px var(--violet), 0 3px 0 var(--line-2); }
+/* Oʻrganish: Kurs · Mashq · Kutubxona at the top; lists of rows (Kutubxona, Mashq) */
+.learn-seg { margin-top: -4px; }
+.lrows.glass { padding: 4px 0; display: flex; flex-direction: column; }
+.lrow { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; min-height: 66px; padding: 10px 14px; text-align: left; color: inherit; text-decoration: none; transition: background-color 0.15s ease; }
+.lrow:not(:last-child) { border-bottom: 1px solid var(--line); }
+.lrow:active { background: var(--bg-2); }
+.lrow-ico { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 14px; }
+.lrow-ico svg { width: 22px; height: 22px; }
+.lrow-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lrow-txt b { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
+.lrow-txt small { font-size: 13px; line-height: 1.35; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lrow > svg { width: 18px; height: 18px; color: var(--muted); }
 .sk-tip { margin-top: 6px; }
 
 /* Course order (2026-11-14): locked levels, units and tests */
@@ -1968,7 +1976,6 @@ input[data-bk]:not([data-kbd]) { caret-color: transparent; }
 .mode-more > summary { cursor: pointer; padding: 10px 4px; font-weight: 700; color: var(--accent-ink); }
 .mode-more[open] > summary { margin-bottom: 6px; }
 .mode-more .mode + .mode { margin-top: 8px; }
-.sk-more { display: block; margin: 10px auto 0; font-size: 14px; }
 
 /* ---------- Stories (#hikoya, js/stories.js) ---------- */
 .hk-list .unit { grid-template-columns: 66px minmax(0, 1fr) auto; }
@@ -2008,7 +2015,6 @@ input[data-bk]:not([data-kbd]) { caret-color: transparent; }
 .hk-end .mascot { width: 120px; height: 120px; }
 .hk-end > b { font-size: 19px; }
 .hk-end .fr-actions { width: 100%; }
-.hk-card .pcard-head .tag { margin-left: auto; }
 .hk-link { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; }
 .hk-link svg { width: 18px; height: 18px; flex: none; }
 @media (prefers-reduced-motion: reduce) { .hk-in { animation: none; } }
@@ -2214,21 +2220,6 @@ html.ln-open .nav a[aria-current="page"] { background: rgba(255, 255, 255, 0.14)
 .ln-stats svg { width: 17px; height: 17px; color: var(--gold); }
 .ln-stats .hot { background: var(--gold); color: var(--gold-ink); }
 .ln-stats .hot svg { color: var(--gold-ink); }
-/* The way in: home and Practice */
-.ln-home { display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 16px; border-radius: var(--r-lg); text-decoration: none; color: #fff; background: var(--pattern), linear-gradient(135deg, var(--tile-violet), var(--tile-pink)); box-shadow: 0 4px 0 color-mix(in srgb, var(--tile-violet) 60%, var(--ink)), var(--shadow); }
-.ln-home:active { transform: translateY(2px); }
-.ln-stack { position: relative; width: 74px; height: 86px; }
-.ln-stack i { position: absolute; inset: 6px 14px; border-radius: 12px; border: 2px solid rgba(255, 255, 255, 0.85); }
-.ln-stack .s1 { transform: rotate(-12deg) translateX(-8px); background: var(--tile-sky); }
-.ln-stack .s2 { transform: rotate(8deg) translateX(8px); background: var(--tile-teal); }
-.ln-stack .s3 { display: grid; place-items: center; background: var(--surface); color: var(--tile-violet); box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2); }
-.ln-stack .s3 svg { width: 28px; height: 28px; }
-.ln-home-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.ln-home-txt small { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.9; }
-.ln-home-txt b { font-size: 19px; font-weight: 800; line-height: 1.2; }
-.ln-home-txt > span { font-size: 13px; line-height: 1.4; opacity: 0.92; }
-.ln-home-go { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: var(--gold); color: var(--gold-ink); box-shadow: 0 3px 0 var(--gold-2); }
-.ln-home-go svg { width: 20px; height: 20px; margin-left: 2px; }
 @media (min-width: 1000px) {
   .ln { left: 232px; }
   .ln-card { padding-bottom: 24px; }
@@ -2248,7 +2239,6 @@ html.ln-open .nav a[aria-current="page"] { background: rgba(255, 255, 255, 0.14)
   .ln-h span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .ln-stats { gap: 4px; } .ln-stats span { padding: 4px 9px; font-size: 14px; gap: 3px; }
   .ln-ic { width: 42px; height: 42px; } .ln-tools { gap: 4px; }
-  .ln-home { grid-template-columns: 58px minmax(0, 1fr) auto; gap: 10px; } .ln-stack { width: 58px; height: 72px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ln-card .ln-body, .ln-card .ln-scene, .ln-card .ln-scene::after, .ln-card .lnp, .ln-card .lnp *, .ln-card .ln-panel, .ln-mean, .ln-swipe svg, .ln-xp, .ln-stars i, .ln-heart svg, .ln-burst, .ln-mic.on { animation: none !important; }

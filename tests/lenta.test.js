@@ -40,9 +40,11 @@ test("lenta: a full-screen feed from the open levels; it starts with a word, swi
   await page.click(".nav a[href='#home']");
   await page.waitForFunction(() => location.hash === "#home" && !document.documentElement.classList.contains("ln-open"));
   assert.equal(await page.evaluate(() => LN), null);
-  assert.equal(await page.locator(".ln-home[href='#lenta']").count(), 1, "the way in on the home page");
+  // The only way in is the menu's own tab: no lenta cards on the home or practice pages
+  assert.equal(await page.locator(".ln-home, #app a[href='#lenta']").count(), 0);
   await page.evaluate(() => { location.hash = "#practice"; });
-  await page.waitForSelector(".ln-home");
+  await page.waitForSelector(".learn-seg");
+  assert.equal(await page.locator(".ln-home, #app a[href='#lenta']").count(), 0);
   assert.deepEqual(errors, []);
 });
 
@@ -140,10 +142,7 @@ test("lenta: a round is rated with stars; pause cards for long or fast scrolling
   assert.deepEqual(p.slice(0, 3), [true, 1, 1]);
   assert.equal(p[3], s0[0] + 1); assert.equal(p[4], s0[1] + 1);
   assert.match(p[5], /Zoʻr talaffuz/);
-  // The way in shows today's stars; lenta achievements
-  await page.evaluate(() => { location.hash = "#home"; });
-  await page.waitForSelector(".ln-home");
-  assert.match(await page.textContent(".ln-home"), /3 yulduz/);
+  // Lenta achievements
   assert.deepEqual(await page.evaluate(() => ["ln100", "lnstar", "ln3x", "ln1000"].map(id => !!ACH.find(a => a.id === id))), [true, true, true, true]);
   assert.deepEqual(errors, []);
 });

@@ -43,7 +43,7 @@ function viewHikoyalar() {
   const lvs = ["A1", "A2", "B1", "B2"], list = HK.filter(h => h.lv === HK_LV), open = lvOpen(HK_LV);
   const read = HK.filter(h => hkBest(h.id) !== null).length;
   return `${topbar()}
-  <div><a class="back" href="#practice">${ICON.back}Mashq</a></div>
+  <div><a class="back" href="#library">${ICON.back}Kutubxona</a></div>
   <div class="lesson-head"><div class="tags"><span class="tag violet-t">${ICON.book}Hikoyalar</span><span class="tag green-t">${read}/${HK.length} oʻqilgan</span></div>
     <h1>Hikoyalar</h1><p class="sub">Qisqa voqealar Dilnoza, Jasur, Defne, Kerem va Pamuk bilan. Har bir gapni tinglang, notanish soʻzni bosing va savollarga javob bering. Har hikoya uchun +${XP_VAL.reading} XP.</p></div>
   <div class="seg glass" role="tablist">${lvs.map(l => `<button role="tab" data-act="hk-lv" data-l="${l}" aria-selected="${HK_LV === l}">${l}${lvOpen(l) ? "" : `<span class="seg-lock">${ICON.lock}</span>`}</button>`).join("")}</div>

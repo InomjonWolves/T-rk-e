@@ -12,7 +12,8 @@ function route() {
   }
 }
 function routeNow() {
-  const h = (location.hash || "#home").slice(1);
+  let h = (location.hash || "#home").slice(1);
+  if (h === "learn") h = LEARN_SEG;
   if (/^(guide|grammar|gx|g-|practice|group-|translate|achievements|profile)/.test(h)) needGram();
   { const ps = $("pamuk-say"); if (ps) { clearTimeout(sayT); ps.classList.remove("show"); } }
   let html, tab = h, after = null;
@@ -41,6 +42,7 @@ function routeNow() {
   else if (h === "grammar") { html = viewGrammarList(); tab = "lessons"; }
   else if (h === "alphabet") { html = viewAlphabet(); tab = "lessons"; }
   else if (h === "practice") html = viewPractice();
+  else if (h === "library") html = viewLibrary();
   else if (h === "rank") { html = viewRank(); after = loadRank; }
   else if (h === "oqish") { html = viewOqish(); tab = "practice"; if (!oqReady()) after = () => loadOq().then(route, () => toast("Matnlar yuklanmadi. Internetni tekshiring")); }
   else if (h === "lenta") { html = viewLenta(); tab = "lenta"; after = GRAM_FULL && typeof HK !== "undefined" ? lnMount : () => Promise.all([loadGram(), loadHk()]).then(route, () => toast("Lenta yuklanmadi. Internetni tekshiring")); }
@@ -52,6 +54,7 @@ function routeNow() {
   else if (h === "profile") html = viewProfile();
   else if (h === "settings") { html = viewSettings(); tab = "profile"; }
   else { html = viewHome(); tab = "home"; }
+  if (tab === "lessons" || tab === "practice" || tab === "library") tab = "learn";
   document.documentElement.classList.toggle("ln-open", h === "lenta");
   app.innerHTML = `<div class="view" data-v="${esc(h.replace(/[^a-z].*$/, "") || "home")}">${html}</div>`;
   document.querySelectorAll(".nav a").forEach(a => { if (a.dataset.tab === tab) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });

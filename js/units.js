@@ -188,8 +188,7 @@ function viewCourse() {
   const lvl = KLEVEL(KLV || kNext().level);
   const total = COURSE.units.length, done = kDoneCount();
   return `${topbar()}
-  <h1 class="page-title">Darslar</h1>
-  ${lessonTabs("course")}
+  ${learnTabs("course")}
   <div class="k-hero">
     <div class="k-hero-txt"><span class="hero-chip"><i>${ICON.check}</i>100% bepul</span>
       <h2>Turk tili <span class="hl">A1 → C1</span></h2>
@@ -199,10 +198,10 @@ function viewCourse() {
       <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}" aria-label="Kurs: ${done}/${total} boʻlim"><i style="width:${pct(done, total)}%"></i></div></div></div>
     <a class="hero-go" href="#${kGate() ? `ktest-${kGate().toLowerCase()}` : `k-${kNext().id}`}" aria-label="Kursni davom ettirish">${ICON.arrow}</a>
   </div>
-  <a class="pcard glass" href="#placement" style="color:inherit;text-decoration:none;padding:14px 16px">
-    <div class="pcard-head"><b>${ICON.target}${S.place && (S.place.start || S.place.applied) ? `Darajangiz: ${esc(S.place.applied || S.place.start)} dan · qayta aniqlash` : "Darajani aniqlash testi"}</b>${ICON.chev}</div>
-    ${S.place && (S.place.start || S.place.applied) ? "" : `<p class="muted" style="margin:0">Turkchani biroz bilsangiz, 5–7 daqiqada mos boʻlimni topamiz.</p>`}
-  </a>
+  ${S.place || done ? "" : `<a class="pcard glass" href="#placement" style="color:inherit;text-decoration:none;padding:14px 16px">
+    <div class="pcard-head"><b>${ICON.target}Darajani aniqlash testi</b>${ICON.chev}</div>
+    <p class="muted" style="margin:0">Turkchani biroz bilsangiz, 5–7 daqiqada mos boʻlimni topamiz.</p>
+  </a>`}
   <div class="seg glass" role="tablist">${COURSE.levels.map(l => `<button role="tab" data-act="k-lv" data-l="${l.id}" aria-selected="${l.id === lvl.id}"${lvOpen(l.id) ? "" : ` aria-label="${l.id} — yopiq"`}>${l.id}${lvOpen(l.id) ? "" : `<i class="seg-lock">${ICON.lock}</i>`}</button>`).join("")}</div>
   ${S.kView === "list" ? "" : kPath(lvl)}
   ${S.kView !== "list" ? "" : `<div class="glass pad"><div class="pcard-head"><b>${esc(lvl.title)}</b><button class="path-toggle" data-act="k-view" data-v="path" aria-label="Yoʻl koʻrinishi">${ICON.flag}</button></div><p class="sub" style="margin-top:4px">${esc(lvl.intro)}</p></div>

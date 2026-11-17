@@ -316,9 +316,9 @@ function viewHelp() {
   <section class="section"><div class="section-head"><h2>Saytdan qanday foydalanish kerak</h2></div>
     <div class="glass pad help-box">
       ${step(1, "Har kuni «Bugungi reja» ni bajaring", "Bosh sahifadagi kartada: takrorlash + 10 ta yangi soʻz, taxminan 10 daqiqa.")}
-      ${step(2, "Kursni tartib bilan oʻqing", "Darslar → Kurs: A1 dan boshlang. Har boʻlimda Lugʻat → Grammatika → Dialog → Matn → Mashqlar.")}
-      ${step(3, "Grammatika va lugʻatni mustahkamlang", "Darslar → Grammatika: A1–C1 mavzular va har biriga mashq. Darslar → Lugʻat: A1 darslari va mavzuli soʻz toʻplamlari.")}
-      ${step(4, "4 koʻnikmani mashq qiling", "Mashq sahifasida: oʻqish, tinglash, yozish va gapirish. Xatolar daftari — barcha xatolaringiz bir joyda.")}
+      ${step(2, "Kursni tartib bilan oʻqing", "Oʻrganish → Kurs: A1 dan boshlang. Har boʻlimda Lugʻat → Grammatika → Dialog → Matn → Mashqlar.")}
+      ${step(3, "Grammatika va lugʻatni mustahkamlang", "Oʻrganish → Kutubxona: grammatika (A1–C1 mavzular va mashqlar), lugʻat, oʻqish matnlari va hikoyalar.")}
+      ${step(4, "4 koʻnikmani mashq qiling", "Oʻrganish → Mashq: oʻqish, tinglash, yozish va gapirish. Xatolar daftari — barcha xatolaringiz bir joyda.")}
       ${step(5, "Aqlli tarjimondan foydalaning", "Yuqoridagi tarjimon belgisi: tarjima + lugʻat + gapdagi grammatika.")}
       ${step(6, "Daraja testini topshiring", "Har daraja oxirida test bor: 60% dan yuqori — keyingi darajaga oʻting.")}
     </div></section>

@@ -418,12 +418,3 @@ window.addEventListener("hashchange", () => {
   if (LN.round.n >= 3) { const a = xpAward("vocab", { right: LN.round.right, n: LN.round.n, key: "lenta", times: LN.round.times, sk: ["r"] }); if (a.xp) toast(`Lenta: +${a.xp} XP`); save(); }
   LN = null;
 });
-// Home and Practice: the way in
-function lnHomeCard() {
-  const d = S.ln && S.ln.d === dayNum() ? S.ln : { n: 0, s: 0 }, n = d.n;
-  return `<a class="ln-home" href="#lenta">
-    <span class="ln-stack" aria-hidden="true"><i class="s1"></i><i class="s2"></i><i class="s3">${LN_ICO.reels}</i></span>
-    <span class="ln-home-txt"><small>Yangi · Lenta</small><b>Varaqlang — oʻrganing</b><span>Soʻz, savol, qoida va gap — har biri bitta ekranda. ${n ? `Bugun: ${n} ta karta${d.s ? ` · ${d.s} yulduz` : ""}` : "1 daqiqada 10 ta karta"}</span></span>
-    <span class="ln-home-go" aria-hidden="true">${ICON.play}</span>
-  </a>`;
-}

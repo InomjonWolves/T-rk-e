@@ -42,7 +42,7 @@ test("cyrillic page: menu and pages in Cyrillic, Turkish lines and table columns
   const { page, errors } = await openApp(browser, "#home", CYR);
   await page.waitForSelector(".nav");
   assert.equal(await page.evaluate(() => document.documentElement.lang), "uz-Cyrl");
-  assert.match(await page.textContent(".nav"), /Асосий.*Дарслар.*Машқ.*Рейтинг.*Профил/s);
+  assert.match(await page.textContent(".nav"), /Асосий.*Лента.*Ўрганиш.*Рейтинг.*Профил/s);
   // No Uzbek word (with an Uzbek letter) is left in Latin on the main pages, and no Turkish line is touched
   for (const h of ["#home", "#practice", "#settings", "#course", "#skills", "#k-a1-2"]) {
     await page.evaluate(x => { location.hash = x; }, h);

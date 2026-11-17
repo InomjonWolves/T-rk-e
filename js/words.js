@@ -136,7 +136,7 @@ function viewOqish() {
   if (!oqReady()) return `${topbar()}${catLoader()}`;
   const lvs = ["A1", "A2", "B1", "B2", "C1"], list = OQ.filter(t => t.lv === OQ_LV);
   return `${topbar()}
-  <div><a class="back" href="#practice">${ICON.back}Mashq</a></div>
+  <div><a class="back" href="#library">${ICON.back}Kutubxona</a></div>
   <div class="lesson-head"><div class="tags"><span class="tag sky-t">${ICON.book}Okuma</span><span class="tag green-t">${OQ.filter(t => oqBest(t.id) !== null).length}/${OQ.length} oʻqilgan</span></div>
     <h1>Oʻqish matnlari</h1><p class="sub">Matnni oʻqing (yoki tinglang), notanish soʻzlarni lugʻatdan koʻring va savollarga javob bering. Har matn uchun +${XP_VAL.reading} XP.</p>
     <a class="link hk-link" href="#hikoya">${ICON.book}Interaktiv hikoyalar ham bor</a></div>

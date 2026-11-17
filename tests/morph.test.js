@@ -105,7 +105,7 @@ test("writing check and written answers: a wrong suffix is named by its rule; th
 
 test("suffix practice: a root and the suffixes to add, checked by the generator; the dictionary's progress is not touched", async () => {
   const { page, errors } = await openApp(browser, "#practice", { state: Object.assign({ mor: { s: 4 } }, C1) });
-  assert.ok(await page.locator(".mor-go[data-mode=morf]").count(), "the entry on the practice page");
+  assert.ok(await page.locator(".lrow[data-mode=morf]").count(), "the entry on the practice page");
   await page.evaluate(() => { XP_FAST_MS = 0; startSession("morf", "s"); });
   await page.waitForSelector(".mor-need");
   const it = await page.evaluate(() => SES.items.map(x => ({ tr: x.tr, ok: Morph.build(x.lem, x.tags, x.pos) === x.tr, soft: /[bcdğ]/.test(x.tr.slice(x.an.root.length - 1, x.an.root.length)) })));

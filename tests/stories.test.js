@@ -93,9 +93,9 @@ test("story player: lines one by one, questions stop the story, sentence tiles, 
   assert.equal(await page.locator(".hk-list .unit.locked").count(), 2);
   await page.evaluate(() => { location.hash = "#hikoya-staj"; });
   await page.waitForSelector(".lock-card");
-  // The Practice page points to the stories
-  await page.evaluate(() => { location.hash = "#practice"; });
-  await page.waitForSelector(".hk-card");
+  // The library points to the stories
+  await page.evaluate(() => { location.hash = "#library"; });
+  await page.waitForSelector('.lrow[href="#hikoya"]');
 
   await page.evaluate(() => { location.hash = "#hikoya-kahvalti"; });
   await page.waitForSelector(".hk-story .hk-line");

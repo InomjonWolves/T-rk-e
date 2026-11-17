@@ -3,7 +3,7 @@
 // ASSETS in the background and waits; the page shows «Yangi versiya tayyor — Yangilash» (message "skip"), or the new
 // version starts the next time the app is opened. Other pages of the site (kurs/, qoida/…): network first.
 // The site's own font files and the Firebase SDK: cache first.
-const CACHE = "turkce-yol-v112";
+const CACHE = "turkce-yol-v113";
 const META = "ty-meta";
 const ASSETS = ["./", "./index.html", "./firebase-config.js", "./content.js", "./lugat.js", "./grammar.js", "./grammar-ex.js", "./course-core.js", "./course.js", "./js/state.js", "./js/kirill.js", "./js/social.js", "./js/words.js", "./js/stories.js", "./js/ui.js", "./js/pages.js", "./js/translate.js", "./js/units.js", "./js/achieve.js", "./js/session.js", "./js/skills.js", "./js/drills.js", "./js/lenta.js", "./js/events.js", "./js/groups.js", "./js/account.js", "./cat.js", "./guide.js", "./oqish.js", "./placement.js", "./hikoya.js", "./kirill-lex.js", "./morph.js", "./sync.js", "./styles.css", "./fonts/onest-v1.woff2", "./privacy.html", "./shartlar.html", "./biz-haqimizda.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
