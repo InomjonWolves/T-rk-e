@@ -167,7 +167,7 @@ const weekDays = () => { const s = weekStart(dayNum()); return WD.map((l, i) => 
 const last7 = () => Array.from({ length: 7 }, (_, i) => { const d = dayNum() - 6 + i; return { k: keyOf(d), l: WD[(new Date(d * DAY).getUTCDay() + 6) % 7] }; });
 
 /* ---------- Recorded audio ----------
-   Pre-made MP3s (tools/audio-gen.js, Azure AI Speech): audio/<2 chars>/<key>.mp3, key = audioKey(text, voice).
+   Pre-made MP3s (tools/audio-gen.js, Google Cloud Text-to-Speech): audio/<2 chars>/<key>.mp3, key = audioKey(text, voice).
    audio/index.txt lists the keys that exist, so the choice "recording or device voice" is made at once (no 404 wait).
    Played through one shared <audio> element (unlocked on the first tap — iPhone allows it to play later on).
    The Android app carries no recordings (they would add ~80 MB): it loads one from the site when it is played and

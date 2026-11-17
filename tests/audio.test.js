@@ -1,4 +1,4 @@
-// Recorded audio (Azure AI Speech files in audio/): the app plays them first and falls back to the device voice;
+// Recorded audio (Google Cloud Text-to-Speech files in audio/): the app plays them first and falls back to the device voice;
 // the Android app plays them from the site and keeps the ones it played.
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
@@ -88,12 +88,16 @@ test("audio: the text list covers every word, dialogs and readings; site config 
   // A month in the cache (a file recorded again reaches everyone), readable by the app (CORS)
   assert.ok(fb.hosting.headers.some(h => h.source === "audio/**/*.mp3" && /max-age=2592000/.test(h.headers[0].value)));
   const wf = fs.readFileSync(path.join(ROOT, ".github/workflows/audio.yml"), "utf8");
-  for (const re of [/AZURE_SPEECH_KEY/, /AZURE_SPEECH_REGION/, /node tools\/audio-gen\.js/, /gh workflow run firebase-hosting\.yml/, /gh workflow run audio\.yml/]) assert.match(wf, re);
-  assert.doesNotMatch(wf, /edge-tts|GOOGLE_TTS_KEY/, "only the official key-based service");
+  for (const re of [/GOOGLE_TTS_API_KEY/, /node tools\/audio-gen\.js/, /gh workflow run firebase-hosting\.yml/, /gh workflow run audio\.yml/]) assert.match(wf, re);
+  assert.doesNotMatch(wf, /edge-tts|AZURE_|GOOGLE_TTS_KEY\b/, "only the official key-based service");
   const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, "tools/audio-voice.json"), "utf8"));
-  assert.ok(cfg.provider === "azure" && "a" in cfg && "b" in cfg);
-  // SSML: the text is escaped, the speed becomes a percentage
-  assert.equal(gen.ssml("tr-TR-EmelNeural", "Ali & Ayşe", 0.9), '<speak version="1.0" xml:lang="tr-TR"><voice name="tr-TR-EmelNeural"><prosody rate="-10%">Ali &amp; Ayşe</prosody></voice></speak>');
+  assert.ok(cfg.provider === "google" && /^tr-TR-Chirp3-HD-/.test(cfg.a.name) && /^tr-TR-Chirp3-HD-/.test(cfg.b.name) && cfg.a.name !== cfg.b.name);
+  // The request: Turkish, the chosen voice, MP3 24 kHz at the learners' speed; the text as the app keys it
+  assert.deepEqual(gen.ttsBody("tr-TR-Chirp3-HD-Kore", "Merhaba…  dünya", 0.9), { input: { text: "Merhaba dünya" }, voice: { languageCode: "tr-TR", name: "tr-TR-Chirp3-HD-Kore" }, audioConfig: { audioEncoding: "MP3", sampleRateHertz: 24000, speakingRate: 0.9 } });
+  // A refusal is explained in plain words in the run's log
+  assert.match(gen.why(403, "Cloud Text-to-Speech API has not been used in project 123 before or it is disabled."), /API yoqilmagan/);
+  assert.match(gen.why(400, "API key not valid. Please pass a valid API key."), /kalit notoʻgʻri/);
+  assert.match(gen.why(403, "This API method requires billing to be enabled."), /billing/);
 });
 
 test("app audio: a recording comes from the site when played, is kept, plays again without the network; next words fetched ahead", async () => {

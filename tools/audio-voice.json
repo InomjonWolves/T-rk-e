@@ -1,6 +1,6 @@
 {
-  "provider": "azure",
-  "a": { "name": "tr-TR-EmelNeural" },
-  "b": { "name": "tr-TR-AhmetNeural" },
+  "provider": "google",
+  "a": { "name": "tr-TR-Chirp3-HD-Kore" },
+  "b": { "name": "tr-TR-Chirp3-HD-Charon" },
   "rate": 0.9
 }

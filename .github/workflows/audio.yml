@@ -1,9 +1,9 @@
 name: Audio
 
-# Saytdagi barcha turkcha so'z va gaplarning audiosi — Azure AI Speech, rasmiy REST API kalit bilan (tools/audio-gen.js).
-# Secret'lar: AZURE_SPEECH_KEY va AZURE_SPEECH_REGION (bo'lmasa audio o'zgarmaydi). Bepul tarif daqiqasiga 20 so'rov
-# qabul qiladi: bitta ishga tushirish ~40 daqiqa ishlaydi, natijani commit qiladi va matn qolgan bo'lsa o'zini yana
-# ishga tushiradi. Fayllar saytda turadi (Firebase Hosting); Android ilova ularni saytdan bosilganda yuklaydi.
+# Saytdagi barcha turkcha so'z va gaplarning audiosi — Google Cloud Text-to-Speech, «Chirp 3: HD» ovozlari, rasmiy
+# REST API kalit bilan (tools/audio-gen.js). Secret: GOOGLE_TTS_API_KEY (bo'lmasa audio o'zgarmaydi). Bitta ishga
+# tushirish ko'pi bilan ~40 daqiqa ishlaydi, natijani commit qiladi va matn qolgan bo'lsa o'zini yana ishga tushiradi.
+# Fayllar saytda turadi (Firebase Hosting); Android ilova ularni saytdan bosilganda yuklaydi.
 on:
   push:
     branches: [main]
@@ -35,32 +35,31 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 55
     env:
-      AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY }}
-      AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
+      GOOGLE_TTS_API_KEY: ${{ secrets.GOOGLE_TTS_API_KEY }}
     steps:
       - name: Kalit yo'q
-        if: env.AZURE_SPEECH_KEY == '' || env.AZURE_SPEECH_REGION == ''
-        run: echo "AZURE_SPEECH_KEY / AZURE_SPEECH_REGION sozlanmagan — audio o'zgarmadi."
+        if: env.GOOGLE_TTS_API_KEY == ''
+        run: echo "GOOGLE_TTS_API_KEY sozlanmagan — audio o'zgarmadi."
       - uses: actions/checkout@v5
-        if: env.AZURE_SPEECH_KEY != '' && env.AZURE_SPEECH_REGION != ''
+        if: env.GOOGLE_TTS_API_KEY != ''
         with:
           ref: main
       - uses: actions/setup-node@v5
-        if: env.AZURE_SPEECH_KEY != '' && env.AZURE_SPEECH_REGION != ''
+        if: env.GOOGLE_TTS_API_KEY != ''
         with:
           node-version: 22
       - name: Playwright (matnlar ro'yxati ilovadan olinadi)
-        if: env.AZURE_SPEECH_KEY != '' && env.AZURE_SPEECH_REGION != ''
+        if: env.GOOGLE_TTS_API_KEY != ''
         run: |
           npm install --no-audit --no-fund
           npx playwright install --with-deps chromium
-      - name: Audio yozish (Azure)
+      - name: Audio yozish (Google Cloud Text-to-Speech)
         id: gen
-        if: env.AZURE_SPEECH_KEY != '' && env.AZURE_SPEECH_REGION != ''
+        if: env.GOOGLE_TTS_API_KEY != ''
         run: node tools/audio-gen.js
-      # Progress is kept even when Azure stopped the run (quota, a wrong key)
+      # Progress is kept even when Google stopped the run (a wrong key, billing off)
       - name: Commit va saytni qayta joylash
-        if: always() && env.AZURE_SPEECH_KEY != '' && env.AZURE_SPEECH_REGION != ''
+        if: always() && env.GOOGLE_TTS_API_KEY != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
