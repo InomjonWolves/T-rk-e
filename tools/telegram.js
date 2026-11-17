@@ -1,4 +1,4 @@
-// Daily Telegram channel post: "Kunning so'zi" + an example phrase + a tip + a link to the site.
+// Daily Telegram channel post: "Kunning soʻzi" + an example phrase + a tip + a link to the site.
 // GitHub Actions runs it every morning (.github/workflows/telegram.yml) when the secrets exist:
 //   TELEGRAM_BOT_TOKEN — from @BotFather; the bot must be an admin of the channel
 //   TELEGRAM_CHAT_ID   — the channel, e.g. @turkceyol or -100…
@@ -19,12 +19,12 @@ function content() {
 }
 const TIPS = [
   "Har kuni 10 daqiqa — haftada bir marta 2 soatdan samaraliroq.",
-  "Yangi so'zni ovoz chiqarib 3 marta ayting: talaffuz xotirada yaxshi qoladi.",
-  "Qo'shimcha unlisi so'zning oxirgi unlisiga moslashadi: ev-ler, kitap-lar.",
-  "Turkchada C harfi \"j\" deb o'qiladi: cep — cho'ntak, cami — jome'.",
-  "So'zni gap ichida o'rganing — shunda qanday ishlatishni ham bilasiz.",
-  "Xato qilishdan qo'rqmang: har bir xato — yangi bilim.",
-  "Kechqurun bugungi so'zlarni bir marta takrorlang — ertalab yaxshiroq eslaysiz."
+  "Yangi soʻzni ovoz chiqarib 3 marta ayting: talaffuz xotirada yaxshi qoladi.",
+  "Qoʻshimcha unlisi soʻzning oxirgi unlisiga moslashadi: ev-ler, kitap-lar.",
+  "Turkchada C harfi \"j\" deb oʻqiladi: cep — choʻntak, cami — jome'.",
+  "Soʻzni gap ichida oʻrganing — shunda qanday ishlatishni ham bilasiz.",
+  "Xato qilishdan qoʻrqmang: har bir xato — yangi bilim.",
+  "Kechqurun bugungi soʻzlarni bir marta takrorlang — ertalab yaxshiroq eslaysiz."
 ];
 // One word per day, the same for everyone; packs rotate through A1 → C1
 function word(date = new Date()) {
@@ -40,7 +40,7 @@ function post(date = new Date()) {
   const { w, tip } = word(date);
   const link = w.pack ? `${SITE}lugat/${w.pack}.html` : SITE;
   return [
-    `🇹🇷 <b>Kunning so'zi</b> · ${w.lv}`,
+    `🇹🇷 <b>Kunning soʻzi</b> · ${w.lv}`,
     "",
     `<b>${esc(w.tr)}</b> — ${esc(w.uz)}`,
     w.note ? `<i>${esc(w.note)}</i>` : "",
@@ -55,7 +55,7 @@ const postButtons = () => ({ inline_keyboard: [[{ text: "📚 Mashq qilish", url
 // The bot's command menu, refreshed with the daily post
 const COMMANDS = [
   { command: "start", description: "Ilovani ochish" },
-  { command: "soz", description: "Kunning so'zi" },
+  { command: "soz", description: "Kunning soʻzi" },
   { command: "test", description: "Bitta viktorina savoli" },
   { command: "kurs", description: "Turk tili kursi A1–C1" },
   { command: "yordam", description: "Bot nima qila oladi" }

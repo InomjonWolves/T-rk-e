@@ -6,7 +6,7 @@
 const { handle } = require("../tools/telegram-bot.js");
 
 module.exports = async (req, res) => {
-  if (req.method !== "POST") { res.status(200).send("Türkçe Yo'l bot ishlayapti"); return; }
+  if (req.method !== "POST") { res.status(200).send("Türkçe Yoʻl bot ishlayapti"); return; }
   if (!process.env.TG_SECRET || req.headers["x-telegram-bot-api-secret-token"] !== process.env.TG_SECRET) { res.status(401).send("no"); return; }
   let u = req.body;
   if (typeof u === "string") { try { u = JSON.parse(u); } catch (e) { u = null; } }

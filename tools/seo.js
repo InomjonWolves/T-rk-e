@@ -21,7 +21,7 @@ const plainSfx = t => String(t).replace(/[\[\]]/g, "");
 const slug = code => code.toLowerCase().replace(/\./g, "-");
 const cut = (s, n) => { s = String(s).replace(/\s+/g, " ").trim(); return s.length <= n ? s : s.slice(0, s.lastIndexOf(" ", n - 1)).replace(/[,;:—–-]+$/, "") + "…"; };
 
-const table = t => `<div class="tw"><table><thead><tr>${t.h.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead>
+const table = t => `<div class="tw" tabindex="0" role="region" aria-label="${esc((t.h && t.h.join(" · ")) || "Jadval")}"><table><thead><tr>${t.h.map(h => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead>
 <tbody>${t.r.map(r => `<tr>${r.map(c => `<td lang="tr">${sfx(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 const pairs = (rows, cls = "") => `<dl class="pairs ${cls}">${rows.map(([a, b]) => `<div><dt lang="tr">${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join("")}</dl>`;
 

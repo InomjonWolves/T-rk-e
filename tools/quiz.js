@@ -52,7 +52,7 @@ function wordPoll(lv, r, rev) {
     if (opts.length < 4) continue;
     const o = shuffle(opts, r);
     return {
-      question: rev ? `"${ask}" turkchada qanday?` : `"${ask}" so'zining ma'nosi nima?`,
+      question: rev ? `"${ask}" turkchada qanday?` : `"${ask}" soʻzining maʼnosi nima?`,
       options: o, correct: o.indexOf(w[key]),
       explanation: `${w.tr} — ${w.uz}`.slice(0, 200), lv, kind: "word"
     };
@@ -64,7 +64,7 @@ function rulePoll(lv, r, avoid = new Set()) {
   if (!pool.length) return null;
   const x = pick(pool, r), right = x.o[x.a], o = shuffle(x.o, r);
   avoid.add(x.code);
-  return { question: "Qaysi javob to'g'ri?\n\n" + x.q, options: o, correct: o.indexOf(right), explanation: x.e || `To'g'ri javob: ${right}`, lv, kind: "rule", code: x.code };
+  return { question: "Qaysi javob toʻgʻri?\n\n" + x.q, options: o, correct: o.indexOf(right), explanation: x.e || `Toʻgʻri javob: ${right}`, lv, kind: "rule", code: x.code };
 }
 const weekNo = (date = new Date()) => Math.floor((Math.floor(date.getTime() / 864e5) + 3) / 7); // weeks start on Monday
 function quiz(date = new Date()) {
@@ -72,8 +72,8 @@ function quiz(date = new Date()) {
   const avoid = new Set(), polls = [wordPoll(lv, r, false), rulePoll(lv, r, avoid), wordPoll(lv, r, true), rulePoll(lv, r, avoid), wordPoll(lv, r, false)].filter(Boolean);
   return {
     lv, polls,
-    intro: `🧠 <b>Haftalik viktorina</b> · ${lv}\n\n${polls.length} ta savol: so'zlar va grammatika. Javobingizni tanlang — to'g'ri javob va izoh darhol ko'rinadi.`,
-    outro: `Nechta to'g'ri topdingiz? 💬\n\n${lv} darajasidagi mashqlar — bepul: https://turkceyol.web.app/`
+    intro: `🧠 <b>Haftalik viktorina</b> · ${lv}\n\n${polls.length} ta savol: soʻzlar va grammatika. Javobingizni tanlang — toʻgʻri javob va izoh darhol koʻrinadi.`,
+    outro: `Nechta toʻgʻri topdingiz? 💬\n\n${lv} darajasidagi mashqlar — bepul: https://turkceyol.web.app/`
   };
 }
 // One random question for the bot's /test (different every call)

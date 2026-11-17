@@ -38,26 +38,26 @@ function reply(text, date = new Date(), chat = 0) {
   const t = String(text || "").trim(), cmd = (/^\/([a-z_]+)/i.exec(t) || [])[1];
   const c = cmd && cmd.toLowerCase();
   if (c === "start") return {
-    text: "Assalomu alaykum! Men Pamuk 🐱 — <b>Türkçe Yo'l</b> boti.\n\nTurk tilini o'zbek tilida bepul o'rganing: A1–C1 kurs, grammatika, lug'at, tinglash va gapirish mashqlari, reyting va kunlik vazifalar.\n\n👇 Pastdagi tugmani bosing — sayt Telegram ichida ochiladi.\nMenga turkcha yoki o'zbekcha so'z yozsangiz, tarjimasini aytaman.",
+    text: "Assalomu alaykum! Men Pamuk 🐱 — <b>Türkçe Yoʻl</b> boti.\n\nTurk tilini oʻzbek tilida bepul oʻrganing: A1–C1 kurs, grammatika, lugʻat, tinglash va gapirish mashqlari, reyting va kunlik vazifalar.\n\n👇 Pastdagi tugmani bosing — sayt Telegram ichida ochiladi.\nMenga turkcha yoki oʻzbekcha soʻz yozsangiz, tarjimasini aytaman.",
     reply_markup: { inline_keyboard: [[openApp], [channel]] }
   };
   if (c === "soz") {
     const { w, tip } = word(date);
-    return { text: `🇹🇷 <b>Kunning so'zi</b> · ${w.lv}\n\n<b>${esc(w.tr)}</b> — ${esc(w.uz)}${w.note ? `\n<i>${esc(w.note)}</i>` : ""}\n\n💡 ${esc(tip)}`, reply_markup: { inline_keyboard: [[openApp]] } };
+    return { text: `🇹🇷 <b>Kunning soʻzi</b> · ${w.lv}\n\n<b>${esc(w.tr)}</b> — ${esc(w.uz)}${w.note ? `\n<i>${esc(w.note)}</i>` : ""}\n\n💡 ${esc(tip)}`, reply_markup: { inline_keyboard: [[openApp]] } };
   }
   if (c === "test" || c === "viktorina") {
     const p = require("./quiz.js").one(date.getTime());
     return { poll: p, text: "Yana savol: /test" };
   }
   if (c === "kurs") return {
-    text: "📚 <b>Turk tili kursi A1–C1</b> — 40 bo'lim, lug'at, grammatika, dialog va mashqlar.\n\nKurs: " + SITE + "kurs/\nGrammatika: " + SITE + "qoida/\nO'qish matnlari: " + SITE + "oqish/",
+    text: "📚 <b>Turk tili kursi A1–C1</b> — 40 boʻlim, lugʻat, grammatika, dialog va mashqlar.\n\nKurs: " + SITE + "kurs/\nGrammatika: " + SITE + "qoida/\nOʻqish matnlari: " + SITE + "oqish/",
     reply_markup: { inline_keyboard: [[openApp]] }
   };
   if (c === "id") return {
-    text: chat ? `Sizning Telegram ID raqamingiz: <code>${+chat}</code>\n\nIlovaning yangi versiyasini shu chatga olish uchun uni GitHub'da <b>TELEGRAM_ADMIN_ID</b> secret'iga yozing.` : "ID faqat shaxsiy chatda koʻrinadi."
+    text: chat ? `Sizning Telegram ID raqamingiz: <code>${+chat}</code>\n\nIlovaning yangi versiyasini shu chatga olish uchun uni GitHubʼda <b>TELEGRAM_ADMIN_ID</b> secretʼiga yozing.` : "ID faqat shaxsiy chatda koʻrinadi."
   };
   if (c === "yordam" || c === "help") return {
-    text: "Men nima qila olaman:\n\n/start — ilovani ochish\n/soz — kunning so'zi\n/test — viktorina savoli\n/kurs — kurs va grammatika\n\nYoki shunchaki so'z yozing: <i>kitap</i>, <i>salom</i>, <i>çalışmak</i> — tarjimasini topaman.",
+    text: "Men nima qila olaman:\n\n/start — ilovani ochish\n/soz — kunning soʻzi\n/test — viktorina savoli\n/kurs — kurs va grammatika\n\nYoki shunchaki soʻz yozing: <i>kitap</i>, <i>salom</i>, <i>çalışmak</i> — tarjimasini topaman.",
     reply_markup: { inline_keyboard: [[openApp], [channel]] }
   };
   if (c) return reply("/yordam");
@@ -66,7 +66,7 @@ function reply(text, date = new Date(), chat = 0) {
     text: hits.map(r => `<b>${esc(r.tr)}</b> — ${esc(r.uz)}${r.note ? ` <i>(${esc(r.note)})</i>` : ""} · ${r.lv}`).join("\n") + "\n\nMashq qilish — ilovada 👇",
     reply_markup: { inline_keyboard: [[openApp]] }
   };
-  return { text: `"${esc(t.slice(0, 40))}" lug'atimda topilmadi 🙈\nBoshqa so'z yozib ko'ring yoki /yordam`, reply_markup: { inline_keyboard: [[openApp]] } };
+  return { text: `"${esc(t.slice(0, 40))}" lugʻatimda topilmadi 🙈\nBoshqa soʻz yozib koʻring yoki /yordam`, reply_markup: { inline_keyboard: [[openApp]] } };
 }
 // A webhook update → the Bot API call to make in the webhook response ({ method, ... }), or null to ignore it.
 // Private chats only; messages older than a day are skipped (the bot may have been off).

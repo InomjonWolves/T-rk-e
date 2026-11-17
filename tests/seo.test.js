@@ -86,3 +86,17 @@ test("static pages fit a phone screen", async () => {
   }
   await page.close();
 });
+
+test("audit 2026-11-17: wide tables on static pages can be reached with the keyboard, safe headers on every file", () => {
+  let n = 0;
+  for (const d of ["kurs", "qoida", "lugat", "oqish", "maqola"]) for (const f of fs.readdirSync(path.join(ROOT, d)).filter(x => x.endsWith(".html"))) {
+    const s = fs.readFileSync(path.join(ROOT, d, f), "utf8");
+    for (const m of s.match(/<div class="tw"[^>]*>/g) || []) { n++; assert.match(m, /tabindex="0"/, `${d}/${f}`); assert.match(m, /aria-label="[^"]+"/, `${d}/${f}`); }
+  }
+  assert.ok(n > 50, "tables found: " + n);
+  const all = JSON.parse(fs.readFileSync(path.join(ROOT, "firebase.json"), "utf8")).hosting.headers.find(h => h.source === "**");
+  const keys = Object.fromEntries(all.headers.map(h => [h.key, h.value]));
+  assert.equal(keys["X-Content-Type-Options"], "nosniff");
+  assert.equal(keys["Referrer-Policy"], "strict-origin-when-cross-origin");
+  assert.ok(!("X-Frame-Options" in keys), "the site opens inside Telegram (Mini App) — no frame ban");
+});

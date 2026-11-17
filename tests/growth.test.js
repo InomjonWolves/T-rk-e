@@ -11,7 +11,7 @@ test("telegram: a different word every day, a link to the site only, no forbidde
   const seen = new Set();
   for (let d = 0; d < 60; d++) {
     const t = post(new Date(Date.UTC(2026, 10, 1) + d * 864e5));
-    assert.match(t, /Kunning so'zi/);
+    assert.match(t, /Kunning soʻzi/);
     assert.match(t, /https:\/\/turkceyol\.web\.app\//);
     assert.ok(!bad.test(t), t);
     assert.ok(t.length < 1000);
@@ -31,10 +31,10 @@ const { reply, lookup } = require("../tools/telegram-bot.js");
 
 test("bot: /start opens the site as a Mini App, /soz is the word of the day, a word gets its translation", () => {
   const s = reply("/start");
-  assert.match(s.text, /Türkçe Yo'l/);
+  assert.match(s.text, /Türkçe Yoʻl/);
   assert.equal(s.reply_markup.inline_keyboard[0][0].web_app.url, "https://turkceyol.web.app/");
   assert.equal(s.reply_markup.inline_keyboard[1][0].url, "https://t.me/turkceyoluz");
-  assert.match(reply("/soz").text, /Kunning so'zi/);
+  assert.match(reply("/soz").text, /Kunning soʻzi/);
   assert.match(reply("/kurs").text, /turkceyol\.web\.app\/kurs\//);
   assert.match(reply("/yordam").text, /\/soz/);
   assert.match(reply("/nimadir").text, /\/soz/, "unknown command → help");
@@ -128,7 +128,7 @@ test("bot webhook: the Vercel function answers in the webhook response, checks t
   const ok = await call({ method: "POST", headers: { "x-telegram-bot-api-secret-token": "s3cret" }, body: msg("kitap", { date: Math.floor(Date.now() / 1000) }) });
   assert.equal(ok.code, 200); assert.equal(ok.body.method, "sendMessage"); assert.match(ok.body.text, /kitob/);
   const str = await call({ method: "POST", headers: { "x-telegram-bot-api-secret-token": "s3cret" }, body: JSON.stringify(msg("/soz", { date: Math.floor(Date.now() / 1000) })) });
-  assert.match(str.body.text, /Kunning so'zi/, "a string body is parsed too");
+  assert.match(str.body.text, /Kunning soʻzi/, "a string body is parsed too");
   assert.equal((await call({ method: "POST", headers: {}, body: msg("kitap") })).code, 401);
   assert.equal((await call({ method: "POST", headers: { "x-telegram-bot-api-secret-token": "wrong" }, body: msg("kitap") })).code, 401);
   assert.deepEqual((await call({ method: "POST", headers: { "x-telegram-bot-api-secret-token": "s3cret" }, body: { update_id: 1 } })).body, {});
