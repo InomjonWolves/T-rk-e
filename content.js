@@ -54,7 +54,7 @@ const UNITS = [
       ["su", "suv"], ["ekmek", "non"], ["çay", "choy"], ["kahve", "qahva"],
       ["et", "goʻsht"], ["tavuk", "tovuq"], ["pirinç", "guruch"], ["süt", "sut"],
       ["elma", "olma"], ["şeker", "shakar"], ["Hesap, lütfen", "Hisobni bering"],
-      ["Afiyet olsun", "Yoqimli ishtaha"], ["Bakar mısınız?", "Qarab yuboring-chi? (ofitsiantga)"]
+      ["Afiyet olsun", "Osh boʻlsin, yoqimli ishtaha"], ["Bakar mısınız?", "Qarab yuboring-chi? (ofitsiantga)"]
     ] },
   { id: "renkler", tr: "Renkler", uz: "Ranglar",
     tip: ["“Mavi” koʻk", "Turkchada osmon rangi “mavi”. “Gök” esa osmonning oʻzi. “Kahverengi” — soʻzma-soʻz “qahva rangi”."],

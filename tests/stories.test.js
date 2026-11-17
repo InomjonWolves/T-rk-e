@@ -103,7 +103,7 @@ test("story player: lines one by one, questions stop the story, sentence tiles, 
   assert.ok(await page.locator(".hk-story .mw").count() > 3, "words can be tapped");
   // Translation of a line
   await page.click(".hk-line [data-act=hk-tr]");
-  assert.match(await page.textContent(".hk-line .hk-uz"), /Yakshanba ertalabi/);
+  assert.match(await page.textContent(".hk-line .hk-uz"), /Yakshanba tongi/);
   const xp0 = await page.evaluate(() => S.xp);
 
   // Walk the story: lines with «Davom etish», questions answered — one on purpose wrong

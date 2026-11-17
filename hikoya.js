@@ -12,7 +12,7 @@
 var HK = [
   { id: "kahvalti", lv: "A1", tr: "Pazar kahvaltısı", uz: "Yakshanba nonushtasi", cast: { Defne: "f", Kerem: "m", Pamuk: "f" },
     s: [
-      ["", "Pazar sabahı. Defne mutfakta kahvaltı hazırlıyor.", "Yakshanba ertalabi. Defne oshxonada nonushta tayyorlayapti."],
+      ["", "Pazar sabahı. Defne mutfakta kahvaltı hazırlıyor.", "Yakshanba tongi. Defne oshxonada nonushta tayyorlayapti."],
       ["Defne", "Kerem, kalk! Kahvaltı hazır!", "Kerem, tur! Nonushta tayyor!"],
       ["Kerem", "Günaydın! Saat kaç?", "Xayrli tong! Soat necha?"],
       ["Defne", "Saat dokuz. Çay da hazır.", "Soat toʻqqiz. Choy ham tayyor."],
@@ -24,7 +24,7 @@ var HK = [
       ["Pamuk", "Miyav!", "Miyov!"],
       ["Kerem", "Pamuk da aç galiba.", "Pamuk ham och shekilli."],
       { k: "next", who: "Defne", o: ["Evet, ona biraz peynir verelim.", "Hayır, bugün pazartesi.", "Ben okula gidiyorum."], a: 0, uz: "Ha, unga ozgina pishloq beraylik." },
-      ["Kerem", "Afiyet olsun, Pamuk!", "Yoqimli ishtaha, Pamuk!"],
+      ["Kerem", "Afiyet olsun, Pamuk!", "Osh boʻlsin, Pamuk!"],
       { k: "order", who: "Defne", s: "Bu çay çok güzel", uz: "Bu choy juda mazali" },
       { k: "mc", q: "Pamuk nimani yaxshi koʻradi?", o: ["Pishloqni", "Choyni", "Pomidorni"], a: 0 }
     ] },
@@ -66,7 +66,7 @@ var HK = [
     ] },
   { id: "ilkders", lv: "A1", tr: "İlk ders", uz: "Birinchi dars", cast: { Dilnoza: "f", "Elif Hoca": "f" },
     s: [
-      ["", "Pazartesi sabahı. Bugün Dilnoza'nın ilk Türkçe dersi.", "Dushanba ertalabi. Bugun Dilnozaning birinchi turkcha darsi."],
+      ["", "Pazartesi sabahı. Bugün Dilnoza'nın ilk Türkçe dersi.", "Dushanba tongi. Bugun Dilnozaning birinchi turkcha darsi."],
       ["Elif Hoca", "Günaydın! Ben Elif, sizin öğretmeninizim.", "Xayrli tong! Men Elif, sizning ustozingizman."],
       ["Elif Hoca", "Adın ne?", "Isming nima?"],
       ["Dilnoza", "Benim adım Dilnoza. Özbekistanlıyım.", "Mening ismim Dilnoza. Oʻzbekistonlikman."],
@@ -209,7 +209,7 @@ var HK = [
     ] },
   { id: "telefon", lv: "B2", tr: "Telefonsuz bir hafta mı?", uz: "Bir hafta telefonsizmi?", cast: { "Elif Hoca": "f", Kerem: "m", Dilnoza: "f" },
     s: [
-      ["", "Elif Hoca derste ilginç bir öneri getiriyor: bir hafta boyunca derslerde telefon kullanılmayacak.", "Elif Hoca darsda qiziq taklif bilan chiqadi: bir hafta davomida darslarda telefon ishlatilmaydi."],
+      ["", "Elif Hoca derste ilginç bir öneri getiriyor: bir hafta boyunca derslerde telefon kullanılmayacak.", "Elif Hoca darsda qiziq taklif kiritadi: bir hafta davomida darslarda telefon ishlatilmaydi."],
       ["Elif Hoca", "Sizce bu iyi bir fikir mi? Gerekçelerinizle birlikte söyleyin.", "Sizningcha, bu yaxshi fikrmi? Dalillaringiz bilan birga ayting."],
       ["Kerem", "Bence gereksiz. Sözlüğe ve çeviri uygulamalarına telefonla ulaşıyoruz. Telefon olmadan öğrenmek daha yavaş olur.", "Menimcha, keraksiz. Lugʻatga va tarjima ilovalariga telefon orqali kiramiz. Telefonsiz oʻrganish sekinroq boʻladi."],
       { k: "mc", q: "Kerem taklifga qanday qaraydi?", o: ["Qarshi", "Rozi", "Befarq"], a: 0 },
