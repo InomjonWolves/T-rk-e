@@ -123,8 +123,13 @@ test("audio: the text list covers every word, dialogs and readings; site config 
   const parts = gen.splitPcm(pcm, rate, 3, lens);
   assert.equal(parts && parts.length, 3);
   assert.ok(parts.every((x, i) => gen.okLen(x.length / 2 / rate, lens[i])));
-  assert.equal(gen.splitPcm(pcm, rate, 4, [10, 10, 10, 10]), null);
-  assert.equal(gen.splitPcm(pcm, rate, 3, [200, 3, 3]), null, "pieces far from the lines' lengths");
+  const why = [];
+  assert.equal(gen.splitPcm(pcm, rate, 3, [200, 3, 3], why), null, "pieces far from the lines' lengths");
+  assert.ok(why.length, "the reason is told");
+  // A line of two sentences has a pause inside, longer than the break after the next line: lengths decide
+  const two = Buffer.concat([sil(0.3), tone(gen.expLen(19)), sil(0.6), tone(gen.expLen(22)), sil(0.9), tone(gen.expLen(26)), sil(0.45), tone(gen.expLen(15)), sil(0.3)]);
+  const p3 = gen.splitPcm(two, rate, 3, [42, 26, 15]);
+  assert.ok(p3 && p3[0].length / 2 / rate > 4.5 && p3[2].length / 2 / rate < 2.2, "the first line keeps both of its sentences");
 });
 
 test("app audio: a recording comes from the site when played, is kept, plays again without the network; next words fetched ahead", async () => {

@@ -61,6 +61,16 @@ jobs:
         id: gen
         if: env.GEMINI_API_KEY != ''
         run: node tools/audio-gen.js
+        env:
+          AUDIO_DEBUG_DIR: debug
+      # Recordings that could not be cut into lines, for a look (audio-debug branch; not on the site)
+      - name: Boʻlinmagan yozuvlar (audio-debug)
+        if: always() && hashFiles('debug/index.txt') != ''
+        run: |
+          cd debug
+          git init -q -b audio-debug && git add -A
+          git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "Bo'linmagan yozuvlar ${{ github.run_id }}"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" audio-debug
       # Progress is kept even when the run stopped (the day's limit, a wrong key)
       - name: Commit va saytni qayta joylash
         if: always() && env.GEMINI_API_KEY != ''

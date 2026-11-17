@@ -102,35 +102,59 @@ function rmsFrames(pcm, rate) {
   for (let i = 0; i + n * 2 <= pcm.length; i += n * 2) { let s = 0; for (let j = 0; j < n; j++) { const x = pcm.readInt16LE(i + j * 2); s += x * x; } out.push(Math.sqrt(s / n)); }
   return out;
 }
-// Expected length of a line: a moment plus the letters; a cut piece far from it means the cut went wrong
-const okLen = (sec, chars) => { const e = 0.35 + 0.075 * chars; return sec >= 0.45 * e && sec <= 2.6 * e; };
-// n pieces of speech, or null when the pauses do not clearly mark n lines (lens — the letters of each line)
-function splitPcm(pcm, rate, n, lens) {
-  const f = rmsFrames(pcm, rate), bytes = Math.floor(rate * FRAME) * 2;
-  if (!f.length) return null;
+// Expected length of a line: a moment plus the letters (Gemini reads a little slowly); far from it — the cut went wrong
+const expLen = chars => 0.35 + 0.085 * chars;
+const okLen = (sec, chars) => sec >= 0.6 * expLen(chars) && sec <= 2.4 * expLen(chars);
+/* n pieces of speech, or null when they cannot be found for sure (lens — the letters of each line). Line breaks are
+   found by both cues at once: the pauses, and where each line should end by its length (a line of two sentences has a
+   pause inside, which alone looks like a break). Among the pauses, the cut points are chosen together (dynamic
+   programming) so that every piece is close to its share of the speech by its letters and sits on a pause as long as
+   possible; then every piece must match its share and its expected length. */
+function splitPcm(pcm, rate, n, lens, why) {
+  const f = rmsFrames(pcm, rate), bytes = Math.floor(rate * FRAME) * 2, fail = m => { if (why) why.push(m); return null; };
+  if (!f.length) return fail("boʻsh");
   const sorted = f.slice().sort((a, b) => a - b), floor = sorted[Math.floor(sorted.length * 0.1)], peak = sorted[Math.floor(sorted.length * 0.95)];
   const thr = Math.max(150, floor + 0.1 * (peak - floor)), loud = f.map(x => x >= thr);
   const first = loud.indexOf(true), last = loud.lastIndexOf(true);
-  if (first < 0) return null;
-  const runs = [];
-  for (let i = first; i <= last; i++) if (!loud[i]) { let j = i; while (j <= last && !loud[j]) j++; runs.push([i, j - i]); i = j; }
-  const cand = runs.filter(r => r[1] >= 10).sort((a, b) => b[1] - a[1]);
-  if (cand.length < n - 1) return null;
-  const chosen = cand.slice(0, n - 1), rest = cand[n - 1];
-  // The line breaks must stand out from the pauses inside sentences
-  if (n > 1 && rest && chosen[n - 2][1] < 35 && chosen[n - 2][1] < 1.25 * rest[1]) return null;
-  const cuts = chosen.map(([s, l]) => s + Math.floor(l / 2)).sort((a, b) => a - b), bounds = [first].concat(cuts, [last + 1]), pad = 6, out = [];
+  if (first < 0) return fail("ovoz yoʻq");
+  const span = last + 1 - first, w = lens.map(c => c + 5), W = w.reduce((a, b) => a + b, 0);
+  let cuts = [];
+  if (n > 1) {
+    const cand = [];
+    for (let i = first; i <= last; i++) if (!loud[i]) { let j = i; while (j <= last && !loud[j]) j++; if (j - i >= 8) cand.push({ pos: i + Math.floor((j - i) / 2), len: j - i }); i = j; }
+    if (cand.length < n - 1) return fail(`pauza kam: ${cand.length}/${n - 1}`);
+    const target = [], C = cand.length;
+    for (let k = 0, acc = 0; k < n - 1; k++) { acc += w[k]; target.push(first + span * acc / W); }
+    const cost = (k, c) => 60 * ((cand[c].pos - target[k]) / span) ** 2 - Math.min(cand[c].len, 75) / 75;
+    const dp = [], from = [];
+    for (let k = 0; k < n - 1; k++) {
+      dp.push(new Array(C).fill(Infinity)); from.push(new Array(C).fill(-1));
+      let best = Infinity, arg = -1;
+      for (let c = 0; c < C; c++) {
+        if (k === 0) dp[k][c] = cost(k, c);
+        else { if (c > 0 && dp[k - 1][c - 1] < best) { best = dp[k - 1][c - 1]; arg = c - 1; } if (arg >= 0) { dp[k][c] = best + cost(k, c); from[k][c] = arg; } }
+      }
+    }
+    let end = -1, bestEnd = Infinity;
+    dp[n - 2].forEach((v, c) => { if (v < bestEnd) { bestEnd = v; end = c; } });
+    if (end < 0) return fail("kesish topilmadi");
+    for (let k = n - 2, c = end; k >= 0; c = from[k][c], k--) cuts.unshift(cand[c].pos);
+  }
+  const bounds = [first].concat(cuts, [last + 1]), pad = 6, out = [];
   for (let k = 0; k < n; k++) {
     let a = bounds[k], b = bounds[k + 1];
     while (a < b && !loud[a]) a++;
     while (b > a && !loud[b - 1]) b--;
-    if (b <= a) return null;
-    const s = Math.max(0, a - pad), e = Math.min(f.length, b + pad);
-    if (lens && !okLen((e - s) * FRAME, lens[k])) return null;
-    out.push(pcm.subarray(s * bytes, e * bytes));
+    if (b <= a) return fail(`${k + 1}-gap boʻsh`);
+    const sec = (b - a) * FRAME, share = span * FRAME * w[k] / W;
+    if (n > 1 && (sec < 0.5 * share || sec > 1.9 * share)) return fail(`${k + 1}-gap ulushi: ${sec.toFixed(1)} s, kutilgan ${share.toFixed(1)} s`);
+    if (!okLen(sec + 0.1, lens[k])) return fail(`${k + 1}-gap uzunligi: ${sec.toFixed(1)} s, kutilgan ${expLen(lens[k]).toFixed(1)} s`);
+    out.push(pcm.subarray(Math.max(0, a - pad) * bytes, Math.min(f.length, b + pad) * bytes));
   }
   return out;
 }
+// Length of one of our MP3s from its size (48 kbit/s)
+const mp3Sec = file => fs.statSync(file).size / 6000;
 function mp3(pcm, rate) {
   const r = spawnSync("ffmpeg", ["-loglevel", "error", "-f", "s16le", "-ar", String(rate), "-ac", "1", "-i", "pipe:0", "-ar", "24000", "-ac", "1", "-c:a", "libmp3lame", "-b:a", "48k", "-f", "mp3", "pipe:1"], { input: pcm, maxBuffer: 64e6 });
   if (r.status !== 0 || !r.stdout || r.stdout.length < 300) throw new Error("ffmpeg: " + String(r.stderr || r.error || "").slice(0, 200));
@@ -153,7 +177,7 @@ function jobsOf(lines, voices) {
 }
 function plan(cfg, list, done) {
   const want = new Map(list.map(([v, t]) => [audioKey(t, v), [v, t]])), expect = new Map(), jobs = [];
-  const fresh = k => !(done.get(k) === expect.get(k) && fs.existsSync(fileOf(k)));
+  const fresh = (k, chars) => !(done.get(k) === expect.get(k) && fs.existsSync(fileOf(k)) && (chars === undefined || okLen(mp3Sec(fileOf(k)), chars)));
   // Characters: every story and dialog, in order (stories first)
   for (const g of list.groups || []) {
     const voices = groupVoices(cfg, g), need = [];
@@ -161,7 +185,7 @@ function plan(cfg, list, done) {
       const key = audioKey(text, "p:" + who);
       if (!want.has(key) || expect.has(key)) continue;
       expect.set(key, voices.get(who));
-      if (fresh(key)) need.push({ key, who, text });
+      if (fresh(key, text.length)) need.push({ key, who, text });
     }
     for (const c of chunks(need, CHUNK, CHUNK_CHARS)) jobs.push(...jobsOf(c, voices));
   }
@@ -183,15 +207,18 @@ async function run(key) {
   console.log(`TTS modellari: ${models.join(", ") || "yoʻq"}`);
   console.log(`${want.size} ta matn; yoziladigan: ${jobs.reduce((a, j) => a + j.lines.length, 0)} gap, ${jobs.length} ta soʻrov`);
   const until = Date.now() + (+(process.env.AUDIO_MINUTES || 40)) * 60000, gap = +(process.env.AUDIO_GAP_MS || 21000);
-  let made = 0, reqs = 0, stop = "", fails = 0, skipped = 0;
+  let made = 0, reqs = 0, stop = "", fails = 0, skipped = 0, dbg = 0;
+  const DEBUG = process.env.AUDIO_DEBUG_DIR || "";
   while (jobs.length) {
     if (Date.now() > until) { stop = "vaqt"; break; }
     const job = jobs.shift(), n = job.lines.length, t0 = Date.now();
     const text = job.multi ? `${P_DLG}\n\n${job.lines.map(l => `${label(l.who)}: ${l.text}`).join("\n")}` : n === 1 ? `${P_ONE}\n${job.lines[0].text}` : `${P_LIST}\n\n${job.lines.map(l => l.text).join("\n")}`;
     try {
       const r = await gen(key, models, gBody(text, job.multi || job.voice)); reqs++;
-      const parts = splitPcm(r.pcm, r.rate, n, job.lines.map(l => l.text.length));
+      const why = [], parts = splitPcm(r.pcm, r.rate, n, job.lines.map(l => l.text.length), why);
       if (!parts) {
+        console.log(`Boʻlinmadi (${n} gap, ${r.model}): ${why.join("; ")} — «${job.lines[0].text.slice(0, 40)}»`);
+        if (DEBUG && dbg < 12) { fs.mkdirSync(DEBUG, { recursive: true }); fs.writeFileSync(path.join(DEBUG, `${++dbg}.pcm`), r.pcm); fs.appendFileSync(path.join(DEBUG, "index.txt"), `${dbg}.pcm ${r.rate} ${n} ${why.join("; ")} | ${job.lines.map(l => l.text).join(" | ")}\n`); }
         // The pauses did not match the lines: halves, down to one line a request; a single line that fails twice is left
         if (n > 1) { const h = Math.ceil(n / 2), voices = new Map(job.multi ? job.lines.map(l => [l.who, job.multi.find(m => m[0] === label(l.who))[1]]) : job.lines.map(l => [l.who, job.voice])); jobs.unshift(...jobsOf(job.lines.slice(h), voices)); jobs.unshift(...jobsOf(job.lines.slice(0, h), voices)); }
         else if (!job.again) jobs.unshift(Object.assign({}, job, { again: 1 }));
@@ -227,5 +254,5 @@ async function main() {
   if (!key) { console.log("GEMINI_API_KEY yoʻq — audio oʻzgarmadi"); return; }
   await run(key);
 }
-module.exports = { audioKey, audioNorm, fileOf, gBody, splitPcm, okLen, groupVoices, label, plan, jobsOf };
+module.exports = { audioKey, audioNorm, fileOf, gBody, splitPcm, okLen, expLen, groupVoices, label, plan, jobsOf };
 if (require.main === module) main().catch(e => { console.error(e.message); process.exit(1); });
