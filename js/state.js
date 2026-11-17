@@ -28,8 +28,9 @@ function errNote(m, f, s) {
     const all = JSON.parse(localStorage.getItem(ERR_KEY) || "{}"), sig = errHash(m.replace(/\d+/g, "#") + "|" + f.replace(/:\d+(:\d+)?$/, ""));
     const e = all[sig] || (all[sig] = { m, n: 0, sent: 0 });
     Object.assign(e, { f, s, n: e.n + 1, r: (location.hash || "#home").split("-")[0].slice(0, 30), v: APP_V, at: Date.now() });
-    const keys = Object.keys(all).sort((a, b) => all[b].at - all[a].at);
-    keys.slice(ERR_MAX).forEach(k => delete all[k]);
+    // Over ERR_MAX kinds the oldest go — never the one just noted; in the same millisecond the later one counts as newer
+    const keys = Object.keys(all).map((k, i) => [k, i]).filter(([k]) => k !== sig).sort((a, b) => all[b[0]].at - all[a[0]].at || b[1] - a[1]);
+    keys.slice(ERR_MAX - 1).forEach(([k]) => delete all[k]);
     localStorage.setItem(ERR_KEY, JSON.stringify(all));
   } catch (x) {}
 }
