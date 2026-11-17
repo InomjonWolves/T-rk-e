@@ -52,6 +52,12 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          # Gradle libraries are kept between runs: Maven Central refuses too many downloads (429)
+          cache: gradle
+          cache-dependency-path: |
+            native/android/*.gradle*
+            native/android/**/*.gradle*
+            native/android/gradle/wrapper/gradle-wrapper.properties
       - name: Capacitor va Firebase SDK
         working-directory: native
         run: npm ci --no-audit --no-fund
@@ -82,7 +88,8 @@ jobs:
           mkdir -p ../../out
           if [ "${{ steps.key.outputs.ok }}" = "1" ]; then
             export ANDROID_VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))
-            ./gradlew --no-daemon -q assembleRelease bundleRelease
+            # One more try after a pause when a library server is busy (429, timeouts)
+            ./gradlew --no-daemon -q assembleRelease bundleRelease || { echo "::warning::Gradle — qayta urinish"; sleep 90; ./gradlew --no-daemon -q assembleRelease bundleRelease; }
             cp app/build/outputs/apk/release/app-release.apk ../../out/turkce-yol-ilova.apk
             cp app/build/outputs/bundle/release/app-release.aab ../../out/turkce-yol-ilova.aab
             # v2/v3 imzo: apksigner bilan tekshiriladi (keytool faqat eski v1 imzoni o'qiydi)
@@ -90,7 +97,7 @@ jobs:
             "$APKSIGNER" verify --print-certs ../../out/turkce-yol-ilova.apk | grep -E "SHA-1|SHA-256" || echo "::warning::imzo tekshiruvi o'qilmadi"
           else
             unset ANDROID_KEY_PASS
-            ./gradlew --no-daemon -q assembleDebug
+            ./gradlew --no-daemon -q assembleDebug || { sleep 90; ./gradlew --no-daemon -q assembleDebug; }
             cp app/build/outputs/apk/debug/app-debug.apk ../../out/turkce-yol-ilova-debug.apk
           fi
           ls -la ../../out

@@ -362,3 +362,10 @@ test("app: a long press on text gives no selection or Copy menu; typing fields s
   assert.deepEqual(await web.page.evaluate(() => { const e = new MouseEvent("contextmenu", { bubbles: true, cancelable: true }); document.body.dispatchEvent(e); return [getComputedStyle(document.body).userSelect, e.defaultPrevented]; }), ["auto", false]);
   await web.page.close();
 });
+
+test("app build survives a busy library server: Gradle cache and one retry (Maven Central 429, 2026-11-17)", () => {
+  const w = read(".github/workflows/native.yml");
+  assert.match(w, /cache: gradle/);
+  assert.match(w, /cache-dependency-path:[\s\S]*native\/android/);
+  assert.match(w, /assembleRelease bundleRelease \|\| \{[^}]*sleep \d+; \.\/gradlew --no-daemon -q assembleRelease bundleRelease; \}/);
+});
