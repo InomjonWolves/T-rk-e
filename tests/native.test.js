@@ -110,7 +110,11 @@ test("app audio: the recordings stay on the site (only their list is packed), an
   assert.ok(!src.includes(".mp3"), "no mp3 is copied into the app");
   assert.match(src, /audio", "index\.txt"/);
   assert.doesNotMatch(read(".github/workflows/native.yml"), /"audio\/\*\*"/, "new audio needs no new app");
-  assert.doesNotMatch(read(".github/workflows/audio.yml"), /native\.yml/);
+  // The app plays new recordings from the site; still, once a day's recording is over, the APK on GitHub is built again
+  // (with the new list) so nobody has to start it
+  const au = read(".github/workflows/audio.yml");
+  assert.match(au, /gh workflow run native\.yml/);
+  assert.match(au, /steps\.commit\.outputs\.changed == '1'/);
   const fb = JSON.parse(read("firebase.json")).hosting.headers;
   for (const s of ["audio/**/*.mp3", "audio/index.txt"]) assert.ok(fb.find(h => h.source === s).headers.some(h => h.key === "Access-Control-Allow-Origin" && h.value === "*"), s);
 });

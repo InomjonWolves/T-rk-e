@@ -73,6 +73,7 @@ jobs:
           git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" audio-debug
       # Progress is kept even when the run stopped (the day's limit, a wrong key)
       - name: Commit va saytni qayta joylash
+        id: commit
         if: always() && env.GEMINI_API_KEY != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -82,8 +83,16 @@ jobs:
           git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "Audio yangilandi ($(git diff --cached --name-only | wc -l) fayl)"
           for i in 1 2 3; do git pull -q --rebase origin main && git push -q origin HEAD:main && break; sleep 5; done
           gh workflow run firebase-hosting.yml --ref main
+          echo "changed=1" >> "$GITHUB_OUTPUT"
       - name: Davomi (matn qolgan bo'lsa)
         if: steps.gen.outputs.left != '' && steps.gen.outputs.left != '0'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run audio.yml --ref main
+      # The day's recording is over (nothing left for a next run today): the app is built again and its APK put on
+      # GitHub (Releases «ilova-latest») with the new list of recordings — nobody has to start anything
+      - name: Ilovani qayta yig'ish (APK)
+        if: always() && steps.commit.outputs.changed == '1' && (steps.gen.outputs.left == '' || steps.gen.outputs.left == '0')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run native.yml --ref main
