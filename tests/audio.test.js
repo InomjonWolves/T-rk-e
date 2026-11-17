@@ -33,8 +33,9 @@ test("audio: the same key in the app and in the generator; recordings first, dev
   assert.equal(gen.audioKey("Merhaba"), gen.audioKey(" Merhaba… "), "normalised like the app");
 
   await page.evaluate(stubs);
-  // No index yet: device voice
+  // No list of recordings (it could not load): device voice
   await page.evaluate(() => { AUDIO_SET = null; speak("kitap"); });
+  await page.waitForFunction(() => __tts.length === 1);
   assert.deepEqual(await page.evaluate(() => [__played.length, __tts]), [0, ["kitap"]]);
   // With a recording: the file plays, at the chosen speed, and the device voice stays quiet
   await page.evaluate(() => { AUDIO_SET = new Set([audioKey("kitap"), audioKey("Selam"), audioKey("Merhaba", "b")]); __tts = []; S.tts = { r: 0.75 }; speak("kitap"); });

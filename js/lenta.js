@@ -248,6 +248,8 @@ function lnActive(i) {
     if (c.k !== "x" && c.k !== "b") { LN.n++; S.lnN = (S.lnN || 0) + 1; lnDay().n++; }
   }
   lnNudgeCheck(i);
+  // The voices of the next cards are fetched now, so they play at once
+  audioWarm(LN.cards.slice(i + 1, i + 4).map(x => x.w ? x.w.tr : x.s ? x.s.tr : x.say || (x.f && x.f.tr) || ""));
   if (i >= 1 && !S.lnHint) { S.lnHint = 1; lnRedraw(0); }
   if (c.k === "x" && !c.done) lnRound(c, i);
   // More cards before the end comes

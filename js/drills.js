@@ -325,24 +325,25 @@ function micToggle() {
   const w = SES.items[SES.i];
   const r = new SR();
   r.lang = "tr-TR"; r.interimResults = true; r.maxAlternatives = 5; r.continuous = false;
-  let finalAlts = null;
-  r.onresult = ev => {
-    const res = ev.results[ev.results.length - 1];
-    const h = $("heard"); if (h) h.textContent = res[0].transcript;
-    if (res.isFinal) finalAlts = [...res].map(a => a.transcript);
-  };
-  r.onerror = ev => {
-    const msg = { "not-allowed": "Mikrofonga ruxsat berilmagan. Brauzer sozlamalarida ruxsat bering.", "service-not-allowed": "Mikrofonga ruxsat berilmagan. Brauzer sozlamalarida ruxsat bering.",
-      "no-speech": "Ovoz eshitilmadi. Mikrofonni bosib, soʻzni aniq ayting.", "audio-capture": "Mikrofon topilmadi.", "network": "Nutqni tanish uchun internet kerak." }[ev.error];
-    if (msg) { const fb = $("fb"); if (fb) { fb.className = "feedback no"; fb.textContent = msg; } }
-  };
-  r.onend = () => {
-    if (REC === r) REC = null;
-    micUi(false, "Yana aytish uchun mikrofonni bosing");
-    if (finalAlts && SES && !SES.answered && SES.items[SES.i] === w) sayCheck(w, finalAlts);
-  };
-  try { r.start(); REC = r; micUi(true, "Tinglayapman… soʻzni ayting"); const h = $("heard"); if (h) h.textContent = ""; }
-  catch (e) { toast("Mikrofonni ishga tushirib boʻlmadi"); }
+  const target = w.oral ? "" : sayNorm(w.tr).out;
+  try {
+    srStart(r, {
+      heard: t => { const h = $("heard"); if (h) h.textContent = t; },
+      // A repeat already right ends listening at once (srStart); a free answer waits for the speaker to finish
+      early: w.oral ? null : t => sayDiff(target, heardNorm(t)).score,
+      error: e => {
+        const msg = { "not-allowed": "Mikrofonga ruxsat berilmagan. Brauzer sozlamalarida ruxsat bering.", "service-not-allowed": "Mikrofonga ruxsat berilmagan. Brauzer sozlamalarida ruxsat bering.",
+          "no-speech": "Ovoz eshitilmadi. Mikrofonni bosib, soʻzni aniq ayting.", "audio-capture": "Mikrofon topilmadi.", "network": "Nutqni tanish uchun internet kerak." }[e];
+        if (msg) { const fb = $("fb"); if (fb) { fb.className = "feedback no"; fb.textContent = msg; } }
+      },
+      end: alts => {
+        if (REC === r) REC = null;
+        micUi(false, "Yana aytish uchun mikrofonni bosing");
+        if (alts && SES && !SES.answered && SES.items[SES.i] === w) sayCheck(w, alts);
+      }
+    });
+    REC = r; micUi(true, "Tinglayapman… soʻzni ayting"); const h = $("heard"); if (h) h.textContent = "";
+  } catch (e) { toast("Mikrofonni ishga tushirib boʻlmadi"); }
 }
 function sayCheck(w, alts) {
   let best = null;

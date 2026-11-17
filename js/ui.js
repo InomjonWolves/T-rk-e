@@ -183,12 +183,15 @@ function audioKey(text, v = "a") {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36).padStart(11, "0");
 }
 const audioPath = k => `${AUDIO_BASE}audio/${k.slice(0, 2)}/${k}.mp3`;
-let AUDIO_SET = null, AEL = null, AUDIO_DONE = null, AUDIO_N = 0;
+let AUDIO_SET = null, AEL = null, AUDIO_DONE = null, AUDIO_N = 0, AUDIO_P = null, AUDIO_WAITED = false;
+// The list of recordings: loaded a moment after the first screen, or at once when something is to be played
 function audioIndex() {
-  if (AUDIO_SET || !window.fetch) return;
+  if (AUDIO_SET || !window.fetch) return Promise.resolve();
+  if (AUDIO_P) return AUDIO_P;
   const load = u => fetch(u).then(r => r.ok ? r.text() : "").then(t => { const ks = t.split("\n").filter(Boolean); if (ks.length) AUDIO_SET = new Set(ks); return ks.length; });
   // The app: the site's list (new recordings too); offline — the list packed into the app
-  load(AUDIO_BASE + "audio/index.txt").catch(() => 0).then(n => { if (!n && AUDIO_BASE) return load("audio/index.txt"); }).catch(() => {});
+  AUDIO_P = load(AUDIO_BASE + "audio/index.txt").catch(() => 0).then(n => { if (!n && AUDIO_BASE) return load("audio/index.txt"); }).catch(() => {}).then(() => { AUDIO_WAITED = true; });
+  return AUDIO_P;
 }
 const AUDIO_CACHE = "ty-audio", AUDIO_TTL = 30 * DAY;
 let AUDIO_URL = "";
@@ -210,12 +213,17 @@ async function audioSrc(k) {
   if (!IS_NATIVE || !window.caches) return url;
   try { return URL.createObjectURL(await (await audioCached(k)).blob()); } catch (e) { return url; }
 }
-// The app: the next recordings of a practice are fetched while the learner answers (a few at a time)
+// The next recordings are fetched while the learner answers (two at a time), so a tap plays at once: in the app into
+// its cache (12), on the site into the browser's own cache (6, not with data saving on)
+const AUDIO_WARM = new Set();
 function audioWarm(texts) {
-  if (!IS_NATIVE || !window.caches || !AUDIO_SET || navigator.onLine === false) return;
-  const ks = [...new Set(texts.filter(t => typeof t === "string" && hasRec(t)).map(t => audioKey(t)))].slice(0, 12);
+  if (!AUDIO_SET || !window.fetch || navigator.onLine === false || (navigator.connection && navigator.connection.saveData)) return;
+  const app = IS_NATIVE && window.caches;
+  const ks = [...new Set(texts.filter(t => typeof t === "string" && hasRec(t)).map(t => audioKey(t)))].filter(k => !AUDIO_WARM.has(k)).slice(0, app ? 12 : 6);
+  ks.forEach(k => AUDIO_WARM.add(k));
   let i = 0;
-  const next = () => { if (i < ks.length) audioCached(ks[i++]).catch(() => {}).then(next); };
+  const get = k => app ? audioCached(k) : fetch(audioPath(k), { priority: "low" }).then(r => r.blob());
+  const next = () => { if (i < ks.length) get(ks[i++]).catch(() => {}).then(next); };
   next(); next();
 }
 const hasRec = (text, v = "a") => !!AUDIO_SET && AUDIO_SET.has(audioKey(text, v));
@@ -255,6 +263,20 @@ function ttsCancel() { audioStop(); nttsStop(); try { speechSynthesis.cancel(); 
 // If the file cannot load (offline, not cached), fallback() runs instead — the device voice.
 function playRec(text, v, rate, done, fallback) {
   const a = audioEl();
+  // Played before the list of recordings came (the first moments after opening): wait for it, up to 2.5 s, rather
+  // than speak with the device voice a text that has a recording
+  if (a && !AUDIO_SET && !AUDIO_WAITED && window.fetch) {
+    audioStop(); nttsStop();
+    const n = AUDIO_N;
+    AUDIO_DONE = done || null;
+    Promise.race([audioIndex(), new Promise(r => setTimeout(r, 2500))]).then(() => {
+      AUDIO_WAITED = true;
+      if (n !== AUDIO_N) return;
+      AUDIO_DONE = null;
+      if (!playRec(text, v, rate, done, fallback)) { if (fallback) fallback(); else if (done) done(); }
+    });
+    return true;
+  }
   if (!a || !hasRec(text, v)) return false;
   audioStop(); nttsStop();
   try { speechSynthesis.cancel(); } catch (e) {}

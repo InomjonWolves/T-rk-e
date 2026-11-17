@@ -362,22 +362,49 @@ function ktSpeakHtml(lv, res, start) {
 }
 const ktHeard = (q, r) => `<span lang="tr">«${esc(r.text)}»</span> <span class="tag ${r.score >= ktNeed(q) ? "green-t" : "pink-t"}">${Math.round(r.score * 100)}%</span>`;
 // Records one answer with the browser's speech recognition and passes the best-scoring transcript to done()
+/* One spoken answer, scored against q.tr (q.kind "oral" — key words of a free answer, otherwise a repeat, letter by
+   letter). Faster than waiting for the browser: words come while they are said (interimResults), and a repeat that is
+   already right (SR_EARLY) ends listening at once instead of after the browser's silence timeout; if listening ends
+   without a final result (stopped by hand, some phones), the last words heard still count; a watchdog stops a
+   recognizer that never ends. */
+const SR_EARLY = 0.95, SR_MAX_MS = 12000;
+function srStart(r, opts) {
+  let alts = null, part = "", fin = false, dog = 0;
+  const finish = list => { if (fin) return; fin = true; clearTimeout(dog); opts.end(list && list.length ? list : null); };
+  r.onresult = ev => {
+    const res = ev.results[ev.results.length - 1], list = [...res].map(a => a.transcript).filter(Boolean);
+    if (!list.length) return;
+    if (opts.heard) opts.heard(list[0]);
+    if (res.isFinal) alts = list; else part = list[0];
+    if (opts.early && opts.early(list[0]) >= SR_EARLY) { alts = list; try { r.abort(); } catch (e) {} finish(list); }
+  };
+  r.onerror = ev => { if (opts.error) opts.error(ev.error); };
+  r.onend = () => finish(alts || (part ? [part] : null));
+  r.start();
+  dog = setTimeout(() => { try { r.stop(); } catch (e) {} setTimeout(() => finish(alts || (part ? [part] : null)), 1500); }, SR_MAX_MS);
+  return () => fin;
+}
 function micCapture(q, btn, done) {
   if (KT_REC) { try { KT_REC.stop(); } catch (e) {} return; }
   ttsCancel();
   const r = new SR();
-  r.lang = "tr-TR"; r.interimResults = false; r.maxAlternatives = 5;
-  let alts = null;
-  r.onresult = ev => { const res = ev.results[ev.results.length - 1]; alts = [...res].map(a => a.transcript); };
-  r.onerror = ev => { if (ev.error === "not-allowed" || ev.error === "service-not-allowed") toast("Mikrofonga ruxsat berilmagan"); else if (ev.error === "no-speech") toast("Ovoz eshitilmadi, yana urinib koʻring"); else if (ev.error === "network") toast("Nutqni tanish uchun internet kerak"); };
-  r.onend = () => {
-    KT_REC = null; btn.classList.remove("on");
-    if (!alts) return;
-    let best = null;
-    alts.forEach(a => { const sc = q.kind === "oral" ? oralScore(q.tr, a).score : sayDiff(sayNorm(q.tr).out, heardNorm(a)).score; if (!best || sc > best.score) best = { score: sc, text: a }; });
-    done(best);
-  };
-  try { r.start(); KT_REC = r; btn.classList.add("on"); } catch (e) { toast("Mikrofonni ishga tushirib boʻlmadi"); }
+  r.lang = "tr-TR"; r.interimResults = true; r.maxAlternatives = 5;
+  const score = a => q.kind === "oral" ? oralScore(q.tr, a).score : sayDiff(sayNorm(q.tr).out, heardNorm(a)).score;
+  try {
+    srStart(r, {
+      early: q.kind === "oral" ? null : score,
+      error: e => { if (e === "not-allowed" || e === "service-not-allowed") toast("Mikrofonga ruxsat berilmagan"); else if (e === "no-speech") toast("Ovoz eshitilmadi, yana urinib koʻring"); else if (e === "network") toast("Nutqni tanish uchun internet kerak"); },
+      end: alts => {
+        if (KT_REC === r) KT_REC = null;
+        btn.classList.remove("on");
+        if (!alts) return;
+        let best = null;
+        alts.forEach(a => { const sc = score(a); if (!best || sc > best.score) best = { score: sc, text: a }; });
+        done(best);
+      }
+    });
+    KT_REC = r; btn.classList.add("on");
+  } catch (e) { toast("Mikrofonni ishga tushirib boʻlmadi"); }
 }
 const keepBest = (store, i, best) => { if (!store[i] || best.score > store[i].score) store[i] = best; return store[i]; };
 function ktMic(lv, i, btn) {
