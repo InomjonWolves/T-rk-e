@@ -98,7 +98,7 @@ test("profile: ⚙ opens one settings page with every setting and link; four mai
   }));
   assert.deepEqual([hero.sides, hero.shelf, hero.cols, hero.below], [0, 5, 5, true]);
   assert.equal(hero.earned, Math.min(5, got)); assert.equal(hero.ribbon, hero.earned, "every earned medal hangs on its ribbon"); assert.equal(hero.locked, 5 - Math.min(5, got)); assert.equal(hero.old, 0);
-  assert.match(hero.all, new RegExp(`Yutuqlar\\s*${got}/81`)); assert.equal(hero.href, "#achievements");
+  assert.match(hero.all, new RegExp(`Yutuqlar\\s*${got}/${await page.evaluate(() => ACH.length)}`)); assert.equal(hero.href, "#achievements");
   // The medal: enamel (a gradient) in a metal rim (a conic gradient), upright
   assert.match(hero.bg, /linear-gradient/); assert.match(hero.bg, /conic-gradient/); assert.equal(hero.tilt, "none");
   // The rarest come first
@@ -143,7 +143,7 @@ test("phone layout: no page wider than the screen, no oversized icons, every men
     await check(`#k-${u}/${t}`);
   }
   const nav = await page.evaluate(() => [...document.querySelectorAll("nav.nav a")].map(a => a.getAttribute("aria-label")));
-  assert.deepEqual(nav, ["Asosiy", "Darslar", "Mashq", "Reyting", "Profil"]);
+  assert.deepEqual(nav, ["Asosiy", "Lenta", "Darslar", "Mashq", "Reyting", "Profil"]);
   assert.deepEqual(errors, []);
   await page.close();
 });

@@ -20,7 +20,7 @@ var Sync = (function () {
   const num = v => typeof v === "number" && isFinite(v) ? v : 0;
 
   // Counters at the top level; settings where the copy saved last wins as a whole; lists merged as sets
-  const COUNT = new Set(["xp", "sessions", "perfect", "trUses", "shared", "night", "early", "roles", "dqn", "wcn", "frB"]);
+  const COUNT = new Set(["xp", "sessions", "perfect", "trUses", "shared", "night", "early", "roles", "dqn", "wcn", "frB", "lnN", "lnS", "ln3"]);
   const LATEST = new Set(["goal", "pub", "anon", "tts", "rem", "hap", "sfx", "kView", "place", "statsAt", "guideLast", "frIn"]);
   const LIST = new Set(["fr", "grp", "frzD"]);
   // Fields merged together by their own rule (not key by key)

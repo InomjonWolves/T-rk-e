@@ -77,7 +77,7 @@ test("palette: text colours are readable on their backgrounds in the light and t
   }
 });
 
-test("tab bar: five tabs with visible names; a side rail with the brand on a wide screen", async () => {
+test("tab bar: six tabs with visible names; a side rail with the brand on a wide screen", async () => {
   const { page, errors } = await openApp(browser, "#practice");
   const tabs = () => page.evaluate(() => [...document.querySelectorAll("nav.nav a")].map(a => {
     const s = a.querySelector("span"), b = s.getBoundingClientRect(), r = a.getBoundingClientRect();
@@ -86,10 +86,10 @@ test("tab bar: five tabs with visible names; a side rail with the brand on a wid
   for (const w of [390, 320]) {
     await page.setViewportSize({ width: w, height: 700 });
     const t = await tabs();
-    assert.deepEqual(t.map(x => x.t), ["Asosiy", "Darslar", "Mashq", "Reyting", "Profil"]);
+    assert.deepEqual(t.map(x => x.t), ["Asosiy", "Lenta", "Darslar", "Mashq", "Reyting", "Profil"]);
     assert.ok(t.every(x => x.shown), `every name is visible at ${w}px`);
     assert.ok(t.every(x => x.h >= 44 && x.w >= 44), `tabs are at least 44px at ${w}px: ${JSON.stringify(t.map(x => [x.w, x.h]))}`);
-    assert.deepEqual(t.map(x => x.cur), [null, null, "page", null, null]);
+    assert.deepEqual(t.map(x => x.cur), [null, null, null, "page", null, null]);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `no sideways scroll at ${w}px`);
   }
   await page.setViewportSize({ width: 1280, height: 800 });
