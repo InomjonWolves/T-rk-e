@@ -90,9 +90,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run audio.yml --ref main
       # The day's recording is over (nothing left for a next run today): the app is built again and its APK put on
-      # GitHub (Releases «ilova-latest») with the new list of recordings — nobody has to start anything
-      - name: Ilovani qayta yig'ish (APK)
+      # GitHub (Releases «ilova-latest») with the new list of recordings and sent to the admin's chat with the bot
+      # (TELEGRAM_ADMIN_ID) — nobody has to start anything
+      - name: Ilovani qayta yig'ish (APK) va Telegramga yuborish
         if: always() && steps.commit.outputs.changed == '1' && (steps.gen.outputs.left == '' || steps.gen.outputs.left == '0')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run native.yml --ref main
+          MADE: ${{ steps.gen.outputs.made }}
+          REST: ${{ steps.gen.outputs.rest }}
+        run: |
+          NOTE="Yangi ovozli yozuvlar qoʻshildi"
+          if [ -n "$MADE" ] && [ "$MADE" != "0" ]; then NOTE="Yangi ovozli yozuvlar: $MADE ta gap"; fi
+          if [ -n "$REST" ] && [ "$REST" != "0" ]; then NOTE="$NOTE (yana $REST ta navbatda)"; fi
+          gh workflow run native.yml --ref main -f notify=true -f note="$NOTE"

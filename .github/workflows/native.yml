@@ -6,6 +6,16 @@ name: Ilova (Capacitor)
 
 on:
   workflow_dispatch:
+    inputs:
+      # audio.yml after the day's recording: the new APK also goes to the admin's chat with @TurkceYolBot
+      notify:
+        description: "APK ni Telegram botga yuborish (TELEGRAM_ADMIN_ID)"
+        type: boolean
+        default: false
+      note:
+        description: "Telegram xabaridagi izoh (nima yangi)"
+        type: string
+        default: ""
   push:
     branches: [main]
     paths:
@@ -98,3 +108,16 @@ jobs:
           gh release create ilova-latest out/turkce-yol-ilova.apk out/turkce-yol-ilova.aab --prerelease --target "$GITHUB_SHA" \
             --title "Türkçe Yoʻl — mustaqil ilova (sinov, $((1000 + GITHUB_RUN_NUMBER)))" \
             --notes "Brauzerga bog'liq bo'lmagan ilova (Capacitor). APK — telefonga o'rnatib sinash uchun (eski ilova ustiga yangilanadi). AAB — Google Play Console'ga yuklash uchun."
+      # The phone gets the new version in Telegram (private chat with the bot, not the channel). A failed send does not
+      # undo the release — the APK is on GitHub anyway
+      - name: Telegram botga yuborish
+        if: steps.key.outputs.ok == '1' && inputs.notify
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_ID: ${{ secrets.TELEGRAM_ADMIN_ID }}
+          APK_NOTE: ${{ inputs.note }}
+          APK_URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/ilova-latest
+        run: |
+          export APK_VERSION=$((1000 + GITHUB_RUN_NUMBER))
+          node tools/telegram-apk.js out/turkce-yol-ilova.apk

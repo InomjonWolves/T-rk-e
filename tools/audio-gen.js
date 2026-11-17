@@ -247,7 +247,7 @@ async function run(key) {
   fs.writeFileSync(DONE, [...done].filter(([k]) => want.has(k)).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k} ${v}`).join("\n") + "\n");
   console.log(`Yozildi: ${made} ta gap (${reqs} ta soʻrov), oʻtkazildi: ${skipped}, oʻchirildi: ${removed}, jami audio: ${have.length}/${want.size}, qoldi: ${left}${stop ? ` (toʻxtadi: ${stop})` : ""}`);
   // The next run today only when this one stopped for time and moved forward; the day's quota waits for tomorrow
-  if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `left=${stop === "vaqt" && made ? left : 0}\n`);
+  if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `left=${stop === "vaqt" && made ? left : 0}\nmade=${made}\nrest=${left}\n`);
 }
 async function main() {
   const key = (process.env.GEMINI_API_KEY || "").trim();

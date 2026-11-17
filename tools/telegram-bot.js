@@ -6,6 +6,7 @@
 //   /test   — one quiz question (a Telegram quiz poll, from tools/quiz.js)
 //   /kurs   — course and grammar links
 //   /yordam — what the bot can do
+//   /id     — the chat's Telegram ID (for the TELEGRAM_ADMIN_ID secret: new app builds are sent to that chat)
 //   any word (Turkish or Uzbek) — its translation from the site's dictionary
 // Needs TELEGRAM_BOT_TOKEN. Try a reply locally: node tools/telegram-bot.js "kitap"
 const { word, content, api, esc, SITE, CHANNEL } = require("./telegram.js");
@@ -33,7 +34,7 @@ function lookup(q) {
 const openApp = { text: "📱 Ilovani ochish", web_app: { url: SITE } };
 const channel = { text: "📢 Kanal", url: CHANNEL };
 // The reply to one message: { text, reply_markup }
-function reply(text, date = new Date()) {
+function reply(text, date = new Date(), chat = 0) {
   const t = String(text || "").trim(), cmd = (/^\/([a-z_]+)/i.exec(t) || [])[1];
   const c = cmd && cmd.toLowerCase();
   if (c === "start") return {
@@ -52,6 +53,9 @@ function reply(text, date = new Date()) {
     text: "📚 <b>Turk tili kursi A1–C1</b> — 40 bo'lim, lug'at, grammatika, dialog va mashqlar.\n\nKurs: " + SITE + "kurs/\nGrammatika: " + SITE + "qoida/\nO'qish matnlari: " + SITE + "oqish/",
     reply_markup: { inline_keyboard: [[openApp]] }
   };
+  if (c === "id") return {
+    text: chat ? `Sizning Telegram ID raqamingiz: <code>${+chat}</code>\n\nIlovaning yangi versiyasini shu chatga olish uchun uni GitHub'da <b>TELEGRAM_ADMIN_ID</b> secret'iga yozing.` : "ID faqat shaxsiy chatda koʻrinadi."
+  };
   if (c === "yordam" || c === "help") return {
     text: "Men nima qila olaman:\n\n/start — ilovani ochish\n/soz — kunning so'zi\n/test — viktorina savoli\n/kurs — kurs va grammatika\n\nYoki shunchaki so'z yozing: <i>kitap</i>, <i>salom</i>, <i>çalışmak</i> — tarjimasini topaman.",
     reply_markup: { inline_keyboard: [[openApp], [channel]] }
@@ -69,7 +73,7 @@ function reply(text, date = new Date()) {
 function handle(u, now = Date.now()) {
   const m = u && u.message;
   if (!m || !m.chat || m.chat.type !== "private" || !m.text || now / 1000 - m.date > 86400) return null;
-  const r = reply(m.text, new Date(now));
+  const r = reply(m.text, new Date(now), m.chat.id);
   if (r.poll) return Object.assign({ method: "sendPoll" }, require("./quiz.js").pollBody(m.chat.id, r.poll));
   return Object.assign({ method: "sendMessage", chat_id: m.chat.id, parse_mode: "HTML", disable_web_page_preview: true }, r);
 }

@@ -159,3 +159,45 @@ test("schedules: an outside scheduler may start the daily post; a second automat
   // Every workflow says which permissions its token gets
   for (const f of fs.readdirSync(path.join(ROOT, ".github/workflows"))) assert.match(fs.readFileSync(path.join(ROOT, ".github/workflows", f), "utf8"), /^permissions:/m, f);
 });
+
+test("new app builds go to the admin's chat with the bot: /id, the caption, the send and the workflow wiring", async () => {
+  const now = Date.UTC(2026, 10, 17, 10);
+  const id = handle({ update_id: 7, message: { message_id: 1, date: now / 1000 - 5, chat: { id: 123456789, type: "private" }, text: "/id" } }, now);
+  assert.equal(id.method, "sendMessage");
+  assert.match(id.text, /<code>123456789<\/code>/);
+  assert.match(id.text, /TELEGRAM_ADMIN_ID/);
+  const { caption, send, versionName } = require("../tools/telegram-apk.js");
+  assert.match(versionName(), /^\d+\.\d+\.\d+$/);
+  const c = caption({ name: "2.2.0", code: "1031", bytes: 7 * 1048576, note: "Yangi ovozli yozuvlar: 40 ta gap <b>", url: "https://github.com/x/releases/tag/ilova-latest", date: new Date(now) });
+  assert.match(c, /Versiya: 2\.2\.0 \(1031\)/);
+  assert.match(c, /Sana: 17\.11\.2026 · 7\.0 MB/);
+  assert.match(c, /40 ta gap &lt;b&gt;/, "the note is escaped");
+  assert.ok(c.length <= 1024);
+  assert.ok(!/turkceyoluz/.test(c), "never the channel");
+  // No secrets → nothing is sent, the build does not fail
+  const apk = path.join(require("os").tmpdir(), "ty-test.apk");
+  fs.writeFileSync(apk, Buffer.alloc(1000, 1));
+  assert.equal(await send(apk, {}), false);
+  await assert.rejects(send(apk, { TELEGRAM_BOT_TOKEN: "1:a", TELEGRAM_ADMIN_ID: "@me" }), /raqam/);
+  // With them: one sendDocument to that chat, the file attached
+  const real = global.fetch, calls = [];
+  global.fetch = async (url, o) => { calls.push({ url, form: o.body }); return { json: async () => ({ ok: true, result: { message_id: 9 } }) }; };
+  try { assert.equal(await send(apk, { TELEGRAM_BOT_TOKEN: "1:a", TELEGRAM_ADMIN_ID: "123456789", APK_VERSION: "1031", APK_NOTE: "x" }), true); }
+  finally { global.fetch = real; fs.unlinkSync(apk); }
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].url, /bot1:a\/sendDocument$/);
+  assert.equal(calls[0].form.get("chat_id"), "123456789");
+  assert.equal(calls[0].form.get("document").size, 1000);
+  assert.match(calls[0].form.get("caption"), /\(1031\)/);
+  // native.yml sends only when asked (input notify), after the release, and a failed send keeps the build green;
+  // audio.yml asks for it after the day's recording
+  const nw = fs.readFileSync(path.join(ROOT, ".github/workflows/native.yml"), "utf8");
+  assert.match(nw, /notify:\s*\n\s*description:[^\n]*\n\s*type: boolean/);
+  assert.match(nw, /inputs\.notify/);
+  assert.match(nw, /TELEGRAM_ADMIN_ID: \$\{\{ secrets\.TELEGRAM_ADMIN_ID \}\}/);
+  assert.ok(nw.indexOf("node tools/telegram-apk.js") > nw.indexOf("gh release create ilova-latest"));
+  assert.match(nw.slice(nw.indexOf("Telegram botga yuborish")), /continue-on-error: true/);
+  const au = fs.readFileSync(path.join(ROOT, ".github/workflows/audio.yml"), "utf8");
+  assert.match(au, /gh workflow run native\.yml --ref main -f notify=true -f note="\$NOTE"/);
+  assert.match(au, /steps\.gen\.outputs\.made/);
+});
