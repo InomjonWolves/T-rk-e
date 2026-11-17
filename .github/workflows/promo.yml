@@ -1,0 +1,24 @@
+# Advertising banners (promo/, drawn by `node tools/promo.js`) with their post texts → the admin's private chat with
+# @TurkceYolBot (secret TELEGRAM_ADMIN_ID), ready to forward to channels and groups. By hand only.
+name: Reklama bannerlari (Telegram)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Bannerlarni botga yuborish
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_ID: ${{ secrets.TELEGRAM_ADMIN_ID }}
+        run: node tools/telegram-promo.js

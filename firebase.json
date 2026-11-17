@@ -19,7 +19,8 @@
       "*.md",
       "firestore.rules",
       "tools/**",
-      "bot/**"
+      "bot/**",
+      "promo/**"
     ],
     "headers": [
       {

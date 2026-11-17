@@ -27,29 +27,34 @@ function caption({ name = "", code = "", bytes = 0, note = "", url = "", date = 
   ];
   return lines.filter(Boolean).join("\n").slice(0, 1024);
 }
+// One Bot API call with a file (multipart); a dropped connection is retried. «chat not found» — the admin has not
+// pressed /start in the bot yet
+async function upload(token, method, fields, field, buf, name, type) {
+  const form = new FormData();
+  for (const [k, v] of Object.entries(fields)) form.append(k, String(v));
+  form.append(field, new Blob([buf], { type }), name);
+  let r;
+  for (let i = 0; ; i++) {
+    try { r = await fetch(`https://api.telegram.org/bot${token}/${method}`, { method: "POST", body: form }); break; }
+    catch (e) { if (i >= 3) throw e; await new Promise(res => setTimeout(res, 3000 * (i + 1))); }
+  }
+  const j = await r.json();
+  if (!j.ok) throw new Error(`${method}: ${j.description}${/chat not found|blocked/i.test(j.description || "") ? " — botda /start bosing" : ""}`);
+  return j.result;
+}
 async function send(file, env = process.env) {
   const token = (env.TELEGRAM_BOT_TOKEN || "").trim(), chat = (env.TELEGRAM_ADMIN_ID || "").trim();
   if (!token || !chat) { console.log("TELEGRAM_BOT_TOKEN yoki TELEGRAM_ADMIN_ID yoʻq — APK Telegramga yuborilmadi"); return false; }
   if (!/^-?\d+$/.test(chat)) throw new Error("TELEGRAM_ADMIN_ID — faqat raqam boʻlishi kerak (botga /id yozing)");
   const buf = fs.readFileSync(file);
   if (buf.length > MAX_MB * 1048576) throw new Error(`APK ${MAX_MB} MB dan katta — bot yubora olmaydi`);
-  const form = new FormData();
-  form.append("chat_id", chat);
-  form.append("parse_mode", "HTML");
-  form.append("caption", caption({ name: versionName(), code: env.APK_VERSION, bytes: buf.length, note: env.APK_NOTE, url: env.APK_URL }));
-  form.append("document", new Blob([buf], { type: "application/vnd.android.package-archive" }), path.basename(file));
-  let r;
-  for (let i = 0; ; i++) {
-    try { r = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, { method: "POST", body: form }); break; }
-    catch (e) { if (i >= 3) throw e; await new Promise(res => setTimeout(res, 3000 * (i + 1))); }
-  }
-  const j = await r.json();
-  // «chat not found» — the admin has not pressed /start in the bot yet
-  if (!j.ok) throw new Error(`sendDocument: ${j.description}${/chat not found|blocked/i.test(j.description || "") ? " — botda /start bosing" : ""}`);
-  console.log("APK Telegramga yuborildi:", j.result.message_id);
+  const r = await upload(token, "sendDocument", { chat_id: chat, parse_mode: "HTML",
+    caption: caption({ name: versionName(), code: env.APK_VERSION, bytes: buf.length, note: env.APK_NOTE, url: env.APK_URL }) },
+    "document", buf, path.basename(file), "application/vnd.android.package-archive");
+  console.log("APK Telegramga yuborildi:", r.message_id);
   return true;
 }
-module.exports = { caption, send, versionName };
+module.exports = { caption, send, versionName, upload };
 if (require.main === module) {
   const file = process.argv[2];
   if (!file) { console.error("APK fayli koʻrsatilmagan"); process.exit(1); }

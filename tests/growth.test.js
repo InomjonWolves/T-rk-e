@@ -201,3 +201,31 @@ test("new app builds go to the admin's chat with the bot: /id, the caption, the 
   assert.match(au, /gh workflow run native\.yml --ref main -f notify=true -f note="\$NOTE"/);
   assert.match(au, /steps\.gen\.outputs\.made/);
 });
+
+test("advertising banners: pictures and post texts are ready for Telegram and go to the admin's chat", async () => {
+  const { posts, send } = require("../tools/telegram-promo.js");
+  const ps = posts(), sizes = { "01-asosiy.jpg": [1280, 720], "02-imkoniyatlar.jpg": [1080, 1080], "03-lenta.jpg": [1080, 1350], "04-story.jpg": [1080, 1920] };
+  assert.deepEqual(ps.map(p => p.file), Object.keys(sizes));
+  for (const p of ps) {
+    const buf = fs.readFileSync(path.join(ROOT, "promo", p.file));
+    // JPEG size from the SOF0 marker
+    let i = 2; while (i < buf.length && !(buf[i] === 0xff && (buf[i + 1] === 0xc0 || buf[i + 1] === 0xc2))) i += 2 + buf.readUInt16BE(i + 2);
+    assert.deepEqual([buf.readUInt16BE(i + 7), buf.readUInt16BE(i + 5)], sizes[p.file], p.file);
+    assert.ok(p.caption.replace(/<[^>]+>/g, "").length <= 1024, p.file);
+    assert.ok((p.caption.match(/<\/?[a-z]+>/g) || []).every(t => /^<\/?[bi]>$/.test(t)), p.file);
+    assert.match(p.caption, /turkceyol\.web\.app/);
+    assert.doesNotMatch(p.caption, /\bTYS\b|github|firebaseapp/i);
+    assert.doesNotMatch(p.caption, /[a-z]'[a-z]/i, "Uzbek apostrophes: ʻ ʼ");
+  }
+  assert.equal(await send({}), 0, "no secrets → nothing is sent");
+  const real = global.fetch, calls = [];
+  global.fetch = async (url, o) => { calls.push({ url, form: o.body }); return { json: async () => ({ ok: true, result: { message_id: calls.length } }) }; };
+  try { assert.equal(await send({ TELEGRAM_BOT_TOKEN: "1:a", TELEGRAM_ADMIN_ID: "77" }), 4); } finally { global.fetch = real; }
+  assert.equal(calls.filter(c => /sendPhoto$/.test(c.url)).length, 4);
+  assert.equal(calls.filter(c => /sendDocument$/.test(c.url)).length, 1, "the story also as a full-size file");
+  assert.ok(calls.every(c => c.form.get("chat_id") === "77"));
+  const wf = fs.readFileSync(path.join(ROOT, ".github/workflows/promo.yml"), "utf8");
+  assert.match(wf, /workflow_dispatch/); assert.doesNotMatch(wf, /\bpush:/);
+  assert.match(wf, /node tools\/telegram-promo\.js/);
+  assert.ok(JSON.parse(fs.readFileSync(path.join(ROOT, "firebase.json"), "utf8")).hosting.ignore.includes("promo/**"), "not on the site");
+});

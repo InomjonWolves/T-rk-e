@@ -128,4 +128,4 @@ if (require.main === module) (async () => {
   await browser.close();
   console.log("feature-1024x500.jpg, icon-512.png");
 })();
-module.exports = { SHOTS };
+module.exports = { SHOTS, appShot, demoState, BG, font };
