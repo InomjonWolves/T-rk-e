@@ -103,6 +103,7 @@ test("audio: the text list covers every word, dialogs and readings; site config 
   assert.ok(fb.hosting.headers.some(h => h.source === "audio/**/*.mp3" && /max-age=2592000/.test(h.headers[0].value)));
   const wf = fs.readFileSync(path.join(ROOT, ".github/workflows/audio.yml"), "utf8");
   for (const re of [/GEMINI_API_KEY/, /node tools\/audio-gen\.js/, /gh workflow run firebase-hosting\.yml/, /gh workflow run audio\.yml/, /schedule:\s*\n\s*- cron:/, /ffmpeg/]) assert.match(wf, re);
+  assert.ok((wf.match(/- cron: "/g) || []).length >= 3, "spare scheduled runs (GitHub can start one late or skip it)");
   assert.doesNotMatch(wf, /edge-tts|AZURE_|GOOGLE_TTS/, "only the official key-based service");
   const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, "tools/audio-voice.json"), "utf8"));
   assert.equal(cfg.provider, "gemini");

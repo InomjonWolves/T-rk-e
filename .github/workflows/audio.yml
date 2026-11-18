@@ -22,8 +22,12 @@ on:
       - "hikoya.js"
   workflow_dispatch:
   # Every day after the free tier's daily reset (midnight Pacific time)
+  # GitHub may start a scheduled run hours late or skip it: two spare times the same day. A run that finds the
+  # day's quota used up records nothing, commits nothing and builds no app
   schedule:
     - cron: "23 9 * * *"
+    - cron: "43 13 * * *"
+    - cron: "13 18 * * *"
 
 concurrency:
   group: audio
