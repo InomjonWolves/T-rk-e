@@ -110,6 +110,35 @@ const okLen = (sec, chars) => sec >= 0.6 * expLen(chars) && sec <= 2.4 * expLen(
    pause inside, which alone looks like a break). Among the pauses, the cut points are chosen together (dynamic
    programming) so that every piece is close to its share of the speech by its letters and sits on a pause as long as
    possible; then every piece must match its share and its expected length. */
+// Some TTS models read our English instruction aloud before the Turkish lines (2026-11-18: «Say the following in
+// Turkish…», ~6 s, then the line). When the recording is much longer than the lines need and the plain split fails,
+// a lead-in of at least 2.5 s up to the longest clear pause in the first 14 s is dropped and the split tried again.
+function splitClean(pcm, rate, n, lens, why) {
+  const first = [], parts = splitPcm(pcm, rate, n, lens, first);
+  if (parts) return parts;
+  const f = rmsFrames(pcm, rate), bytes = Math.floor(rate * FRAME) * 2;
+  const sorted = f.slice().sort((a, b) => a - b), floor = sorted[Math.floor(sorted.length * 0.1)], peak = sorted[Math.floor(sorted.length * 0.95)];
+  const thr = Math.max(150, floor + 0.1 * (peak - floor)), loud = f.map(x => x >= thr);
+  const total = loud.filter(Boolean).length * FRAME, need = lens.reduce((a, c) => a + expLen(c), 0);
+  if (total > 1.3 * need) {
+    // The end of the read-aloud instruction: the longest clear pause in the window (not the first one — the
+    // instruction has short breaths inside, and a later pause may be inside the Turkish line)
+    const start = loud.indexOf(true), maxF = Math.min(f.length, Math.round(14 / FRAME));
+    let best = null;
+    for (let i = start + Math.round(2.5 / FRAME); i < maxF; i++) {
+      if (loud[i]) continue;
+      let j = i; while (j < f.length && !loud[j]) j++;
+      if (j - i >= Math.round(0.4 / FRAME) && (!best || j - i > best[1] - best[0])) best = [i, j];
+      i = j;
+    }
+    if (best) {
+      const cut = best[0] + Math.floor((best[1] - best[0]) / 2), rest = splitPcm(pcm.subarray(cut * bytes), rate, n, lens, []);
+      if (rest && rest.every((q, k) => q.length / 2 / rate <= 1.8 * expLen(lens[k]) + 0.3)) { if (why) why.push(`kirish (${(cut * FRAME).toFixed(1)} s) olib tashlandi`); return rest; }
+    }
+  }
+  if (why) why.push(...first);
+  return null;
+}
 function splitPcm(pcm, rate, n, lens, why) {
   const f = rmsFrames(pcm, rate), bytes = Math.floor(rate * FRAME) * 2, fail = m => { if (why) why.push(m); return null; };
   if (!f.length) return fail("boʻsh");
@@ -215,7 +244,7 @@ async function run(key) {
     const text = job.multi ? `${P_DLG}\n\n${job.lines.map(l => `${label(l.who)}: ${l.text}`).join("\n")}` : n === 1 ? `${P_ONE}\n${job.lines[0].text}` : `${P_LIST}\n\n${job.lines.map(l => l.text).join("\n")}`;
     try {
       const r = await gen(key, models, gBody(text, job.multi || job.voice)); reqs++;
-      const why = [], parts = splitPcm(r.pcm, r.rate, n, job.lines.map(l => l.text.length), why);
+      const why = [], parts = splitClean(r.pcm, r.rate, n, job.lines.map(l => l.text.length), why);
       if (!parts) {
         console.log(`Boʻlinmadi (${n} gap, ${r.model}): ${why.join("; ")} — «${job.lines[0].text.slice(0, 40)}»`);
         if (DEBUG && dbg < 12) { fs.mkdirSync(DEBUG, { recursive: true }); fs.writeFileSync(path.join(DEBUG, `${++dbg}.pcm`), r.pcm); fs.appendFileSync(path.join(DEBUG, "index.txt"), `${dbg}.pcm ${r.rate} ${n} ${why.join("; ")} | ${job.lines.map(l => l.text).join(" | ")}\n`); }
@@ -258,5 +287,5 @@ async function main() {
   if (!key) { console.log("GEMINI_API_KEY yoʻq — audio oʻzgarmadi"); return; }
   await run(key);
 }
-module.exports = { audioKey, audioNorm, fileOf, gBody, splitPcm, okLen, expLen, groupVoices, label, plan, jobsOf };
+module.exports = { audioKey, audioNorm, fileOf, gBody, splitPcm, splitClean, okLen, expLen, groupVoices, label, plan, jobsOf };
 if (require.main === module) main().catch(e => { console.error(e.message); process.exit(1); });

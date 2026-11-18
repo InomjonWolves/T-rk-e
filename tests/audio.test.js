@@ -131,6 +131,13 @@ test("audio: the text list covers every word, dialogs and readings; site config 
   const two = Buffer.concat([sil(0.3), tone(gen.expLen(19)), sil(0.6), tone(gen.expLen(22)), sil(0.9), tone(gen.expLen(26)), sil(0.45), tone(gen.expLen(15)), sil(0.3)]);
   const p3 = gen.splitPcm(two, rate, 3, [42, 26, 15]);
   assert.ok(p3 && p3[0].length / 2 / rate > 4.5 && p3[2].length / 2 / rate < 2.2, "the first line keeps both of its sentences");
+  // A model that reads the English instruction aloud first (~6 s, then a long pause, then the line): the lead-in is dropped
+  const lead = Buffer.concat([sil(0.1), tone(2.5), sil(0.3), tone(3.2), sil(1.2), tone(gen.expLen(31)), sil(0.3)]);
+  assert.equal(gen.splitPcm(lead, rate, 1, [31]), null, "too long as it is");
+  const w2 = [], kept = gen.splitClean(lead, rate, 1, [31], w2);
+  assert.ok(kept && Math.abs(kept[0].length / 2 / rate - gen.expLen(31)) < 0.6, "only the Turkish line is kept");
+  assert.match(w2.join(), /kirish/);
+  assert.equal(gen.splitClean(Buffer.concat([sil(0.2), tone(9), sil(0.3)]), rate, 1, [31]), null, "no clear pause — nothing to keep");
 });
 
 test("app audio: a recording comes from the site when played, is kept, plays again without the network; next words fetched ahead", async () => {
