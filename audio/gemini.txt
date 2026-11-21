@@ -52,6 +52,7 @@
 0jft8m09fhk Puck
 0jh46jg3tt6 Zephyr
 0jtfow0d4ns Kore
+0kdij653j2a Leda
 0kk51sdfrcu Gacrux
 0lngrugjbc8 Kore
 0lzqofx9mpf Sadaltager
@@ -160,6 +161,7 @@
 1skbf12ynsw Puck
 1t4jknxr1mj Kore
 1tiox7gvxdn Puck
+1tjo6omx0in Charon
 1trj8qqnswa Umbriel
 1ts0f1s43v8 Leda
 1ts2978ualu Puck
