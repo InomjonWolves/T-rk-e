@@ -1,0 +1,1 @@
+1.pcm 24000 8 2-gap uzunligi: 0.9 s, kutilgan 1.9 s | Ödev yapıyorum. Sen ne yapıyorsun? | Yemek pişiriyorum. | Sen mi? Ne pişiriyorsun? | Pilav pişiriyorum ama çok yavaş oluyor. | Annem gülüyor! O da seni dinliyor. | Babam ne yapıyor? | Bahçede çalışıyor. Orada hava nasıl? | Burada yağmur yağıyor. Sizde?
