@@ -8,6 +8,7 @@
 03zrrayylp3 Leda
 04ykfutw6i9 Achird
 05dzmbeegty Charon
+05s94yy8kmn Puck
 05v8wc8pqxv Leda
 062hq3d0g8c Puck
 06cscahenkn Achird
@@ -31,6 +32,8 @@
 0bngwerejts Sadaltager
 0bqpwhboltx Puck
 0byln9hcyhq Umbriel
+0cgn4jl89yf Puck
+0clvq4f9ex4 Laomedeia
 0clyzqw7xyp Leda
 0cwpbla7nh6 Gacrux
 0d618hprsif Leda
@@ -56,15 +59,18 @@
 0j4ryzmsxcr Erinome
 0jft8m09fhk Puck
 0jh46jg3tt6 Zephyr
+0jh7txvk7pr Zephyr
 0jtfow0d4ns Kore
 0kdij653j2a Leda
 0khvykdwrki Achird
 0kk51sdfrcu Gacrux
 0km8sop7an9 Aoede
 0lngrugjbc8 Kore
+0lzek4pv0u9 Zephyr
 0lzqofx9mpf Sadaltager
 0m4dnq6biad Zephyr
 0mi5j3qgp61 Sadaltager
+0mwyht3lxz4 Zephyr
 0n6jyjstyq0 Charon
 0nc0exvzxzc Puck
 0nkzkr3ukzo Leda
@@ -238,6 +244,7 @@
 2a817drm1sx Achird
 2afvtkfdpq8 Charon
 2ak6fny6loi Zephyr
+2ay6fp7h19g Zephyr
 2b01ugwvfu9 Leda
 2b05rlv78vz Kore
 2b36519og5o Laomedeia
@@ -247,6 +254,7 @@
 2c5duo08p9p Leda
 2cbh9re1ns7 Rasalgethi
 2cq31ltota0 Puck
+2dgv1uc2ium Laomedeia
 2dgyo8ascn6 Kore
 2dq6tl51bgo Zephyr
 2dqrpt74y8o Leda
