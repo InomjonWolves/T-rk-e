@@ -10,11 +10,13 @@
 05dzmbeegty Charon
 05s94yy8kmn Puck
 05v8wc8pqxv Leda
+05ya5fzr6zw Zephyr
 062hq3d0g8c Puck
 06cscahenkn Achird
 06d56mm7b36 Leda
 07e26hsos3e Aoede
 07mdzf02yzc Erinome
+07oekre6t63 Laomedeia
 07yvrf55mgw Puck
 08fuqxop5s5 Erinome
 08heduggnsd Kore
@@ -63,6 +65,7 @@
 0jh7txvk7pr Zephyr
 0jtfow0d4ns Kore
 0kdij653j2a Leda
+0keve6hqkvs Laomedeia
 0khvykdwrki Achird
 0kk51sdfrcu Gacrux
 0km8sop7an9 Aoede
@@ -106,10 +109,13 @@
 0wq64cm5ov6 Charon
 0wx343u7kfb Leda
 0xdg7kt50nj Charon
+0xdhdmu50ye Zephyr
 0xsjsjuigdy Kore
 0xw1zvo1o31 Zephyr
+0y9s5oaenw7 Achird
 0yicmhkzpo7 Gacrux
 0ysh6vkkpau Leda
+0yv2t4xqij9 Zephyr
 0z3ccybfwg2 Erinome
 0zheklw4jzz Puck
 0zkattxckhh Pulcherrima
@@ -151,12 +157,14 @@
 19odhf2fg4l Achird
 19uq3pudi63 Zephyr
 1a6he9tz6e7 Charon
+1a9ju8zgtu2 Algieba
 1ahtolvvh2i Kore
 1az20c5zrh4 Puck
 1bt8ixg5b19 Leda
 1ej4k2j7ilh Achird
 1ejprpfffh7 Leda
 1enjrksvogr Leda
+1fr1017xz6i Achird
 1fuwec9rsym Leda
 1ge3y3m78z3 Leda
 1gx594raumv Leda
@@ -182,6 +190,7 @@
 1lwspcfke7k Achird
 1mfq1ebp4ea Achird
 1mxyx7obzpz Erinome
+1n25rlz9u2o Algieba
 1n3evhsevyw Zephyr
 1n6xbhjqygw Leda
 1nohyaim5s0 Puck
@@ -199,6 +208,7 @@
 1qvrufmo3qr Kore
 1rypnriaf5i Achird
 1s25645062k Puck
+1s4e5zoh95a Zephyr
 1skbf12ynsw Puck
 1t4jknxr1mj Kore
 1tiox7gvxdn Puck
@@ -210,6 +220,7 @@
 1u5jgy3909x Aoede
 1uukowuoril Leda
 1v1f0kei60q Leda
+1v55fxl7t2l Leda
 1v8vcpfyjay Aoede
 1vahwubc5ox Achird
 1vig8j109nw Leda
@@ -220,9 +231,11 @@
 1wnnucebcqj Rasalgethi
 1wpx6kevtvr Rasalgethi
 1wykl4v9deh Erinome
+1x2cpjr0dt5 Laomedeia
 1xs5764pytw Puck
 1ydkzfc6346 Erinome
 1ygxqv07c66 Erinome
+1yjuxeh4p06 Laomedeia
 1yq2nr1yvnt Kore
 1z0e0uys8em Achird
 1z3kh9fjbej Kore
@@ -248,6 +261,7 @@
 25ig4cov3jb Zephyr
 25vlwvmuif9 Leda
 264mydawgl9 Gacrux
+26lhm4h0tyb Laomedeia
 2786enxw1vi Kore
 278iz2jluak Kore
 27h9gynrsuu Puck
@@ -258,9 +272,13 @@
 29uj7r5hz77 Leda
 29uw3ys9m3o Achird
 29xy0zgt3mj Leda
+2a0yt4ifcns Algieba
+2a41diqdkio Zephyr
 2a817drm1sx Achird
 2afvtkfdpq8 Charon
 2ak6fny6loi Zephyr
+2albdzhs69c Leda
+2ao9q95i7xd Achird
 2ay6fp7h19g Zephyr
 2b01ugwvfu9 Leda
 2b05rlv78vz Kore
@@ -271,6 +289,7 @@
 2bv2lqsbf4p Puck
 2c5duo08p9p Leda
 2cbh9re1ns7 Rasalgethi
+2co4mn9zo4z Laomedeia
 2cq31ltota0 Puck
 2da28reigxl Orus
 2dgv1uc2ium Laomedeia
