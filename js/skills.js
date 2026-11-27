@@ -198,9 +198,9 @@ function wrCheck(text, task) {
   const t = text.trim(), low = " " + t.toLocaleLowerCase("tr") + " ";
   const words = t.split(/\s+/).filter(w => /[a-zçğıöşüA-ZÇĞİÖŞÜ]/.test(w)), wc = words.length;
   const sents = t.replace(/([.!?…])\s+/g, "$1\n").split(/\n+/).map(x => x.trim()).filter(x => /[a-zçğıöşü]/i.test(x)), sc = sents.length;
-  const tgt = wrTarget(task.e.title), have = tgt.unit === "soʻz" ? wc : sc;
+  const tgt = task.tgt || wrTarget(task.e.title), have = tgt.unit === "soʻz" ? wc : sc;
   const vol = Math.min(1, have / tgt.min);
-  const goals = (WT[task.u.id] || []).map(([label, re]) => ({ label, ok: re.test(low) }));
+  const goals = (task.goals || WT[task.u.id] || []).map(([label, re]) => ({ label, ok: re.test(low) }));
   const gScore = goals.length ? goals.filter(g => g.ok).length / goals.length : 1;
   const conns = WR_CONN.filter(c => new RegExp(`(^|[^a-zçğıöşü])${c}([^a-zçğıöşü]|$)`).test(low));
   const needC = task.u.level === "A1" ? 2 : task.u.level === "A2" ? 3 : 4;
@@ -227,12 +227,12 @@ function wrCheck(text, task) {
   return { score, wc, sc, tgt, have, goals, conns, needC, spell, lowerStart, noEnd, reps };
 }
 const WR_RES = {};
-function wrResultHtml(r) {
+function wrResultHtml(r, goalsTitle = "Mavzu grammatikasi") {
   const row = (ok, title, body) => `<div class="wr-row"><span class="state ${ok ? "done" : "warn"}">${ok ? ICON.check : "!"}</span><div><b>${title}</b><div class="sub">${body}</div></div></div>`;
   const verdict = r.score >= 85 ? "Ajoyib yozilgan!" : r.score >= 70 ? "Yaxshi! Kichik kamchiliklar bor." : r.score >= 50 ? "Yomon emas, lekin toʻldirish kerak." : "Hali qisqa yoki talablarga mos emas.";
   return `<div class="wr-head">${pctRing(r.score / 100)}<div><b>${verdict}</b><div class="sub">${r.wc} ta soʻz · ${r.sc} ta gap</div></div></div>
     ${row(r.have >= r.tgt.min, "Hajm", `${r.have} ${r.tgt.unit} (talab: ${r.tgt.min}–${r.tgt.max} ${r.tgt.unit})${r.have > r.tgt.max * 1.5 ? " — juda uzun, qisqartiring" : ""}`)}
-    ${r.goals.length ? row(r.goals.every(g => g.ok), "Mavzu grammatikasi", r.goals.map(g => `${g.ok ? "✔" : "✘"} ${esc(g.label)}`).join("<br>")) : ""}
+    ${r.goals.length ? row(r.goals.every(g => g.ok), goalsTitle, r.goals.map(g => `${g.ok ? "✔" : "✘"} ${esc(g.label)}`).join("<br>")) : ""}
     ${row(r.conns.length >= r.needC, "Bogʻlovchilar", r.conns.length ? `Ishlatilgan: <span lang="tr">${r.conns.map(esc).join(", ")}</span>${r.conns.length < r.needC ? `. Yana qoʻshing: ayrıca, örneğin, bu yüzden, sonuç olarak…` : ""}` : "Gaplarni bogʻlang: ve, ama, çünkü, sonra, bu yüzden…")}
     ${row(!r.spell.length, "Imlo va turkcha harflar", r.spell.length ? r.spell.slice(0, 8).map(s => s.fix ? `<span lang="tr">${esc(s.w)} → <b>${esc(s.fix)}</b></span>${s.kind ? ` <small class="muted">(${esc(s.why)})</small>` : ""}` : `<span lang="tr">${esc(s.w)}</span> — ${esc(s.why)}`).join("<br>") : "Xato topilmadi")}
     ${row(!r.lowerStart && !r.noEnd, "Tinish belgilari", !r.lowerStart && !r.noEnd ? "Gaplar katta harf bilan boshlanib, nuqta bilan tugagan" : [r.lowerStart ? `${r.lowerStart} ta gap kichik harf bilan boshlangan` : "", r.noEnd ? "matn oxirida nuqta yoʻq" : ""].filter(Boolean).join(", "))}

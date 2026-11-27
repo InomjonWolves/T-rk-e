@@ -46,6 +46,8 @@ function routeNow() {
   else if (h === "rank") { html = viewRank(); after = loadRank; }
   else if (h === "oqish") { html = viewOqish(); tab = "practice"; if (!oqReady()) after = () => loadOq().then(route, () => toast("Matnlar yuklanmadi. Internetni tekshiring")); }
   else if (h === "lenta") { html = viewLenta(); tab = "lenta"; after = GRAM_FULL && typeof HK !== "undefined" ? lnMount : () => Promise.all([loadGram(), loadHk()]).then(route, () => toast("Lenta yuklanmadi. Internetni tekshiring")); }
+  else if (h === "mock") { html = viewMockList(); tab = "practice"; if (!mkReady()) after = () => loadMock().then(route, () => toast("Sinov yuklanmadi. Internetni tekshiring")); }
+  else if (/^mock-[a-z0-9]+$/.test(h)) { html = viewMock(h.slice(5)); tab = "practice"; if (!mkReady()) after = () => loadMock().then(route, () => toast("Sinov yuklanmadi. Internetni tekshiring")); }
   else if (h === "hikoya") { html = viewHikoyalar(); tab = "practice"; if (!hkReady()) after = () => loadHk().then(route, () => toast("Hikoyalar yuklanmadi. Internetni tekshiring")); }
   else if (/^hikoya-[a-z0-9]+$/.test(h)) { html = viewHikoya(h.slice(7)); tab = "practice"; if (!hkReady()) after = () => loadHk().then(route, () => toast("Hikoyalar yuklanmadi. Internetni tekshiring")); }
   else if (/^oqish-[a-z0-9]+$/.test(h)) { html = viewOqText(h.slice(6)); tab = "practice"; if (!oqReady()) after = () => loadOq().then(route, () => toast("Matnlar yuklanmadi. Internetni tekshiring")); }
@@ -56,6 +58,7 @@ function routeNow() {
   else { html = viewHome(); tab = "home"; }
   if (tab === "lessons" || tab === "practice" || tab === "library") tab = "learn";
   document.documentElement.classList.toggle("ln-open", h === "lenta");
+  document.documentElement.classList.toggle("mk-run", !!(typeof MK !== "undefined" && MK && MK.phase === "run" && h === "mock-" + MK.id));
   app.innerHTML = `<div class="view" data-v="${esc(h.replace(/[^a-z].*$/, "") || "home")}">${html}</div>`;
   document.querySelectorAll(".nav a").forEach(a => { if (a.dataset.tab === tab) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
   // A row of chips that scrolls sideways shows its chosen chip

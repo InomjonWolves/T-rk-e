@@ -1,6 +1,6 @@
 /* Türkçe Yoʻl — State and the learning engine: dates, progress (S), spaced repetition, daily activity, XP, streak freeze, reminders.
    The app is split into scripts in js/, loaded in this order by index.html (state, kirill, social, words, stories, ui,
-   pages, translate, units, achieve, session, skills, drills, lenta, events, groups, account). They share one global scope like one file:
+   pages, translate, units, achieve, session, skills, drills, lenta, exam, events, groups, account). They share one global scope like one file:
    a script may call what a later one declares only from inside a function, never while it loads (tools/app-order.js
    checks this). Data comes from content.js (UNITS) and grammar.js (LETTERS, GRAMMAR). */
 

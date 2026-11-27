@@ -13,7 +13,7 @@ const WORD = /[A-Za-zÇŞĞİÖÜçşğıöüâîûÂÎÛʻʼ]+/g;
 const TRL = /[çşğıöüâîû]|c(?!h)/, UZL = /[ʻʼqxw]|sh|ch/;
 const low = w => w.replace(/I/g, "ı").replace(/İ/g, "i").toLowerCase();
 const plainWord = w => w.length > 1 && !TRL.test(w) && !UZL.test(w);
-const SOURCES = ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js", "oqish.js", "placement.js", "hikoya.js", "morph.js", "index.html", "privacy.html"];
+const SOURCES = ["content.js", "lugat.js", "grammar.js", "grammar-ex.js", "course.js", "guide.js", "oqish.js", "placement.js", "hikoya.js", "mock.js", "morph.js", "index.html", "privacy.html"];
 
 function uzWords() {
   const files = SOURCES.concat(fs.readdirSync(path.join(ROOT, "js")).filter(f => f.endsWith(".js")).map(f => "js/" + f));

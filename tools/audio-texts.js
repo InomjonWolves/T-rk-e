@@ -12,7 +12,7 @@ async function collect() {
   const browser = await launch();
   try {
     const { page } = await openApp(browser, "#home");
-    await page.evaluate(() => Promise.all([loadCourse(), loadOq(), loadPlb(), loadHk()]));
+    await page.evaluate(() => Promise.all([loadCourse(), loadOq(), loadPlb(), loadHk(), loadMock()]));
     const r = await page.evaluate(() => {
       const out = [], seen = new Set(), groups = [];
       const add = (t, v = "a") => {
@@ -46,6 +46,14 @@ async function collect() {
         h.s.forEach(x => { const ln = Array.isArray(x) ? x : hkLineOf(x); if (ln) { add(ln[1], hkVoice(h, ln[0])); add(ln[1], "p:" + (ln[0] || "_")); g.lines.push([ln[0] || "_", audioNorm(ln[1])]); } });
         groups.unshift(g);
       });
+      // Mock exams: every listening line in its speaker's own voice only (the exam plays "p:<speaker>"); each
+      // conversation is one group, so two speakers are recorded together
+      MOCK.tests.forEach(t => t.l.parts.forEach((p, pi) => [p.audio].concat(p.qs.map(q => q.audio)).forEach((au, j) => {
+        if (!au) return;
+        const g = { id: `mk:${t.id}:${pi}:${j}`, lines: [], cast: au.cast };
+        au.lines.forEach(([who, tr]) => { add(tr, "p:" + who); g.lines.push([who, audioNorm(tr)]); });
+        groups.push(g);
+      })));
       // Placement test: listening comprehension sentences from its own bank
       Object.values(PLB).forEach(b => (b.l || []).forEach(x => add(x.t)));
       // Listening/speaking items built at run time from the course (dialog lines, oral answers)

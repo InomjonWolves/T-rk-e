@@ -484,6 +484,8 @@ function viewPractice() {
     <p>${items.length ? `${due.length} ta takrorlash va ${fresh.length} ta yangi soʻz — maʼno, yozish, tinglash va talaffuz bitta mashqda.` : "Bugungi takrorlash bajarildi. Ertaga yangi soʻzlar keladi."}</p>
   </button>
 
+  <a class="glass pad mk-entry" href="#mock"><span class="mk-entry-ico">${ICON.trophy}</span><span><b>Imtihon sinovi</b><small>Toʻliq imtihon: tinglash, oʻqish, yozish va gapirish — vaqt bilan, ball va tahlil bilan</small></span>${ICON.chev}</a>
+
   <section class="section">
     <div class="section-head"><h2>Koʻnikmalar</h2><a class="link" href="#skills">Natijalar</a></div>
     <div class="sk-grid">${SKILLS.map(sk => { const g = SK_GO[sk.id], off = sk.id === "s" && !canListen(), on = done.includes(sk), tip = adv === sk.id;

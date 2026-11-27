@@ -29,7 +29,22 @@
     "Eczacı": "Orus",
     "Antrenör": "Fenrir",
     "Kitapçı": "Algieba",
-    "Doktor": "Rasalgethi"
+    "Doktor": "Rasalgethi",
+    "Ayşe": "Despina",
+    "Can": "Schedar",
+    "Oya": "Laomedeia",
+    "Cem": "Zubenelgenubi",
+    "Ece": "Callirrhoe",
+    "Tolga": "Sadachbia",
+    "Gül": "Vindemiatrix",
+    "Kaan": "Enceladus",
+    "Spiker": "Aoede",
+    "Sunucu": "Gacrux",
+    "Mehmet Bey": "Alnilam",
+    "Selma": "Sulafat",
+    "Burak": "Iapetus",
+    "Leyla": "Erinome",
+    "Emre": "Algenib"
   },
   "female": ["Leda", "Zephyr", "Laomedeia", "Aoede", "Erinome", "Gacrux", "Sulafat", "Vindemiatrix", "Despina", "Achernar", "Autonoe", "Callirrhoe", "Pulcherrima", "Kore"],
   "male": ["Puck", "Achird", "Iapetus", "Sadaltager", "Charon", "Umbriel", "Orus", "Fenrir", "Algieba", "Rasalgethi", "Enceladus", "Algenib", "Alnilam", "Schedar", "Zubenelgenubi", "Sadachbia"]

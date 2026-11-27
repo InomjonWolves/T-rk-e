@@ -144,12 +144,14 @@ function renderBlocks(blocks) {
   }).join("");
 }
 // Lines are strings or [speaker, text]: each speaker gets a voice of their own (another voice, or another pitch)
-function speakSeq(lines) {
+// done() — once the last line has played (not when the sequence was cancelled)
+function speakSeq(lines, done) {
   ttsCancel();
   const who = [], run = ++SEQ_N;
   let i = 0;
   const next = () => {
-    if (run !== SEQ_N || i >= lines.length) return;
+    if (run !== SEQ_N) return;
+    if (i >= lines.length) { if (done) done(); return; }
     const ln = lines[i++], spk = Array.isArray(ln) ? ln[0] : "", text = audioNorm(Array.isArray(ln) ? ln[1] : ln);
     if (spk && !who.includes(spk)) who.push(spk);
     const alt = spk ? who.indexOf(spk) % 2 === 1 : false;
