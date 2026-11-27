@@ -5,9 +5,9 @@
        qism: {t — nomi, d — koʻrsatma, k: "mc" | "gap", audio?: {cast: {ism: "f"|"m"}, lines: [[ism, gap]]}, title?, text?,
               o? — hamma savolga umumiy variantlar (harf bilan: A, B…), qs: [savol]}
        mc savol: {q, o?, a — toʻgʻri variant raqami, e — izoh, audio?}; gap savol: {q — «___» joyi bilan, a — «a / b» variantlar, e}
-     w (yozish): {min, tasks: [{id, t, d, tr — topshiriq matni, min, max — soʻz, w — vazn, lv, need: [[talab, qolip]]}]}
+     w (yozish): {min, tasks: [{id, t, d, tr — topshiriq matni, min, max — soʻz, w — vazn, lv, need: [[talab, qolip]], m — namunaviy javob}]}
        qolip — soʻz boshlari: "merhaba|selam" (js/exam.js soʻz chegarasini oʻzi qoʻshadi)
-     s (gapirish): {parts: [{t, d, prep, talk — soniya, qs: [{q, cues?, pro?, con?, kw — mavzu soʻzlari qolipi}]}]}
+     s (gapirish): {parts: [{t, d, prep, talk — soniya, qs: [{q, cues?, pro?, con?, kw — mavzu soʻzlari qolipi, m — namunaviy javob}]}]}
    Ball: har boʻlim 0–75, umumiy — boʻlimlar oʻrtachasi; daraja — scale.bands (taxminiy). */
 var MOCK = {
   scale: { max: 75, bands: [["C1", 65], ["B2", 51], ["B1", 38]] },
@@ -202,6 +202,7 @@ var MOCK = {
         tasks: [
           {
             id: "1.1", t: "1.1-topshiriq · Doʻstga xat", min: 50, max: 70, w: 1, lv: "A2",
+            m: "Merhaba Selin! Şehrime geleceğine çok sevindim. Kalacak yer için eski çarşının yanındaki küçük pansiyonu öneririm; hem temiz hem de ucuz. Mutlaka sahildeki parkta yürüyüş yap ve şehir müzesini gör. Akşamları sahil çok güzel ama biraz kalabalık oluyor. Cumartesi akşamı saat yedide buluşalım mı? Seni en sevdiğim balık lokantasına götürmek istiyorum. Bir de bana hangi saatte geleceğini yaz. Görüşmek üzere, sevgiler!",
             d: "Doʻstingiz Selin sizga xat yozdi. Unga norasmiy uslubda javob yozing (50–70 soʻz).",
             tr: "Merhaba! Gelecek ay üç günlüğüne senin şehrine geliyorum. Nerede kalmalıyım, neleri görmeliyim? Bir de seninle buluşmak istiyorum, hangi gün uygun? Sevgiler, Selin\n\nSelin'e cevap yazın: kalacak bir yer önerin, görülecek bir-iki yer söyleyin ve buluşmak için gün ile saat önerin.",
             need: [
@@ -214,6 +215,7 @@ var MOCK = {
           },
           {
             id: "1.2", t: "1.2-topshiriq · Rasmiy xat", min: 120, max: 150, w: 1.5, lv: "B1",
+            m: "Sayın Yetkili,\n\n3 Mart tarihinde sitenizden 48213 numaralı siparişle bir çamaşır makinesi satın aldım. Sitede teslimat süresi üç gün olarak belirtilmişti; ancak makine iki hafta gecikmeyle, 17 Mart'ta teslim edildi. Üstelik kutuyu açtığımda makinenin kapağının çatlak olduğunu gördüm. Bu nedenle makineyi hiç kullanamadım. Müşteri hizmetlerinizi iki kez aradım, fakat sorunumla ilgilenen olmadı. Sitenizden bu kadar özensiz bir hizmet beklemiyordum, çünkü daha önce yaptığım alışverişlerde hiçbir sorun yaşamamıştım.\n\nHasarlı ürünün fotoğraflarını ekte gönderiyorum. Makineyi orijinal kutusunda sakladım, dolayısıyla geri göndermeye hazırdır. Sizden makinenin en geç bir hafta içinde yenisiyle değiştirilmesini rica ediyorum. Eğer değişim mümkün değilse, ödediğim ücretin tamamının iade edilmesini talep ediyorum. Ayrıca yaşadığım gecikme için bir açıklama bekliyorum.\n\nBana bu e-posta adresinden ya da telefonla ulaşabilirsiniz. İlginiz için şimdiden teşekkür ederim.\n\nSaygılarımla,\nDilnoza Karimova",
             d: "Internet doʻkonga rasmiy shikoyat xati yozing (120–150 soʻz).",
             tr: "Bir internet sitesinden çamaşır makinesi sipariş ettiniz. Makine iki hafta geç geldi ve kapağı çatlaktı. Şirketin müşteri hizmetlerine resmî bir e-posta yazın: sorunu anlatın, ne zaman ve ne sipariş ettiğinizi belirtin, ne istediğinizi (değişim ya da para iadesi) açıkça yazın.",
             need: [
@@ -227,6 +229,7 @@ var MOCK = {
           },
           {
             id: "2", t: "2-topshiriq · Insho", min: 180, max: 220, w: 2.5, lv: "B2",
+            m: "Çocukların yabancı dil öğrenmeye ne zaman başlaması gerektiği, ailelerin ve öğretmenlerin sık sık tartıştığı bir konudur. Bence yabancı dil eğitimi ilkokulun ilk yılında başlamalıdır; ancak bu, ana dilin ihmal edilmesi anlamına gelmemelidir.\n\nHer şeyden önce, küçük çocuklar yeni sesleri büyüklerden çok daha kolay taklit eder. Örneğin altı yaşında şarkılar ve oyunlarla İngilizce öğrenen bir çocuk, yıllar sonra bile doğal bir telaffuzla konuşabilir. Ayrıca erken yaşta başka bir dille tanışmak, çocuğun farklı kültürlere karşı merakını artırır ve dünyaya daha açık bakmasını sağlar. Üstelik dil öğrenen çocuklar problem çözmede ve dikkat gerektiren işlerde de daha başarılı olabilir.\n\nÖte yandan, ana dilini henüz iyi bilmeyen bir çocuğun iki dili karıştırabileceği de doğrudur. Bu nedenle bazı uzmanlar önce ana dilin sağlamlaştırılmasını önerir. Ne var ki araştırmalar, bu karışıklığın genellikle kısa sürdüğünü gösteriyor. Asıl önemli olan, derslerin çocuğun yaşına uygun ve eğlenceli olmasıdır. Bu yüzden derslerde oyun, şarkı ve hikâye gibi yöntemler kullanılmalıdır.\n\nSonuç olarak, yabancı dil eğitimine erken başlamanın faydaları zararlarından fazladır. Okullar ana dil derslerine de yeterli zaman ayırırsa, çocuklar iki dili de başarıyla öğrenebilir. Bunun için ailelerin de evde çocuklarıyla bol bol kitap okuması gerekir. Kısacası, iki dil birbirinin rakibi değil, tamamlayıcısıdır.",
             d: "Berilgan mavzu boʻyicha fikringizni dalillar va misollar bilan asoslab, insho yozing (180–220 soʻz).",
             tr: "Bazı insanlar, çocukların yabancı dili ilkokulun ilk yılından itibaren öğrenmesi gerektiğini düşünüyor. Bazıları ise önce ana dilin iyice öğrenilmesi gerektiğini savunuyor. Siz ne düşünüyorsunuz? Görüşünüzü gerekçeler ve örneklerle açıklayan bir kompozisyon yazın.",
             need: [
@@ -244,16 +247,20 @@ var MOCK = {
             t: "1-qism · Oʻzingiz haqingizda", prep: 5, talk: 30,
             d: "Uchta savolga javob bering. Har biriga 30 soniya vaqt bor. Toʻliq gaplar bilan, misol keltirib gapiring.",
             qs: [
-              { q: "Boş zamanlarınızda ne yapmaktan hoşlanırsınız?", kw: "hoşlan|sev|zaman|hafta sonu|kitap|spor|müzik|film|yürü|oku|arkadaş" },
-              { q: "Yaşadığınız şehri ya da köyü kısaca anlatır mısınız?", kw: "şehir|köy|yaşa|güzel|büyük|küçük|insan|sokak|park|kalabalık|sakin" },
-              { q: "Türkçe öğrenmeye neden başladınız?", kw: "türkçe|öğren|çünkü|iş|okul|üniversite|türkiye|dizi|arkadaş|seyahat" }
+              { q: "Boş zamanlarınızda ne yapmaktan hoşlanırsınız?", kw: "hoşlan|sev|zaman|hafta sonu|kitap|spor|müzik|film|yürü|oku|arkadaş",
+                m: "Boş zamanlarımda kitap okumayı ve yürüyüş yapmayı çok severim. Özellikle hafta sonları arkadaşlarımla parka gidiyoruz. Akşamları da bazen Türk dizileri izliyorum, çünkü hem eğleniyorum hem de Türkçemi geliştiriyorum." },
+              { q: "Yaşadığınız şehri ya da köyü kısaca anlatır mısınız?", kw: "şehir|köy|yaşa|güzel|büyük|küçük|insan|sokak|park|kalabalık|sakin",
+                m: "Taşkent'te yaşıyorum. Büyük ve kalabalık bir şehir ama aynı zamanda çok yeşil. Geniş caddeleri, güzel parkları ve tarihî binaları var. İnsanlar misafirperverdir. Akşamları şehir ışıklarla daha da güzel oluyor." },
+              { q: "Türkçe öğrenmeye neden başladınız?", kw: "türkçe|öğren|çünkü|iş|okul|üniversite|türkiye|dizi|arkadaş|seyahat",
+                m: "Türkçe öğrenmeye iki yıl önce başladım, çünkü Türkiye'de üniversitede okumak istiyorum. Ayrıca Türkçe ile Özbekçe birbirine çok benziyor, bu yüzden öğrenmek bana zevkli geliyor." }
             ]
           },
           {
             t: "2-qism · Voqeani aytib berish", prep: 60, talk: 120,
             d: "Bir daqiqa tayyorlaning, keyin ikki daqiqa gapiring. Quyidagi savollarga toʻxtaling.",
             qs: [
-              { q: "Hayatınızda unutamadığınız bir yolculuğu anlatın.", cues: ["Nereye ve kiminle gittiniz?", "Orada neler yaptınız?", "Bu yolculuk sizin için neden önemliydi?"], kw: "git|yolculuk|tatil|gör|arkadaş|aile|otobüs|uçak|tren|deniz|unutama|önemli" }
+              { q: "Hayatınızda unutamadığınız bir yolculuğu anlatın.", cues: ["Nereye ve kiminle gittiniz?", "Orada neler yaptınız?", "Bu yolculuk sizin için neden önemliydi?"], kw: "git|yolculuk|tatil|gör|arkadaş|aile|otobüs|uçak|tren|deniz|unutama|önemli",
+                m: "Geçen yaz ailemle birlikte Semerkant'a gittik. Taşkent'ten hızlı trenle sadece iki saatte vardık. İlk gün Registan Meydanı'nı gezdik; mavi çinileri görünce gerçekten büyülendim. Akşam meydanda bir ışık gösterisi vardı, çok kalabalıktı ama harikaydı. İkinci gün eski çarşıya gittik ve orada taze ekmekle kuru meyve aldık. Öğleden sonra Şah-ı Zinde'yi ziyaret ettik; rehberimiz bize binaların yüzyıllar önce nasıl yapıldığını anlattı. Akşam yemeğinde de meşhur Semerkant pilavını yedik. Annem bana, dedemin çocukken bu çarşıda çalıştığını anlattı. Bu yolculuk benim için çok önemliydi, çünkü hem ülkemin tarihini daha yakından tanıdım hem de ailemle uzun zamandır ilk kez birlikte vakit geçirdim. Bu yüzden o günleri hiç unutamıyorum." }
             ]
           },
           {
@@ -263,7 +270,8 @@ var MOCK = {
               { q: "«Teknoloji insanları birbirinden uzaklaştırıyor.»",
                 pro: ["Aileler yemekte bile telefona bakıyor.", "Yüz yüze görüşmeler azaldı.", "Sanal arkadaşlıklar yüzeysel kalıyor."],
                 con: ["Uzaktaki akrabalarla görüntülü konuşabiliyoruz.", "Aynı ilgi alanına sahip insanlarla tanışmak kolaylaştı.", "Yalnız yaşayan yaşlılar için büyük bir destek."],
-                kw: "teknoloji|telefon|internet|insan|uzaklaş|yakınlaş|aile|arkadaş|görüş|sanal" }
+                kw: "teknoloji|telefon|internet|insan|uzaklaş|yakınlaş|aile|arkadaş|görüş|sanal",
+                m: "Bu konuda iki farklı görüş var. Bir yandan teknolojinin insanları uzaklaştırdığı doğru. Örneğin birçok aile yemekte bile telefonuna bakıyor ve yüz yüze konuşmalar azalıyor. Sanal arkadaşlıklar da çoğu zaman yüzeysel kalıyor. Gençler bazen sokakta yürürken bile başlarını telefondan kaldırmıyor. Öte yandan teknoloji insanları birbirine yakınlaştırıyor da. Yurt dışında yaşayan akrabalarımla her hafta görüntülü konuşabiliyorum. Ayrıca yalnız yaşayan yaşlılar için internet büyük bir destek; torunlarını ekranda görerek yalnızlık hissinden biraz olsun kurtuluyorlar. Bence sorun teknolojinin kendisi değil, onu nasıl kullandığımız. Teknoloji bir araçtır; onu iyi ya da kötü yapan bizim alışkanlıklarımızdır. Sonuç olarak teknolojiyi bilinçli kullanırsak insanları uzaklaştırmaz, aksine yakınlaştırır." }
             ]
           }
         ]

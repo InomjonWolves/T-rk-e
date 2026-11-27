@@ -21,7 +21,7 @@ var Sync = (function () {
 
   // Counters at the top level; settings where the copy saved last wins as a whole; lists merged as sets
   const COUNT = new Set(["xp", "sessions", "perfect", "trUses", "shared", "night", "early", "roles", "dqn", "wcn", "frB", "lnN", "lnS", "ln3"]);
-  const LATEST = new Set(["goal", "pub", "anon", "tts", "rem", "hap", "sfx", "kView", "place", "statsAt", "guideLast", "frIn"]);
+  const LATEST = new Set(["goal", "pub", "anon", "tts", "rem", "hap", "sfx", "kView", "place", "statsAt", "guideLast", "frIn", "mkStrict", "mkRec"]);
   const LIST = new Set(["fr", "grp", "frzD"]);
   // Fields merged together by their own rule (not key by key)
   const GROUPS = new Set(["day", "dayXp", "week", "wxp", "newDay", "xpr", "dq", "wc", "goalD", "goalN", "streak", "lastDay", "frz", "frzNew", "best", "lg", "lgw", "plg", "pw", "pwxp", "lgr", "savedAt", "first"]);

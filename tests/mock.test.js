@@ -51,10 +51,13 @@ test("mock: four sections, valid answers, explanations, speakers with voices, ta
       assert.ok(tk.need.length >= 3, tk.id);
       tk.need.forEach(([l, src]) => { assert.ok(l); new RegExp(src); });
     }
+    const wc = x => x.trim().split(/\s+/).filter(w => /[a-zçğıöşüA-ZÇĞİÖŞÜ]/.test(w)).length;
+    for (const tk of t.w.tasks) assert.ok(tk.m && wc(tk.m) >= tk.min && wc(tk.m) <= tk.max, `${t.id} ${tk.id}: model answer ${tk.m ? wc(tk.m) : 0} words`);
     for (const p of t.s.parts) {
       assert.ok(p.t && p.d && p.talk >= 20 && p.prep >= 0, p.t);
-      p.qs.forEach(q => { assert.ok(q.q); new RegExp(q.kw); if (q.pro) assert.equal(q.pro.length, q.con.length); });
+      p.qs.forEach(q => { assert.ok(q.q); new RegExp(q.kw); if (q.pro) assert.equal(q.pro.length, q.con.length); assert.ok(q.m && wc(q.m) >= p.talk * 0.7, `${q.q}: model answer`); });
     }
+    assert.notEqual(t.id, "fix", "#mock-fix is the mistakes drill");
   }
 });
 
@@ -209,6 +212,132 @@ test("mock: one section only, leaving pauses the clock, cancelling a started run
   await page.click('[data-act="mk-cancel"]');
   await page.waitForFunction(() => !document.querySelector(".mk-resume"));
   assert.equal(await page.evaluate(() => localStorage.getItem("ty-mock-run")), null);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("mock: strict mode — one play, forward only, the clock runs away from the page", async () => {
+  const { page, errors } = await openApp(browser, "#mock");
+  await page.waitForSelector('[data-act="mk-strict"]');
+  await page.click('[data-act="mk-strict"]');
+  assert.equal(await page.getAttribute('[data-act="mk-strict"]', "aria-checked"), "true");
+  await page.click('[data-act="mk-start"][data-s="l"]');
+  await page.waitForSelector(".mk-intro");
+  assert.match(await page.textContent(".mk-intro"), /1 marta eshittiriladi/);
+  await page.click('[data-act="mk-go"]');
+  await page.waitForSelector(".mk-bar");
+  await page.evaluate(() => { speakSeq = (lines, done) => setTimeout(done, 30); });
+  await page.click('[data-act="mk-play"] >> nth=0');
+  await page.waitForFunction(() => !MK_PLAYING);
+  assert.equal(await page.locator('[data-act="mk-play"] >> nth=0').isDisabled(), true);
+  // Forward only: no «Oldingi», other parts closed
+  assert.equal(await page.locator('.mk-nav [data-act="mk-part"][data-p="-1"]').count(), 0);
+  assert.equal(await page.isVisible(".mk-fwd"), true);
+  assert.equal(await page.locator('.mk-ptab[data-p="1"]').isDisabled(), true);
+  await page.click('.mk-nav [data-act="mk-part"][data-p="1"]');
+  assert.equal(await page.evaluate(() => MK.pi), 1);
+  assert.equal(await page.locator('.mk-ptab[data-p="0"]').isDisabled(), true);
+  await page.evaluate(() => { mkAct("mk-part", { dataset: { p: "0" } }); });
+  assert.equal(await page.evaluate(() => MK.pi), 1, "no way back");
+  // Away from the page the deadline still counts; back on the page the section ends
+  await page.evaluate(() => { MK.dl = Date.now() + 1500; });
+  await page.click(".mk-exit");
+  await page.waitForSelector(".mk-resume");
+  assert.match(await page.textContent(".mk-resume"), /vaqt toʻxtamaydi/);
+  await page.waitForFunction(() => MK.left === 0, null, { timeout: 5000 });
+  await page.evaluate(() => { location.hash = "#mock-1"; });
+  await page.waitForSelector(".mk-res", { timeout: 5000 });
+  assert.match(await page.textContent(".mk-res"), /Qatʼiy rejim/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+// A microphone stand-in: getUserMedia and MediaRecorder that hand over a short recording
+const REC = `if (!navigator.mediaDevices) Object.defineProperty(navigator, "mediaDevices", { value: {} });
+navigator.mediaDevices.getUserMedia = async () => ({ getTracks: () => [{ stop() {} }] });
+window.MediaRecorder = class { constructor() { this.state = "inactive"; } start() { this.state = "recording"; }
+  stop() { this.state = "inactive"; setTimeout(() => { this.ondataavailable && this.ondataavailable({ data: new Blob(["x"], { type: "audio/webm" }) }); this.onstop && this.onstop(); }, 10); } };`;
+
+test("mock: history and its chart, the change since last time, the mistakes drill, writing criteria, models, own recording", async () => {
+  const now = Date.now(), mkh = {};
+  mkh[(now - 5 * 864e5).toString(36)] = { t: "1", v: 30, s: { l: 30, r: 32, w: 28, s: 30 }, f: 1, x: 0 };
+  mkh[(now - 2 * 864e5).toString(36)] = { t: "1", v: 41, s: { l: 44, r: 40, w: 38, s: 42 }, f: 1, x: 0 };
+  const { page, errors } = await openApp(browser, "#mock", { sr: true, init: REC, state: { mkh } });
+  await page.waitForSelector(".mk-hist");
+  assert.equal(await page.locator(".mk-chart .mk-ch-dot").count(), 2);
+  assert.equal(await page.locator(".mk-hrow").count(), 2);
+  assert.match(await page.textContent(".mk-ch-title"), /\+11/);
+  // A full run with four wrong answers in listening and reading, the model texts as writing, a recorded first answer
+  await page.click('[data-act="mk-start"][data-s="all"]');
+  await page.click('[data-act="mk-go"]');
+  await page.waitForSelector(".mk-bar");
+  const wrong = await page.evaluate(() => {
+    const t = mkTest("1"), bad = [];
+    ["l", "r"].forEach(s => mkQs(t, s).forEach((x, i) => { const miss = i === 2 || (s === "r" && i < 2); if (miss) bad.push(`1|${s}|${x.k}`);
+      MK.ans[s][x.k] = miss ? (x.p.k === "gap" ? "yok" : (x.q.a + 1) % (x.q.o || x.p.o).length) : x.p.k === "gap" ? x.q.a.split(" / ")[0] : x.q.a; }));
+    t.w.tasks.forEach(tk => { MK.ans.w[tk.id] = tk.m; });
+    ["l", "r", "w"].forEach(s => { MK.si = MK.secs.indexOf(s); MK.phase = "run"; mkEnd(); });
+    return bad;
+  });
+  await page.waitForFunction(() => MK.si === 3 && MK.phase === "intro");
+  await calm(page);
+  await page.click('[data-act="mk-go"]');
+  await page.waitForSelector(".mk-speak");
+  await page.evaluate(s => { let n = 0; window.__say = () => (n++ ? "" : s); }, SPOKEN);
+  await page.click('[data-act="mk-sp-go"]');
+  await page.click('[data-act="mk-sp-talk"]');
+  await page.waitForFunction(() => MK_MIC && MK_MIC.text.length > 20);
+  await page.click('[data-act="mk-sp-stop"]');
+  await page.waitForSelector(".mk-myrec audio", { timeout: 5000 });
+  await page.evaluate(() => { const t = mkTest("1"); mkTurns(t).forEach((x, i) => { if (i) MK.ans.s[i] = { text: x.q.m }; }); MK.sp = { i: 4, st: "rev" }; mkRender(); });
+  await page.click('[data-act="mk-end"]');
+  await page.waitForSelector(".mk-res");
+  await calm(page);
+  // The change since the last full run, the history grows
+  assert.ok(await page.locator(".mk-score .mk-delta").count());
+  assert.match(await page.textContent(".mk-res"), /Oldingi urinish/);
+  assert.equal(await page.evaluate(() => Object.keys(S.mkh).length), 3);
+  // Writing: four criteria per task, the detailed check folded, the model answers score high
+  assert.equal(await page.locator(".mk-rub .mk-rrow").count(), 12);
+  assert.equal(await page.locator(".mk-model").count(), 3 + 5);
+  const models = await page.evaluate(() => mkTest("1").w.tasks.map(tk => mkWriteCheck(tk.m, tk).s));
+  assert.ok(models.every(s => s >= 80), `model answers ${models}`);
+  assert.equal(await page.locator(".mk-rvbox >> nth=3 >> .mk-myrec audio").count(), 1, "the recording is in the review");
+  // Mistakes: the four wrong questions; two right answers clear each
+  assert.deepEqual((await page.evaluate(() => mkmActive().map(m => m.key))).sort(), wrong.sort());
+  assert.equal(wrong.length, 4);
+  assert.match(await page.textContent(".mk-fixgo"), /4 ta savol/);
+  const fixAll = async () => {
+    for (let g = 0; g < 30; g++) {
+      const done = await page.evaluate(() => {
+        if (!MKF || MKF.done) return true;
+        const m = MKF.items[MKF.i];
+        if (MKF.a === null) {
+          if (m.x.p.k === "gap") { document.getElementById("mk-fin").value = m.x.q.a.split(" / ")[0]; document.querySelector('[data-act="mk-fcheck"]').click(); }
+          else document.querySelector(`[data-act="mk-fo"][data-o="${m.x.q.a}"]`).click();
+        }
+        document.querySelector('[data-act="mk-fnext"]').click();
+        return false;
+      });
+      if (done) break;
+    }
+  };
+  await page.click(".mk-fixgo");
+  await page.waitForSelector(".mk-fix");
+  assert.match(await page.textContent(".mk-fix"), /Afsus|Tinglash|Matn|\?/);
+  await fixAll();
+  await page.waitForSelector(".mk-fix-sum");
+  assert.match(await page.textContent(".mk-fix-sum"), /4\/4/);
+  assert.match(await page.textContent(".mk-res"), /Yana 4 ta savol/);
+  await page.click('[data-act="mk-fagain"]');
+  await fixAll();
+  await page.waitForSelector(".mk-fix-sum");
+  assert.match(await page.textContent(".mk-res"), /Barcha xatolar tuzatildi/);
+  assert.equal(await page.evaluate(() => mkmActive().length), 0);
+  // A wrong answer in the drill sends the question back: two right answers needed again
+  await page.evaluate(() => { mkmMark("1|r|0.0", false); MKF = null; location.hash = "#mock"; });
+  await page.waitForSelector(".mk-fixgo");
+  assert.match(await page.textContent(".mk-fixgo"), /1 ta savol/);
   assert.deepEqual(errors, []);
   await page.close();
 });

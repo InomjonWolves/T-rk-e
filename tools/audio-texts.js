@@ -54,6 +54,8 @@ async function collect() {
         au.lines.forEach(([who, tr]) => { add(tr, "p:" + who); g.lines.push([who, audioNorm(tr)]); });
         groups.push(g);
       })));
+      // …and the model answers of the speaking tasks, in the plain voice
+      MOCK.tests.forEach(t => t.s.parts.forEach(p => p.qs.forEach(q => q.m && add(q.m))));
       // Placement test: listening comprehension sentences from its own bank
       Object.values(PLB).forEach(b => (b.l || []).forEach(x => add(x.t)));
       // Listening/speaking items built at run time from the course (dialog lines, oral answers)
