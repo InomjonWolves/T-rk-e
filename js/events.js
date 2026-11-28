@@ -105,7 +105,16 @@ function onAct(e) {
     const gi = +location.hash.slice(9) - 1, qi = +b.dataset.q;
     $("gq-" + qi).outerHTML = gqHtml(GRAMMAR[gi], qi);
   }
-  else if (act === "photo") $("photo-input").click();
+  else if (act === "photo") { if ($("photo-input")) { closeSheet(); $("photo-input").click(); } else go("profile"); }
+  else if (act === "avatar") openSheet(heroSheet());
+  else if (act === "hero-pick") {
+    const id = b.dataset.id;
+    if (!heroOpen(id)) { const [a, n, why] = heroProg(id); toast(`${HEROES[id].tr} hali yoʻq: ${why} (${a}/${n})`); return; }
+    S.hero = id; save();
+    if (MYPHOTO) setMyPhoto("");
+    closeSheet(); toast(`Avataringiz: ${HEROES[id].tr}`);
+    const y = window.scrollY; route(); window.scrollTo(0, y);
+  }
   else if (act === "sheet-x") closeSheet();
   else if (act === "tr-go") translateNow();
   else if (act === "tr-swap") { TR_DIR = TR_DIR === "tr" ? "uz" : "tr"; if (TR_OUT && TR_OUT.text) TR_TEXT = TR_OUT.text; TR_OUT = null; route(); }

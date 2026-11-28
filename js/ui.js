@@ -362,10 +362,13 @@ const avClass = s => "c" + (1 + [...String(s)].reduce((a, c) => a + c.charCodeAt
 // A user's photo, or the brand cat on a coloured disc for those without one
 let MYPHOTO = "";
 const AV_CACHE = {};
-function avatarHTML(photo, seed, cls = "", fr) {
+// hero — the hero someone chose (others: their league row's "hr"); without a photo one's own avatar is one's own hero
+const avMine = seed => seed === "me" || !!(USER && seed === USER.uid);
+function avatarHTML(photo, seed, cls = "", fr, hero) {
+  const h = HEROES[hero] ? hero : avMine(seed || "me") ? myHero() : "pamuk";
   const av = photo
     ? `<span class="avatar ${cls}"><img src="${esc(photo)}" alt=""></span>`
-    : `<span class="avatar cat-av ${avClass(seed || "me")} ${cls}">${catSVG({ pose: "head", lite: true })}</span>`;
+    : `<span class="avatar cat-av ${avClass(seed || "me")} ${cls}" data-hero="${h}">${heroSVG(h, { pose: "head", lite: true })}</span>`;
   return fr ? framed(av, fr.n, fr) : av;
 }
 const photoKey = () => "ty-photo" + (USER ? ":" + USER.uid : EARLY ? ":" + EARLY : "");

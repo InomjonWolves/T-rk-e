@@ -2525,3 +2525,70 @@ details.glass.mk-rvbox > summary { display: grid; grid-template-columns: 36px mi
 .mk-nosound { flex-basis: 100%; margin: 0; font-size: 13px; font-weight: 600; color: var(--pink-ink); }
 /* The weekly challenge on its own card (the practice page) */
 .wc-page > .wc-mini { border-top: 0; padding-top: 0; }
+
+/* ---------- Heroes (heroes.js, 2026-11-28): Pamuk's friends move with Pamuk's own rules; their wings, fins and pivots ---------- */
+.cat.hro .cat-tail-a { transform-origin: var(--tla, 186px 210px); }
+.cat.hro .cat-tail-b { transform-origin: var(--tlb, 227px 186px); }
+.cat.hro .cat-ear-r { transform-origin: var(--er, 160px 74px); }
+.cat.hro .hro-wing-l { transform-origin: var(--wl, 62px 150px); animation: hroWingL 5.6s ease-in-out var(--cd, 0s) infinite; transition: transform 0.3s ease; }
+.cat.hro .hro-wing-r { transform-origin: var(--wr, 178px 150px); animation: hroWingR 5.6s ease-in-out var(--cd, 0s) infinite; transition: transform 0.3s ease; }
+@keyframes hroWingL { 0%, 62%, 100% { transform: none; } 68% { transform: rotate(16deg); } 74% { transform: rotate(3deg); } 80% { transform: rotate(11deg); } 88% { transform: none; } }
+@keyframes hroWingR { 0%, 62%, 100% { transform: none; } 68% { transform: rotate(-16deg); } 74% { transform: rotate(-3deg); } 80% { transform: rotate(-11deg); } 88% { transform: none; } }
+.cat.hro.hop .hro-wing-l { animation: hroHopL 0.78s ease-out; }
+.cat.hro.hop .hro-wing-r { animation: hroHopR 0.78s ease-out; }
+@keyframes hroHopL { 30% { transform: rotate(38deg); } 55% { transform: rotate(6deg); } 72% { transform: rotate(18deg); } }
+@keyframes hroHopR { 30% { transform: rotate(-38deg); } 55% { transform: rotate(-6deg); } 72% { transform: rotate(-18deg); } }
+.cat.hro.wow .hro-wing-l, .cat.hro.dance .hro-wing-l { animation: hroFlapL 0.3s ease-in-out infinite alternate; }
+.cat.hro.wow .hro-wing-r, .cat.hro.dance .hro-wing-r { animation: hroFlapR 0.3s ease-in-out infinite alternate; }
+@keyframes hroFlapL { from { transform: rotate(8deg); } to { transform: rotate(42deg); } }
+@keyframes hroFlapR { from { transform: rotate(-8deg); } to { transform: rotate(-42deg); } }
+.cat.hro.sad .hro-wing-l, .cat.hro.plead .hro-wing-l { animation: none; transform: rotate(-7deg) translateY(3px); }
+.cat.hro.sad .hro-wing-r, .cat.hro.plead .hro-wing-r { animation: none; transform: rotate(7deg) translateY(3px); }
+.cat.hro .hro-ink { animation: hroInk 3.4s ease-in var(--cd, 0s) infinite; }
+@keyframes hroInk { 0%, 55% { transform: none; opacity: 1; } 85% { transform: translateY(16px); opacity: 0; } 100% { opacity: 0; } }
+.cat.hro .hro-apple { transform-box: fill-box; transform-origin: 50% 100%; }
+.cat.hro.hop .hro-apple { animation: hroApple 0.78s ease-out; }
+@keyframes hroApple { 35% { transform: translateY(-6px) rotate(-12deg); } 70% { transform: rotate(6deg); } }
+@media (prefers-reduced-motion: reduce) { .cat.hro .hro-wing-l, .cat.hro .hro-wing-r, .cat.hro .hro-ink, .cat.hro .hro-apple { animation: none !important; } }
+
+/* The avatar sheet: a row of heroes, one's own photo */
+.hsheet { display: flex; flex-direction: column; gap: 12px; }
+.hsheet h2 { margin: 0; }
+.hsheet > p { margin: -6px 0 0; }
+.hpick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 8px; }
+.hp { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px 6px; border-radius: 18px; border: 2px solid transparent; background: var(--surface-2); color: var(--ink); font: inherit; cursor: pointer; min-width: 0; }
+.hp b { font-size: 13px; font-weight: 800; }
+.hp-av { width: 58px; height: 58px; border-radius: 50%; overflow: hidden; }
+.hp.on { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 3px 0 var(--accent); }
+.hp.locked .hp-av { filter: grayscale(1); opacity: 0.45; }
+.hp.locked b { color: var(--muted); }
+.hp-lock { position: absolute; top: 6px; right: 8px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); color: var(--muted); box-shadow: var(--shadow); }
+.hp-lock svg { width: 13px; height: 13px; }
+.hp-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.hp-acts .btn { flex: 1 1 140px; gap: 8px; }
+.hp-all { display: inline-flex; align-items: center; gap: 4px; align-self: center; min-height: 44px; }
+.hp-all svg { width: 16px; height: 16px; }
+
+/* The heroes page: one card each, like a collector's card */
+.hgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 12px; }
+.hcard { display: flex; flex-direction: column; border-radius: 22px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 3px 0 var(--line-2), var(--shadow); }
+.hc-top { position: relative; padding: 10px 10px 0; background: radial-gradient(circle at 50% 78%, color-mix(in srgb, var(--c) 30%, var(--surface)) 0, color-mix(in srgb, var(--c) 12%, var(--surface)) 62%), var(--surface); border-bottom: 1px solid color-mix(in srgb, var(--c) 26%, var(--line)); }
+.hc-top::before { content: ""; position: absolute; inset: 0; background: var(--pattern); opacity: 0.5; mix-blend-mode: soft-light; pointer-events: none; }
+.hc-no { position: absolute; top: 8px; left: 10px; z-index: 1; font-size: 12px; font-weight: 800; color: var(--ink-2); padding: 2px 8px; border-radius: 999px; background: var(--surface); }
+.hc-lock { position: absolute; top: 8px; right: 10px; z-index: 1; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); color: var(--muted); }
+.hc-lock svg { width: 14px; height: 14px; }
+.hc-art { position: relative; width: min(150px, 86%); margin: 6px auto 0; }
+.hc-art .cat { width: 100%; height: auto; }
+.hcard.locked .hc-art .cat { filter: grayscale(1) contrast(0.7); opacity: 0.5; }
+.hc-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px; flex: 1; }
+.hc-name { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.hc-name b { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
+.hc-name small { font-size: 13px; font-weight: 700; color: var(--muted); }
+.hc-type { gap: 5px; }
+.hc-type svg { width: 14px; height: 14px; }
+.hc-body p { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); flex: 1; }
+.hc-mine { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-weight: 800; color: var(--green-ink); }
+.hc-mine svg { width: 18px; height: 18px; }
+.hc-pick { margin-top: 2px; }
+.hc-need { align-self: stretch; display: flex; flex-direction: column; gap: 5px; }
+.hc-need small { font-size: 12.5px; line-height: 1.35; font-weight: 600; }

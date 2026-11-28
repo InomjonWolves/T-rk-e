@@ -37,8 +37,14 @@ function cloudSave(now) {
       const name = ((USERNAME || "").trim().split(/\s+/)[0] || "Oʻquvchi").slice(0, 20);
       const row = lgDoc(name, ts), ref = db.collection("league").doc(USER.uid);
       // Until the new Firestore rules are published, the old five-field row still keeps the tables alive
+      // …and until they know the hero field, the row goes without it (the avatar is then Pamuk for others)
+      if (LG_NOHR) delete row.hr;
       if (LG_OLD) ref.set(lgLegacy(row)).catch(() => {});
-      else ref.set(row).catch(e => { if (e && e.code === "permission-denied") { LG_OLD = true; ref.set(lgLegacy(row)).catch(() => {}); } });
+      else ref.set(row).catch(e => {
+        if (!e || e.code !== "permission-denied") return;
+        if (row.hr) { LG_NOHR = true; delete row.hr; ref.set(row).catch(e2 => { if (e2 && e2.code === "permission-denied") { LG_OLD = true; ref.set(lgLegacy(row)).catch(() => {}); } }); }
+        else { LG_OLD = true; ref.set(lgLegacy(row)).catch(() => {}); }
+      });
     }
     statsPush();
     errFlush();
@@ -46,12 +52,12 @@ function cloudSave(now) {
   }, now ? 0 : 1500);
 }
 // The public leaderboard row: today, this week (inside a league), all time; last week for settling leagues
-let LG_OLD = false;
+let LG_OLD = false, LG_NOHR = false;
 const lgLegacy = r => ({ name: r.name, week: r.week, wxp: r.wxp, xp: r.xp, streak: r.streak });
 function lgDoc(name, ts) {
   const i = v => Math.max(0, Math.round(v || 0)), xp = i(S.xp);
   return { name, week: S.week, wxp: Math.min(i(S.wxp), xp, 25000), xp, streak: streakNow(), day: S.day, dxp: Math.min(i(S.dayXp), 3500),
-    lg: lgOf(S.lg).n, lgw: S.lgw || "", pw: S.pw || "", pwxp: i(S.pwxp), plg: lgOf(S.plg).n, at: ts };
+    lg: lgOf(S.lg).n, lgw: S.lgw || "", pw: S.pw || "", pwxp: i(S.pwxp), plg: lgOf(S.plg).n, at: ts, ...(myHero() !== "pamuk" ? { hr: myHero() } : {}) };
 }
 // Write a pending save at once (before signing out)
 function cloudFlush() {

@@ -47,7 +47,8 @@ service cloud.firestore {
     // Halollik: kunlik va haftalik XP chegarasi, XP oʻsish tezligi (at — server vaqti), liga haftasiga bir marta ±1.
     match /league/{uid} {
       function lgOk(d) {
-        return d.keys().hasOnly(['name', 'week', 'wxp', 'xp', 'streak', 'day', 'dxp', 'lg', 'lgw', 'pw', 'pwxp', 'plg', 'at'])
+        return d.keys().hasOnly(['name', 'week', 'wxp', 'xp', 'streak', 'day', 'dxp', 'lg', 'lgw', 'pw', 'pwxp', 'plg', 'at', 'hr'])
+          && d.get('hr', '') is string && d.get('hr', '').size() <= 8
           && d.name is string && d.name.size() <= 24
           && d.wxp is int && d.xp is int && d.wxp >= 0 && d.wxp <= d.xp && d.wxp <= 25000
           && d.get('dxp', 0) is int && d.get('dxp', 0) >= 0 && d.get('dxp', 0) <= 3500

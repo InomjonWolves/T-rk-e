@@ -122,9 +122,11 @@ const LN_TAG = { w: "Yangi soʻz", q: "Savol", r: "Turkchasini toping", l: "Ting
 const lnLiked = id => !!(S.lk && S.lk[id]);
 const lnSpark = (x, y, s, d) => `<path class="lnp-spark" style="--d:${d}s" d="M${x} ${y - s}Q${x} ${y} ${x + s} ${y}Q${x} ${y} ${x} ${y + s}Q${x} ${y} ${x - s} ${y}Q${x} ${y} ${x} ${y - s}z"/>`;
 const LN_NOTE = (x, y, c) => `<g class="lnp-note ${c}"><ellipse cx="${x}" cy="${y}" rx="8" ry="6.5" transform="rotate(-18 ${x} ${y})"/><path d="M${x + 7} ${y - 2}V${y - 32}l13 4v8l-13-4" /></g>`;
-function lnOver(k, sm) {
+function lnOver(k, sm, hid) {
   let g = "";
-  if (k === "l") g = `<g class="lnp-hp"><path d="M40 114C30 22 210 22 200 114" fill="none" stroke="#252a4d" stroke-width="13" stroke-linecap="round"/><path d="M47 102C44 38 196 38 193 102" fill="none" stroke="#8f98ff" stroke-width="3.5" stroke-linecap="round" opacity=".8"/>
+  // Yunus brings his own headphones: only the notes float around him
+  if (k === "l" && hid === "yunus") g = `<g fill="#fff">${LN_NOTE(16, 64, "n1")}${LN_NOTE(214, 30, "n2")}${sm ? "" : LN_NOTE(222, 132, "n3")}</g>`;
+  else if (k === "l") g = `<g class="lnp-hp"><path d="M40 114C30 22 210 22 200 114" fill="none" stroke="#252a4d" stroke-width="13" stroke-linecap="round"/><path d="M47 102C44 38 196 38 193 102" fill="none" stroke="#8f98ff" stroke-width="3.5" stroke-linecap="round" opacity=".8"/>
       <rect x="20" y="94" width="36" height="58" rx="17" fill="#ffbf47"/><rect x="27" y="103" width="22" height="40" rx="11" fill="#ff8f1f"/><rect x="184" y="94" width="36" height="58" rx="17" fill="#ffbf47"/><rect x="191" y="103" width="22" height="40" rx="11" fill="#ff8f1f"/></g>
     <g fill="#fff">${LN_NOTE(16, 64, "n1")}${LN_NOTE(206, 40, "n2")}${sm ? "" : LN_NOTE(222, 132, "n3")}</g>`;
   if (k === "f") g = `<g class="lnp-bulb"><circle cx="206" cy="44" r="30" fill="#ffe27a" opacity=".35"/><circle cx="206" cy="40" r="17" fill="#ffd43b"/><path d="M199 56h14v9a3 3 0 0 1-3 3h-8a3 3 0 0 1-3-3z" fill="#e8e3ff"/><path d="M200 61h12" stroke="#a49fd0" stroke-width="2"/><path d="M202 36q4-6 8 0" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/></g>`;
@@ -132,10 +134,12 @@ function lnOver(k, sm) {
   if (sp) g += `<g fill="#fff">${sp.map(([x, y, s, d]) => lnSpark(x, y, s, d)).join("")}</g>`;
   return g;
 }
+// Each skill's own hero hosts its cards (heroes.js); Pamuk hosts the facts, the round results and the breaks
+const LN_HERO = { w: "sincap", q: "sincap", r: "leylek", l: "yunus", g: "tilki", s: "kirpi", p: "marti" };
 function lnScene(c, i) {
-  const k = c.k, v = c.v, sm = /^[qrlg]$/.test(k);
-  const cat = catSVG({ pose: { g: "read", x: "cheer", p: "wave" }[k] || "sit", look: catLook(), ears: "up" });
-  const vb = (cat.match(/viewBox="([^"]+)"/) || [])[1] || "0 8 240 236", over = lnOver(k, sm);
+  const k = c.k, v = c.v, sm = /^[qrlg]$/.test(k), hid = LN_HERO[k];
+  const cat = hid ? heroSVG(hid, {}) : catSVG({ pose: { x: "cheer" }[k] || "sit", look: catLook(), ears: "up" });
+  const vb = (cat.match(/viewBox="([^"]+)"/) || [])[1] || "0 8 240 236", over = lnOver(k, sm, hid);
   const SIGN = { count: "Barakalla!", time: "Dam oling", long: "Yetarli!", fast: "Sekinroq", night: "Xayrli tun", day: "Ajoyib!" };
   let props = "";
   if (k === "w") props = `<span class="lnp-sign"${c.open ? "" : ' aria-hidden="true"'}>${c.open ? esc(lnCut(c.w.uz, 26)) : "?"}</span>`;

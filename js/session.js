@@ -29,6 +29,7 @@ function routeNow() {
   else if (h.startsWith("k-") && KU[h.slice(2)]) { const id = h.slice(2); html = unitOpen(id) ? viewCourseUnit(id) : lockedView(KU[id].level, id); tab = "lessons"; }
   else if (/^ktest-(a1|a2|b1|b2|c1)$/.test(h)) { const lv = h.slice(6).toUpperCase(); html = testOpen(lv) ? viewCourseTest(lv) : lockedView(lv); tab = "lessons"; }
   else if (h === "achievements") { html = viewAchievements(); tab = "profile"; }
+  else if (h === "heroes") { html = viewHeroes(); tab = "profile"; }
   else if (h === "skills") { html = viewSkills(); tab = "profile"; }
   else if (h === "write") { html = viewWrite(); tab = "practice"; }
   else if (h === "placement") { html = viewPlacement(); tab = "lessons"; if (!plbReady()) after = () => loadPlb().then(route, () => toast("Test yuklanmadi. Internetni tekshiring")); }

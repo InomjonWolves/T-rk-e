@@ -17,7 +17,7 @@ const FB_VERSION = "10.12.2";
 // Everything the app page loads (index.html, scripts loaded on demand, styles, fonts, icons, the document pages)
 const FILES = [
   "index.html", "privacy.html", "shartlar.html", "biz-haqimizda.html", "hisob-ochirish.html", "styles.css", "pages.css", "firebase-config.js",
-  "cat.js", "content.js", "lugat.js", "grammar.js", "grammar-ex.js", "guide.js",
+  "cat.js", "heroes.js", "content.js", "lugat.js", "grammar.js", "grammar-ex.js", "guide.js",
   "course-core.js", "course.js", "oqish.js", "placement.js", "hikoya.js", "mock.js", "kirill-lex.js", "morph.js", "sync.js",
   "icon.svg", "icon-192.png", "icon-512.png", "icon-maskable-512.png"
 ];

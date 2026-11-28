@@ -155,20 +155,50 @@ function frameNextRow() {
   </div>`;
 }
 function pamukHero() {
-  const L = lvlInfo(), fr = myFrame(), top = achTop(), done = ACH.filter(achDone).length;
+  const L = lvlInfo(), fr = myFrame(), top = achTop(), done = ACH.filter(achDone).length, hm = myHero(), H = HEROES[hm];
   const medal = ([a, on], i) => `<a class="ph-medal${on ? "" : " locked"}" href="#achievements" title="${esc(a.d)}">${on ? achSticker(a, i) : `<span class="ach-st ach-lock">${ICON.lock}</span>`}<small>${esc(a.t)}</small></a>`;
   return `<section class="section">
     <div class="glass pad grow-card ph-card ph-fr${fr}">
-      <div class="ph-stage"><div class="ph-cat">${framed(`<span class="avatar ph-av">${catSVG({ pose: "sit", look: L.st.id, cls: "mascot" })}</span>`, fr, { cls: "fr-hero" })}</div></div>
+      <div class="ph-stage"><div class="ph-cat">${framed(`<span class="avatar ph-av">${hm === "pamuk" ? catSVG({ pose: "sit", look: L.st.id, cls: "mascot" }) : heroSVG(hm, { cls: "mascot" })}</span>`, fr, { cls: "fr-hero" })}</div></div>
       <div class="ph-shelf" role="group" aria-label="Asosiy yutuqlar">${top.map(medal).join("")}</div>
       <div class="tags ph-tags"><span class="tag violet-t">${L.lv}-daraja</span><span class="tag orange-t">${FRAMES[fr - 1].uz} ramka</span></div>
-      <b>${esc(L.st.uz)}</b><p class="muted">${esc(L.st.d)}</p>
+      ${hm === "pamuk" ? `<b>${esc(L.st.uz)}</b><p class="muted">${esc(L.st.d)}</p>` : `<b><span lang="tr">${H.tr}</span> · ${esc(H.t)}</b><p class="muted">${esc(H.d)}</p>`}
       <div class="bar"><i style="width:${Math.round(L.p * 100)}%"></i></div>
       <small class="muted">${L.lv + 1}-darajagacha ${L.to - S.xp} XP${L.next ? ` · ${L.next.lv}-darajada «${esc(L.next.uz)}»` : ""}</small>
       ${frameNextRow()}
+      <a class="ph-all" href="#heroes"><span>${ICON.users}<b>Qahramonlar</b></span><span>${HERO_IDS.filter(heroOpen).length}/${HERO_IDS.length}${ICON.chev}</span></a>
       <a class="ph-all" href="#achievements"><span>${ICON.trophy}<b>Yutuqlar</b></span><span>${done}/${ACH.length}${ICON.chev}</span></a>
     </div>
   </section>`;
+}
+
+/* ---------- Heroes: Pamuk and his friends (heroes.js) — the avatar sheet and the cards page ---------- */
+function heroSheet() {
+  const me = myHero();
+  return `<div class="hsheet"><h2>Avatar</h2><p class="muted">Qahramonni tanlang yoki oʻz rasmingizni qoʻying.</p>
+    <div class="hpick">${HERO_IDS.map(id => { const h = HEROES[id], open = heroOpen(id), on = !MYPHOTO && id === me;
+      return `<button class="hp${on ? " on" : ""}${open ? "" : " locked"}" data-act="hero-pick" data-id="${id}" aria-pressed="${on}"${open ? "" : ' aria-disabled="true"'}><span class="avatar cat-av hp-av">${heroSVG(id, { pose: "head", lite: true })}</span><b lang="tr">${h.tr}</b>${open ? "" : `<i class="hp-lock" role="img" aria-label="Yopiq">${ICON.lock}</i>`}</button>`; }).join("")}</div>
+    <div class="hp-acts"><button class="btn btn-ghost" data-act="photo">${ICON.camera}Oʻz rasmim</button>${MYPHOTO ? `<button class="btn btn-ghost" data-act="photo-remove">Rasmni olib tashlash</button>` : ""}</div>
+    <a class="link hp-all" href="#heroes">Barcha qahramonlar va ularni qanday topish ${ICON.chev}</a></div>`;
+}
+function viewHeroes() {
+  const me = myHero(), met = HERO_IDS.filter(heroOpen).length;
+  const card = (id, i) => {
+    const h = HEROES[id], open = heroOpen(id), [a, b, why] = heroProg(id), mine = id === me && !MYPHOTO;
+    return `<article class="hcard${open ? "" : " locked"}" style="--c: var(--${h.c})">
+      <div class="hc-top"><span class="hc-no">#${String(i + 1).padStart(2, "0")}</span>${open ? "" : `<span class="hc-lock" role="img" aria-label="Hali topilmagan">${ICON.lock}</span>`}
+        <div class="hc-art">${heroSVG(id, { cls: "mascot", label: `${h.tr} — ${h.uz}` })}</div></div>
+      <div class="hc-body">
+        <div class="hc-name"><b lang="tr">${h.tr}</b><small>${esc(h.uz)}</small></div>
+        <span class="tag ${h.c}-t hc-type">${ICON[h.ico]}${esc(h.t)}</span>
+        <p>${esc(h.d)}</p>
+        ${open ? (mine ? `<span class="hc-mine">${ICON.check}Avataringiz</span>` : `<button class="btn btn-soft btn-block hc-pick" data-act="hero-pick" data-id="${id}">Avatar qilish</button>`)
+          : `<div class="hc-need"><small>${esc(why)}</small><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${b}" aria-valuenow="${a}" aria-label="${esc(why)}: ${a}/${b}"><i style="width:${pct(a, b)}%"></i></div><small class="muted">${a}/${b}</small></div>`}
+      </div></article>`;
+  };
+  return `${topbar()}<div><a class="back" href="#profile">${ICON.back}Profil</a></div>
+    <div><h1 class="page-title">Qahramonlar</h1><p class="sub">Pamuk va uning doʻstlari — har biri bitta koʻnikmaning homiysi. Koʻnikmani mashq qilsangiz, uning qahramoni sizga qoʻshiladi. Topilgan: ${met}/${HERO_IDS.length}</p></div>
+    <div class="hgrid">${HERO_IDS.map(card).join("")}</div>`;
 }
 
 /* ---------- Lessons ---------- */
@@ -554,11 +584,11 @@ async function loadRank() {
   const me = rows.findIndex(r => r.id === USER.uid);
   const pod = i => { const r = rows[i]; if (!r) return "<div></div>"; const fr = frameOf(r.xp, r.lg); return `<div class="pod${i === 0 ? " first" : ""}">
       ${i === 0 && fr === 7 ? `<span class="crown" aria-hidden="true"></span>` : i === 0 ? `<svg class="crown" viewBox="0 0 24 18" fill="#ffc83d" aria-hidden="true"><path d="M2 5l5 4 5-8 5 8 5-4-2 12H4z"/></svg>` : `<span class="place">${i + 1}</span>`}
-      <span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id, "", { n: fr, lv: lvlOf(r.xp) })}</span>
+      <span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id, "", { n: fr, lv: lvlOf(r.xp) }, r.hr)}</span>
       <b>${esc(r.name || "Oʻquvchi")}</b><span>${r[key]} XP${tab === "all" ? ` · ${lvlOf(r.xp)}-dar.` : ""}</span><i class="ped" aria-hidden="true">${i + 1}</i></div>`; };
   $("rank-body").innerHTML = `<div class="glass podium">${pod(1)}${pod(0)}${pod(2)}</div>
     ${rows.length > 3 ? `<div class="glass words" style="margin-top:12px">${rows.slice(3, 50).map((r, i) => `<div class="rank-row${r.id === USER.uid ? " me" : ""}">
-      <span class="n">${i + 4}</span><span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id, "", { n: frameOf(r.xp, r.lg) })}</span>
+      <span class="n">${i + 4}</span><span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id, "", { n: frameOf(r.xp, r.lg) }, r.hr)}</span>
       <span style="min-width:0"><b>${esc(r.name || "Oʻquvchi")}</b><small>${sub(r)}</small></span><span class="xp">${r[key]} XP</span></div>${i + 4 === upN && rows.length > upN ? `<div class="lg-zone">⬆ Koʻtarilish zonasi</div>` : ""}`).join("")}</div>` : ""}
     <p class="sub" style="text-align:center;margin-top:12px">${me >= 0 ? `Siz ${me + 1}-oʻrindasiz · eng yaxshi ${Math.max(1, Math.round((me + 1) / rows.length * 100))}%` : S.pub ? "Mashq qilib XP toʻplang, shunda reytingda paydo boʻlasiz." : "Siz reytingda koʻrinmaysiz. Buni Profil → Sozlamalarda yoqish mumkin."}</p>`;
   loadRankPhotos(rows.slice(0, 50).map(r => r.id));
@@ -569,7 +599,7 @@ function frRender(rows) {
   const others = rows.filter(r => r.id !== USER.uid);
   const hidden = frList().length - others.length;
   $("rank-body").innerHTML = `${others.length ? `<div class="glass words">${rows.map((r, i) => `<div class="rank-row${r.id === USER.uid ? " me" : ""}">
-      <span class="n">${i + 1}</span><span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id, "", { n: frameOf(r.xp, r.lg) })}</span>
+      <span class="n">${i + 1}</span><span data-av="${esc(r.id)}">${avatarHTML(r.id === USER.uid ? MYPHOTO : AV_CACHE[r.id], r.id, "", { n: frameOf(r.xp, r.lg) }, r.hr)}</span>
       <span style="min-width:0"><b>${esc(r.id === USER.uid ? "Siz" : r.name || "Oʻquvchi")}</b><small>${lvlOf(r.xp)}-daraja · ${lgOf(r.lg).uz} · ${r.streak || 0} kun</small></span>
       <span class="xp">${r.wxp || 0} XP${r.id === USER.uid ? "" : `<button class="fr-x" data-act="fr-del" data-u="${esc(r.id)}" aria-label="Doʻstlikdan olib tashlash">×</button>`}</span></div>`).join("")}</div>
     ${hidden > 0 ? `<p class="sub" style="text-align:center">${hidden} ta doʻstingiz reytingda koʻrinishni oʻchirgan</p>` : ""}`
@@ -587,11 +617,11 @@ function viewProfile() {
   const th = (() => { try { return localStorage.getItem("ty-theme") || "auto"; } catch (e) { return "auto"; } })();
   return `<div class="top"><h1 class="page-title">Profil</h1><a class="icon-btn gear-btn" href="#settings" aria-label="Sozlamalar">${ICON.gear}</a></div>
   <div class="profile-card glass">
-    <button class="avatar-edit" data-act="photo"><span class="sr">Profil rasmini oʻzgartirish, daraja: </span>${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "lg", { n: myFrame(), lv: lvlOf(S.xp) })}<span class="cam">${ICON.camera}</span>${genderSticker()}</button>
+    <button class="avatar-edit" data-act="avatar"><span class="sr">Avatarni oʻzgartirish, daraja: </span>${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "lg", { n: myFrame(), lv: lvlOf(S.xp) })}<span class="cam">${ICON.camera}</span>${genderSticker()}</button>
     <input type="file" id="photo-input" accept="image/*" hidden>
     <div class="pc-txt"><b>${esc(USERNAME || (USER ? "Oʻquvchi" : "Mehmon"))}</b><span>${esc(USER ? USER.email || (/^tg\d+$/.test(USER.uid) ? "Telegram hisobi" : "") : "Hisobsiz rejim")}</span>
       ${PROFILE.birth ? `<span style="display:block">${esc(birthText(PROFILE.birth))}</span>` : ""}
-      <div class="tags" style="margin-top:6px">${USER && USER.emailVerified ? `<span class="tag green-t">${ICON.check}Tasdiqlangan</span>` : ""}${MYPHOTO ? `<button class="tag pink-t" data-act="photo-remove">Rasmni olib tashlash</button>` : `<button class="tag violet-t" data-act="photo">Rasm qoʻyish</button>`}</div></div>
+      <div class="tags" style="margin-top:6px">${USER && USER.emailVerified ? `<span class="tag green-t">${ICON.check}Tasdiqlangan</span>` : ""}<button class="tag violet-t" data-act="avatar">Avatarni oʻzgartirish</button></div></div>
   </div>
   ${isPass && !USER.emailVerified ? `<div class="notice"><div><b>Pochtangizni tasdiqlang.</b> ${esc(USER.email)} manziliga xat yubordik.</div><button class="btn btn-ghost" data-act="verify-again">Xatni qayta yuborish</button></div>` : ""}
 

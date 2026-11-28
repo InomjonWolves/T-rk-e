@@ -91,6 +91,10 @@ test("league rows: today/week/league fields, limits, a league step once a week, 
   const row = { name: "A", week: "2026-11-02", wxp: 100, xp: 2000, streak: 3, day: "2026-11-02", dxp: 100, lg: 2, lgw: "2026-11-02", pw: "2026-10-26", pwxp: 900, plg: 1, at: serverTimestamp() };
   await assertSucceeds(setDoc(ref, row));
   await assertFails(setDoc(doc(as("lg2", "google"), "league/lg2"), Object.assign({}, row, { hack: 1 })), "unknown field");
+  // The chosen hero (heroes.js) is shown to others: a short name, nothing else
+  await assertSucceeds(setDoc(doc(as("lg5", "google"), "league/lg5"), Object.assign({}, row, { hr: "kirpi" })));
+  await assertFails(setDoc(doc(as("lg4", "google"), "league/lg4"), Object.assign({}, row, { hr: "x".repeat(40) })), "hero name too long");
+  await assertFails(setDoc(doc(as("lg4", "google"), "league/lg4"), Object.assign({}, row, { hr: 5 })), "hero must be a name");
   await assertFails(setDoc(doc(as("lg2", "google"), "league/lg2"), Object.assign({}, row, { dxp: 9000 })), "daily ceiling");
   await assertFails(setDoc(doc(as("lg2", "google"), "league/lg2"), Object.assign({}, row, { wxp: 3000 })), "week above all time");
   await assertFails(setDoc(doc(as("lg2", "google"), "league/lg2"), Object.assign({}, row, { lg: 7, xp: 1500 })), "Legend with 1500 XP");

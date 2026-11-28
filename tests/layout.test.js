@@ -115,7 +115,7 @@ test("profile: ⚙ opens one settings page with every setting and link; four mai
     sides: document.querySelectorAll(".ph-stage .ph-medal, .ph-side").length, shelf: document.querySelectorAll(".ph-shelf > .ph-medal").length, cols: getComputedStyle(document.querySelector(".ph-shelf")).gridTemplateColumns.split(" ").length,
     below: document.querySelector(".ph-shelf").getBoundingClientRect().top >= document.querySelector(".ph-stage .fr-hero").getBoundingClientRect().bottom, ribbon: document.querySelectorAll(".ph-medal:not(.locked) .ach-st .fr-rib").length, earned: document.querySelectorAll(".ph-medal:not(.locked) .ach-st").length,
     locked: document.querySelectorAll(".ph-medal.locked .ach-lock").length, old: document.querySelectorAll(".sticker-wall, .grow-path, .fr-gallery, #app .achv").length,
-    all: document.querySelector(".ph-all").textContent, href: document.querySelector(".ph-all").getAttribute("href"),
+    all: document.querySelector(".ph-all[href=\"#achievements\"]").textContent, href: document.querySelector(".ph-all[href=\"#achievements\"]").getAttribute("href"),
     bg: getComputedStyle(document.querySelector(".ph-medal:not(.locked) .ach-st .ach-disk")).backgroundImage, tilt: getComputedStyle(document.querySelector(".ph-medal .ach-st")).transform
   }));
   assert.deepEqual([hero.sides, hero.shelf, hero.cols, hero.below], [0, 5, 5, true]);

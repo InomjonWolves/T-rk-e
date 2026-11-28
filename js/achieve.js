@@ -138,7 +138,7 @@ function showCelebrate() {
   const colors = ["#ffb422", "#e5484d", "#3b5bdb", "#17a36a", "#7a54e0", "#0fa3a0"];
   el.innerHTML = `<div class="confetti" aria-hidden="true">${Array.from({ length: 36 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 0.6).toFixed(2)}s;animation-duration:${(2 + Math.random() * 1.5).toFixed(2)}s;transform:rotate(${Math.random() * 360}deg)"></i>`).join("")}</div>
     <div class="cel-card" role="dialog" aria-modal="true" aria-label="${esc(c.eyebrow || "Yangi yutuq")}">
-      <div class="cel-cat">${c.look ? catSVG({ pose: "sit", acc: "stars", look: c.look, cls: "mascot" }) : mascot("trophy")}</div>
+      <div class="cel-cat">${c.hero ? heroSVG(c.hero, { cls: "mascot" }) : c.look ? catSVG({ pose: "sit", acc: "stars", look: c.look, cls: "mascot" }) : mascot("trophy")}</div>
       ${c.frame ? `<span class="cel-medal cel-frame">${avatarHTML(MYPHOTO, USER ? USER.uid : "me", "", { n: c.frame })}</span>` : c.league ? `<span class="cel-medal">${lgBadge(c.league, "lg-cel")}</span>` : c.ach ? `<span class="cel-medal cel-ach">${achBadge(ACH_COL(c.c), c.r, c.ico)}</span>` : `<span class="medal art ${c.c} cel-medal${c.r > 2 ? ` ach-r${c.r}` : ""}">${c.badge !== undefined ? `<b class="cel-num">${esc(c.badge)}</b>` : ICON[c.ico] || ICON.star}</span>`}
       <small class="eyebrow">${esc(c.eyebrow || "Yangi yutuq!")}</small>
       <h2>${esc(c.title)}</h2>

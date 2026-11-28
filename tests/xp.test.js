@@ -235,7 +235,8 @@ test("an idle week moves one league down, with a gentle word from Pamuk", async 
 test("league rules: new fields, limits and once-a-week league change are in firestore.rules", () => {
   const rules = fs.readFileSync(path.join(ROOT, "firestore.rules"), "utf8");
   const m = rules.slice(rules.indexOf("match /league/"), rules.indexOf("match /groups/"));
-  assert.match(m, /hasOnly\(\['name', 'week', 'wxp', 'xp', 'streak', 'day', 'dxp', 'lg', 'lgw', 'pw', 'pwxp', 'plg', 'at'\]\)/);
+  assert.match(m, /hasOnly\(\['name', 'week', 'wxp', 'xp', 'streak', 'day', 'dxp', 'lg', 'lgw', 'pw', 'pwxp', 'plg', 'at', 'hr'\]\)/);
+  assert.match(m, /d\.get\('hr', ''\) is string && d\.get\('hr', ''\)\.size\(\) <= 8/);
   assert.match(m, /d\.get\('dxp', 0\) <= 3500/);
   assert.match(m, /d\.at == request\.time/);
   assert.match(m, /request\.resource\.data\.get\('lgw', ''\) != resource\.data\.get\('lgw', ''\)/);

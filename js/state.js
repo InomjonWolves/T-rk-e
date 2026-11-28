@@ -90,7 +90,7 @@ function loadLocal(key) {
   return migrate(v);
 }
 let remTimer;
-function save() { lvlCheck(); frameCheck(); S.savedAt = Date.now(); try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {} cloudSave(); clearTimeout(remTimer); remTimer = setTimeout(() => remSync(), 2500); clearTimeout(achTimer); achTimer = setTimeout(checkAch, 450); }
+function save() { lvlCheck(); frameCheck(); heroCheck(); S.savedAt = Date.now(); try { localStorage.setItem(KEYU, JSON.stringify(S)); } catch (e) {} cloudSave(); clearTimeout(remTimer); remTimer = setTimeout(() => remSync(), 2500); clearTimeout(achTimer); achTimer = setTimeout(checkAch, 450); }
 
 /* ---------- Spaced repetition (simplified SM-2) ----------
    Each word: i = interval in days, e = ease, d = due day, r = successful reviews in a row,
