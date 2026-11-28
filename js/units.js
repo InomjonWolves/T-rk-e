@@ -145,8 +145,10 @@ function renderBlocks(blocks) {
 }
 // Lines are strings or [speaker, text]: each speaker gets a voice of their own (another voice, or another pitch)
 // done() — once the last line has played (not when the sequence was cancelled)
-function speakSeq(lines, done) {
+// o.rate — a fixed speed (the exam plays its recordings at their own pace, whatever the learner's setting)
+function speakSeq(lines, done, o = {}) {
   ttsCancel();
+  const rate = o.rate || ttsRate();
   const who = [], run = ++SEQ_N;
   let i = 0;
   const next = () => {
@@ -157,10 +159,10 @@ function speakSeq(lines, done) {
     const alt = spk ? who.indexOf(spk) % 2 === 1 : false;
     const later = () => setTimeout(next, 350);
     const tts = () => {
-      if (nttsSay(text, 0.9 * ttsRate(), () => { if (run === SEQ_N) later(); }, alt ? 1.3 : 1)) return;
+      if (nttsSay(text, 0.9 * rate, () => { if (run === SEQ_N) later(); }, alt ? 1.3 : 1)) return;
       try {
         const u = new SpeechSynthesisUtterance(text);
-        u.lang = "tr-TR"; u.rate = 0.9 * ttsRate();
+        u.lang = "tr-TR"; u.rate = 0.9 * rate;
         const v = ttsVoice(alt); if (v) u.voice = v;
         // Only one Turkish voice: tell the speakers apart by pitch
         if (alt && trVoices().length < 2) u.pitch = 1.35;
@@ -169,7 +171,7 @@ function speakSeq(lines, done) {
       } catch (e) {}
     };
     // Recordings: the character's own voice, else the second speaker's "b", else "a"
-    if (!playRec(text, spk ? whoVoices(spk, alt) : "a", ttsRate() * 0.9 / 0.85, () => { if (run === SEQ_N) later(); }, tts)) tts();
+    if (!playRec(text, spk ? whoVoices(spk, alt) : "a", o.rate || ttsRate() * 0.9 / 0.85, () => { if (run === SEQ_N) later(); }, tts)) tts();
   };
   next();
 }

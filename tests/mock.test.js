@@ -22,18 +22,26 @@ test("mock: four sections, valid answers, explanations, speakers with voices, ta
   for (const t of MOCK.tests) {
     assert.match(t.id, /^[a-z0-9]+$/);
     assert.ok(t.tr && t.uz);
+    // The multilevel exam's frame: listening 45 minutes, reading 60, writing 60 (three tasks), 35 questions each
+    assert.deepEqual([t.l.min, t.r.min, t.w.min, t.w.tasks.length], [45, 60, 60, 3], t.id);
     for (const sec of ["l", "r"]) {
       assert.ok(t[sec].min > 0 && t[sec].parts.length >= 3, `${t.id} ${sec}`);
       let n = 0;
       for (const p of t[sec].parts) {
         assert.ok(p.t && p.d && ["mc", "gap"].includes(p.k), `${t.id} ${sec} ${p.t}`);
+        let heard = !!p.audio;
+        if (p.sum) assert.ok(p.qs.some(q => q.k === "gap"), `${p.t}: a summary has gaps`);
+        if (p.map) { assert.equal(p.o.length, p.map.boxes.length, `${p.t}: a letter for every building`); p.map.boxes.forEach(b => assert.ok(b.x >= 0 && b.y >= 0 && b.x + b.w <= p.map.w && b.y + b.h <= p.map.h, b.l)); }
         for (const q of p.qs) {
-          const at = `${t.id} ${sec} ${p.t}: ${q.q.slice(0, 30)}`;
+          const at = `${t.id} ${sec} ${p.t}: ${q.q.slice(0, 30)}`, k = q.k || p.k;
           n++;
           assert.ok(q.e && q.e.length > 10, `${at}: explanation`);
-          if (p.k === "gap") { assert.equal(q.q.split("___").length, 2, `${at}: one gap`); assert.ok(typeof q.a === "string" && q.a.trim(), at); }
+          assert.ok(["mc", "gap"].includes(k), at);
+          if (k === "gap") { assert.equal(q.q.split("___").length, 2, `${at}: one gap`); assert.ok(typeof q.a === "string" && q.a.trim(), at); }
           else { const o = q.o || p.o; assert.ok(o && o.length >= 3, `${at}: options`); assert.ok(Number.isInteger(q.a) && q.a >= 0 && q.a < o.length, `${at}: answer`); }
-          if (sec === "l") assert.ok(p.audio || q.audio, `${at}: listening needs audio`);
+          // Listening: the part's audio, the question's own, or the extract heard just before (two questions per extract)
+          heard = heard || !!q.audio;
+          if (sec === "l") assert.ok(heard, `${at}: listening needs audio`);
         }
         for (const au of [p.audio].concat(p.qs.map(q => q.audio)).filter(Boolean)) {
           for (const [who, line] of au.lines) {
@@ -43,7 +51,7 @@ test("mock: four sections, valid answers, explanations, speakers with voices, ta
           }
         }
       }
-      assert.ok(n >= 15, `${t.id} ${sec}: ${n} questions`);
+      assert.equal(n, 35, `${t.id} ${sec}: ${n} questions`);
     }
     assert.ok(t.w.min > 0 && t.w.tasks.length >= 2);
     for (const tk of t.w.tasks) {
@@ -55,14 +63,15 @@ test("mock: four sections, valid answers, explanations, speakers with voices, ta
     for (const tk of t.w.tasks) assert.ok(tk.m && wc(tk.m) >= tk.min && wc(tk.m) <= tk.max, `${t.id} ${tk.id}: model answer ${tk.m ? wc(tk.m) : 0} words`);
     for (const p of t.s.parts) {
       assert.ok(p.t && p.d && p.talk >= 20 && p.prep >= 0, p.t);
-      p.qs.forEach(q => { assert.ok(q.q); new RegExp(q.kw); if (q.pro) assert.equal(q.pro.length, q.con.length); assert.ok(q.m && wc(q.m) >= p.talk * 0.7, `${q.q}: model answer`); });
+      (p.pics || []).forEach(k => assert.match(k, /^[a-z]+$/));
+      p.qs.forEach(q => { assert.ok(q.q); new RegExp(q.kw); if (q.pro) assert.equal(q.pro.length, q.con.length); assert.ok(q.m && wc(q.m) >= (q.talk || p.talk) * 0.7, `${q.q}: model answer`); });
     }
     assert.notEqual(t.id, "fix", "#mock-fix is the mistakes drill");
   }
 });
 
 // Answers that are all right, written into the run as the page would
-const allRight = sec => `(() => { const t = mkTest(MK.id); mkQs(t, "${sec}").forEach(x => { MK.ans["${sec}"][x.k] = x.p.k === "gap" ? x.q.a.split(" / ")[0] : x.q.a; }); mkSave(); mkRender(); })()`;
+const allRight = sec => `(() => { const t = mkTest(MK.id); mkQs(t, "${sec}").forEach(x => { MK.ans["${sec}"][x.k] = mkKind(x) === "gap" ? x.q.a.split(" / ")[0] : x.q.a; }); mkSave(); mkRender(); })()`;
 const GOOD = {
   "1.1": "Merhaba Selin! Gelecek ay gelmene çok sevindim. Bence bizim evde kalabilirsin, çünkü evimiz büyük ve sessiz. Ayrıca şehrimizde güzel bir müze ve büyük bir park var, onları mutlaka görmelisin. Cumartesi akşam saat yedide buluşalım mı? Sonra birlikte eski çarşıda yemek yeriz. Başka bir planın olursa bana yaz, ona göre değiştiririz. Görüşürüz, sevgiler!",
   "1.2": "Sayın Yetkili, on mart tarihinde sitenizden bir çamaşır makinesi sipariş ettim. Sipariş numaram 48213. Ancak makine iki hafta geç geldi ve kutuyu açtığımda kapağının çatlak olduğunu gördüm. Bu durum beni çok üzdü, çünkü makineyi hemen kullanmam gerekiyordu. Ayrıca kargo şirketini birkaç kez aradım ama kimse yardımcı olmadı. Müşteri hizmetlerinize de iki e-posta gönderdim, fakat henüz bir cevap alamadım. Ürünün fotoğraflarını bu e-postanın ekinde bulabilirsiniz. Makineyi kutusuyla birlikte sakladım, bu yüzden geri göndermek kolay olacaktır. Makineyi hâlâ kullanamıyorum ve evde çamaşırlar birikiyor. Bu nedenle makinenin en kısa sürede yenisiyle değiştirilmesini rica ediyorum. Eğer bu mümkün değilse, ödediğim paranın iade edilmesini talep ediyorum. Ayrıca bu gecikme için bir açıklama bekliyorum. Sorunun bir hafta içinde çözülmesini umuyorum. Cevabınızı sabırla bekliyorum. Saygılarımla, Dilnoza Karimova",
@@ -72,25 +81,26 @@ const GOOD = {
 const calm = page => page.evaluate(() => { for (let i = 0; i < 6 && !document.getElementById("celebrate").hidden; i++) nextCelebrate(); });
 const SPOKEN = "Boş zamanlarımda kitap okumayı ve arkadaşlarımla yürüyüş yapmayı çok seviyorum çünkü bu beni rahatlatıyor ayrıca hafta sonları müzik dinliyorum ve bazen film izliyorum";
 
-test("mock: a full run — sections in order, clock, listening limit, a reload, scores, review, XP", async () => {
-  const { page, errors } = await openApp(browser, "#practice", { sr: true });
-  await page.waitForSelector('.mk-entry[href="#mock"]');
-  await page.click(".mk-entry");
-  await page.waitForSelector(".mk-test");
-  assert.equal(await page.locator('.mk-cell').count(), 4);
-  await page.click('[data-act="mk-start"][data-s="all"]');
+test("mock: the full test from the home page — always strict, sections in order, clock, one play, a reload, scores, review, XP", async () => {
+  const { page, errors } = await openApp(browser, "#home", { sr: true });
+  await page.waitForSelector(".mk-deneme");
+  await page.click(".mk-dn-go");
   await page.waitForSelector(".mk-intro");
   assert.match(await page.textContent(".mk-intro"), /Tinglash/);
+  assert.match(await page.textContent(".mk-intro"), /1 marta eshittiriladi/);
+  assert.deepEqual(await page.evaluate(() => [MK.full, MK.strict, MK.id]), [true, true, "1"]);
+  // The home page's numbers are the test's own
+  assert.equal(await page.evaluate(() => { const t = mkTest("1"); return MK_SECS.every(s => MOCK_INFO[s][0] === mkSecCount(t, s) && MOCK_INFO[s][1] === mkSecMin(t, s)); }), true);
   // Before a section starts, nothing runs and the menu stays
   assert.equal(await page.evaluate(() => document.documentElement.classList.contains("mk-run")), false);
   await page.click('[data-act="mk-go"]');
   await page.waitForSelector(".mk-bar #mk-time");
   assert.equal(await page.evaluate(() => document.documentElement.classList.contains("mk-run")), true);
   assert.equal(await page.isVisible(".nav"), false);
-  assert.match(await page.textContent("#mk-time"), /^(30:00|29:5\d)$/);
-  // Listening: at most two plays of one audio
+  assert.match(await page.textContent("#mk-time"), /^(45:00|44:5\d)$/);
+  // Listening: one play of every audio in the full test
   await page.evaluate(() => { speakSeq = (lines, done) => setTimeout(done, 30); });
-  for (let i = 0; i < 2; i++) { await page.click('[data-act="mk-play"] >> nth=0'); await page.waitForFunction(() => !MK_PLAYING); }
+  await page.click('[data-act="mk-play"] >> nth=0'); await page.waitForFunction(() => !MK_PLAYING);
   assert.equal(await page.locator('[data-act="mk-play"] >> nth=0').isDisabled(), true);
   assert.match(await page.textContent(".mk-audio >> nth=0"), /tugadi/);
   // One answer by tap, then a reload: the run goes on where it stopped
@@ -100,16 +110,18 @@ test("mock: a full run — sections in order, clock, listening limit, a reload, 
   await page.reload();
   await page.waitForSelector(".mk-bar");
   assert.equal(await page.locator(".mk-q >> nth=0 >> .opt.picked").count(), 1);
-  assert.equal(await page.evaluate(() => MK.plays["l0.0"]), 2);
-  // A gap answer typed with the Turkish letter buttons
-  await page.click('[data-act="mk-part"][data-p="1"]');
+  assert.equal(await page.evaluate(() => MK.plays["l0.0"]), 1);
+  assert.match(await page.textContent(".mk-where small"), /^1\/4-boʻlim · 1\/35 javob$/);
+  // A gap answer typed with the Turkish letter buttons (forward only: the next part by the button below)
+  await page.click('.mk-nav [data-act="mk-part"][data-p="1"]');
   await page.fill(".mk-in >> nth=4", "per");
   await page.click('.mk-chars [data-c="ş"]');
   await page.type(".mk-in >> nth=4", "embe");
   assert.equal(await page.evaluate(() => MK.ans.l["1.4"]), "perşembe");
+  assert.equal(await page.textContent("#mk-cnt"), "2", "the bar counts typed answers too");
   // Everything right; the clock running out ends the section
   await page.evaluate(allRight("l"));
-  await page.evaluate(() => { MK.left = 1.2; });
+  await page.evaluate(() => { MK.dl = Date.now() + 1200; });
   await page.waitForSelector(".mk-intro", { timeout: 5000 });
   await calm(page);
   assert.match(await page.textContent(".mk-intro"), /Oʻqish/);
@@ -118,8 +130,7 @@ test("mock: a full run — sections in order, clock, listening limit, a reload, 
   await page.click('[data-act="mk-go"]');
   await page.waitForSelector(".mk-bar");
   await page.evaluate(allRight("r"));
-  await page.evaluate(() => { delete MK.ans.r["0.0"]; delete MK.ans.r["0.1"]; MK.ans.r["3.0"] = 2; mkRender(); });
-  await page.click('[data-act="mk-part"][data-p="3"]');
+  await page.evaluate(() => { const x = mkQs(mkTest("1"), "r").find(q => q.k === "3.0"); delete MK.ans.r["0.0"]; delete MK.ans.r["0.1"]; MK.ans.r["3.0"] = (x.q.a + 1) % x.q.o.length; MK.pi = 4; mkRender(); });
   await page.click('[data-act="mk-end"]');
   assert.match(await page.textContent('[data-act="mk-end"]'), /2 ta savol javobsiz/);
   await page.click('[data-act="mk-end"]');
@@ -151,7 +162,7 @@ test("mock: a full run — sections in order, clock, listening limit, a reload, 
   await page.click('[data-act="mk-sp-stop"]');
   await page.waitForSelector('[data-act="mk-sp-next"]', { timeout: 5000 });
   assert.match(await page.textContent(".mk-heard.done"), /kitap okumayı/);
-  await page.evaluate(s => { [1, 2, 3, 4].forEach(i => { MK.ans.s[i] = { text: s + " " + s }; }); MK.sp = { i: 4, st: "rev" }; mkRender(); }, SPOKEN);
+  await page.evaluate(() => { const t = mkTurns(mkTest("1")); t.forEach((x, i) => { if (i) MK.ans.s[i] = { text: x.q.m }; }); MK.sp = { i: t.length - 1, st: "rev" }; mkRender(); });
   await page.click('[data-act="mk-end"]');
   // The result: the score, the level, sections, the review, XP and the saved best
   await page.waitForSelector(".mk-res");
@@ -173,6 +184,11 @@ test("mock: a full run — sections in order, clock, listening limit, a reload, 
   await page.click('a.btn[href="#mock"]');
   await page.waitForSelector(".mk-best");
   assert.match(await page.textContent(".mk-best"), new RegExp(String(res.res.v)));
+  // …and so does the home page
+  await page.evaluate(() => { location.hash = "#home"; });
+  await page.waitForSelector(".mk-dn-best");
+  assert.match(await page.textContent(".mk-dn-best"), new RegExp(`${res.res.v}/75`));
+  assert.match(await page.textContent('.mk-sk[data-s="l"]'), /75/);
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -194,7 +210,7 @@ test("mock: one section only, leaving pauses the clock, cancelling a started run
   await page.waitForSelector(".mk-bar");
   assert.equal(await page.evaluate(() => MK.secs.join()), "r");
   await page.evaluate(allRight("r"));
-  await page.click('[data-act="mk-part"][data-p="3"]');
+  await page.click('[data-act="mk-part"][data-p="4"]');
   await page.click('[data-act="mk-end"]');
   await page.waitForSelector(".mk-res");
   await calm(page);
@@ -274,7 +290,7 @@ test("mock: history and its chart, the change since last time, the mistakes dril
   const wrong = await page.evaluate(() => {
     const t = mkTest("1"), bad = [];
     ["l", "r"].forEach(s => mkQs(t, s).forEach((x, i) => { const miss = i === 2 || (s === "r" && i < 2); if (miss) bad.push(`1|${s}|${x.k}`);
-      MK.ans[s][x.k] = miss ? (x.p.k === "gap" ? "yok" : (x.q.a + 1) % (x.q.o || x.p.o).length) : x.p.k === "gap" ? x.q.a.split(" / ")[0] : x.q.a; }));
+      MK.ans[s][x.k] = miss ? (mkKind(x) === "gap" ? "yok" : (x.q.a + 1) % (x.q.o || x.p.o).length) : mkKind(x) === "gap" ? x.q.a.split(" / ")[0] : x.q.a; }));
     t.w.tasks.forEach(tk => { MK.ans.w[tk.id] = tk.m; });
     ["l", "r", "w"].forEach(s => { MK.si = MK.secs.indexOf(s); MK.phase = "run"; mkEnd(); });
     return bad;
@@ -289,7 +305,7 @@ test("mock: history and its chart, the change since last time, the mistakes dril
   await page.waitForFunction(() => MK_MIC && MK_MIC.text.length > 20);
   await page.click('[data-act="mk-sp-stop"]');
   await page.waitForSelector(".mk-myrec audio", { timeout: 5000 });
-  await page.evaluate(() => { const t = mkTest("1"); mkTurns(t).forEach((x, i) => { if (i) MK.ans.s[i] = { text: x.q.m }; }); MK.sp = { i: 4, st: "rev" }; mkRender(); });
+  await page.evaluate(() => { const t = mkTurns(mkTest("1")); t.forEach((x, i) => { if (i) MK.ans.s[i] = { text: x.q.m }; }); MK.sp = { i: t.length - 1, st: "rev" }; mkRender(); });
   await page.click('[data-act="mk-end"]');
   await page.waitForSelector(".mk-res");
   await calm(page);
@@ -299,7 +315,7 @@ test("mock: history and its chart, the change since last time, the mistakes dril
   assert.equal(await page.evaluate(() => Object.keys(S.mkh).length), 3);
   // Writing: four criteria per task, the detailed check folded, the model answers score high
   assert.equal(await page.locator(".mk-rub .mk-rrow").count(), 12);
-  assert.equal(await page.locator(".mk-model").count(), 3 + 5);
+  assert.equal(await page.locator(".mk-model").count(), 3 + 8);
   const models = await page.evaluate(() => mkTest("1").w.tasks.map(tk => mkWriteCheck(tk.m, tk).s));
   assert.ok(models.every(s => s >= 80), `model answers ${models}`);
   assert.equal(await page.locator(".mk-rvbox >> nth=3 >> .mk-myrec audio").count(), 1, "the recording is in the review");
@@ -313,7 +329,7 @@ test("mock: history and its chart, the change since last time, the mistakes dril
         if (!MKF || MKF.done) return true;
         const m = MKF.items[MKF.i];
         if (MKF.a === null) {
-          if (m.x.p.k === "gap") { document.getElementById("mk-fin").value = m.x.q.a.split(" / ")[0]; document.querySelector('[data-act="mk-fcheck"]').click(); }
+          if (mkKind(m.x) === "gap") { document.getElementById("mk-fin").value = m.x.q.a.split(" / ")[0]; document.querySelector('[data-act="mk-fcheck"]').click(); }
           else document.querySelector(`[data-act="mk-fo"][data-o="${m.x.q.a}"]`).click();
         }
         document.querySelector('[data-act="mk-fnext"]').click();
@@ -338,6 +354,42 @@ test("mock: history and its chart, the change since last time, the mistakes dril
   await page.evaluate(() => { mkmMark("1|r|0.0", false); MKF = null; location.hash = "#mock"; });
   await page.waitForSelector(".mk-fixgo");
   assert.match(await page.textContent(".mk-fixgo"), /1 ta savol/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("mock: the home page shows the exam first — Deneme and the four skills, no extra card in Mashq", async () => {
+  const { page, errors } = await openApp(browser, "#home");
+  await page.waitForSelector(".mk-hub");
+  // Right after the greeting, before everything else
+  assert.equal(await page.evaluate(() => { const v = document.querySelector('.view[data-v="home"]'), a = [...v.children]; return a.indexOf(v.querySelector(".mk-hub")) === a.indexOf(v.querySelector(".greet")) + 1; }), true);
+  assert.equal(await page.locator(".mk-sk").count(), 4);
+  assert.equal(await page.evaluate(() => typeof MOCK), "undefined", "the tests load only when needed");
+  // One skill: the writing section, not strict unless chosen
+  await page.click('.mk-sk[data-s="w"]');
+  await page.waitForSelector(".mk-intro");
+  assert.match(await page.textContent(".mk-intro"), /Yozish/);
+  assert.deepEqual(await page.evaluate(() => [MK.secs.join(), MK.full, MK.strict]), ["w", false, false]);
+  await page.click('[data-act="mk-go"]');
+  await page.waitForSelector(".mk-situ");
+  // Back home: the started run is offered instead of a new one
+  await page.evaluate(() => { location.hash = "#home"; });
+  await page.waitForSelector('.mk-dn-go[href="#mock-1"]');
+  // The speaking section draws its pictures, the listening map its letters
+  await page.evaluate(() => { MK = null; localStorage.removeItem(MK_KEY); mkStart("1", "s"); });
+  await page.waitForSelector('[data-act="mk-go"]');
+  await page.click('[data-act="mk-go"]');
+  await page.evaluate(() => { MK.sp = { i: 3, st: "ready" }; mkRender(true); });
+  assert.equal(await page.locator(".mk-pics.two .mk-pic svg").count(), 2);
+  assert.equal(await page.evaluate(() => mkTurns(mkTest("1"))[3].talk), 45, "a question's own time");
+  await page.evaluate(() => { MK = null; localStorage.removeItem(MK_KEY); mkStart("1", "l"); });
+  await page.click('[data-act="mk-go"]');
+  await page.evaluate(() => { MK.pi = mkTest("1").l.parts.findIndex(p => p.map); mkRender(true); });
+  assert.equal(await page.locator(".mk-map .mk-mb").count(), 7);
+  assert.equal(await page.locator(".mk-q >> nth=0 >> .mk-opts.letters .opt").count(), 7);
+  await page.evaluate(() => { location.hash = "#practice"; });
+  await page.waitForSelector(".sk-tile");
+  assert.equal(await page.locator(".mk-entry").count(), 0);
   assert.deepEqual(errors, []);
   await page.close();
 });

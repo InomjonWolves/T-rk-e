@@ -83,9 +83,10 @@ test("audio: the text list covers every word, dialogs and readings; site config 
   const a = list.filter(x => x[0] === "a"), b = list.filter(x => x[0] === "b"), p = list.filter(x => x[0].startsWith("p:"));
   assert.ok(a.length > 3500, `${a.length} texts`);
   assert.ok(b.length > 50, "second dialog voice");
-  // Every dialog and story line in its character's voice, and the conversations in order (stories first) for one request each
+  // Every dialog and story line in its character's voice, and the conversations in order (the mock exams' listening, then the stories) for one request each
   assert.ok(p.length > 500 && p.some(x => x[0] === "p:Dilnoza") && p.some(x => x[0] === "p:_"), `${p.length} character lines`);
-  assert.ok(list.groups.length > 40 && list.groups[0].id.startsWith("hk:") && list.groups.every(g => g.lines.length && g.lines.every(([w, t]) => p.some(x => x[0] === "p:" + w && x[1] === t))));
+  const firstHk = list.groups.findIndex(g => g.id.startsWith("hk:"));
+  assert.ok(list.groups.length > 40 && list.groups[0].id.startsWith("mk:") && firstHk > 0 && list.groups.slice(0, firstHk).every(g => g.id.startsWith("mk:")) && list.groups.every(g => g.lines.length && g.lines.every(([w, t]) => p.some(x => x[0] === "p:" + w && x[1] === t))));
   const keys = new Set(list.map(([v, t]) => gen.audioKey(t, v)));
   assert.equal(keys.size, list.length, "no key collisions");
   assert.ok(list.some(x => x[1] === "Ben de memnun oldum."), "course dialog line");

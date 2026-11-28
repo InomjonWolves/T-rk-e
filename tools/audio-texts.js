@@ -63,9 +63,10 @@ async function collect() {
       add("Merhaba! Türkçe öğreniyorum.");
       return { out, groups };
     });
-    // Stories first (unshift above keeps them in reverse): the story order of the file
-    const hk = r.groups.filter(g => g.id.startsWith("hk:")).reverse(), rest = r.groups.filter(g => !g.id.startsWith("hk:"));
-    r.out.groups = hk.concat(rest);
+    // The mock exams' listening first (the app's strongest part, played once in the real exam), then the stories
+    // (unshift above keeps them in reverse: the story order of the file), then the rest
+    const mk = r.groups.filter(g => g.id.startsWith("mk:")), hk = r.groups.filter(g => g.id.startsWith("hk:")).reverse(), rest = r.groups.filter(g => !/^(mk|hk):/.test(g.id));
+    r.out.groups = mk.concat(hk, rest);
     return r.out;
   } finally { await browser.close(); }
 }

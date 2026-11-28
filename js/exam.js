@@ -34,6 +34,9 @@ const mkTest = id => mkReady() ? MOCK.tests.find(t => t.id === id) : null;
 const mkSk = sec => SKILLS.find(x => x.id === sec);
 const mkClock = s => { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
 const mkRe = src => new RegExp(`(^|[^a-zçğıöşü])(${src})`);
+const mkKind = x => x.q.k || x.p.k;
+// The audio a listening question is about: its own, the part's, or the extract heard just before it (two questions an extract)
+const mkAuOf = x => { if (x.q.audio || x.p.audio) return x.q.audio || x.p.audio; for (let i = x.qi - 1; i >= 0; i--) if (x.p.qs[i].audio) return x.p.qs[i].audio; return null; };
 const mkWords = t => String(t || "").trim().split(/\s+/).filter(w => /[a-zçğıöşüA-ZÇĞİÖŞÜ]/.test(w)).length;
 function mkLevel(v) { for (const [lv, min] of MOCK.scale.bands) if (v >= min) return lv; return "B1 dan past"; }
 // The questions of a listening or reading section, numbered through the section
@@ -45,7 +48,7 @@ function mkQs(t, sec) {
 // Speaking: every question of every part is one turn
 function mkTurns(t) {
   const out = [];
-  t.s.parts.forEach((p, pi) => p.qs.forEach((q, qi) => out.push({ p, pi, q, qi, prep: p.prep, talk: p.talk })));
+  t.s.parts.forEach((p, pi) => p.qs.forEach((q, qi) => out.push({ p, pi, q, qi, prep: q.prep != null ? q.prep : p.prep, talk: q.talk || p.talk })));
   return out;
 }
 const mkSecMin = (t, sec) => sec === "s" ? Math.ceil(mkTurns(t).reduce((a, x) => a + x.prep + x.talk + 20, 0) / 60) : t[sec].min;
@@ -58,7 +61,7 @@ function mkSaveSoon() { clearTimeout(MK_SAVE_T); MK_SAVE_T = setTimeout(mkSave, 
 function mkLoad() {
   if (MK) return MK;
   try { MK = JSON.parse(localStorage.getItem(MK_KEY) || "null"); } catch (e) { MK = null; }
-  if (MK && !mkTest(MK.id)) MK = null;
+  if (MK && mkReady() && !mkTest(MK.id)) MK = null;
   // A reload in the middle of speaking starts that turn again
   if (MK && MK.sp && MK.sp.st !== "rev") MK.sp.st = "ready";
   if (MK && MK.phase === "wait") MK.phase = "run";
@@ -71,7 +74,8 @@ function mkStart(id, which) {
   if (mkLoad() && mkBusy() && MK.started) { toast("Boshlangan sinovni davom ettiring yoki bekor qiling"); go("mock-" + MK.id); return; }
   const secs = which === "all" ? MK_SECS.slice() : [which];
   Object.values(MK_RECS).forEach(u => { try { URL.revokeObjectURL(u); } catch (e) {} }); MK_RECS = {};
-  MK = { id, secs, full: which === "all", strict: !!S.mkStrict, si: 0, pi: 0, phase: "intro", left: 0, t: 0, started: 0, ans: { l: {}, r: {}, w: {}, s: {} }, ord: {}, plays: {}, used: {}, score: {}, xp: {}, sp: { i: 0, st: "ready" }, res: null };
+  // The full test is always strict, like the real exam; a single section follows the learner's switch
+  MK = { id, secs, full: which === "all", strict: which === "all" || !!S.mkStrict, si: 0, pi: 0, phase: "intro", left: 0, t: 0, started: 0, ans: { l: {}, r: {}, w: {}, s: {} }, ord: {}, plays: {}, used: {}, score: {}, xp: {}, sp: { i: 0, st: "ready" }, res: null };
   // Options of a question with its own choices come in a new order every run (shared A–F options keep theirs)
   ["l", "r"].forEach(sec => mkQs(t, sec).forEach(x => { if (x.q.o) MK.ord[sec + x.k] = shuffle(x.q.o.map((_, i) => i)); }));
   mkSave();
@@ -128,10 +132,10 @@ function mkTestCard(t) {
     <div class="mk-test-head"><div><b lang="tr">${esc(t.tr)}</b><small>${esc(t.uz)} · ~${Math.round(total / 6) / 10} soat</small></div>
       ${r.b != null ? `<span class="mk-best" title="Eng yaxshi natija"><b>${r.b}</b><small>/ ${MOCK.scale.max}</small></span>` : ""}</div>
     ${mkSecGrid(t)}
-    <button class="btn btn-grad btn-block" data-act="mk-start" data-id="${t.id}" data-s="all">${ICON.trophy}Toʻliq sinovni boshlash</button>
+    <button class="btn btn-grad btn-block" data-act="mk-start" data-id="${t.id}" data-s="all">${ICON.trophy}Toʻliq sinov · qatʼiy rejimda</button>
     <p class="muted mk-or">Yoki faqat bitta boʻlim:</p>
     <div class="mk-ones">${MK_SECS.map(s => k(s)).join("")}</div>
-    <button class="set-row mk-strict" data-act="mk-strict" role="switch" aria-checked="${!!S.mkStrict}"><span><b>Qatʼiy rejim</b><small>Haqiqiy imtihondagidek: vaqt toʻxtamaydi, audio 1 marta, orqaga qaytib boʻlmaydi</small></span><span class="switch"></span></button>
+    <button class="set-row mk-strict" data-act="mk-strict" role="switch" aria-checked="${!!S.mkStrict}"><span><b>Boʻlim mashqida ham qatʼiy rejim</b><small>Vaqt toʻxtamaydi, audio 1 marta, orqaga qaytib boʻlmaydi. Toʻliq sinov doim shunday</small></span><span class="switch"></span></button>
   </div>
   ${mkHistHTML(t)}`;
 }
@@ -184,11 +188,45 @@ function mkResumeCard() {
     <p class="muted">Hozirgi boʻlim: ${sec.uz}${MK.phase === "run" && MK.secs[MK.si] !== "s" ? ` · ${mkClock(MK.left)} qoldi` : ""}. ${MK.strict ? "Qatʼiy rejim: vaqt toʻxtamaydi." : "Vaqt faqat sinov oynasi ochiq turganda yuradi."}</p>
     <div class="fr-actions"><button class="btn btn-ghost" data-act="mk-cancel">Bekor qilish</button><a class="btn btn-grad" href="#mock-${MK.id}">Davom ettirish</a></div></div>`;
 }
+// The test a button on the home page starts: the one tried least (for the full test — fewest full runs)
+function mkPick(which) {
+  const r = id => (S.mk || {})[id] || {}, n = t => which === "all" ? r(t.id).n || 0 : mkHistList(t.id).filter(h => !h.f && h.s[which] != null).length;
+  return MOCK.tests.slice().sort((a, b) => n(a) - n(b))[0].id;
+}
+/* The home page's first block: the full mock exam (always strict) and each section on its own.
+   Works before mock.js is loaded: counts and times come from MOCK_INFO, the scores from S.mk */
+const MOCK_INFO = { l: [35, 45, "Dinleme"], r: [35, 60, "Okuma"], w: [3, 60, "Yazma"], s: [8, 13, "Konuşma"] };
+function mkBest(sec) { let b = null; Object.values(S.mk || {}).forEach(r => { const v = sec ? r.s && r.s[sec] : r.b; if (v != null && (b == null || v > b)) b = v; }); return b; }
+function mkHomeHub() {
+  const busy = mkLoad() && mkBusy() && MK.started, best = mkBest(), max = 75, nfix = Object.values(S.mkm || {}).filter(mkmSt).length;
+  const steps = MK_SECS.map(sec => { const k = mkSk(sec), [, m, tr] = MOCK_INFO[sec];
+    return `<li><span class="mk-dn-si">${ICON[k.ico]}</span><b lang="tr">${tr}</b><small>${m} daq</small></li>`; }).join("");
+  const tile = sec => { const k = mkSk(sec), [n, m] = MOCK_INFO[sec], b = mkBest(sec);
+    return `<button class="mk-sk" data-act="mk-start" data-id="auto" data-s="${sec}">
+      <span class="mk-sk-ico ${k.c}-t">${ICON[k.ico]}</span>
+      <span class="mk-sk-txt"><b>${k.uz}</b><small>${n} ${mkSecUnit(sec)} · ${m} daq</small></span>
+      ${b != null ? `<span class="mk-sk-best"><b>${b}</b><span class="sr">ball — eng yaxshi natija</span></span>` : `<span class="mk-sk-go">${ICON.chev}</span>`}</button>`; };
+  return `<section class="mk-hub" aria-labelledby="mk-hub-h">
+    <div class="mk-deneme">
+      <div class="mk-dn-top"><span class="hero-chip"><i>${ICON.trophy}</i><span data-lat="">CEFR · Multilevel</span></span>
+        ${best != null ? `<span class="mk-dn-best"><small>Eng yaxshi</small><b>${best}<small>/${max}</small></b><small>${mkLevelOf(best)}</small></span>` : ""}</div>
+      <h2 id="mk-hub-h" lang="tr">Deneme <span class="hl">sınavı</span></h2>
+      <p>Haqiqiy imtihondagidek: rasmiy vaqt, qatʼiy tartib, 0–${max} ball va daraja.</p>
+      <ol class="mk-dn-steps" aria-label="Sinov boʻlimlari">${steps}</ol>
+      ${busy ? `<a class="btn btn-white btn-block mk-dn-go" href="#mock-${MK.id}">${ICON.play}Boshlangan sinovni davom ettirish</a>`
+        : `<button class="btn btn-white btn-block mk-dn-go go" data-act="mk-start" data-id="auto" data-s="all">Sinovni boshlash<span class="mk-dn-arrow">${ICON.chev}</span></button>`}
+    </div>
+    <h3 class="mk-hub-or">Yoki bitta koʻnikmani sinang</h3>
+    <div class="mk-sks">${MK_SECS.map(tile).join("")}</div>
+    <div class="mk-hub-links"><a class="link" href="#mock">${ICON.list}Natijalar va baholash</a>${nfix ? `<a class="link" href="#mock-fix">${ICON.target}Xatolar ustida ishlash · ${nfix}</a>` : ""}</div>
+  </section>`;
+}
+const mkLevelOf = v => mkReady() ? mkLevel(v) : v >= 65 ? "C1" : v >= 51 ? "B2" : v >= 38 ? "B1" : "B1 dan past";
 function viewMockList() {
   if (!mkReady()) return `${topbar()}${catLoader()}`;
   const sc = MOCK.scale;
   return `${topbar()}
-  <div><a class="back" href="#practice">${ICON.back}Mashq</a></div>
+  <div><a class="back" href="#home">${ICON.back}Asosiy</a></div>
   <div class="lesson-head"><div class="tags"><span class="tag orange-t">${ICON.trophy}Imtihon sinovi</span></div>
     <h1>Imtihon sinovi</h1><p class="sub">Haqiqiy imtihondagidek: toʻrt boʻlim, vaqt chegarasi, avtomatik baholash va har bir xatoning izohi.</p></div>
   ${mkResumeCard()}
@@ -230,7 +268,7 @@ function mkRender(top) {
 function mkBar(t, sec) {
   const k = mkSk(sec), n = MK.secs.length;
   return `<div class="mk-bar"><a class="mk-exit" href="#mock" aria-label="Toʻxtatish va chiqish">${ICON.back}</a>
-    <span class="mk-where"><b>${k.uz}</b><small>${n > 1 ? `${MK.si + 1}/${n}-boʻlim · ` : ""}<span lang="tr">${esc(t.tr)}</span></small></span>
+    <span class="mk-where"><b>${k.uz}</b><small>${n > 1 ? `${MK.si + 1}/${n}-boʻlim · ` : ""}${sec === "l" || sec === "r" ? `<span id="mk-cnt">${mkSecCount(t, sec) - mkUnanswered(t, sec)}</span>/${mkSecCount(t, sec)} javob` : `<span lang="tr">${esc(t.tr)}</span>`}</small></span>
     <span class="mk-time${sec !== "s" && MK.left <= 300 ? " low" : ""}" id="mk-time" role="timer" aria-label="Qolgan vaqt">${sec === "s" ? mkSpClock() : mkClock(MK.left)}</span></div>`;
 }
 function mkRunHTML(t) {
@@ -260,7 +298,7 @@ function mkRunHTML(t) {
   const left = mkUnanswered(t, sec);
   return `${mkBar(t, sec)}
   <nav class="mk-ptabs" aria-label="Qismlar">${tabs}</nav>
-  ${sec === "w" ? mkTaskHTML(p) : mkPartHTML(t, sec, p, MK.pi)}
+  ${sec === "w" ? mkTaskHTML(p, t) : mkPartHTML(t, sec, p, MK.pi)}
   <div class="mk-nav">
     ${fwd ? `<span class="mk-fwd muted">Orqaga qaytib boʻlmaydi</span>` : `<button class="btn btn-ghost" data-act="mk-part" data-p="${MK.pi - 1}" ${MK.pi ? "" : "disabled"}>${ICON.back}Oldingi</button>`}
     ${last ? `<button class="btn btn-grad" data-act="mk-end" data-n="${left}">${ICON.check}Boʻlimni yakunlash</button>` : `<button class="btn btn-grad" data-act="mk-part" data-p="${MK.pi + 1}">Keyingi qism</button>`}
@@ -279,37 +317,81 @@ const mkParas = s => String(s).split(/\n\n+/).map(x => `<p>${esc(x).replace(/\n/
 function mkAudioHTML(key, au) {
   const n = MK.plays[key] || 0, on = MK_PLAYING === key, left = mkPlays() - n;
   return `<div class="mk-audio${on ? " on" : ""}"><button class="btn ${on ? "btn-soft" : "btn-grad"}" data-act="mk-play" data-k="${key}" ${on || left <= 0 || MK_PLAYING ? "disabled" : ""}>${ICON.speak}${on ? "Eshitilmoqda…" : n ? "Yana tinglash" : "Tinglash"}</button>
-    <small>${on ? "Diqqat bilan tinglang" : left > 0 ? `${left} marta tinglash mumkin` : "Tinglash imkoniyati tugadi"}</small></div>`;
+    <small>${on ? "Diqqat bilan tinglang" : left > 0 ? `${left} marta tinglash mumkin` : "Tinglash imkoniyati tugadi"}</small>
+    ${!on && !n && !canSpeak() ? `<p class="mk-nosound">Bu qurilmada turkcha ovoz topilmadi. Internetga ulaning (yozuvlar saytdan keladi) yoki Chrome brauzerida oching.</p>` : ""}</div>`;
 }
 function mkPartHTML(t, sec, p, pi) {
-  const qs = mkQs(t, sec).filter(x => x.pi === pi), shared = p.o, letters = shared && shared.some(o => o.length > 14);
+  const qs = mkQs(t, sec).filter(x => x.pi === pi), shared = p.o, letters = shared && shared.some(o => o.length > 14), tiny = shared && shared.every(o => o.length <= 2);
   const opt = (x, j, label) => { const v = MK.ans[sec][x.k];
     return `<button class="opt${v === j ? " picked" : ""}" data-act="mk-o" data-k="${x.k}" data-o="${j}" aria-pressed="${v === j}"${letters ? ` aria-label="${String.fromCharCode(65 + j)}: ${esc(shared[j])}"` : ""}>${label}</button>`; };
   const q = x => {
     const num = `<span class="mk-n">${x.n}</span>`;
-    if (p.k === "gap") {
+    if (mkKind(x) === "gap") {
       const [a, b] = x.q.q.split("___"), v = MK.ans[sec][x.k] || "";
       return `<div class="mk-q mk-gap">${num}<p lang="tr">${esc(a)}<input class="mk-in" data-mkk="${sec}|${x.k}" value="${esc(v)}" autocomplete="off" autocapitalize="off" spellcheck="false" lang="tr" aria-label="${x.n}-savol javobi">${esc(b || "")}</p></div>`;
     }
     const own = x.q.o, ord = own ? MK.ord[sec + x.k] || own.map((_, i) => i) : shared.map((_, i) => i);
-    return `<div class="mk-q">${x.q.audio ? mkAudioHTML(sec + x.k, x.q.audio) : ""}<p class="mk-qt">${num}<span lang="tr">${esc(x.q.q)}</span></p>
-      <div class="mk-opts${letters ? " letters" : shared ? " row" : ""}" lang="tr">${ord.map(j => opt(x, j, letters ? String.fromCharCode(65 + j) : own ? esc(own[j]) : esc(shared[j]))).join("")}</div></div>`;
+    return `<div class="mk-q${x.q.h ? " mk-ex" : ""}">${x.q.h ? `<p class="mk-exh">${esc(x.q.h)}</p>` : ""}${x.q.audio ? mkAudioHTML(sec + x.k, x.q.audio) : ""}<p class="mk-qt">${num}<span lang="tr">${esc(x.q.q)}</span></p>
+      <div class="mk-opts${!own && (letters || tiny) ? " letters" : !own && shared ? " row" : ""}" lang="tr">${ord.map(j => opt(x, j, !own && letters ? String.fromCharCode(65 + j) : own ? esc(own[j]) : esc(shared[j]))).join("")}</div></div>`;
   };
   return `<section class="glass pad mk-part">
     <h2>${esc(p.t)}</h2><p class="mk-d">${esc(p.d)}</p>
     ${p.audio ? mkAudioHTML(sec + pi, p.audio) : ""}
+    ${p.map ? mkMap(p.map) : ""}
     ${p.text || p.title ? `<article class="mk-text" lang="tr">${p.title ? `<h3>${esc(p.title)}</h3>` : ""}${p.text ? mkParas(p.text) : ""}</article>` : ""}
+    ${p.sum ? `<article class="mk-text mk-sum"><h3>Xulosa</h3><div lang="tr">${mkParas(p.sum)}</div></article>` : ""}
     ${letters ? `<ol class="mk-legend" lang="tr">${shared.map((o, j) => `<li><b>${String.fromCharCode(65 + j)}</b>${esc(o)}</li>`).join("")}</ol>` : ""}
     <div class="mk-qs${qs.some(x => x.q.q.length > 60 && !x.q.o) ? " long" : ""}">${qs.map(q).join("")}</div>
-    ${p.k === "gap" ? mkChars() : ""}
+    ${qs.some(x => mkKind(x) === "gap") ? mkChars() : ""}
   </section>`;
 }
+// A plan for the map task: lettered buildings, paths, named landmarks (our own drawing from the test's data)
+function mkMap(m) {
+  const g = m.gate, txt = (x, y, cls, t) => `<text class="${cls}" x="${x}" y="${y}" text-anchor="middle">${esc(t)}</text>`;
+  return `<figure class="mk-map"><svg viewBox="0 0 ${m.w} ${m.h}" role="img" lang="tr" aria-label="Xarita: ${m.boxes.map(b => b.l).join(", ")} harfli binolar${m.marks.map(k => ", " + k.t).join("")}${g ? ", " + g.t : ""}">
+    <rect class="mk-mbg" width="${m.w}" height="${m.h}" rx="12"/>
+    ${m.paths.map(([a, b, c, d]) => `<line class="mk-mp" x1="${a}" y1="${b}" x2="${c}" y2="${d}"/>`).join("")}
+    ${m.boxes.map(b => `<rect class="mk-mb" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="7"/>${txt(b.x + b.w / 2, b.y + b.h / 2 + 7, "mk-ml", b.l)}`).join("")}
+    ${m.marks.map(k => `<circle class="mk-mk" cx="${k.x}" cy="${k.y}" r="${k.r}"/>${txt(k.x, k.y + 4, "mk-mt", k.t)}`).join("")}
+    ${g ? `<rect class="mk-mg" x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" rx="7"/>${txt(g.x + g.w / 2, g.y + g.h / 2 + 4, "mk-mgt", g.t)}` : ""}
+  </svg></figure>`;
+}
+/* The speaking tasks' pictures: simple scenes of our own, drawn with the design's colours (they follow the dark theme) */
+const pcCar = (x, y, c) => `<rect class="pc-${c}" x="${x}" y="${y - 8}" width="28" height="9" rx="3"/><rect class="pc-${c}" x="${x + 6}" y="${y - 14}" width="15" height="7" rx="2"/><circle class="pc-wheel" cx="${x + 7}" cy="${y + 1}" r="3"/><circle class="pc-wheel" cx="${x + 21}" cy="${y + 1}" r="3"/>`;
+const pcTree = (x, y, r) => `<rect class="pc-trunk" x="${x - 2}" y="${y}" width="4" height="${r + 6}"/><circle class="pc-leaf" cx="${x}" cy="${y}" r="${r}"/>`;
+const MK_PICS = {
+  sehir: ["Şehir: yüksek binalar, yol ve arabalar", () => {
+    let b = "";
+    [[10, 30, 34, 80, "b1"], [50, 12, 30, 98, "b2"], [86, 44, 38, 66, "b3"], [130, 22, 28, 88, "b1"], [164, 50, 28, 60, "b2"]].forEach(([x, y, w, h, c]) => {
+      b += `<rect class="pc-${c}" x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>`;
+      for (let yy = y + 7; yy < y + h - 9; yy += 11) for (let xx = x + 5; xx <= x + w - 10; xx += 9) b += `<rect class="pc-win" x="${xx}" y="${yy}" width="5" height="6" rx="1"/>`;
+    });
+    return `<rect class="pc-sky" width="200" height="130"/><circle class="pc-sun" cx="178" cy="20" r="10"/>${b}<rect class="pc-road" y="110" width="200" height="20"/>${[8, 48, 88, 128, 168].map(x => `<rect class="pc-line" x="${x}" y="119" width="22" height="2" rx="1"/>`).join("")}${pcCar(26, 116, "c1")}${pcCar(122, 126, "c2")}`;
+  }],
+  koy: ["Köy: tepeler, küçük bir ev, ağaçlar ve çit", () => `<rect class="pc-sky" width="200" height="130"/><circle class="pc-sun" cx="30" cy="24" r="11"/>
+    <ellipse class="pc-hill2" cx="150" cy="104" rx="110" ry="42"/><ellipse class="pc-hill" cx="40" cy="112" rx="112" ry="36"/><rect class="pc-grass" y="104" width="200" height="26"/>
+    <polygon class="pc-path" points="94,104 106,104 122,130 78,130"/>
+    <rect class="pc-wall" x="74" y="66" width="52" height="38"/><polygon class="pc-roof" points="66,68 100,42 134,68"/><rect class="pc-door" x="94" y="82" width="12" height="22" rx="1"/><rect class="pc-win2" x="80" y="74" width="10" height="9"/><rect class="pc-win2" x="110" y="74" width="10" height="9"/>
+    ${pcTree(28, 82, 13)}${pcTree(52, 90, 9)}${pcTree(160, 78, 14)}
+    ${[140, 148, 156, 164, 172, 180, 188].map(x => `<rect class="pc-fence" x="${x}" y="96" width="3" height="12"/>`).join("")}<rect class="pc-fence" x="138" y="99" width="54" height="2"/>`],
+  calisma: ["Kütüphanede bilgisayarla ders çalışan bir genç kız", () => `<rect class="pc-room" width="200" height="130"/>
+    <rect class="pc-frame" x="128" y="12" width="58" height="46" rx="2"/><rect class="pc-sky" x="132" y="16" width="50" height="38"/><circle class="pc-sun" cx="170" cy="27" r="6"/>
+    <rect class="pc-shelf" x="12" y="10" width="72" height="94" rx="2"/>${[0, 1, 2].map(r => [0, 1, 2, 3, 4, 5, 6].map(i => `<rect class="pc-bk${(i + r) % 3}" x="${17 + i * 9}" y="${16 + r * 30 + (i % 2) * 3}" width="7" height="${22 - (i % 2) * 3}" rx="1"/>`).join("") + `<rect class="pc-board" x="12" y="${39 + r * 30}" width="72" height="3"/>`).join("")}
+    <rect class="pc-floor" y="104" width="200" height="26"/>
+    <rect class="pc-chair" x="92" y="78" width="20" height="30" rx="4"/>
+    <circle class="pc-skin" cx="102" cy="55" r="9"/><path class="pc-hair" d="M93 55 q0 -12 9 -12 q10 0 10 12 q-3 -6 -10 -7 q-6 1 -9 7z"/><rect class="pc-shirt" x="90" y="65" width="24" height="24" rx="8"/>
+    <rect class="pc-table" x="66" y="86" width="118" height="6" rx="2"/><rect class="pc-table" x="72" y="92" width="5" height="16"/><rect class="pc-table" x="172" y="92" width="5" height="16"/>
+    <rect class="pc-lap" x="122" y="67" width="30" height="19" rx="2"/><rect class="pc-lapb" x="118" y="85" width="38" height="3" rx="1"/>
+    <rect class="pc-bk0" x="160" y="80" width="18" height="5" rx="1"/><rect class="pc-bk1" x="161" y="75" width="16" height="5" rx="1"/>`]
+};
+const mkPic = (k, i, n) => { const p = MK_PICS[k]; return p ? `<figure class="mk-pic"><svg viewBox="0 0 200 130" role="img" lang="tr" aria-label="${esc(p[0])}">${p[1]()}</svg>${n > 1 ? `<figcaption>${i + 1}-rasm</figcaption>` : ""}</figure>` : ""; };
 // Turkish letters a phone keyboard may not have at hand: they go into the field typed in last
 const mkChars = () => `<div class="mk-chars" lang="tr" aria-label="Turkcha harflar">${["ç", "ğ", "ı", "İ", "ö", "ş", "ü"].map(c => `<button data-act="mk-ch" data-c="${c}">${c}</button>`).join("")}</div>`;
-function mkTaskHTML(tk) {
+function mkTaskHTML(tk, t) {
   const v = MK.ans.w[tk.id] || "", wc = mkWords(v);
   return `<section class="glass pad mk-part">
     <h2>${esc(tk.t)}</h2><p class="mk-d">${esc(tk.d)}</p>
+    ${tk.ctx && t.w.ctx ? `<article class="mk-text mk-situ" lang="tr">${mkParas(t.w.ctx)}</article>` : ""}
     <article class="mk-text mk-task" lang="tr">${mkParas(tk.tr)}</article>
     <textarea class="mk-write" data-mkw="${tk.id}" lang="tr" spellcheck="false" autocapitalize="sentences" rows="10" aria-label="${esc(tk.t)} — matningiz" placeholder="Shu yerga turkcha yozing…">${esc(v)}</textarea>
     <div class="mk-wc"><span id="mk-wc-${tk.id.replace(".", "-")}" class="${wc >= tk.min && wc <= tk.max ? "ok" : ""}">${wc} soʻz</span><small>talab: ${tk.min}–${tk.max} soʻz</small></div>
@@ -339,6 +421,7 @@ function mkSpeakHTML(t) {
   return `<section class="glass pad mk-part mk-speak">
     <h2>${esc(x.p.t)}</h2><p class="mk-d">${esc(x.p.d)}</p>
     <p class="mk-progress muted">${sp.i + 1}/${turns.length}-savol</p>
+    ${x.p.pics ? `<div class="mk-pics${x.p.pics.length > 1 ? " two" : ""}">${x.p.pics.map((k, i, a) => mkPic(k, i, a.length)).join("")}</div>` : ""}
     <div class="mk-prompt"><p class="mk-qt" lang="tr">${esc(q.q)}</p>${cues}${pc}</div>
     ${act}
   </section>`;
@@ -496,7 +579,7 @@ function mkScoreSec(t, sec) {
 }
 function mkRight(sec, x) {
   const v = MK.ans[sec][x.k];
-  if (x.p.k === "gap") return ansMatch(v || "", x.q.a) === 2;
+  if (mkKind(x) === "gap") return ansMatch(v || "", x.q.a) === 2;
   return v === x.q.a;
 }
 function mkEnd() {
@@ -566,10 +649,11 @@ function mkReviewHTML(t, sec) {
   if (sec === "l" || sec === "r") {
     body = mkQs(t, sec).map((x, i) => {
       const ok = sc.ok[i], v = MK.ans[sec][x.k], o = x.q.o || x.p.o, letters = x.p.o && x.p.o.some(s => s.length > 14);
-      const show = j => j === undefined || j === "" ? "—" : x.p.k === "gap" ? j : (letters ? String.fromCharCode(65 + j) + ") " : "") + o[j];
-      const right = x.p.k === "gap" ? x.q.a.split(" / ")[0] : show(x.q.a);
+      const gap = mkKind(x) === "gap", lt = letters && !x.q.o;
+      const show = j => j === undefined || j === "" ? "—" : gap ? j : (lt ? String.fromCharCode(65 + j) + ") " : "") + o[j];
+      const right = gap ? x.q.a.split(" / ")[0] : show(x.q.a);
       return `<div class="mk-rv${ok ? " ok" : " no"}"><span class="mk-n">${x.n}</span><div>
-        <p lang="tr">${esc(x.p.k === "gap" ? x.q.q.replace("___", "…") : x.q.q.length > 140 ? x.q.q.slice(0, 140) + "…" : x.q.q)}</p>
+        ${gap && x.q.q === "___" ? `<p class="muted">(${x.n}) boʻsh joy</p>` : `<p lang="tr">${esc(gap ? x.q.q.replace("___", "…") : x.q.q.length > 140 ? x.q.q.slice(0, 140) + "…" : x.q.q)}</p>`}
         <p class="mk-rv-a">${ok ? `${ICON.check}<span lang="tr">${esc(show(v))}</span>` : `Sizning javobingiz: <span lang="tr">${esc(show(v))}</span><br>Toʻgʻri javob: <b lang="tr">${esc(right)}</b>`}</p>
         ${ok ? "" : `<p class="mk-why">${esc(x.q.e)}</p>`}</div></div>`;
     }).join("");
@@ -615,7 +699,7 @@ function mkFixStart() {
   list.forEach(m => {
     items.push(m);
     const sim = MOCK.tests.filter(t => t.id !== m.t.id).flatMap(t => mkQs(t, m.sec).filter(x => x.pi === m.x.pi).map(x => ({ key: `${t.id}|${m.sec}|${x.k}`, t, sec: m.sec, x, sim: 1 })))
-      .filter(c => !keys.has(c.key) && !items.some(i => i.key === c.key));
+      .filter(c => mkKind(c.x) === mkKind(m.x) && !keys.has(c.key) && !items.some(i => i.key === c.key));
     if (sim.length) items.push(sim[Math.floor(Math.random() * sim.length)]);
   });
   MKF = { items, i: 0, a: null, v: "", right: 0, done: null, ord: items.map(m => m.x.q.o ? shuffle(m.x.q.o.map((_, j) => j)) : null) };
@@ -632,16 +716,16 @@ function viewMockFix() {
       <div class="fr-actions"><a class="btn btn-ghost" href="#mock">Sinovlar</a>${left ? `<button class="btn btn-grad" data-act="mk-fagain">Yana mashq qilish</button>` : `<a class="btn btn-grad" href="#mock">Yangi sinov</a>`}</div></div>`;
   }
   const m = MKF.items[MKF.i], x = m.x, p = x.p, k = mkSk(m.sec), q = x.q, answered = MKF.a !== null, n = MKF.items.length;
-  const ctxAudio = m.sec === "l" ? (q.audio || p.audio) : null;
+  const ctxAudio = m.sec === "l" ? mkAuOf(m.x) : null;
   let body;
-  if (p.k === "gap") {
+  if (mkKind(x) === "gap") {
     const [a, b] = q.q.split("___"), ok = answered && MKF.a === 1;
-    body = `<p class="mk-gapline" lang="tr">${esc(a)}<input class="mk-in" id="mk-fin" value="${esc(MKF.v)}" autocomplete="off" autocapitalize="off" spellcheck="false" lang="tr" aria-label="Javob" ${answered ? "disabled" : ""}>${esc(b || "")}</p>
+    body = `<p class="mk-gapline" lang="tr">${q.q === "___" ? `(${x.n}) ` : ""}${esc(a)}<input class="mk-in" id="mk-fin" value="${esc(MKF.v)}" autocomplete="off" autocapitalize="off" spellcheck="false" lang="tr" aria-label="Javob" ${answered ? "disabled" : ""}>${esc(b || "")}</p>
       ${answered ? `<div class="feedback ${ok ? "ok" : "no"}">${ok ? "Toʻgʻri!" : `Toʻgʻri javob: <b lang="tr">${esc(q.a.split(" / ")[0])}</b>`}</div>` : `${mkChars()}<button class="btn btn-grad btn-block" data-act="mk-fcheck">${ICON.check}Tekshirish</button>`}`;
   } else {
-    const shared = p.o, letters = shared && shared.some(o => o.length > 14), opts = q.o || shared, ord = MKF.ord[MKF.i] || opts.map((_, j) => j);
+    const shared = q.o ? null : p.o, letters = shared && shared.some(o => o.length > 14), tiny = shared && shared.every(o => o.length <= 2), opts = q.o || p.o, ord = MKF.ord[MKF.i] || opts.map((_, j) => j);
     body = `${letters ? `<ol class="mk-legend" lang="tr">${shared.map((o, j) => `<li><b>${String.fromCharCode(65 + j)}</b>${esc(o)}</li>`).join("")}</ol>` : ""}
-      <div class="mk-opts${letters ? " letters" : shared ? " row" : ""}" lang="tr">${ord.map(j => { const cls = answered ? (j === q.a ? " right" : MKF.a === j ? " wrong" : "") : "";
+      <div class="mk-opts${letters || tiny ? " letters" : shared ? " row" : ""}" lang="tr">${ord.map(j => { const cls = answered ? (j === q.a ? " right" : MKF.a === j ? " wrong" : "") : "";
         return `<button class="opt${cls}" data-act="mk-fo" data-o="${j}" ${answered ? "disabled" : ""}${letters ? ` aria-label="${String.fromCharCode(65 + j)}: ${esc(shared[j])}"` : ""}>${letters ? String.fromCharCode(65 + j) : esc(opts[j])}</button>`; }).join("")}</div>
       ${answered ? `<div class="feedback ${MKF.a === q.a ? "ok" : "no"}">${MKF.a === q.a ? "Toʻgʻri!" : "Afsus — toʻgʻri javob yashil bilan belgilangan."}</div>` : ""}`;
   }
@@ -653,7 +737,9 @@ function viewMockFix() {
     <small class="muted">${MKF.i + 1}/${n} · ${esc(p.t)} · <span lang="tr">${esc(m.t.tr)}</span></small>
     ${ctxAudio ? `<div class="mk-audio"><button class="btn btn-grad" data-act="mk-fplay">${ICON.speak}Tinglash</button><small>Istalgancha tinglash mumkin</small></div>` : ""}
     ${m.sec === "r" && (p.text || p.title) ? `<details class="mk-ctx"${p.k === "gap" || p.text && p.text.length < 900 ? " open" : ""}><summary>Matn${p.title ? `: <span lang="tr">${esc(p.title)}</span>` : ""}</summary><article class="mk-text" lang="tr">${p.text ? mkParas(p.text) : ""}</article></details>` : ""}
-    ${p.k === "gap" ? "" : `<p class="mk-qt" lang="tr">${esc(q.q)}</p>`}
+    ${p.sum && mkKind(x) === "gap" ? `<article class="mk-text mk-sum"><h3>Xulosa</h3><div lang="tr">${mkParas(p.sum)}</div></article>` : ""}
+    ${p.map ? mkMap(p.map) : ""}
+    ${mkKind(x) === "gap" ? "" : `<p class="mk-qt" lang="tr">${esc(q.q)}</p>`}
     ${body}
     ${answered ? `<p class="mk-why">${esc(q.e)}</p><button class="btn btn-grad btn-block" data-act="mk-fnext">${MKF.i + 1 < n ? "Keyingi savol" : "Yakunlash"}</button>` : ""}
   </section>`;
@@ -681,7 +767,7 @@ function mkfAct(act, b) {
   const m = MKF.items[MKF.i];
   if (act === "mk-fo") mkfAnswer(+b.dataset.o === m.x.q.a, +b.dataset.o);
   else if (act === "mk-fcheck") { const v = ($("mk-fin") || {}).value || ""; if (!v.trim()) { toast("Avval javob yozing"); return; } MKF.v = v; const ok = ansMatch(v, m.x.q.a) === 2; mkfAnswer(ok, ok ? 1 : 0); }
-  else if (act === "mk-fplay") { const au = m.x.q.audio || m.x.p.audio; speakSeq(au.lines.map(l => [l[0], l[1]])); }
+  else if (act === "mk-fplay") { const au = mkAuOf(m.x); speakSeq(au.lines.map(l => [l[0], l[1]]), null, { rate: 1 }); }
   else if (act === "mk-fnext") {
     ttsCancel();
     if (MKF.i + 1 < MKF.items.length) { MKF.i++; MKF.a = null; MKF.v = ""; mkfRender(); window.scrollTo(0, 0); return; }
@@ -701,7 +787,12 @@ function mkChar(c) {
   el.dispatchEvent(new Event("input", { bubbles: true }));
 }
 function mkAct(act, b) {
-  if (act === "mk-start") { mkStart(b.dataset.id, b.dataset.s); return; }
+  if (act === "mk-start") {
+    const s = b.dataset.s, id = b.dataset.id;
+    if (mkReady()) mkStart(id === "auto" ? mkPick(s) : id, s);
+    else { toast("Yuklanmoqda…"); loadMock().then(() => mkStart(id === "auto" ? mkPick(s) : id, s), () => toast("Sinov yuklanmadi. Internetni tekshiring")); }
+    return;
+  }
   if (act.startsWith("mk-f")) { mkfAct(act, b); return; }
   if (act === "mk-ch") { mkChar(b.dataset.c); return; }
   if (act === "mk-strict") { S.mkStrict = !S.mkStrict; save(); b.setAttribute("aria-checked", String(S.mkStrict)); return; }
@@ -727,7 +818,7 @@ function mkAct(act, b) {
     if (MK_PLAYING || (MK.plays[key] || 0) >= mkPlays()) return;
     MK.plays[key] = (MK.plays[key] || 0) + 1; MK_PLAYING = key; mkSave(); mkRender();
     const n = MK.plays[key], stop = () => { if (MK_PLAYING !== key || (MK && MK.plays[key] !== n)) return; MK_PLAYING = null; if (MK && location.hash === "#mock-" + MK.id) mkRender(); };
-    speakSeq(au.lines.map(l => [l[0], l[1]]), stop);
+    speakSeq(au.lines.map(l => [l[0], l[1]]), stop, { rate: 1 });
     // A voice that never reports its end (some browsers) does not lock the button for good
     setTimeout(stop, 4000 + au.lines.reduce((a, l) => a + l[1].length * 110 + 600, 0));
   }
@@ -742,7 +833,12 @@ function mkAct(act, b) {
 document.addEventListener("input", e => {
   const d = e.target.dataset;
   if (!MK || !d || !(d.mkk || d.mkw)) return;
-  if (d.mkk) { const [sec, k] = d.mkk.split("|"); MK.ans[sec][k] = e.target.value; }
+  if (d.mkk) {
+    const [sec, k] = d.mkk.split("|"), t = mkTest(MK.id); MK.ans[sec][k] = e.target.value;
+    const c = $("mk-cnt"), tab = document.querySelector(".mk-ptab.on small"), [a, n] = mkPartCount(t, sec, MK.pi);
+    if (c) c.textContent = mkSecCount(t, sec) - mkUnanswered(t, sec);
+    if (tab) tab.textContent = `${a}/${n}`;
+  }
   else {
     MK.ans.w[d.mkw] = e.target.value;
     const tk = mkTest(MK.id).w.tasks.find(x => x.id === d.mkw), wc = mkWords(e.target.value), el = $("mk-wc-" + d.mkw.replace(".", "-"));
