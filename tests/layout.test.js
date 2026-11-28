@@ -21,10 +21,16 @@ test("home: one status card, no duplicated stats or old lesson lists", async () 
   }));
   assert.equal(r.status, 1); assert.equal(r.lvl, 1); assert.equal(r.week, 1);
   assert.deepEqual(r.old, [], "old duplicate home blocks are gone");
-  assert.ok(r.cards <= 9, `home has ${r.cards} blocks`);
+  assert.ok(r.cards <= 6, `home has ${r.cards} blocks`);
   const t = await text(page);
-  assert.match(t, /Bugungi reja/); assert.match(t, /Kursni davom ettiring/); assert.match(t, /Bugungi vazifalar/); assert.match(t, /Hafta:/); assert.match(t, /Bugungi soʻz/);
+  // Short (2026-11-28): the exam, today's tasks, the status and the plan; the rest lives in Oʻrganish
+  assert.match(t, /Deneme sınavı/); assert.match(t, /Bugungi vazifalar/); assert.match(t, /Bugungi reja/);
+  for (const gone of [/Pamuk tavsiyasi/, /Bugungi soʻz/, /Pamuk maslahati/, /Hafta:/, /Kursni davom ettiring/, /Turkchani biroz bilasizmi/]) assert.doesNotMatch(t, gone);
   assert.equal((t.match(/Kunlik vazifalar|Haftalik challenge/g) || []).length, 0);
+  // The weekly challenge moved to the practice page
+  await page.evaluate(() => { location.hash = "#practice"; });
+  await page.waitForSelector(".wc-page .wc-mini");
+  assert.match(await page.textContent(".wc-page"), /Hafta:/);
   assert.deepEqual(errors, []);
   await page.close();
 });

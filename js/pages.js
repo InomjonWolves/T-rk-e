@@ -56,21 +56,15 @@ function recsCard() {
   return `<section class="section recs-sec"><div class="section-head"><h2>Pamuk tavsiyasi</h2><span class="tag violet-t">Siz uchun</span></div>
     <div class="recs glass">${r.map(x => `<button class="rec-row" data-act="rec" data-id="${x.id}"><span class="ico ${x.c}-t">${ICON[x.ico] || ICON.star}</span><span class="rec-txt"><b>${esc(x.t)}</b><small>${esc(x.why)}</small></span>${ICON.chev}</button>`).join("")}</div></section>`;
 }
+// The home page, short (2026-11-28): the mock exam first, then today's tasks; the rest of the learning lives in Oʻrganish
+// (the course and the placement test on the course page, Pamuk's advice and the weekly challenge on the practice page)
 function viewHome() {
   const due = dueWords().length, fresh = Math.min(newLeft(), newWords(NEW_PER_DAY).length), todo = due + fresh;
-  const w = wordOfDay(), t = tipOfDay();
   return `${topbar()}
   ${greeting()}
   ${mkHomeHub()}
-  <div class="home-side">
-  ${statusCard()}
-  ${guestCard()}
-  ${comebackCard()}
-  ${gtHomeCard()}
-  ${dqCard()}
-  ${installCard()}
-  </div>
   <div class="home-main">
+  ${dqCard()}
   ${todo ? `<section class="hero">
     <span class="hero-chip"><i>${ICON.spark}</i>Bugungi reja</span>
     <h2>Kuniga <span class="hl">10 daqiqa</span> yetarli</h2>
@@ -84,30 +78,13 @@ function viewHome() {
     <button class="btn hero-pill" data-act="go" data-to="practice">Erkin mashq<span class="hero-pill-go">${ICON.chev}</span></button>
     <div class="hero-cat">${catSVG({ pose: "cheer", ears: "up", look: catLook(), cls: "mascot" })}</div>
   </section>`}
-
-  ${recsCard()}
-  ${plHomeCard()}
-  ${(() => { const u = kNext(), p = kProgress(u.id), gate = kGate(); if (gate) { const g = KLEVEL(gate); return `<section class="section">
-    <div class="section-head"><h2>Kursni davom ettiring</h2><a class="link" href="#course">Barcha boʻlimlar</a></div>
-    <a class="pcard glass k-next" href="#ktest-${gate.toLowerCase()}"><div class="k-next-row"><span class="art orange">${ICON.trophy}</span>
-      <div class="unit-body"><small class="eyebrow">${gate} · daraja testi</small><b class="k-next-title">${esc(g.test.title)}</b></div>${ICON.chev}</div>
-    <p class="muted">${gate} ning barcha boʻlimlari tugadi. Testdan ${g.test.pass}% olsangiz, ${u.level} darajasi ochiladi.</p></a></section>`; } return `<section class="section">
-    <div class="section-head"><h2>Kursni davom ettiring</h2><a class="link" href="#course">Barcha boʻlimlar</a></div>
-    <a class="pcard glass k-next" href="#${kHash(u.id)}">
-    <div class="k-next-row"><span class="art ${LV_COLOR[u.level]}"><span>${u.level}.${u.n}</span></span>
-      <div class="unit-body"><small class="eyebrow">${u.level} · ${u.n}-boʻlim</small><b class="k-next-title" lang="tr">${esc(u.title)}</b></div>${pctRing(p)}</div>
-    <p class="muted">${esc(u.sub)}</p>
-    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${COURSE.units.length}" aria-valuenow="${kDoneCount()}" aria-label="Kurs: ${kDoneCount()}/${COURSE.units.length} boʻlim"><i style="width:${pct(kDoneCount(), COURSE.units.length)}%"></i></div>
-    <small class="muted">Kurs: ${kDoneCount()}/${COURSE.units.length} boʻlim · A1 → C1</small></a></section>`; })()}
-
-  <section class="section wd-sec">
-    <div class="section-head"><h2>Bugungi soʻz</h2></div>
-    <div class="glass pad word-day">
-      <div class="tile-row"><div style="min-width:0"><div class="wd-tr" lang="tr">${esc(w.tr)}</div><div class="word-uz" style="font-size:16px">${esc(w.uz)}</div></div><button class="say" data-act="say" data-t="${esc(w.tr)}" aria-label="Tinglash">${ICON.speak}</button></div>
-      ${w.note ? `<div class="word-note">${esc(w.note)}</div>` : ""}
-      <div class="tip-line"><div class="tip-cat">${catSVG({ pose: "head", look: catLook() })}</div><div><small class="eyebrow">Pamuk maslahati</small><b>${esc(t[0])}</b><p class="muted">${esc(t[1])}</p></div></div>
-    </div>
-  </section>
+  </div>
+  <div class="home-side">
+  ${guestCard()}
+  ${comebackCard()}
+  ${gtHomeCard()}
+  ${statusCard()}
+  ${installCard()}
   </div>`;
 }
 
@@ -132,7 +109,6 @@ function dqCard() {
     <div class="pcard-head"><b>${ICON.target}Bugungi vazifalar</b><span class="tag ${q.paid ? "green-t" : "violet-t"}">${q.paid ? `${ICON.check}+${XP_VAL.daily} XP olindi` : `${done}/3 · +${XP_VAL.daily} XP`}</span></div>
     ${q.k.map(k => { const g = DQ_GO[k], ok = q.ok[k]; return `<button class="dq-row${ok ? " ok" : ""}" ${ok ? "disabled" : dqBtn(k)}>
       <span class="dq-ico">${ok ? ICON.check : ICON[g[2]]}</span><span><b>${g[0]}</b><small>${g[1]}</small></span><span class="dq-xp">+${XP_VAL[k]} XP</span>${ok ? "" : ICON.chev}</button>`; }).join("")}
-    ${wcMini()}
   </section>`;
 }
 function dqMini() {
@@ -493,13 +469,16 @@ function viewPractice() {
       return g.startsWith("href") ? `<a class="sk-tile glass${tip ? " tip" : ""}" ${g}>${inner}</a>` : `<button class="sk-tile glass${tip ? " tip" : ""}" ${g} ${off ? "disabled" : ""}>${inner}</button>`; }).join("")}</div>
   </section>
 
+  ${recsCard()}
+
   <div class="lrows glass">
     ${lrow('href="#gx"', "cap", "violet", "Qoidalar mashqi", `${gxDoneCount()}/${GX_CODES.length} mavzu · keyingisi: ${esc((gxTopic(gxNext()) || {}).uz || gxNext())}`)}
     ${lrow('data-act="start" data-mode="morf"', "spark", "teal", "Qoʻshimchalar mashqi", "Soʻzga toʻgʻri qoʻshimcha qoʻshish")}
     ${lrow('data-act="modes-all"', "list", "sky", "Boshqa mashq turlari", "Kartochka, test, diktant, talaffuz…")}
   </div>
 
-  ${mis ? mistakesCard() : ""}`;
+  ${mis ? mistakesCard() : ""}
+  <div class="glass pad wc-page">${wcMini()}</div>`;
 }
 
 /* ---------- Leaderboard ---------- */

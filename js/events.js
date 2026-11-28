@@ -212,7 +212,6 @@ function onAct(e) {
   else if (act === "pl-done") plFinish();
   else if (act === "pl-again") { PL = null; route(); window.scrollTo(0, 0); }
   else if (act === "pl-apply") plApply(b.dataset.l);
-  else if (act === "pl-skip") { S.place = { at: todayKey(), skipped: 1 }; save(); route(); }
   else if (act === "k-test-again") { KTEST_ANS = {}; KTEST_RES = null; KT_GEN[b.dataset.l] = null; KT_ANS = { lv: b.dataset.l, l: {}, w: {}, s: {} }; route(); window.scrollTo(0, 0); }
   else if (act === "say-seq") speakSeq(JSON.parse(b.dataset.lines));
   else if (act === "cel-next") nextCelebrate();

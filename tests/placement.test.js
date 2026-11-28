@@ -104,11 +104,11 @@ test("placement bank: original items, 10 reading + 4 writing per level, listenin
   assert.deepEqual(errors, []);
 });
 
-test("home page offers the placement test to new learners until skipped", async () => {
-  const { page, errors } = await openApp(browser, "#home");
-  assert.ok(await page.evaluate(() => !!document.querySelector('a[href="#placement"]')));
-  await page.click("[data-act=pl-skip]"); await page.waitForTimeout(100);
-  assert.equal(await page.evaluate(() => !!document.querySelector("[data-act=pl-skip]")), false);
+test("the course page offers the placement test to new learners, not after a result", async () => {
+  const { page, errors } = await openApp(browser, "#course");
+  assert.ok(await page.evaluate(() => !!document.querySelector('a.pcard[href="#placement"]')));
+  await page.evaluate(() => { S.place = { at: todayKey(), passed: "A1", start: "A2" }; save(); route(); });
+  assert.equal(await page.evaluate(() => !!document.querySelector('a.pcard[href="#placement"]')), false);
   assert.deepEqual(errors, []);
 });
 

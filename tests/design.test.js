@@ -104,10 +104,10 @@ test("home: one column in reading order on a phone, two columns on a wide screen
   const { page, errors } = await openApp(browser, "#home", { state: { xp: 230 } });
   const boxes = () => page.evaluate(() => {
     const b = q => { const r = document.querySelector(q).getBoundingClientRect(); return { y: Math.round(r.top + scrollY), x: Math.round(r.left), w: Math.round(r.width) }; };
-    return { status: b(".status-card"), hero: b(".hero"), course: b(".k-next"), tasks: b(".dq-today"), word: b(".wd-sec"), sw: document.documentElement.scrollWidth, W: innerWidth };
+    return { exam: b(".mk-hub"), status: b(".status-card"), hero: b(".hero"), tasks: b(".dq-today"), sw: document.documentElement.scrollWidth, W: innerWidth };
   });
   let t = await boxes();
-  assert.ok(t.status.y < t.hero.y && t.hero.y < t.course.y && t.course.y < t.tasks.y && t.tasks.y < t.word.y, "status → plan → course → tasks → word: " + JSON.stringify(t));
+  assert.ok(t.exam.y < t.tasks.y && t.tasks.y < t.status.y && t.status.y < t.hero.y, "exam → tasks → status → plan: " + JSON.stringify(t));
   assert.ok(t.hero.w > 300 && t.sw <= t.W);
   // The plan's button is the saffron one and Pamuk sits in the card
   assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector(".hero .btn")).getPropertyValue("--b").trim()), "#ffb422");
@@ -115,9 +115,9 @@ test("home: one column in reading order on a phone, two columns on a wide screen
   await page.setViewportSize({ width: 1280, height: 800 });
   t = await boxes();
   assert.ok(t.status.x >= t.hero.x + t.hero.w, "the status card stands beside the plan");
-  assert.ok(Math.abs(t.status.y - t.hero.y) < 4, "both columns start on one line");
-  assert.equal(t.tasks.x, t.status.x, "tasks are in the side column");
-  assert.equal(t.course.x, t.hero.x, "the course is in the main column");
+  assert.ok(Math.abs(t.status.y - t.tasks.y) < 4, "both columns start on one line");
+  assert.equal(t.tasks.x, t.hero.x, "today's tasks and the plan are the main column");
+  assert.ok(t.exam.y < t.tasks.y && t.exam.w > t.hero.w, "the exam spans both columns above");
   assert.ok(t.sw <= t.W);
   assert.deepEqual(errors, []);
   await page.close();

@@ -98,8 +98,9 @@ test("writing check and written answers: a wrong suffix is named by its rule; th
     return { a, t: rec && rec.t, why: rec && rec.why, none };
   });
   assert.equal(tip.a, undefined); assert.equal(tip.t, "Qoʻshimchalar mashqi"); assert.match(tip.why, /undosh yumshashi boʻyicha 4 marta/); assert.equal(tip.none, false);
-  await page.evaluate(() => { location.hash = "#home"; route(); });
-  assert.ok(await page.locator(".recs [data-id=mor], .rec-row").count(), "the tip is on the home page");
+  await page.evaluate(() => { location.hash = "#practice"; route(); });
+  await page.waitForSelector(".recs");
+  assert.ok(await page.locator(".recs [data-id=mor]").count(), "the tip is on the practice page");
   assert.deepEqual(errors, []);
 });
 

@@ -26,14 +26,14 @@ test("a new learner: A1 open, the rest locked; units one by one; the level test 
   await page.close();
 });
 
-test("the level test opens the next level; the home card leads to the test when it is the way on", async () => {
+test("the level test opens the next level; the course card leads to the test when it is the way on", async () => {
   const k = {}; ["a1-1", "a1-2", "a1-3", "a1-4", "a1-5", "a1-6", "a1-7", "a1-8"].forEach(id => { k[id] = done; });
-  const { page, errors } = await openApp(browser, "#home", { state: { onb: 1, k } });
+  const { page, errors } = await openApp(browser, "#course", { state: { onb: 1, k } });
   assert.deepEqual(await page.evaluate(() => [kGate(), testOpen("A1"), lvOpen("A2")]), ["A1", true, false]);
-  assert.equal(await page.getAttribute(".k-next", "href"), "#ktest-a1");
+  assert.equal(await page.getAttribute(".k-hero .hero-go", "href"), "#ktest-a1");
   await page.evaluate(() => { S.ktest = { A1: 80 }; save(); route(); });
   assert.deepEqual(await page.evaluate(() => [kGate(), lvOpen("A2"), unitOpen("a2-1"), unitOpen("a2-2")]), [null, true, true, false]);
-  assert.equal(await page.getAttribute(".k-next", "href"), "#k-a2-1");
+  assert.equal(await page.getAttribute(".k-hero .hero-go", "href"), "#k-a2-1");
   assert.deepEqual(errors, []);
   await page.close();
 });

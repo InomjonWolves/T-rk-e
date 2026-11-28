@@ -472,15 +472,6 @@ function plLevel(rows, lv) {
   const pct = Math.round(r.filter(x => x.ok).length / r.length * 100);
   return { pct, ok: pct >= plNeed(lv) && part("r") >= 0.5 && part("w") >= 0.5 };
 }
-function plHomeCard() {
-  if (S.place || kDoneCount() > 0 || S.xp > 400) return "";
-  return `<div class="pcard glass">
-    <div class="pcard-head"><b>${ICON.target}Turkchani biroz bilasizmi?</b><span class="tag teal-t">10–15 daq</span></div>
-    <p class="muted">Bosqichma-bosqich test darajangizni aniqlaydi va kursni mos joydan boshlaydi: oʻqish, tinglash, yozish va gapirish boʻyicha.</p>
-    <a class="btn btn-grad btn-block" href="#placement" style="margin-top:8px">Darajani aniqlash</a>
-    <button class="link" data-act="pl-skip" style="display:block;margin:10px auto 0">Kerak emas, A1 dan boshlayman</button>
-  </div>`;
-}
 function plSection(id, name, sub, body) {
   return `<section class="section">${ktPartHead(id, name)}${sub ? `<p class="sub">${sub}</p>` : ""}${body}</section>`;
 }

@@ -200,6 +200,10 @@ test("personal advice: the weakest skill, a hardly practised one, the fullest mi
   assert.deepEqual(r.map(x => x[0]), ["sk-w", "sk-s"]);
   assert.match(r[0][1], /yozishda aniqlik 58%/);
   assert.match(r[1][1], /gapirish kam mashq qilindi/);
+  // Pamuk's advice is on the practice page (not on the short home page)
+  assert.equal(await page.locator(".recs").count(), 0);
+  await page.evaluate(() => { location.hash = "#practice"; });
+  await page.waitForSelector(".recs .rec-row");
   assert.equal(await page.locator(".recs .rec-row").count(), 2);
   // The tip starts the mixed writing practice
   await page.evaluate(() => document.querySelector('.rec-row[data-id="sk-w"]').click());
