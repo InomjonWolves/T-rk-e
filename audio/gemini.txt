@@ -9,6 +9,7 @@
 01go4dz8p90 Achird
 01qcyqv4up3 Leda
 01tfjp08jbh Zephyr
+026ea0590aa Leda
 02c7dlky1bp Leda
 02c9kcgnner Erinome
 02ljj5kysy0 Vindemiatrix
@@ -152,6 +153,7 @@
 0nr9904h2vp Orus
 0ns7x01yf6o Orus
 0nxbaqr19cw Puck
+0o5hapepypp Erinome
 0oduatcs6ea Zephyr
 0odzgc3940j Kore
 0oierw0llg5 Achird
@@ -444,6 +446,7 @@
 1xs5764pytw Puck
 1ydkzfc6346 Erinome
 1ygxqv07c66 Erinome
+1yhyktfp4yn Erinome
 1yjuxeh4p06 Laomedeia
 1ynqbvit41h Zephyr
 1yq2nr1yvnt Kore
@@ -545,6 +548,7 @@
 2cq31ltota0 Puck
 2d67io7jvqj Zephyr
 2da28reigxl Orus
+2dek96jx4sk Leda
 2dgv1uc2ium Laomedeia
 2dgyo8ascn6 Kore
 2dhrqczqy27 Autonoe
