@@ -42,6 +42,13 @@ jobs:
           node tools/minify.js . --version "${GITHUB_SHA::8}"
           # Ilovaning ishlashini tekshiradigan testlar siqilgan kod bilan (manba matnini oʻqiydigan testlar emas)
           node --test --test-concurrency=2 tests/pages.test.js tests/practice.test.js tests/xp.test.js tests/reading.test.js tests/placement.test.js tests/achievements.test.js tests/lugat.test.js tests/layout.test.js tests/checks.test.js tests/groups.test.js tests/auth.test.js
+      - name: Eski versiyalarni tozalash
+        # Bepul tarifda Hosting xotirasi 10 GB: har joylash ~120 MB qoldiradi — oxirgi 5 tasidan eskilari oʻchiriladi
+        if: env.HAS_KEY == 'true'
+        continue-on-error: true
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node tools/hosting-clean.js
       - name: Firebase Hosting'ga joylash
         if: env.HAS_KEY == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0

@@ -26,10 +26,10 @@ const text = s => s > 0
 const streakLeft = (doc, now) => doc.d === localDay(new Date(now.getTime() - 864e5), doc.z || 0) ? doc.s || 0 : 0;
 
 const b64 = x => Buffer.from(x).toString("base64url");
-async function accessToken(sa) {
+async function accessToken(sa, scope = "https://www.googleapis.com/auth/datastore https://www.googleapis.com/auth/firebase.messaging") {
   const now = Math.floor(Date.now() / 1000);
   const head = b64(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const body = b64(JSON.stringify({ iss: sa.client_email, scope: "https://www.googleapis.com/auth/datastore https://www.googleapis.com/auth/firebase.messaging", aud: "https://oauth2.googleapis.com/token", iat: now, exp: now + 3600 }));
+  const body = b64(JSON.stringify({ iss: sa.client_email, scope, aud: "https://oauth2.googleapis.com/token", iat: now, exp: now + 3600 }));
   const sig = crypto.createSign("RSA-SHA256").update(`${head}.${body}`).sign(sa.private_key).toString("base64url");
   const r = await fetch("https://oauth2.googleapis.com/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${head}.${body}.${sig}` });
   const j = await r.json();

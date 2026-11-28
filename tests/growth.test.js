@@ -243,6 +243,9 @@ test("autonomous week: the daily report and failure alerts go to the admin's cha
   assert.ok((txt.match(/<\/?[a-z]+>/g) || []).every(x => /^<\/?b>$/.test(x)));
   assert.match(reportText({ today: t, audio: { made: 3, left: 0 } }), /hammasi yozildi/);
   assert.match(alertText({ name: "Audio", html_url: "https://x/3" }), /«Audio» ishlamay qoldi[\s\S]*https:\/\/x\/3/);
+  // The alert says what the failure means, and the commit title is marked as only the last change
+  const al = alertText({ name: "Firebase Hosting", display_title: "CLAUDE.md: Firestore qoidalari", html_url: "https://x/4" });
+  assert.match(al, /sayt oldingi versiyada ishlab turibdi\.\nOxirgi oʻzgarish: <i>CLAUDE\.md: Firestore qoidalari<\/i>/);
   assert.equal(tkDay(Date.UTC(2026, 10, 17, 20)), "2026-11-18", "Tashkent day");
   const rep = fs.readFileSync(path.join(ROOT, ".github/workflows/report.yml"), "utf8"), watch = fs.readFileSync(path.join(ROOT, ".github/workflows/watch.yml"), "utf8");
   assert.match(rep, /schedule:/); assert.match(rep, /telegram-report\.js report/); assert.match(rep, /SA: \$\{\{ secrets\.PUSH_SERVICE_ACCOUNT \}\}/);
@@ -253,4 +256,18 @@ test("autonomous week: the daily report and failure alerts go to the admin's cha
   for (const n of JSON.parse(/workflows: (\[.*\])/.exec(watch)[1])) assert.ok(names.includes(n), n);
   // The audio run leaves its progress for the report
   assert.match(fs.readFileSync(path.join(ROOT, "tools/audio-gen.js"), "utf8"), /progress\.json/);
+});
+
+test("hosting storage: old versions are cleared before each deploy, the live one and the last releases never", () => {
+  const { toDelete, lastReleases, vid, KEEP } = require("../tools/hosting-clean.js");
+  const V = (id, status = "FINALIZED", age = 30) => ({ name: `sites/turkceyol/versions/${id}`, status, createTime: new Date(Date.now() - age * 864e5).toISOString() });
+  const rel = ["a", "b", "c", "d", "e", "f", "g"].map((id, i) => ({ releaseTime: new Date(Date.UTC(2026, 10, 1 + i)).toISOString(), version: { name: `projects/614558378510/sites/turkceyol/versions/${id}` } }));
+  assert.equal(KEEP, 5);
+  assert.deepEqual(lastReleases(rel.slice().reverse().concat([])).sort(), ["c", "d", "e", "f", "g"], "the newest five, in any order");
+  const keep = new Set([...lastReleases(rel), "pv"]);
+  const del = toDelete([V("a"), V("b"), V("c"), V("g"), V("pv"), V("x", "CREATED", 0), V("y", "ABANDONED", 3), V("z", "DELETED")], keep).map(v => vid(v.name));
+  assert.deepEqual(del, ["a", "b", "y"], "old copies go; kept releases, a preview, a deploy in progress and deleted ones stay");
+  const wf = fs.readFileSync(path.join(ROOT, ".github/workflows/firebase-hosting.yml"), "utf8");
+  assert.ok(wf.indexOf("tools/hosting-clean.js") > 0 && wf.indexOf("tools/hosting-clean.js") < wf.indexOf("action-hosting-deploy"), "cleared before the deploy");
+  assert.match(wf, /SA: \$\{\{ secrets\.FIREBASE_SERVICE_ACCOUNT \}\}/);
 });

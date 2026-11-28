@@ -58,8 +58,20 @@ function reportText({ today, users, errs, audio, by, app }) {
   if (app) out.push("", `📱 Ilova: oxirgi versiya ${app.code} (${app.ok ? "yigʻildi" : "yigʻilmadi ❌"})`);
   return out.join("\n");
 }
+// What a failed job means for the learners, in plain words (the commit title alone misled: «… Firestore qoidalari …»)
+const ALERT_WHY = {
+  "Testlar": "Kod tekshiruvi oʻtmadi — sayt va ilova oʻzgarmadi.",
+  "Firebase Hosting": "Saytga yangi versiya joylanmadi — sayt oldingi versiyada ishlab turibdi.",
+  "Audio": "Bugungi ovoz yozuvlari toʻxtadi — mavjud audio ishlayapti.",
+  "Ilova (Capacitor)": "Yangi APK yigʻilmadi — oldingi APK oʻz joyida.",
+  "Telegram": "Kanalga bugungi post chiqmagan boʻlishi mumkin.",
+  "Telegram bot (Vercel)": "Bot yangilanmadi — oldingi versiyasi javob beradi.",
+  "Liga natijalari": "Haftalik liga natijalari serverda hisoblanmadi — ilova oʻzi hisoblaydi.",
+  "Kunlik hisobot (Telegram)": "Kunlik hisobot yuborilmadi."
+};
 function alertText(r) {
-  return `⚠️ <b>«${esc(r.name)}» ishlamay qoldi</b>\n${esc(r.display_title || "").slice(0, 120)}\n\n${r.html_url}\n\nClaude kunlik tekshiruvda koʻrib chiqadi.`;
+  const why = ALERT_WHY[r.name], title = esc(r.display_title || "").slice(0, 120);
+  return `⚠️ <b>«${esc(r.name)}» ishlamay qoldi</b>${why ? "\n" + why : ""}${title ? `\nOxirgi oʻzgarish: <i>${title}</i>` : ""}\n\n${r.html_url}\n\nClaude kunlik tekshiruvda koʻrib chiqadi.`;
 }
 
 async function firestore(sa, coll) {
